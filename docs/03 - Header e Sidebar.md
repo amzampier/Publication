@@ -1,7 +1,7 @@
 # 03 — Header e Sidebar · Área Administrativa
 
 **Versão:** 1.0.0 · **Data:** 2026-09-30 · **Idioma:** Português do Brasil (pt-BR)
-**Escopo:** estrutura e comportamento do shell da Área Administrativa (Header Dark + Sidebar retrátil)
+**Escopo:** estrutura e comportamento do shell da Área Administrativa (Header + Sidebar retrátil)
 **Arquivos-fonte:** [`app/components/layout/AppHeader.vue`](../app/components/layout/AppHeader.vue) ·
 [`app/components/layout/AppSidebar.vue`](../app/components/layout/AppSidebar.vue) ·
 [`app/layouts/default.vue`](../app/layouts/default.vue) ·
@@ -19,7 +19,7 @@ spec `openspec/specs/design-system/layout-navigation/spec.md`
 ## Sumário
 
 1. [Papel no shell](#1-papel-no-shell)
-2. [Header Dark](#2-header-dark)
+2. [Header claro](#2-header-claro)
    - [2.1 Zona esquerda: alternância + logo](#21-zona-esquerda-alternância--logo)
    - [2.2 Zona direita: notificações + Account](#22-zona-direita-notificações--account)
 3. [Bloco Account e menu suspenso](#3-bloco-account-e-menu-suspenso)
@@ -45,7 +45,7 @@ spec `openspec/specs/design-system/layout-navigation/spec.md`
 
 ```
 <div class="fp-shell h-screen flex flex-col overflow-hidden">
-  <LayoutAppHeader :sidebar-open="sidebarOpen" />        ← Header Dark (h-16)
+  <LayoutAppHeader :sidebar-open="sidebarOpen" />        ← Header claro (h-16)
   <div class="fp-shell-body flex flex-1 min-h-0">
     <LayoutAppSidebar :sidebar-open="sidebarOpen" />     ← Sidebar retrátil
     <main class="fp-shell-content">…</main>              ← App Canvas (#f8fafc)
@@ -63,29 +63,33 @@ spec `openspec/specs/design-system/layout-navigation/spec.md`
   implementada pela change OpenSpec `separate-public-admin-areas`.
 - A seção 14 do `/design` usa `definePageMeta({ layout: false })` e reproduz o shell em modo demo.
 
-## 2. Header Dark
+## 2. Header claro
 
-`h-16 flex items-center justify-between px-4 shrink-0 relative z-40 bg-brand-primary`
-Fundo `#112051` · textos `#f8fafc` · separadores `w-px h-5`.
+`h-16 flex items-center justify-between px-4 shrink-0 relative z-40 bg-white border-b border-slate-200 text-slate-900`
+Fundo `bg-white` · `border-b border-slate-200` · textos herdados do container em `text-slate-900`
+(nenhum filho declara cor própria de texto) · separadores `w-px h-5 bg-slate-200`.
 
 ### 2.1 Zona esquerda: alternância + logo
 
 | Elemento | Detalhe |
 |---|---|
 | Botão de alternância | `PanelLeftClose` com sidebar aberta / `PanelLeftOpen` recolhida; `aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-expanded`, `aria-controls="app-sidebar"`; foco `ring-2 ring-brand-focus/50` |
-| Separador | `w-px h-5 bg-white/20` |
-| Logotipo | badge `p-1.5 rounded-md bg-lime-500/15 text-brand-accent` + ícone `Building2 h-4 w-4` + nome **`Publications`** (`text-sm font-bold tracking-tight truncate`) |
+| Separador | `w-px h-5 bg-slate-200` |
+| Logotipo | badge `p-1.5 rounded-md bg-brand-primary/10 text-brand-primary` + ícone `Building2 h-4 w-4` + nome **`Publications`** (`text-sm font-bold tracking-tight truncate`) |
 
 **Não existe** seletor, texto ou badge de empresa/filial: o sistema tem **escopo único** (docs/02 §2.1) e a
 área atual (Pública/Administrativa) é evidente pela rota e pelo layout.
 
 ### 2.2 Zona direita: notificações + Account
 
-- **Sino de notificações** (`Bell`): botão `p-1.5 rounded-lg hover:bg-white/5`, ponto `bg-rose-500` quando
-  há itens; painel `absolute right-0 top-full mt-1 w-72 bg-brand-primary border border-slate-700 rounded-lg`
-  com cabeçalho (contador "n nova(s)"), lista `max-h-64 overflow-y-auto scrollbar-discreta` e ação
-  **Limpar tudo** (desabilitada com lista vazia). Clicar em uma notificação a remove (dispensar).
-  Abre/fecha o mesmo ciclo do Account: abrir um fecha o outro.
+- **Sino de notificações** (`Bell`): botão `p-1.5 rounded-lg hover:bg-slate-100`, ponto `bg-rose-500` quando
+  há itens; painel `absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-lg`
+  com **cabeçalho `px-3 py-2 bg-brand-primary`** (banda navy: título `text-white`, contador
+  `text-slate-300`), lista `max-h-64 overflow-y-auto scrollbar-discreta bg-[#f9feee]` (título do
+  item herda `slate-900`, mensagem `text-slate-600`, tempo `text-slate-500`, hover `bg-slate-100`,
+  estado vazio `text-slate-500`) e rodapé `border-t border-slate-200` com ação **Limpar tudo**
+  `text-[#0f7a06] hover:bg-slate-100` (verde de texto §2.1, desabilitada com lista vazia). Clicar em
+  uma notificação a remove (dispensar). Abre/fecha o mesmo ciclo do Account: abrir um fecha o outro.
 - **Bloco Account** — ver [§3](#3-bloco-account-e-menu-suspenso). Sempre no extremo direito, oposto ao toggle.
 
 ## 3. Bloco Account e menu suspenso
@@ -97,20 +101,20 @@ Fundo `#112051` · textos `#f8fafc` · separadores `w-px h-5`.
 - Nome e perfil em **duas linhas alinhadas à esquerda**: nome `text-xs font-normal`,
   perfil `text-[10px] font-normal`, ambos sem negrito.
 - Chevron `h-3.5 w-3.5` rotaciona 180° ao abrir (`transition-transform duration-200`).
-- Hover `bg-white/5` · foco `ring-2 ring-brand-focus/50`.
+- Hover `bg-slate-100` · foco `ring-2 ring-brand-focus/50`.
 
 **Menu** — `role="menu"` `aria-label="Menu da conta"`:
 
 ```
-absolute right-0 top-full mt-1 w-56 bg-brand-primary border border-slate-700
+absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200
 rounded-lg shadow-lg py-1 z-30
 ```
 
-Itens: `w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-left hover:bg-brand-structure/60 ds-item-hover-dark`
-mais `:style="--item-cor"` — no hover o rótulo assume a **cor do item** (mesmo padrão da sidebar,
-só que com a variante escura `.ds-item-hover-dark` e fallback `#f8fafc`, nunca slate); ícone
-`h-3.5 w-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), colorido por
-`MenuItem.cor`, divisor `my-1 h-px bg-white/40`. **Meu Perfil** (sem
+Itens: `w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 text-left hover:bg-slate-100 ds-item-hover-dark`
+mais `:style="--item-cor"` — no hover o rótulo assume a **cor do item** (superfície branca: classe
+`.ds-item-hover-dark` com fallback `#0f172a`); ícone `h-3.5 w-3.5` com **traço 1.5**
+(`.ds-icon-light` — mesmo peso da sidebar), colorido por `MenuItem.cor` (cores cheias — o menu é
+branco), divisor `my-1 h-px bg-slate-200`. **Meu Perfil** (sem
 `cor`) e **Encerrar Sessão** (rótulo já colorido permanentemente) não usam a classe de hover.
 
 Ordem fixa (definida em `config/navigation.ts`):
@@ -130,7 +134,7 @@ Ordem fixa (definida em `config/navigation.ts`):
 
 ## 4. Sidebar retrátil
 
-`<aside id="app-sidebar">` — `shrink-0 bg-white border-r border-slate-200 flex flex-col
+`<aside id="app-sidebar">` — `shrink-0 bg-brand-primary border-r border-white/10 flex flex-col
 transition-all duration-200`; conteúdo `flex flex-col gap-0.5 p-2 flex-1`.
 
 ### 4.1 Modos expandida e rail
@@ -149,22 +153,23 @@ mesmo markup no modo expandido (`justify-center` no rail) e sempre visível.
 
 ### 4.3 Sessões e itens
 
-- Cabeçalho da sessão: `text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1`,
+- Cabeçalho da sessão: `text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1
+  hover:text-white focus-visible:text-white`,
   chevron rotaciona 180°, `aria-expanded` — **recolhimento individual**, todas iniciam `aberto: true`.
 - Item: `<button>` `flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left`, ícone `h-4 w-4`
   com **traço 1.5** (`.ds-icon-light` em `main.css` — o traço 2 do Lucide parecia em negrito em 16px;
-  com `:style` de `item.cor` quando o item tem cor), rótulo `text-xs font-normal truncate`,
+  com `:style` de `tinta(item.cor)` quando o item tem cor), rótulo `text-xs font-normal truncate`,
   `aria-label`, `aria-current="page"` quando ativo.
-- **Item ativo:** `bg-brand-structure/10 text-lime-700` (derivado do tom estrutural, sem accent sólido);
-  o ícone colorido mantém a sua cor. **Inativo:** `text-slate-600 hover:bg-slate-100` +
+- **Item ativo:** `bg-white/10 text-lime-300` (Q1 — `lime-700` não alcança 3:1 sobre navy);
+  o ícone colorido mantém a sua tinta. **Inativo:** `text-slate-300 hover:bg-white/10` +
   `.ds-item-hover` — no hover a opção inteira assume a **cor do próprio item** (`--item-cor` vindo do
-  config; item sem `cor` cai no fallback `#0f172a`/slate-900). A classe entra só no ramo inativo, então
-  o item ativo não muda com o hover.
+  config e traduzido por `tinta(item.cor)`; item sem `cor` cai no fallback `#f8fafc`). A classe entra só
+  no ramo inativo, então o item ativo não muda com o hover.
 
 ### 4.4 Comportamento no rail
 
 - Sem cabeçalhos de sessão; `sessoesVisiveis` mantém apenas sessões **abertas**.
-- Divisor entre sessões: `h-px bg-slate-200 mx-1 my-1.5`.
+- Divisor entre sessões: `h-px bg-white/15 mx-1 my-1.5`.
 - Cada item é envolto em `<UiTooltip content={label} position="right">` com
   `:disabled="sidebarOpen"` (tooltip só no rail).
 - O estado `aberto` de cada sessão **é preservado** ao recolher e reexpandir.
@@ -196,8 +201,10 @@ Observações:
   Release Week e Escopo de Projetos), **cadastros de apoio** e **administração/governança**.
 - **Cores dos ícones (`SidebarItem.cor`)** — o ícone fica colorido sempre e o hover da opção pinta
   rótulo/ícone com a mesma cor (`.ds-item-hover` + `--item-cor` em
-  [`app/assets/css/main.css`](../app/assets/css/main.css)). Cores **cheias**, na mesma
-  intensidade do menu suspenso do Account:
+  [`app/assets/css/main.css`](../app/assets/css/main.css)). As cores no config são **cheias** (mesma
+  intensidade do menu suspenso do Account); sobre o navy da sidebar o helper `tinta()`
+  (`app/composables/shellTintas.ts`) aplica a tinta D9 correspondente — tabela das 8 tintas em
+  [`01 - design_system.md`](01%20-%20design_system.md) §3.3:
   - **Publicações:** Manuais `#f45f71`, Release Week `#1a9e07`, Escopo de Projetos `#50a1ff`
   - **Cadastros:** Parceiros `#047857` (Verde Esmeralda), Softwares `#0364f7` (azul Estrutural)
   - **Administração** (mesmas cores do `accountMenuItens`, mesmo item => mesma cor): Gestão de
@@ -228,7 +235,7 @@ interface Conta         { nome: string; perfil: string }
 
 `MenuItem.cor` e `SidebarItem.cor` existem porque o Tailwind não resolve cor dinâmica em classe —
 sempre via `:style`; no caso da sidebar, a mesma cor alimenta a variável `--item-cor` usada pelo
-hover `.ds-item-hover`.
+hover `.ds-item-hover`, traduzida para a tinta D9 por `tinta(item.cor)` (ver §4.3).
 
 **Removidos nesta fase:** `empresaAtiva` e o item "Troca de Filial / Empresa" (escopo único, sem
 empresas/filiais).
@@ -261,14 +268,40 @@ só o conteúdo é impresso. Detalhes em `01 - design_system.md` §3.4.
 ## 10. Vitrine `/design` §14
 
 A seção 14 **espelha o shell real**: importa `sessoes`, `itemRaiz`, `conta`, `accountMeuPerfil`,
-`accountMenuItens` e `accountEncerrarSessao` de `config/navigation.ts` em vez de manter definição local
-dos dados (mantém apenas uma cópia de trabalho para o recolhimento, como o `AppSidebar`), reproduz as
-mesmas larguras (`w-52`/`w-[46px]`), os mesmos divisores, o item raiz acima das sessões e o mesmo menu
-(`w-56`). Qualquer mudança aqui exige conferir a vitrine — e vice-versa.
+`accountMenuItens`, `accountEncerrarSessao` e `notificacoesIniciais` de `config/navigation.ts` em vez
+de manter definição local dos dados (mantém apenas uma cópia de trabalho para o recolhimento, como o
+`AppSidebar`), reproduz as mesmas larguras (`w-52`/`w-[46px]`), os mesmos divisores, o item raiz acima
+das sessões, o mesmo menu (`w-56`) e a central de notificações. Qualquer mudança aqui exige conferir a
+vitrine — e vice-versa.
+
+**Comparação de modelos (toggle "Atual | Antigo (comparação)"):** o cabeçalho da seção alterna o estado
+`shellTradicional` (default `false` = modelo atual), aplicando `ds-shell-antigo` ao container da demo
+quando "Antigo" — header navy, sidebar branca (ícone/rótulo com as cores cheias, ativo
+`bg-brand-structure/10 text-lime-700`, fallback de hover `#0f172a`) e **menu Account navy** (fundo
+`bg-brand-primary border-slate-700`, rótulo `text-[#f8fafc]`, hover `bg-brand-structure/60`, divisor
+`bg-white/40`). No estado "Atual" (padrão) a demo é idêntica ao shell real: header claro, sidebar navy
+com tintas D9 via `tinta()` (ativo `bg-white/10 text-lime-300`, fallback de hover `#f8fafc`), menu
+Account branco e **sino/painel de notificações** (dados de `notificacoesIniciais`, dispensar e
+"Limpar tudo", exclusão mútua com o menu da conta, clique fora e `Escape`; cabeçalho do painel em navy
+com escrita branca, lista `bg-[#f9feee]`, "Limpar tudo" em verde `#0f7a06`). Vale **só para a
+vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem idênticos e o shell real
+(`AppHeader`/`AppSidebar`) não recebe a classe — nele o modelo é sempre o atual. Mapa completo em
+`01 - design_system.md` §3.5.
 
 ## 11. Mudanças desta fase e pendências
 
-**Change OpenSpec `separate-public-admin-areas` (atual):**
+**Change OpenSpec `adotar-shell-claro-escuro` (atual):**
+
+| Arquivo | Mudança |
+|---|---|
+| `app/components/layout/AppHeader.vue` | header claro (`bg-white border-b border-slate-200 text-slate-900`), badge do logo `brand-primary/10`, menu Account branco e sino/painel (cabeçalho navy com escrita branca, lista `bg-[#f9feee]`, "Limpar tudo" verde `#0f7a06`) |
+| `app/components/layout/AppSidebar.vue` | sidebar navy (`bg-brand-primary border-r border-white/10`), ativo `bg-white/10 text-lime-300`, inativo `slate-300`, tintas D9 via `tinta()` |
+| `app/composables/shellTintas.ts` (novo) | mapa das 8 tintas D9 + `tinta(hex)` (compartilhado com a demo §14) |
+| `app/assets/css/main.css` | semântica de hover invertida: base = modelo novo, `.ds-shell-antigo` só na demo |
+| `app/pages/design.vue` §14 | default = modelo atual, toggle "Atual \| Antigo (comparação)", sino/painel na demo |
+| `docs/01 - design_system.md` §3 | §3.1/§3.2/§3.3 no modelo novo, tintas em §3.3, §3.5 = modelo legado |
+
+**Change OpenSpec `separate-public-admin-areas` (arquivada):**
 
 | Arquivo | Mudança |
 |---|---|

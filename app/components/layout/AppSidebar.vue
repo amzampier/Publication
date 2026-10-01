@@ -23,7 +23,7 @@ const alternarSessao = (sessao: SidebarSession) => {
   <aside
     id="app-sidebar"
     :class="[
-      'shrink-0 bg-white border-r border-slate-200 flex flex-col transition-all duration-200',
+      'shrink-0 bg-brand-primary border-r border-white/10 flex flex-col transition-all duration-200',
       // No rail o overflow fica visível para o UiTooltip não ser cortado
       sidebarOpen ? 'w-52 overflow-hidden' : 'w-[46px] overflow-visible'
     ]"
@@ -44,8 +44,8 @@ const alternarSessao = (sessao: SidebarSession) => {
           :class="[
             'flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left transition-colors',
             itemAtivo === itemRaiz.id
-              ? 'bg-brand-structure/10 text-lime-700'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              ? 'bg-white/10 text-lime-300'
+              : 'text-slate-300 hover:text-white hover:bg-white/10'
           ]"
           @click="itemAtivo = itemRaiz.id"
         >
@@ -56,7 +56,7 @@ const alternarSessao = (sessao: SidebarSession) => {
         <template v-for="sessao in sessoesVisiveis" :key="sessao.label">
           <button
             type="button"
-            class="flex items-center justify-between w-full text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1 select-none hover:text-slate-600 transition-colors focus-visible:outline-none focus-visible:text-slate-600"
+            class="flex items-center justify-between w-full text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1 select-none hover:text-white transition-colors focus-visible:outline-none focus-visible:text-white"
             :aria-expanded="sessao.aberto"
             :aria-label="`Sessão ${sessao.label}`"
             @click="alternarSessao(sessao)"
@@ -79,16 +79,16 @@ const alternarSessao = (sessao: SidebarSession) => {
               :class="[
                 'flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left transition-colors',
                 itemAtivo === item.id
-                  ? 'bg-brand-structure/10 text-lime-700'
-                  : 'text-slate-600 hover:bg-slate-100 ds-item-hover'
+                  ? 'bg-white/10 text-lime-300'
+                  : 'text-slate-300 hover:bg-white/10 ds-item-hover'
               ]"
-              :style="item.cor ? { '--item-cor': item.cor } : undefined"
+              :style="item.cor ? { '--item-cor': tinta(item.cor) } : undefined"
               @click="itemAtivo = item.id"
             >
               <component
                 :is="item.icon"
                 class="h-4 w-4 shrink-0 ds-icon-light"
-                :style="item.cor ? { color: item.cor } : undefined"
+                :style="item.cor ? { color: tinta(item.cor) } : undefined"
                 aria-hidden="true"
               />
               <span class="text-xs font-normal truncate">{{ item.label }}</span>
@@ -107,8 +107,8 @@ const alternarSessao = (sessao: SidebarSession) => {
             :class="[
               'flex items-center justify-center rounded-lg py-2 w-full transition-colors',
               itemAtivo === itemRaiz.id
-                ? 'bg-brand-structure/10 text-lime-700'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                ? 'bg-white/10 text-lime-300'
+                : 'text-slate-300 hover:text-white hover:bg-white/10'
             ]"
             @click="itemAtivo = itemRaiz.id"
           >
@@ -117,7 +117,7 @@ const alternarSessao = (sessao: SidebarSession) => {
         </UiTooltip>
 
         <template v-for="sessao in sessoesVisiveis" :key="sessao.label">
-          <div v-if="sessao.aberto" class="h-px bg-slate-200 mx-1 my-1.5" aria-hidden="true"></div>
+          <div v-if="sessao.aberto" class="h-px bg-white/15 mx-1 my-1.5" aria-hidden="true"></div>
 
           <template v-if="sessao.aberto">
             <UiTooltip
@@ -134,16 +134,16 @@ const alternarSessao = (sessao: SidebarSession) => {
                 :class="[
                   'flex items-center justify-center rounded-lg py-2 w-full transition-colors',
                   itemAtivo === item.id
-                    ? 'bg-brand-structure/10 text-lime-700'
-                    : 'text-slate-600 hover:bg-slate-100 ds-item-hover'
+                    ? 'bg-white/10 text-lime-300'
+                    : 'text-slate-300 hover:bg-white/10 ds-item-hover'
                 ]"
-                :style="item.cor ? { '--item-cor': item.cor } : undefined"
+                :style="item.cor ? { '--item-cor': tinta(item.cor) } : undefined"
                 @click="itemAtivo = item.id"
               >
                 <component
                   :is="item.icon"
                   class="h-4 w-4 shrink-0 ds-icon-light"
-                  :style="item.cor ? { color: item.cor } : undefined"
+                  :style="item.cor ? { color: tinta(item.cor) } : undefined"
                   aria-hidden="true"
                 />
               </button>

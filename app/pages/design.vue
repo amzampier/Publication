@@ -46,12 +46,14 @@ import {
 
 import { useToast } from '../composables/useToast'
 import type { ColumnDef } from '../utils/dataGrid'
+import type { Notificacao } from '../config/navigation'
 import {
   accountEncerrarSessao,
   accountMeuPerfil,
   accountMenuItens,
   conta,
   itemRaiz,
+  notificacoesIniciais,
   sessoes
 } from '../config/navigation'
 
@@ -136,8 +138,8 @@ interface ColorSwatchItem {
 
 const colorSwatches: ColorSwatchItem[] = [
   {
-    title: 'Navy (Ação Primária & Header)',
-    description: 'Botões de ação máxima, cabeçalhos executivos',
+    title: 'Navy (Ação Primária & Sidebar)',
+    description: 'Botões de ação máxima, cabeçalhos executivos, sidebar',
     hex: '#112051',
     bgClass: 'bg-[#112051]',
     badgeClass: 'text-white',
@@ -400,16 +402,41 @@ const sessoesVisiveis = computed(() =>
   sidebarOpen.value ? sessoesDemo : sessoesDemo.filter((sessao) => sessao.aberto)
 )
 
+// Modelo da vitrine §14 (design D6): default = modelo atual (header claro + sidebar navy);
+// shellTradicional = true compara com o modelo antigo (header navy + sidebar branca).
+// Ícone/--item-cor sobre navy usam as tintas D9 60/40 via tinta() (design D2) — as cores
+// cheias foram calibradas para fundo branco e quebram 3:1 sobre #112051.
+const shellTradicional = ref(false)
+
 // Account do header (bloco + menu suspenso) — mesma fonte do shell real
 const accountMenuAberto = ref(false)
 const accountRef = ref<HTMLElement | null>(null)
 
+// Sino da demo §14 (design D6) — mesma fonte e comportamento do AppHeader
+const notificacoesAberto = ref(false)
+const notificacoesRef = ref<HTMLElement | null>(null)
+const notificacoes = ref<Notificacao[]>([...notificacoesIniciais])
+
 const alternarMenuAccount = () => {
   accountMenuAberto.value = !accountMenuAberto.value
+  notificacoesAberto.value = false
+}
+
+const alternarNotificacoes = () => {
+  notificacoesAberto.value = !notificacoesAberto.value
+  accountMenuAberto.value = false
 }
 
 const fecharMenuAccount = () => {
   accountMenuAberto.value = false
+}
+
+const visualizarNotificacao = (id: string) => {
+  notificacoes.value = notificacoes.value.filter((notificacao) => notificacao.id !== id)
+}
+
+const limparNotificacoes = () => {
+  notificacoes.value = []
 }
 
 const fecharMenuSeFora = (evento: PointerEvent) => {
@@ -417,11 +444,15 @@ const fecharMenuSeFora = (evento: PointerEvent) => {
   if (accountMenuAberto.value && accountRef.value && !accountRef.value.contains(alvo)) {
     accountMenuAberto.value = false
   }
+  if (notificacoesAberto.value && notificacoesRef.value && !notificacoesRef.value.contains(alvo)) {
+    notificacoesAberto.value = false
+  }
 }
 
 const fecharMenuComEscape = (evento: KeyboardEvent) => {
   if (evento.key === 'Escape') {
     accountMenuAberto.value = false
+    notificacoesAberto.value = false
   }
 }
 
@@ -1840,10 +1871,11 @@ variant="lime"
               </div>
               <div>
                 <h2 class="text-base font-bold text-slate-900 tracking-tight">
-                  14. Arquitetura de Layout Bimodal: Header Dark + Sidebar Retrátil
+                  14. Arquitetura de Layout Bimodal: Header Claro + Sidebar Navy
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">
-                  Demonstração da barra superior executiva com bloco de Account e menu suspenso,
+                  Demonstração da barra superior executiva com central de notificações, bloco de
+                  Account e menu suspenso,
                   alternância de sidebar (expandida
                   <code class="font-mono text-slate-700">'w-52'</code> /
                   rail <code class="font-mono text-slate-700">'w-[46px]'</code>) e sessões de menu
@@ -1851,18 +1883,43 @@ variant="lime"
                 </p>
               </div>
             </div>
+
+            <!-- Comparação de modelos (só vitrine): alterna a demo, o shell real segue o modelo atual -->
+            <div class="flex items-center gap-1.5 shrink-0" role="group" aria-label="Modelo do shell da demonstração">
+              <UiButton
+                size="sm"
+                :variant="shellTradicional ? 'outline' : 'primary'"
+                :aria-pressed="!shellTradicional"
+                @click="shellTradicional = false"
+              >
+                Atual
+              </UiButton>
+              <UiButton
+                size="sm"
+                :variant="shellTradicional ? 'primary' : 'outline'"
+                :aria-pressed="shellTradicional"
+                @click="shellTradicional = true"
+              >
+                Antigo (comparação)
+              </UiButton>
+            </div>
           </div>
 
           <!-- Demo do Shell -->
-          <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div class="border border-slate-200 rounded-xl overflow-hidden" :class="{ 'ds-shell-antigo': shellTradicional }">
 
-            <!-- Header Dark -->
-            <div class="flex items-center justify-between px-4 h-16 bg-brand-primary">
+            <!-- Header: modelo atual (claro) por padrão; com ds-shell-antigo volta ao navy -->
+            <div
+              :class="[
+                'flex items-center justify-between px-4 h-16',
+                shellTradicional ? 'bg-brand-primary text-[#f8fafc]' : 'bg-white border-b border-slate-200 text-slate-900'
+              ]"
+            >
               <div class="flex items-center min-w-0">
                 <!-- Toggle Sidebar -->
                 <button
                   type="button"
-                  class="mr-3 text-[#f8fafc] hover:opacity-75 transition-opacity p-1 rounded"
+                  class="mr-3 hover:opacity-75 transition-opacity p-1 rounded"
                   aria-label="Alternar sidebar"
                   @click="sidebarOpen = !sidebarOpen"
                 >
@@ -1870,19 +1927,123 @@ variant="lime"
                 </button>
                 <!-- Logo -->
                 <div class="flex items-center gap-2">
-                  <div class="p-1.5 rounded-md bg-lime-500/15 text-brand-accent">
+                  <div
+                    :class="[
+                      'p-1.5 rounded-md',
+                      shellTradicional ? 'bg-lime-500/15 text-brand-accent' : 'bg-brand-primary/10 text-brand-primary'
+                    ]"
+                  >
                     <Building2 class="h-4 w-4" aria-hidden="true" />
                   </div>
-                  <span class="text-sm font-bold text-[#f8fafc] tracking-tight">Publications</span>
+                  <span class="text-sm font-bold tracking-tight">Publications</span>
                 </div>
               </div>
 
               <div class="flex items-center gap-2.5">
+                <!-- Sino de notificações (demonstração — espelha o AppHeader) -->
+                <div ref="notificacoesRef" class="relative">
+                  <button
+                    type="button"
+                    class="relative p-1.5 rounded-lg transition-colors"
+                    :class="shellTradicional ? 'hover:bg-white/5' : 'hover:bg-slate-100'"
+                    aria-label="Central de notificações"
+                    aria-haspopup="menu"
+                    :aria-expanded="notificacoesAberto"
+                    @click="alternarNotificacoes"
+                  >
+                    <Bell class="h-4 w-4" aria-hidden="true" />
+                    <span
+                      v-if="notificacoes.length > 0"
+                      class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500"
+                      aria-hidden="true"
+                    ></span>
+                  </button>
+
+                  <div
+                    v-if="notificacoesAberto"
+                    role="menu"
+                    aria-label="Notificações"
+                    class="absolute right-0 top-full mt-1 w-72 rounded-lg shadow-lg z-20 overflow-hidden"
+                    :class="shellTradicional ? 'bg-brand-primary border border-slate-700' : 'bg-white border border-slate-200'"
+                  >
+                    <div
+                      class="px-3 py-2 bg-brand-primary flex items-center justify-between gap-2"
+                      :class="shellTradicional ? 'border-b border-slate-700' : ''"
+                    >
+                      <span
+                        class="text-xs font-medium"
+                        :class="shellTradicional ? 'text-[#f8fafc]' : 'text-white'"
+                      >Central de Notificações</span>
+                      <span
+                        class="text-[10px] tabular-nums"
+                        :class="shellTradicional ? 'text-slate-400' : 'text-slate-300'"
+                      >
+                        {{ notificacoes.length }} {{ notificacoes.length === 1 ? 'nova' : 'novas' }}
+                      </span>
+                    </div>
+
+                    <div
+                      class="max-h-64 overflow-y-auto scrollbar-discreta"
+                      :class="shellTradicional ? '' : 'bg-[#f9feee]'"
+                    >
+                      <template v-if="notificacoes.length > 0">
+                        <button
+                          v-for="notificacao in notificacoes"
+                          :key="notificacao.id"
+                          type="button"
+                          role="menuitem"
+                          class="w-full flex items-start gap-2.5 px-3 py-2.5 text-left transition-colors"
+                          :class="shellTradicional ? 'hover:bg-brand-structure/60' : 'hover:bg-slate-100'"
+                          @click="visualizarNotificacao(notificacao.id)"
+                        >
+                          <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-accent shrink-0" aria-hidden="true"></span>
+                          <span class="min-w-0">
+                            <span
+                              class="block text-xs font-medium"
+                              :class="shellTradicional ? 'text-[#f8fafc]' : 'text-slate-900'"
+                            >{{ notificacao.titulo }}</span>
+                            <span
+                              class="block text-[11px] font-light leading-snug mt-0.5"
+                              :class="shellTradicional ? 'text-slate-300' : 'text-slate-600'"
+                            >{{ notificacao.mensagem }}</span>
+                            <span class="block text-[10px] font-light text-slate-500 mt-1">{{ notificacao.tempo }}</span>
+                          </span>
+                        </button>
+                      </template>
+                      <p
+                        v-else
+                        class="px-3 py-7 text-center text-xs font-light"
+                        :class="shellTradicional ? 'text-slate-400' : 'text-slate-500'"
+                      >Nenhuma notificação nova.</p>
+                    </div>
+
+                    <div
+                      class="px-2 py-1.5 flex justify-end"
+                      :class="shellTradicional ? 'border-t border-slate-700' : 'border-t border-slate-200'"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-light transition-colors disabled:opacity-40 disabled:pointer-events-none"
+                        :class="shellTradicional ? 'text-[#f8fafc] hover:bg-brand-structure/60' : 'text-[#0f7a06] hover:bg-slate-100'"
+                        :disabled="notificacoes.length === 0"
+                        @click="limparNotificacoes"
+                      >
+                        <Trash2 class="h-3 w-3" aria-hidden="true" />
+                        Limpar tudo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Bloco Account -->
                 <div ref="accountRef" class="relative">
                   <button
                     type="button"
-                    class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-white/5 transition-colors"
+                    :class="[
+                      'flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg transition-colors',
+                      shellTradicional ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                    ]"
                     aria-haspopup="menu"
                     :aria-expanded="accountMenuAberto"
                     @click="alternarMenuAccount"
@@ -1897,11 +2058,11 @@ variant="lime"
                       <span v-else class="text-[10px] font-bold text-slate-950">AR</span>
                     </span>
                     <span class="text-left">
-                      <span class="block text-xs font-normal text-[#f8fafc] leading-tight">{{ conta.nome }}</span>
-                      <span class="block text-[10px] font-normal text-[#f8fafc] leading-tight">{{ conta.perfil }}</span>
+                      <span class="block text-xs font-normal leading-tight">{{ conta.nome }}</span>
+                      <span class="block text-[10px] font-normal leading-tight">{{ conta.perfil }}</span>
                     </span>
                     <ChevronDownIcon
-                      class="h-3.5 w-3.5 text-[#f8fafc] transition-transform duration-200"
+                      class="h-3.5 w-3.5 transition-transform duration-200"
                       :class="accountMenuAberto ? 'rotate-180' : 'rotate-0'"
                       aria-hidden="true"
                     />
@@ -1912,12 +2073,22 @@ variant="lime"
                     v-if="accountMenuAberto"
                     role="menu"
                     aria-label="Menu da conta"
-                    class="absolute right-0 top-full mt-1 w-56 bg-brand-primary border border-slate-700 rounded-lg shadow-lg py-1 z-20"
+                    class="absolute right-0 top-full mt-1 w-56 rounded-lg shadow-lg py-1 z-20"
+                    :class="
+                      shellTradicional
+                        ? 'bg-brand-primary border border-slate-700'
+                        : 'bg-white border border-slate-200'
+                    "
                   >
                     <button
                       type="button"
                       role="menuitem"
-                      class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-[#f8fafc] hover:bg-brand-structure/60 transition-colors text-left"
+                      class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light transition-colors text-left"
+                      :class="
+                        shellTradicional
+                          ? 'text-[#f8fafc] hover:bg-brand-structure/60'
+                          : 'text-slate-700 hover:bg-slate-100'
+                      "
                       @click="fecharMenuAccount"
                     >
                       <component
@@ -1928,14 +2099,23 @@ variant="lime"
                       {{ accountMeuPerfil.label }}
                     </button>
 
-                    <div class="my-1 h-px bg-white/40" role="separator"></div>
+                    <div
+                      class="my-1 h-px"
+                      :class="shellTradicional ? 'bg-white/40' : 'bg-slate-200'"
+                      role="separator"
+                    ></div>
 
                     <button
                       v-for="item in accountMenuItens"
                       :key="item.label"
                       type="button"
                       role="menuitem"
-                      class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-[#f8fafc] hover:bg-brand-structure/60 ds-item-hover-dark transition-colors text-left"
+                      class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light ds-item-hover-dark transition-colors text-left"
+                      :class="
+                        shellTradicional
+                          ? 'text-[#f8fafc] hover:bg-brand-structure/60'
+                          : 'text-slate-700 hover:bg-slate-100'
+                      "
                       :style="item.cor ? { '--item-cor': item.cor } : undefined"
                       @click="fecharMenuAccount"
                     >
@@ -1948,12 +2128,17 @@ variant="lime"
                       {{ item.label }}
                     </button>
 
-                    <div class="my-1 h-px bg-white/40" role="separator"></div>
+                    <div
+                      class="my-1 h-px"
+                      :class="shellTradicional ? 'bg-white/40' : 'bg-slate-200'"
+                      role="separator"
+                    ></div>
 
                     <button
                       type="button"
                       role="menuitem"
-                      class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light hover:bg-brand-structure/60 transition-colors text-left"
+                      class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light transition-colors text-left"
+                      :class="shellTradicional ? 'hover:bg-brand-structure/60' : 'hover:bg-slate-100'"
                       @click="fecharMenuAccount"
                     >
                       <component
@@ -1977,7 +2162,10 @@ variant="lime"
               <!-- Sidebar Retrátil -->
               <div
                 :class="[
-                  'border-r border-slate-200 flex flex-col transition-all duration-200 shrink-0 bg-white',
+                  'flex flex-col transition-all duration-200 shrink-0',
+                  shellTradicional
+                    ? 'bg-white border-r border-slate-200'
+                    : 'bg-brand-primary border-r border-white/10',
                   // No rail o overflow fica visível para o UiTooltip não ser cortado
                   sidebarOpen ? 'w-52 overflow-hidden' : 'w-[46px] overflow-visible'
                 ]"
@@ -1993,8 +2181,10 @@ variant="lime"
                         'flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full transition-colors',
                         sidebarOpen ? '' : 'justify-center',
                         sidebarActiveItem === itemRaiz.id
-                          ? 'bg-brand-structure/10 text-lime-700'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                          ? (shellTradicional ? 'bg-brand-structure/10 text-lime-700' : 'bg-white/10 text-lime-300')
+                          : shellTradicional
+                            ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                            : 'text-slate-300 hover:text-white hover:bg-white/10'
                       ]"
                       @click="sidebarActiveItem = itemRaiz.id"
                     >
@@ -2007,7 +2197,7 @@ variant="lime"
                     <!-- Divisor entre sessões no modo rail -->
                     <div
                       v-if="!sidebarOpen && grupo.aberto"
-                      class="h-px bg-slate-200 mx-1 my-1.5"
+                      :class="['h-px mx-1 my-1.5', shellTradicional ? 'bg-slate-200' : 'bg-white/15']"
                       aria-hidden="true"
                     ></div>
 
@@ -2015,7 +2205,8 @@ variant="lime"
                     <button
                       v-if="sidebarOpen"
                       type="button"
-                      class="flex items-center justify-between w-full text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1 select-none hover:text-slate-600 transition-colors"
+                      class="flex items-center justify-between w-full text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1 select-none transition-colors"
+                      :class="shellTradicional ? 'hover:text-slate-600' : 'hover:text-white'"
                       :aria-expanded="grupo.aberto"
                       :aria-label="`Sessão ${grupo.label}`"
                       @click="toggleSessao(grupo)"
@@ -2044,16 +2235,18 @@ variant="lime"
                           :class="[
                             'flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left transition-colors',
                             sidebarActiveItem === item.id
-                              ? 'bg-brand-structure/10 text-lime-700'
-                              : 'text-slate-600 hover:bg-slate-100 ds-item-hover'
+                              ? (shellTradicional ? 'bg-brand-structure/10 text-lime-700' : 'bg-white/10 text-lime-300')
+                              : shellTradicional
+                                ? 'text-slate-600 hover:bg-slate-100 ds-item-hover'
+                                : 'text-slate-300 hover:bg-white/10 ds-item-hover'
                           ]"
-                          :style="item.cor ? { '--item-cor': item.cor } : undefined"
+                          :style="item.cor ? { '--item-cor': shellTradicional ? item.cor : tinta(item.cor) } : undefined"
                           @click="sidebarActiveItem = item.id"
                         >
                           <component
                             :is="item.icon"
                             class="h-4 w-4 shrink-0 ds-icon-light"
-                            :style="item.cor ? { color: item.cor } : undefined"
+                            :style="item.cor ? { color: shellTradicional ? item.cor : tinta(item.cor) } : undefined"
                             aria-hidden="true"
                           />
                           <span v-if="sidebarOpen" class="text-xs font-normal truncate">{{ item.label }}</span>

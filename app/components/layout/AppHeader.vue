@@ -88,13 +88,13 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="h-16 flex items-center justify-between px-4 shrink-0 relative z-40 bg-brand-primary"
+    class="h-16 flex items-center justify-between px-4 shrink-0 relative z-40 bg-white border-b border-slate-200 text-slate-900"
   >
     <!-- Zona esquerda: alternância + separador + logo -->
     <div class="flex items-center min-w-0">
       <button
         type="button"
-        class="mr-3 text-[#f8fafc] hover:opacity-75 transition-opacity p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+        class="mr-3 hover:opacity-75 transition-opacity p-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
         :aria-label="sidebarOpen ? 'Recolher sidebar' : 'Expandir sidebar'"
         :aria-expanded="sidebarOpen"
         aria-controls="app-sidebar"
@@ -104,13 +104,13 @@ onUnmounted(() => {
         <PanelLeftOpen v-else class="h-4 w-4" aria-hidden="true" />
       </button>
 
-      <span class="w-px h-5 bg-white/20 shrink-0" aria-hidden="true"></span>
+      <span class="w-px h-5 bg-slate-200 shrink-0" aria-hidden="true"></span>
 
       <div class="flex items-center gap-2 min-w-0 ml-3">
-        <span class="p-1.5 rounded-md bg-lime-500/15 text-brand-accent shrink-0">
+        <span class="p-1.5 rounded-md bg-brand-primary/10 text-brand-primary shrink-0">
           <Building2 class="h-4 w-4" aria-hidden="true" />
         </span>
-        <span class="text-sm font-bold text-[#f8fafc] tracking-tight truncate">Publications</span>
+        <span class="text-sm font-bold tracking-tight truncate">Publications</span>
       </div>
     </div>
 
@@ -120,7 +120,7 @@ onUnmounted(() => {
       <div ref="notificacoesRef" class="relative">
         <button
           type="button"
-          class="relative p-1.5 rounded-lg text-[#f8fafc] hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+          class="relative p-1.5 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
           aria-label="Central de notificações"
           aria-haspopup="menu"
           :aria-expanded="notificacoesAberto"
@@ -138,45 +138,45 @@ onUnmounted(() => {
           v-if="notificacoesAberto"
           role="menu"
           aria-label="Notificações"
-          class="absolute right-0 top-full mt-1 w-72 bg-brand-primary border border-slate-700 rounded-lg shadow-lg z-30 overflow-hidden"
+          class="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-lg z-30 overflow-hidden"
         >
-          <div class="px-3 py-2 border-b border-slate-700 flex items-center justify-between gap-2">
-            <span class="text-xs font-medium text-[#f8fafc]">Central de Notificações</span>
-            <span class="text-[10px] text-slate-400 tabular-nums">
+          <div class="px-3 py-2 bg-brand-primary flex items-center justify-between gap-2">
+            <span class="text-xs font-medium text-white">Central de Notificações</span>
+            <span class="text-[10px] text-slate-300 tabular-nums">
               {{ notificacoes.length }} {{ notificacoes.length === 1 ? 'nova' : 'novas' }}
             </span>
           </div>
 
-          <div class="max-h-64 overflow-y-auto scrollbar-discreta">
+          <div class="max-h-64 overflow-y-auto scrollbar-discreta bg-[#f9feee]">
             <template v-if="notificacoes.length > 0">
               <button
                 v-for="notificacao in notificacoes"
                 :key="notificacao.id"
                 type="button"
                 role="menuitem"
-                class="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-brand-structure/60 transition-colors"
+                class="w-full flex items-start gap-2.5 px-3 py-2.5 text-left hover:bg-slate-100 transition-colors"
                 @click="visualizarNotificacao(notificacao.id)"
               >
                 <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-brand-accent shrink-0" aria-hidden="true"></span>
                 <span class="min-w-0">
-                  <span class="block text-xs font-medium text-[#f8fafc]">{{ notificacao.titulo }}</span>
-                  <span class="block text-[11px] font-light text-slate-300 leading-snug mt-0.5">
+                  <span class="block text-xs font-medium">{{ notificacao.titulo }}</span>
+                  <span class="block text-[11px] font-light text-slate-600 leading-snug mt-0.5">
                     {{ notificacao.mensagem }}
                   </span>
                   <span class="block text-[10px] font-light text-slate-500 mt-1">{{ notificacao.tempo }}</span>
                 </span>
               </button>
             </template>
-            <p v-else class="px-3 py-7 text-center text-xs font-light text-slate-400">
+            <p v-else class="px-3 py-7 text-center text-xs font-light text-slate-500">
               Nenhuma notificação nova.
             </p>
           </div>
 
-          <div class="border-t border-slate-700 px-2 py-1.5 flex justify-end">
+          <div class="border-t border-slate-200 px-2 py-1.5 flex justify-end">
             <button
               type="button"
               role="menuitem"
-              class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-light text-[#f8fafc] hover:bg-brand-structure/60 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+              class="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-light text-[#0f7a06] hover:bg-slate-100 transition-colors disabled:opacity-40 disabled:pointer-events-none"
               :disabled="notificacoes.length === 0"
               @click="limparNotificacoes"
             >
@@ -191,7 +191,7 @@ onUnmounted(() => {
       <div ref="contaRef" class="relative">
         <button
           type="button"
-          class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+          class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
           aria-haspopup="menu"
           :aria-expanded="contaAberto"
           @click="alternarConta"
@@ -200,11 +200,11 @@ onUnmounted(() => {
             <span class="text-[10px] font-bold text-slate-950">{{ iniciais }}</span>
           </span>
           <span class="text-left leading-tight hidden sm:block">
-            <span class="block text-xs font-normal text-[#f8fafc]">{{ conta.nome }}</span>
-            <span class="block text-[10px] font-normal text-[#f8fafc]">{{ conta.perfil }}</span>
+            <span class="block text-xs font-normal">{{ conta.nome }}</span>
+            <span class="block text-[10px] font-normal">{{ conta.perfil }}</span>
           </span>
           <ChevronDownIcon
-            class="h-3.5 w-3.5 text-[#f8fafc] transition-transform duration-200"
+            class="h-3.5 w-3.5 transition-transform duration-200"
             :class="contaAberto ? 'rotate-180' : 'rotate-0'"
             aria-hidden="true"
           />
@@ -214,27 +214,27 @@ onUnmounted(() => {
           v-if="contaAberto"
           role="menu"
           aria-label="Menu da conta"
-          class="absolute right-0 top-full mt-1 w-56 bg-brand-primary border border-slate-700 rounded-lg shadow-lg py-1 z-30"
+          class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-30"
         >
           <!-- Meu Perfil -->
           <button
             type="button"
             role="menuitem"
-            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-[#f8fafc] hover:bg-brand-structure/60 transition-colors text-left"
+            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 transition-colors text-left"
             @click="fecharMenus"
           >
             <component :is="accountMeuPerfil.icon" class="h-3.5 w-3.5 shrink-0 ds-icon-light" aria-hidden="true" />
             {{ accountMeuPerfil.label }}
           </button>
 
-          <div class="my-1 h-px bg-white/40" role="separator"></div>
+          <div class="my-1 h-px bg-slate-200" role="separator"></div>
 
           <button
             v-for="item in accountMenuItens"
             :key="item.label"
             type="button"
             role="menuitem"
-            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-[#f8fafc] hover:bg-brand-structure/60 ds-item-hover-dark transition-colors text-left"
+            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 ds-item-hover-dark transition-colors text-left"
             :style="item.cor ? { '--item-cor': item.cor } : undefined"
             @click="fecharMenus"
           >
@@ -247,12 +247,12 @@ onUnmounted(() => {
             {{ item.label }}
           </button>
 
-          <div class="my-1 h-px bg-white/40" role="separator"></div>
+          <div class="my-1 h-px bg-slate-200" role="separator"></div>
 
           <button
             type="button"
             role="menuitem"
-            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light hover:bg-brand-structure/60 transition-colors text-left"
+            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light hover:bg-slate-100 transition-colors text-left"
             @click="fecharMenus"
           >
             <component

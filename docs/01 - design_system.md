@@ -77,20 +77,20 @@ A classe utilitária `.tabular-nums` (aplicada em `app/assets/css/main.css` a `f
 
 | # | Token | HEX | Tailwind | Aplicação |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Navy (Ação Primária & Header)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`); demais superfícies em cor sólida — cabeçalho executivo, header/menus dark (hover `brand.primary-raised` `#1b2e6b`) |
+| 1 | **Navy (Ação Primária & Sidebar)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`); demais superfícies em cor sólida — cabeçalho executivo e sidebar da Área Administrativa (hover `brand.primary-raised` `#1b2e6b` no menu legado, §3.5) |
 | 2 | **Verde Accent (Accent & Prestígio)** | `#4ed813` | `bg-brand-accent` | Destaques executivos, ícones e chips sobre chrome escuro; foco de controles em `#1a9e07` |
 | 3 | **Verde Esmeralda (Status Positivo)** | `#047857` | `bg-emerald-700` | Status "Publicado"/Concluído, confirmações, dia "Hoje" |
 | 4 | **Vermelho Rosa (Erro & Alerta)** | `#be123c` | `bg-rose-700` | Erros, validações falhas, alertas críticos |
 | 5 | **Índigo (Revisão & Auditoria)** | `#4338ca` | `bg-indigo-700` | Revisão aprovada, trilha de auditoria |
 | 6 | **Rate Limit (Bloqueio 30 Minutos)** | `#e11d48` | `bg-rose-600` | Cor semântica de bloqueio de segurança |
-| 7 | **Azul Estrutural (Estrutura Dark)** | `#0364f7` | `bg-brand-structure` | Estrutura dark: item ativo da sidebar (`/10`), avatar, hover de menus dark (`/60`), header da grid (texto nesses fundos em `#020617`) |
+| 7 | **Azul Estrutural (Estrutura Dark)** | `#0364f7` | `bg-brand-structure` | Estrutura dark: avatar do Account, degradê de cabeçalho de modal/botão (com navy) e header da grid (texto nesses fundos em `#020617`) — o item ativo da sidebar passou a `white/10` (§3.3) |
 | 8 | **Slate 50 (App Canvas)** | `#f8fafc` | `bg-slate-50` | Fundo principal das telas e do header de tabela |
 
 Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliado, laranja = Pendente, azul = Em Análise, rose = Bloqueado) estão especificadas em [5.2 Badge](#52-badge--seção-4-do-design).
 
 > **Regra:** componentes não introduzem hex divergente para estados compartilhados. O cabeçalho da `DataTable` usa o token `brand.primary` (`#112051`) — ver [5.11](#511-datatable--seção-13-do-design). O `Kpi` aceita `cor` livre mas recomenda-se um dos 8 tokens acima.
 >
-> **Accent em chrome escuro:** `#4ed813` é reservado a fundos escuros (header, chips e ícones sobre navy). Sobre superfícies claras use `#1a9e07` (foco, bordas e divisórias) e `#0f7a06` (texto) — nunca `#4ed813` puro sobre branco (1,88:1).
+> **Accent em chrome escuro:** `#4ed813` é reservado a fundos escuros (chips e ícones sobre o navy da sidebar). Sobre superfícies claras use `#1a9e07` (foco, bordas e divisórias) e `#0f7a06` (texto) — nunca `#4ed813` puro sobre branco (1,88:1).
 
 ### 2.2 Foco canônico verde `#1a9e07`
 
@@ -105,32 +105,57 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 
 *(seção 14 do `/design` — demonstração interativa do shell)*
 
-### 3.1 Header Dark
+### 3.1 Header claro
 
-- Fundo `#112051`, textos `#f8fafc` (demo: `h-16 px-4`; o header real segue a mesma paleta).
-- **Zona esquerda:** botão de alternância da sidebar (`aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-controls="app-sidebar"`, `aria-expanded`) + logotipo — badge de destaque `bg-lime-500/15 text-brand-accent` com ícone `Building2` e nome **`Publications`**. Sem seletor, texto ou badge de empresa/filial — o sistema tem escopo único; o shell identifica a **Área Administrativa pela rota `/admin`** (`/admin/**`, layout `app/layouts/admin.vue`), enquanto a raiz `/` é a Área Pública e renderiza sem ele (`app/layouts/default.vue`).
-- **Zona direita:** sino de notificações (painel `w-72`, contador e ação "Limpar tudo") + bloco Account no extremo direito, oposto ao botão de alternância. Abrir um fecha o outro.
+- Fundo `bg-white` + `border-b border-slate-200`; textos herdados do container em `text-slate-900`
+  (demo e real: `h-16 px-4` — nenhum filho declara cor própria de texto).
+- **Zona esquerda:** botão de alternância da sidebar (`aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-controls="app-sidebar"`, `aria-expanded`) + separador `w-px h-5 bg-slate-200` + logotipo — badge de destaque `bg-brand-primary/10 text-brand-primary` com ícone `Building2` e nome **`Publications`**. Sem seletor, texto ou badge de empresa/filial — o sistema tem escopo único; o shell identifica a **Área Administrativa pela rota `/admin`** (`/admin/**`, layout `app/layouts/admin.vue`), enquanto a raiz `/` é a Área Pública e renderiza sem ele (`app/layouts/default.vue`).
+- **Zona direita:** sino de notificações — painel `w-72 bg-white border-slate-200` com
+  **cabeçalho `bg-brand-primary`** (banda navy: título `text-white`, contador `text-slate-300`),
+  **lista de mensagens com fundo `#f9feee`** (área creme distintiva do corpo do painel), hover de
+  item `bg-slate-100`, estado vazio `text-slate-500` e ação **"Limpar tudo" em verde
+  `#0f7a06`** (verde de texto sobre superfície clara, §2.1; hover `bg-slate-100`) — + bloco
+  Account no extremo direito, oposto ao botão de alternância. Abrir um fecha o outro.
+- Hovers do sino e do botão da conta: `hover:bg-slate-100`.
+- **Modelo anterior (header navy):** comparar na seção 14 do `/design` pelo toggle "Antigo" — ver §3.5.
 
 ### 3.2 Bloco Account
 
 - Gatilho: avatar `h-7 w-7` circular `bg-brand-structure` (foto ou iniciais), **nome completo** e perfil (ex.: `Administrador`) em **duas linhas alinhadas à esquerda** (`text-left`, perfil abaixo do nome) — nome `text-xs font-normal`, perfil `text-[10px] font-normal`, ambos sem negrito — e chevron rotacionável.
-- Menu (`role="menu"`, `w-56`, `bg-brand-primary`, texto `#f8fafc`, hover `bg-brand-structure/60` + pinta o rótulo com a cor do item via `.ds-item-hover-dark`/`--item-cor` (mesmo padrão da sidebar, fallback `#f8fafc`), ícones `h-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), **itens em `text-xs font-light`**), nesta ordem: **Meu Perfil** — divisor `my-1 h-px bg-white/40` — **Configurações Globais · Gestão de Usuários · Configuração de Perfis (RBAC) · Gestão de Auditoria** — divisor — **Encerrar Sessão** (rótulo em `#f45f71`).
+- Menu (`role="menu"`, `w-56`, `bg-white border border-slate-200`, texto `text-slate-700`, hover `bg-slate-100` + pinta o rótulo com a cor do item via `.ds-item-hover-dark`/`--item-cor` (fallback `#0f172a` — superfície branca), ícones `h-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), **itens em `text-xs font-light`**), nesta ordem: **Meu Perfil** — divisor `my-1 h-px bg-slate-200` — **Configurações Globais · Gestão de Usuários · Configuração de Perfis (RBAC) · Gestão de Auditoria** — divisor — **Encerrar Sessão** (rótulo em `#f45f71`).
 - Fecha com clique fora (`pointerdown` global) e tecla `Escape`.
 - Cores dos ícones (`MenuItem.cor`, via `:style`): `#50a1ff`, `#b070ef`, `#f5b302`, `#2dd4bf`; Encerrar Sessão `#f45f71`.
 
 ### 3.3 Sidebar retrátil com sessões colapsáveis
 
-- **Modo expandido:** `w-52` — títulos completos; **modo rail:** `w-[46px]` — só ícones centralizados, maximizando a área de conteúdo. Transição `transition-all duration-200`, fundo branco, borda `border-r border-slate-200`.
+- **Modo expandido:** `w-52` — títulos completos; **modo rail:** `w-[46px]` — só ícones centralizados, maximizando a área de conteúdo. Transição `transition-all duration-200`, fundo `bg-brand-primary` (navy `#112051`), borda `border-r border-white/10`.
 - **Item raiz:** **"Painel Executivo"** (`LayoutDashboard`), renderizado acima das sessões, sem cabeçalho — no rail vira apenas o ícone com tooltip.
-- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão. Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) em **cores cheias** (mesma intensidade do menu suspenso): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
-- **No rail:** `sessoesVisiveis` filtra para apenas as sessões abertas, sem chevrons, com divisor `h-px bg-slate-200 mx-1 my-1.5` entre sessões; o estado (`aberto`) é preservado ao reexpandir. Cada item é envolto por `<UiTooltip position="right">` com o seu rótulo (desabilitado enquanto a sidebar está expandida), e a sidebar troca `overflow-hidden` por `overflow-visible` no rail para que o balão não seja cortado.
-- **Item ativo:** `bg-brand-structure/10 text-lime-700` (derivado do tom estrutural `#0364f7`, sem fundo de accent sólido); o ícone colorido mantém a sua cor. **Inativo:** `text-slate-600 hover:bg-slate-100` + `.ds-item-hover` — no hover a opção inteira assume a **cor do próprio item** via `--item-cor` (item sem `cor` cai no fallback `#0f172a`/slate-900); o item ativo não recebe a classe e não muda no hover.
+- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão. Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
+- **Cabeçalho de sessão:** `text-[9px] font-bold text-slate-400 uppercase tracking-widest`, com `hover:text-white` e `focus-visible:text-white` ao recolher — recolhimento individual, chevron rotaciona 180°.
+- **Tintas dos ícones sobre navy** (mistura 60% cor + 40% branco; aplicadas a ícone **e** a
+  `--item-cor` pelo helper `tinta()` de [`app/composables/shellTintas.ts`](../app/composables/shellTintas.ts),
+  compartilhado entre o shell real e a demo §14):
+
+| Item | Cor cheia | Tinta (navy) |
+|---|---|---|
+| Manuais | `#f45f71` | `#f89faa` |
+| Release Week | `#1a9e07` | `#76c56a` |
+| Escopo de Projetos · Configurações Globais | `#50a1ff` | `#96c7ff` |
+| Parceiros | `#047857` | `#68ae9a` |
+| Softwares | `#0364f7` | `#68a2fa` |
+| Gestão de Usuários | `#b070ef` | `#d0a9f5` |
+| Perfis de Acesso (RBAC) | `#f5b302` | `#f9d167` |
+| Auditoria | `#2dd4bf` | `#81e5d9` |
+
+- **No rail:** `sessoesVisiveis` filtra para apenas as sessões abertas, sem chevrons, com divisor `h-px bg-white/15 mx-1 my-1.5` entre sessões; o estado (`aberto`) é preservado ao reexpandir. Cada item é envolto por `<UiTooltip position="right">` com o seu rótulo (desabilitado enquanto a sidebar está expandida), e a sidebar troca `overflow-hidden` por `overflow-visible` no rail para que o balão não seja cortado.
+- **Item ativo:** `bg-white/10 text-lime-300` (Q1 — `lime-700` daria ≈3:1 sobre navy, falha para 12px); o ícone colorido mantém a sua tinta. **Inativo:** `text-slate-300 hover:bg-white/10` + `.ds-item-hover` — no hover a opção inteira assume a **cor do próprio item** via `--item-cor` (tinta D9 para itens com `cor`; item sem `cor` cai no fallback `#f8fafc`); o item ativo não recebe a classe e não muda no hover.
 - Cada item é `<button>` com `aria-label` e rótulo `text-xs font-normal` (peso 400 — mais leve
   que o `font-medium` anterior; o item ativo se destaca pela cor/fundo, não pelo negrito).
   Ícone `h-4 w-4` com **traço 1.5** (`.ds-icon-light` — traço padrão do Lucide, 2, parecia em
   negrito em 16px); o menu Account usa o mesmo traço 1.5 (ícones `h-3.5`), chevrons de sessão e
   demais ícones do app seguem o traço 2.
 - **Área de conteúdo:** `background-color:#f8fafc` (App Canvas).
+- **Modelo anterior (sidebar branca + menu navy):** comparar na seção 14 do `/design` pelo toggle "Antigo" — ver §3.5.
 
 ### 3.4 Impressão de documentos (`@media print`)
 
@@ -139,6 +164,39 @@ Definida em [`app/assets/css/main.css`](../app/assets/css/main.css):
 - Oculta `header`, `aside`, `nav`, `button:not(.print-visible)` e elementos `.no-print`.
 - `body` em branco/preto, `font-size: 11pt`.
 - Utilitários: `.print-page-break` (`page-break-before: always`) e `.print-clean` (remove borda/sombra).
+
+### 3.5 Modelo legado (comparação na vitrine §14)
+
+- **Propósito:** a seção 14 do `/design` permite comparar o **modelo atual** (padrão — header claro
+  + sidebar navy, idêntico ao shell real, §3.1/§3.3) com o **modelo legado** (header navy + sidebar
+  branca + menu navy). O toggle **"Atual | Antigo (comparação)"** aplica a classe `ds-shell-antigo`
+  ao container da demo quando "Antigo" está selecionado — **só a vitrine muda**; o shell real
+  (`AppHeader`/`AppSidebar`) segue sempre o modelo atual.
+- **Mapa de comparação** (colunas "Antigo" × "Atual"; permanecem iguais: área de conteúdo, impressão, larguras
+  `w-52`/`w-[46px]`, árvore e ordem da navegação):
+
+| Elemento | Antigo (comparação) | Atual (padrão) |
+|---|---|---|
+| Header (fundo/texto) | `bg-brand-primary text-[#f8fafc]` | `bg-white border-b border-slate-200 text-slate-900` (cor herdada pelo container) |
+| Badge do logo | `bg-lime-500/15 text-brand-accent` | `bg-brand-primary/10 text-brand-primary` |
+| Hover do botão da conta | `hover:bg-white/5` | `hover:bg-slate-100` |
+| Menu Account (fundo/borda) | `bg-brand-primary border-slate-700` | `bg-white border-slate-200` |
+| Menu Account (rótulo/hover) | `text-[#f8fafc] hover:bg-brand-structure/60` | `text-slate-700 hover:bg-slate-100` |
+| Menu Account (divisor) | `bg-white/40` | `bg-slate-200` |
+| Sidebar (fundo/borda) | `bg-white border-r border-slate-200` | `bg-brand-primary border-r border-white/10` |
+| Rótulo inativo | `text-slate-600` | `text-slate-300` |
+| Hover do item raiz | `hover:text-slate-900 hover:bg-slate-100` | `hover:text-white hover:bg-white/10` |
+| Item colorido (hover) | cor cheia via `--item-cor` (fallback `#0f172a`, regra `.ds-shell-antigo`) | tinta D9 via `--item-cor` (`tinta()`, fallback `#f8fafc`) |
+| Item ativo | `bg-brand-structure/10 text-lime-700` | `bg-white/10 text-lime-300` |
+| Cabeçalho de sessão | `text-slate-400 hover:text-slate-600` | `text-slate-400 hover:text-white` |
+| Divisor no rail | `bg-slate-200` | `bg-white/15` |
+| Sino/painel (demonstração) | painel navy integral, sem banda separada | banda `bg-brand-primary`, lista `bg-[#f9feee]`, "Limpar tudo" `text-[#0f7a06]` |
+
+- **Tintas dos ícones sobre navy:** a tabela das 8 tintas D9 migrou para [§3.3](#33-sidebar-retrátil-com-sessões-colapsáveis) —
+  tanto o shell real quanto a demo §14 as aplicam pelo mesmo helper `tinta()`
+  (`app/composables/shellTintas.ts`).
+
+- **Estados:** o ativo do modelo atual usa `lime-300` porque o `lime-700` do legado daria ≈3:1 sobre navy (falha para 12px); o menu Account é **branco no atual** (§3.2 — ícones com as cores cheias, rótulo `text-slate-700`, hover via `.ds-item-hover-dark` com fallback `#0f172a`) e **navy no legado** (fallback `#f8fafc` pela regra `.ds-shell-antigo .ds-item-hover-dark:hover` em `main.css`); o modo rail usa os mesmos ternários (markup único, sem duplicação).
 
 <!-- B3 -->
 ## 4. Convenções Globais

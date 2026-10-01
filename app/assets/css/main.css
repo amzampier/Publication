@@ -19,15 +19,26 @@
   clip-path: inset(calc(100% - 9px) 0 0 0);
 }
 
-/* Hover das opções da sidebar: a opção assume a cor do item (--item-cor, vindo do
-   config/navigation.ts) e, quando o item não tem cor, cai no slate-900 (fallback). */
+/* Hover das opções da sidebar — modelo novo (sidebar navy): a opção assume a cor do
+   item (--item-cor, vindo do config/navigation.ts) e, quando o item não tem cor, cai
+   no texto claro (fallback #0f172a ficaria invisível sobre o navy). */
 .ds-item-hover:hover {
+  color: var(--item-cor, #f8fafc);
+}
+
+/* Menu suspenso do Account — modelo novo (fundo branco): mesma lógica, mas o
+   fallback é escuro (#f8fafc ficaria invisível sobre o branco). */
+.ds-item-hover-dark:hover {
   color: var(--item-cor, #0f172a);
 }
 
-/* Menu suspenso do Account (fundo escuro): mesma lógica do hover da sidebar,
-   mas o fallback é a cor clara do texto do menu — nunca o slate-900. */
-.ds-item-hover-dark:hover {
+/* Modelo legado da vitrine §14 (.ds-shell-antigo: sidebar branca + menu navy),
+   aplicado só quando a demo exibe o estado antigo pelo toggle. */
+.ds-shell-antigo .ds-item-hover:hover {
+  color: var(--item-cor, #0f172a);
+}
+
+.ds-shell-antigo .ds-item-hover-dark:hover {
   color: var(--item-cor, #f8fafc);
 }
 

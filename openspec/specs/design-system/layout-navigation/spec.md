@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir a estrutura e o comportamento do shell da Área Administrativa — zonas do Header Dark, ordem do
+Definir a estrutura e o comportamento do shell da Área Administrativa — zonas do Header, ordem do
 menu do Account, árvore de navegação da sidebar (item raiz e sessões) e alternância entre modo
 expandido e rail — para que código, vitrine `/design`, documentação e validação de QA observem o mesmo
 shell.
@@ -10,7 +10,7 @@ shell.
 ## Requirements
 
 ### Requirement: O header exibe as zonas canônicas com alternância e logo à esquerda
-O sistema SHALL exibir no Header Dark, na zona esquerda, o botão de alternância da sidebar seguido da
+O sistema SHALL exibir no Header, na zona esquerda, o botão de alternância da sidebar seguido da
 identidade do produto, **sem qualquer texto, seletor ou badge de empresa/filial** (sistema de escopo único).
 
 #### Scenario: Identidade exibida é Publications
@@ -108,7 +108,7 @@ configuração, de modo que a seção 14 da vitrine `/design` exiba exatamente o
   mesma ordem e divisores do shell real
 
 ### Requirement: O shell administrativo é restrito às rotas da Área Administrativa
-O sistema SHALL exibir o shell (Header Dark + Sidebar) apenas nas rotas sob `/admin/**` e SHALL
+O sistema SHALL exibir o shell (Header + Sidebar) apenas nas rotas sob `/admin/**` e SHALL
 renderizar a raiz (`/`) como Área Pública, sem qualquer elemento do shell.
 
 #### Scenario: Raiz renderiza sem o shell
