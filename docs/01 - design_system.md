@@ -1,0 +1,686 @@
+# Design System — Publications (Dicas Teorema)
+
+**Versão:** 1.0.0 · **Data:** 2026-09-28 · **Idioma:** Português do Brasil (pt-BR)
+**Stack:** Nuxt 4 · Vue 3 (`<script setup>`) · Tailwind CSS · lucide-vue-next · Google Fonts (Plus Jakarta Sans + JetBrains Mono)
+**Autoridade de comportamento:** spec `openspec/specs/design-system/spec.md` — **ainda não criada**; até lá, este documento é a referência oficial dos padrões. Quando a spec existir, em caso de divergência ela prevalece sobre este documento.
+**Vitrine:** rota [`/design`](../app/pages/design.vue) (14 seções numeradas)
+
+> Este documento descreve **apenas o que está implementado**: os 19 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
+
+---
+
+## Sumário
+
+**Fundamentos**
+
+1. [Princípios & Tipografia](#1-princípios--tipografia)
+2. [Tokens de Cor & Foco Canônico](#2-tokens-de-cor--foco-canônico)
+3. [Layout & Navegação](#3-layout--navegação)
+4. [Convenções Globais](#4-convenções-globais)
+
+**Componentes** (5.1–5.12 na ordem das seções do `/design`)
+
+5. [Componentes](#5-componentes)
+   - [5.1 Button](#51-button--seção-3-do-design) (seção 3)
+   - [5.2 Badge](#52-badge--seção-4-do-design) (seção 4)
+   - [5.3 Input](#53-input--seção-5-do-design) (seção 5)
+   - [5.4 UploadFiles & CameraWeb](#54-uploadfiles--cameraweb--seção-6-do-design) (seção 6)
+   - [5.5 Tooltip](#55-tooltip--seção-7-do-design) (seção 7)
+   - [5.6 Toast & useToast](#56-toast--usetoast--seção-8-do-design) (seção 8)
+   - [5.7 Select](#57-select--seção-9-do-design) (seção 9)
+   - [5.8 DatePicker & Calendar](#58-datepicker--calendar--seção-10-do-design) (seção 10)
+   - [5.9 Família Checkbox](#59-família-checkbox--seção-11-do-design) (seção 11)
+   - [5.10 Kpi](#510-kpi--seção-12-do-design) (seção 12)
+   - [5.11 DataTable](#511-datatable--seção-13-do-design) (seção 13)
+   - [5.12 UiModal & UiModalSection](#512-uimodal--uimodalsection--seção-15-do-design) (seção 15)
+
+## 1. Princípios & Tipografia
+
+*(seção 1 do `/design`)*
+
+### 1.1 Princípios fundamentais
+
+1. **Clareza e Precisão da Informação** — informações críticas (títulos de publicação, datas, versões e códigos como `REL-2026-W39`) têm hierarquia rigorosa; valores numéricos e códigos usam `JetBrains Mono` com `font-variant-numeric: tabular-nums`.
+2. **Identidade Visual Navy & Verde Accent** — ação primária e cabeçalhos em Navy (`#112051`) com destaques em Verde Accent (`#4ed813` / `#1a9e07`); sobriedade institucional, sem azuis genéricos de marketing.
+3. **Dualidade de Áreas Inconfundível** — o usuário sempre sabe em qual área está: **Área Pública** (leitura das publicações, sem autenticação) e **Área Administrativa** (cadastros e publicação de Releases Week Semanal, Manuais e Escopo de Projetos, com autenticação e permissões); identidade visual e navegação deixam a área atual explícita.
+4. **Disciplina "Zero-Pill" & Anti-Slop** — metadados, datas e categorias são texto limpo e unboxed com separadores sutis (`·`); badges operacionais usam `rounded-md` (nunca `rounded-full`); filtros são botões de controle segmentado.
+5. **Layout Bimodal Retrátil & Sessões Agrupadas** — sidebar retrátil (expandida `w-52`, rail `w-[46px]`) com sessões de menu colapsáveis (ver [seção 3](#3-layout--navegação)).
+
+### 1.2 Tipografia oficial
+
+Fontes carregadas em `nuxt.config.ts` (Google Fonts):
+
+- **Sans-serif:** `Plus Jakarta Sans` — títulos, corpo, labels.
+- **Monoespaçada:** `JetBrains Mono` com `tabular-nums` — códigos de publicação, datas, versões, UUIDs.
+
+| Nível | Família | Tamanho / Leading | Peso | Aplicação |
+| :--- | :--- | :--- | :--- | :--- |
+| **H1** | Plus Jakarta Sans | 24px / 28px | `font-bold` (700) | Títulos de tela (Painel, Publicações) |
+| **H2** | Plus Jakarta Sans | 18px / 24px | `font-bold` (700) | Títulos de seção, cabeçalhos de bloco |
+| **H3** | Plus Jakarta Sans | 14px / 20px | `font-semibold` (600) | Títulos de cartões, categorias, grupos |
+| **Body** | Plus Jakarta Sans | 13px / 20px | `font-normal` (400) | Textos descritivos, históricos |
+| **Corpo Pequeno** | Plus Jakarta Sans | 12px / 16px | `font-medium` (500) | Rótulos de formulário, legendas, breadcrumbs |
+| **Micro / Badges** | Plus Jakarta Sans | 11px / 14px | `font-bold` (700) | Badges de status (`rounded-md`) |
+| **Monospace (Numérico)** | JetBrains Mono | 14px a 24px | `font-bold` (700) | Valores numéricos e métricas, `tabular-nums` |
+| **Monospace (Código)** | JetBrains Mono | 12px | `font-medium` (500) | Códigos (`REL-2026-W39`), versões, UUIDs |
+
+A classe utilitária `.tabular-nums` (aplicada em `app/assets/css/main.css` a `font-variant-numeric: tabular-nums`) é obrigatória em qualquer coluna/valor numérico. Demonstração viva na seção 1 do `/design` (quadro "Precisão Numérica").
+
+**Valores de formulário:** o texto digitado/selecionado em `Input`, `Select` e `DatePicker` usa `font-normal` (400) — deliberadamente mais leve que os rótulos/legendas (`font-medium`) para que o conteúdo digitado não dispute atenção com o label. O campo `mono` do `Input` usa `font-medium` (500), coerente com *Monospace (Código)*.
+
+<!-- B1 -->
+## 2. Tokens de Cor & Foco Canônico
+
+*(seção 2 do `/design` — lista `colorSwatches` de `app/pages/design.vue`)*
+
+### 2.1 As 8 cores oficiais
+
+| # | Token | HEX | Tailwind | Aplicação |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | **Navy (Ação Primária & Header)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`); demais superfícies em cor sólida — cabeçalho executivo, header/menus dark (hover `brand.primary-raised` `#1b2e6b`) |
+| 2 | **Verde Accent (Accent & Prestígio)** | `#4ed813` | `bg-brand-accent` | Destaques executivos, ícones e chips sobre chrome escuro; foco de controles em `#1a9e07` |
+| 3 | **Verde Esmeralda (Status Positivo)** | `#047857` | `bg-emerald-700` | Status "Publicado"/Concluído, confirmações, dia "Hoje" |
+| 4 | **Vermelho Rosa (Erro & Alerta)** | `#be123c` | `bg-rose-700` | Erros, validações falhas, alertas críticos |
+| 5 | **Índigo (Revisão & Auditoria)** | `#4338ca` | `bg-indigo-700` | Revisão aprovada, trilha de auditoria |
+| 6 | **Rate Limit (Bloqueio 30 Minutos)** | `#e11d48` | `bg-rose-600` | Cor semântica de bloqueio de segurança |
+| 7 | **Azul Estrutural (Estrutura Dark)** | `#0364f7` | `bg-brand-structure` | Estrutura dark: item ativo da sidebar (`/10`), avatar, hover de menus dark (`/60`), header da grid (texto nesses fundos em `#020617`) |
+| 8 | **Slate 50 (App Canvas)** | `#f8fafc` | `bg-slate-50` | Fundo principal das telas e do header de tabela |
+
+Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliado, laranja = Pendente, azul = Em Análise, rose = Bloqueado) estão especificadas em [5.2 Badge](#52-badge--seção-4-do-design).
+
+> **Regra:** componentes não introduzem hex divergente para estados compartilhados. O cabeçalho da `DataTable` usa o token `brand.primary` (`#112051`) — ver [5.11](#511-datatable--seção-13-do-design). O `Kpi` aceita `cor` livre mas recomenda-se um dos 8 tokens acima.
+>
+> **Accent em chrome escuro:** `#4ed813` é reservado a fundos escuros (header, chips e ícones sobre navy). Sobre superfícies claras use `#1a9e07` (foco, bordas e divisórias) e `#0f7a06` (texto) — nunca `#4ed813` puro sobre branco (1,88:1).
+
+### 2.2 Foco canônico verde `#1a9e07`
+
+**Todos** os estados de foco de controles de formulário (`Input`, `Select`, `DatePicker`, `Checkbox`, botões) destacam-se exatamente na mesma cor `#1a9e07`:
+
+- **Input / Select:** borda inferior e cantos inferiores via overlay `border-2 border-brand-focus` recortado com a classe utilitária `.ds-bottom-clip` (`clip-path` só nos cantos inferiores, definida em `app/assets/css/main.css`); `Select`/`DatePicker` abertos ou focados aplicam `border-b-brand-focus border-b-2` no gatilho.
+- **Checkbox/Chip:** `focus-visible:ring-brand-focus/30` (anel de accent) e `focus-visible:outline-brand-focus` nos cards/câmera/upload.
+- **Erro** usa o mesmo recorte em vermelho (overlay `border-2 border-rose-700` com `.ds-bottom-clip`), sempre com precedência sobre o foco.
+
+<!-- B2 -->
+## 3. Layout & Navegação
+
+*(seção 14 do `/design` — demonstração interativa do shell)*
+
+### 3.1 Header Dark
+
+- Fundo `#112051`, textos `#f8fafc` (demo: `h-16 px-4`; o header real segue a mesma paleta).
+- **Zona esquerda:** botão de alternância da sidebar (`aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-controls="app-sidebar"`, `aria-expanded`) + logotipo — badge de destaque `bg-lime-500/15 text-brand-accent` com ícone `Building2` e nome **`Publications`**. Sem seletor, texto ou badge de empresa/filial — o sistema tem escopo único; o shell identifica a **Área Administrativa pela rota `/admin`** (`/admin/**`, layout `app/layouts/admin.vue`), enquanto a raiz `/` é a Área Pública e renderiza sem ele (`app/layouts/default.vue`).
+- **Zona direita:** sino de notificações (painel `w-72`, contador e ação "Limpar tudo") + bloco Account no extremo direito, oposto ao botão de alternância. Abrir um fecha o outro.
+
+### 3.2 Bloco Account
+
+- Gatilho: avatar `h-7 w-7` circular `bg-brand-structure` (foto ou iniciais), **nome completo** e perfil (ex.: `Administrador`) em **duas linhas alinhadas à esquerda** (`text-left`, perfil abaixo do nome) — nome `text-xs font-normal`, perfil `text-[10px] font-normal`, ambos sem negrito — e chevron rotacionável.
+- Menu (`role="menu"`, `w-56`, `bg-brand-primary`, texto `#f8fafc`, hover `bg-brand-structure/60` + pinta o rótulo com a cor do item via `.ds-item-hover-dark`/`--item-cor` (mesmo padrão da sidebar, fallback `#f8fafc`), ícones `h-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), **itens em `text-xs font-light`**), nesta ordem: **Meu Perfil** — divisor `my-1 h-px bg-white/40` — **Configurações Globais · Gestão de Usuários · Configuração de Perfis (RBAC) · Gestão de Auditoria** — divisor — **Encerrar Sessão** (rótulo em `#f45f71`).
+- Fecha com clique fora (`pointerdown` global) e tecla `Escape`.
+- Cores dos ícones (`MenuItem.cor`, via `:style`): `#50a1ff`, `#b070ef`, `#f5b302`, `#2dd4bf`; Encerrar Sessão `#f45f71`.
+
+### 3.3 Sidebar retrátil com sessões colapsáveis
+
+- **Modo expandido:** `w-52` — títulos completos; **modo rail:** `w-[46px]` — só ícones centralizados, maximizando a área de conteúdo. Transição `transition-all duration-200`, fundo branco, borda `border-r border-slate-200`.
+- **Item raiz:** **"Painel Executivo"** (`LayoutDashboard`), renderizado acima das sessões, sem cabeçalho — no rail vira apenas o ícone com tooltip.
+- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão. Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) em **cores cheias** (mesma intensidade do menu suspenso): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
+- **No rail:** `sessoesVisiveis` filtra para apenas as sessões abertas, sem chevrons, com divisor `h-px bg-slate-200 mx-1 my-1.5` entre sessões; o estado (`aberto`) é preservado ao reexpandir. Cada item é envolto por `<UiTooltip position="right">` com o seu rótulo (desabilitado enquanto a sidebar está expandida), e a sidebar troca `overflow-hidden` por `overflow-visible` no rail para que o balão não seja cortado.
+- **Item ativo:** `bg-brand-structure/10 text-lime-700` (derivado do tom estrutural `#0364f7`, sem fundo de accent sólido); o ícone colorido mantém a sua cor. **Inativo:** `text-slate-600 hover:bg-slate-100` + `.ds-item-hover` — no hover a opção inteira assume a **cor do próprio item** via `--item-cor` (item sem `cor` cai no fallback `#0f172a`/slate-900); o item ativo não recebe a classe e não muda no hover.
+- Cada item é `<button>` com `aria-label` e rótulo `text-xs font-normal` (peso 400 — mais leve
+  que o `font-medium` anterior; o item ativo se destaca pela cor/fundo, não pelo negrito).
+  Ícone `h-4 w-4` com **traço 1.5** (`.ds-icon-light` — traço padrão do Lucide, 2, parecia em
+  negrito em 16px); o menu Account usa o mesmo traço 1.5 (ícones `h-3.5`), chevrons de sessão e
+  demais ícones do app seguem o traço 2.
+- **Área de conteúdo:** `background-color:#f8fafc` (App Canvas).
+
+### 3.4 Impressão de documentos (`@media print`)
+
+Definida em [`app/assets/css/main.css`](../app/assets/css/main.css):
+
+- Oculta `header`, `aside`, `nav`, `button:not(.print-visible)` e elementos `.no-print`.
+- `body` em branco/preto, `font-size: 11pt`.
+- Utilitários: `.print-page-break` (`page-break-before: always`) e `.print-clean` (remove borda/sombra).
+
+<!-- B3 -->
+## 4. Convenções Globais
+
+Regras que valem para **todos** os componentes (derivadas da spec `design-system` e do código).
+
+### 4.1 Uso e auto-import
+
+- Componentes em `app/components/ui/` seguem o auto-import padrão do Nuxt (scan de `~/components` com `pathPrefix: true`): o nome no template deriva da pasta + arquivo, **basta `<UiButton />` no template, sem import manual e sem configuração em `nuxt.config.ts`**. Exceção: composables/utilitários continuam importados normalmente (`import { useToast } from '../composables/useToast'`).
+- Ícones: sempre `lucide-vue-next` (`import { Save } from 'lucide-vue-next'`), com `aria-hidden="true"` quando decorativos.
+
+### 4.2 Contrato de eventos
+
+- O evento **`change` emite o valor resultante** da alteração (mesmo tipo do `modelValue` correspondente) — **nunca** um `Event` bruto do DOM. Ex.: `Select` emite `change('1.01.01.02')`, não `change(Event)`.
+- Controles com estado usam `v-model` (`modelValue` + `update:modelValue`); `change` é o evento semântico adicional para efeitos colaterais.
+- `Input` emite `update:modelValue` sempre como `string`.
+
+### 4.3 Vocabulário de enums e idioma
+
+- **Enums voltados a consumidores em inglês**; texto de exibição em pt-BR. Ex.: `variant="done"` renderiza "Concluído", `BadgeVariant = 'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral'`.
+- Vocabulários de `variant` são semanticamente distintos por componente (status ≠ cor ≠ chrome): nunca misturar significados dentro do mesmo enum.
+- **Alias PT do Tooltip** (`topo`, `rodape`, `esquerda`, `direita`) permanecem aceitos, marcados `@deprecated` — prefira `top`, `bottom`, `left`, `right`.
+
+### 4.4 Foco e cores compartilhados
+
+- Foco de controles de formulário: **somente** verde `#1a9e07` (ver [2.2](#22-foco-canonico-verde-1a9e07)); erro: vermelho canônico de componente. Nenhum hex divergente para estados compartilhados — derivar sempre dos tokens da [seção 2](#2-tokens-de-cor--foco-canônico).
+
+### 4.5 Acessibilidade & teclado
+
+- Rótulo associado ao controle (prop `label` + `useId()` para `label[for]`/`aria-labelledby`).
+- Papéis e estados ARIA nos compostos: `role="combobox"`/`listbox`/`option` (Select), `role="grid"`/`gridcell` (Calendar), `role="dialog"` (CameraWeb), `role="menu"`/`menuitem`/`menuitemradio` (menus do shell), `aria-expanded`, `aria-checked`, `aria-selected`, `aria-current="date"`.
+- Toda ação disponível via mouse tem caminho por teclado (setas, `Enter`, `Space`, `Escape`, `Tab` com `focus-visible`).
+- Notificações anunciadas a leitores de tela: container de toasts com `role="status"` `aria-live="polite"`.
+
+### 4.6 Toasts: API do `useToast`
+
+```ts
+const { toast } = useToast()
+
+toast.success('Release Publicada', 'Release Week #39 publicada na Área Pública.')   // success | warning | danger | info
+toast.danger('Falha no Upload', 'Arquivo muito grande. Tente novamente.', 0)         // duration em ms
+```
+
+- Auto-dismiss padrão **5000 ms** com barra de progresso de 2.5 px; `duration <= 0` ⇒ toast **persistente** (sem barra, sem remoção automática).
+- `ToastContainer` fica montado globalmente em `app/app.vue` — os toasts funcionam em qualquer rota.
+
+<!-- B4 -->
+## 5. Componentes
+
+Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-import)).
+
+### 5.1 Button — seção 3 do `/design`
+
+**Arquivo:** `app/components/ui/Button.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `variant` | `'primary' \| 'outline' \| 'danger' \| 'accent'` | `'primary'` | Hierarquia de ação |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | `sm` 11px · `md` 12px · `lg` 14px |
+| `disabled` | `boolean` | `false` | `opacity-50 cursor-not-allowed`, suprime `click` |
+| `loading` | `boolean` | `false` | Spinner + `disabled` nativo; suprime `click` |
+| `type` | `'button' \| 'submit' \| 'reset'` | `'button'` | Tipo do `<button>` nativo |
+
+- **Emits:** `click(event: MouseEvent)` — só dispara se `!disabled && !loading`.
+- **Slots:** `default`, `leftIcon`, `rightIcon`.
+- **Variantes:** `primary` = `bg-gradient-to-r from-brand-primary to-[#0364f7] hover:brightness-110 active:brightness-95 text-white` (ação máxima: "Salvar", "Entrar"; degradê da esquerda `#112051` para a direita `#0364f7`, hover/active só variam o brilho) · `outline` = branco + borda `slate-300` ("Cancelar", "Exportar CSV") · `danger` = rosa `rose-50/200/700` ("Excluir") · `accent` = verde `lime-50/300/900` (ação auxiliar).
+- **Gotchas:** classes de base `rounded-lg font-semibold transition-all`; foco `focus-visible` verde do sistema (`brand-focus`, `#1a9e07`).
+
+```vue
+<UiButton variant="primary" :loading="salvando" @click="salvar">
+  <template #leftIcon><Save class="h-3.5 w-3.5" /></template>
+  Salvar Alterações
+</UiButton>
+```
+
+### 5.2 Badge — seção 4 do `/design`
+
+**Arquivo:** `app/components/ui/Badge.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `variant` | `BadgeVariant` | `'neutral'` | Status semântico (ver tabela) |
+| `pulsing` | `boolean` | `false` | Dot com `animate-ping` |
+| `showIcon` | `boolean` | `true` | Ícone da variante (se houver) |
+| `size` | `'sm' \| 'md'` | `'md'` | `sm` 10px · `md` 11px |
+
+- **Emits:** nenhum · **Slots:** `default` (substitui o rótulo interno).
+- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral'`** (enum em inglês, display em pt-BR).
+
+| Variant | Rótulo (PT) | Fundo / Borda / Texto | Ícone |
+| :--- | :--- | :--- | :--- |
+| `done` | Concluído | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `CheckCircle2` |
+| `reconciled` | Reconciliado | `bg-indigo-50` / `border-indigo-200` / `text-indigo-800` | `ShieldCheck` |
+| `pending` | Pendente | `bg-orange-50` / `border-orange-200` / `text-orange-800` | `Clock` |
+| `inReview` | Em Análise | `bg-blue-50` / `border-blue-200` / `text-blue-800` | `Search` |
+| `blocked` | Bloqueado | `bg-rose-50` / `border-rose-200` / `text-rose-700` | `AlertTriangle` |
+| `neutral` | Neutro | `bg-slate-100` / `border-slate-200` / `text-slate-700` | — |
+
+- **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
+- **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone.
+
+**Mapeamento de status de publicação → variante** (guia de uso do Publications; as variantes acima são fixas no componente):
+
+| Status da publicação | Variante | Badge exibido |
+| :--- | :--- | :--- |
+| Publicado | `done` | Publicado (exibido como "Concluído" pelo componente) |
+| Agendado | `pending` | Agendado (exibido como "Pendente") |
+| Em Revisão | `inReview` | Em Revisão (exibido como "Em Análise") |
+| Bloqueado | `blocked` | Bloqueado |
+| Rascunho | `neutral` | Rascunho (exibido como "Neutro") |
+| — | `reconciled` | **Reservada** — variante legada ("Reconciliado"), sem uso no domínio de publicações |
+
+> Os rótulos exibidos vêm do componente; para rótulos próprios do domínio, use o slot `default` (ex.: `<UiBadge variant="done">Publicado</UiBadge>`).
+
+```vue
+<UiBadge variant="done" />                      <!-- "Concluído" -->
+<UiBadge variant="blocked" size="sm" />          <!-- pulsante, sempre -->
+<UiBadge variant="pending">{{ statusCustom }}</UiBadge>
+```
+
+<!-- C1 -->
+### 5.3 Input — seção 5 do `/design`
+
+**Arquivo:** `app/components/ui/Input.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string \| number` | `''` | `v-model` (emitido sempre como `string`) |
+| `label` | `string` | `''` | Rótulo associado (`useId()` no `[for]`); fica `text-rose-600` em erro |
+| `type` | `string` | `'text'` | Tipo nativo do input |
+| `placeholder` | `string` | `''` | Placeholder (`text-slate-400`) |
+| `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
+| `error` | `string` | `''` | Mensagem exibida **via Tooltip** no ícone (nunca texto abaixo) |
+| `helperText` | `string` | `''` | Texto auxiliar abaixo (`11px slate-500`) |
+| `leftIcon` / `rightIcon` | `Component \| null` | `null` | Ícone interno esquerdo/direito |
+| `mono` | `boolean` | `false` | `font-mono tabular-nums font-medium` (códigos/valores) |
+| `labelClass` / `inputClass` | `string` | `''` | Classes extras de label/input |
+| `forceFocus` | `boolean` | `false` | Simula o destaque de foco sem foco real |
+
+- **Emits:** `update:modelValue(value: string)` · `rightIconClick()` (sem payload).
+- **Slots:** `labelRight` (à direita do label), `leftIcon`, `rightIcon` (alternativa à prop).
+- **Foco canônico:** overlay `border-2 border-brand-focus` com classe `.ds-bottom-clip` — apenas a borda inferior e os dois cantos arredondados inferiores (`h-[34px]`, `rounded-lg`).
+- **Erro:** overlay idêntico em `border-rose-700` + `AlertCircle` interno à direita dentro de `<UiTooltip position="top">`; **tem precedência sobre `rightIcon`**; nenhum texto de erro é renderizado abaixo do campo (não quebra o alinhamento do formulário).
+- **Gotchas:** input nativo com `outline:none` forçado; altura fixa `34px` — mesmo gabarito do `Select`; valor em `text-xs font-normal` (`mono` = `font-medium`, ver §1.2).
+
+```vue
+<UiInput
+  v-model="senha"
+  label="Senha de Acesso"
+  type="password"
+  :left-icon="Lock"
+  :right-icon="show ? EyeOff : Eye"
+  @right-icon-click="show = !show"
+/>
+
+<UiInput v-model="slug" label="Slug da Publicação" mono :error="erroSlug" helperText="Formato: release-week-2026-w39" />
+```
+
+<!-- C2 -->
+### 5.4 UploadFiles & CameraWeb — seção 6 do `/design`
+
+#### UploadFiles
+
+**Arquivo:** `app/components/ui/UploadFiles.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `rotulo` | `string` | `'Arraste os arquivos aqui ou clique para adicionar'` | Rótulo do estado vazio |
+| `dica` | `string` | `'PNG, JPG ou SVG'` | Subtítulo de formatos |
+| `sugestao` | `string` | `''` | Dica opcional (ex.: dimensão) |
+| `aceitar` | `string` | `'*'` | `accept` do input de arquivo |
+| `multiple` | `boolean` | `false` | Seleção múltipla + lista de nomes |
+| `mostrarCamera` | `boolean` | `true` | Exibe a ação "Tirar foto" |
+| `preview` | `string` | `''` | URL de preview externo (sobrepõe a interna) |
+| `forma` | `'circular' \| 'retrato' \| 'retangular'` | `'circular'` | Forma do preview |
+| `alt` | `string` | `'Pré-visualização do arquivo'` | Texto alternativo da imagem |
+
+- **Emits:** `change(arquivos: File[] | null)` — lista selecionada, ou `null` ao excluir · `camera()` (sem payload, para abrir o `CameraWeb`).
+- **Slots:** nenhum.
+- **Estados visuais** (borda `rounded-xl border-2`): **vazio** = tracejada `slate-300` + fundo `slate-50/50`, círculo com ícone `Cloud`, rótulo verde, dica e sugestão; **arrastando** = tracejada verde `border-lime-500 bg-lime-50/60`; **preenchido** = sólida `border-slate-200 bg-white`, altura equivalente (`min-h-28`).
+- **Preview por `forma`:** `circular` 96px `object-contain` (sem distorção) · `retrato` 96×72 `object-cover` · `retangular` `max-h-20 contain` (logo integral, sem corte).
+- **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`). Excluir desabilitado sem arquivo.
+- **Gotchas:** aceita clique e drag & drop (`dragover/dragleave/drop`); no single-file a prévia usa o 1º arquivo `image/*`; `URL.createObjectURL` é liberada com `revokeObjectURL` ao trocar/remover; no modo múltiplo lista os nomes + contagem.
+
+```vue
+<UiUploadFiles
+  forma="retrato"
+  aceitar="image/*"
+  :multiple="false"
+  @change="(files) => arquivos = files"
+  @camera="cameraAberta = true"
+/>
+```
+
+#### CameraWeb
+
+**Arquivo:** `app/components/ui/CameraWeb.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `autoIniciar` | `boolean` | `true` | Solicita a câmera ao montar |
+
+- **Emits:** `foto(dataUrl: string)` (JPEG `toDataURL('image/jpeg', 0.9)`) · `fechar()`.
+- **Slots:** nenhum.
+- **Estados internos:** `'ocioso'` (botão "Iniciar câmera") → `'carregando'` ("Solicitando acesso à câmera...") → `'pronto'` (vídeo) ou `'erro'` (`role="alert"`, mensagens de permissão negada/HTTPS, com ação **"Tentar novamente"**).
+- **Comportamento:** renderiza **exatamente via `UiModal`** (`size="xs"`, título "Câmera Web", subtítulo "Captura de imagem", ícone de câmera — com header navy, backdrop `bg-zinc-900/50`, focus-trap e scroll-lock do modal) contendo uma `UiModalSection` "Pré-visualização"; vídeo espelhado por padrão (`scale-x[-1]`, alternável pelo botão **Espelhar** do rodapé, que aplica o mesmo eixo na imagem capturada); seletor de dispositivo **apenas se houver mais de 1 câmera**, usando o **`UiSelect`** do sistema (`label="Câmera"`, `clearable=false`, opções `deviceId`/label com fallback `Câmera N`); fallback para qualquer câmera se o `deviceId` ativo falhar.
+- **Gotchas:** ações Fechar (o `X` do próprio `UiModal`, com tooltip), **Espelhar**, Capturar e Sair usam o `<UiTooltip>` do sistema; o rodapé usa largura total — **Espelhar à esquerda** e Capturar/Sair à direita; Espelhar alterna `aria-pressed` e vale para pré-visualização **e** captura (`ctx.translate/scale(-1,1)`); o backdrop **não** fecha a câmera (regra do modal) — fechamento por X, `Escape` ou Sair; ao fechar o modal o `stream` é interrompido e o `fechar` é emitido (o consumidor deve desmontar com `v-if`); capturar desabilitado fora do estado `pronto`; **`stream.getTracks().forEach(stop)`** ao fechar e em `onBeforeUnmount` (libera o dispositivo); requer HTTPS (mensagem de erro própria).
+
+```vue
+<UiCameraWeb @foto="(dataUrl) => avatarFoto = dataUrl" @fechar="cameraAberta = false" />
+```
+
+<!-- C3 -->
+### 5.5 Tooltip — seção 7 do `/design`
+
+**Arquivo:** `app/components/ui/Tooltip.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `content` | `string` | `''` | Texto (alternativa ao slot `content`) |
+| `position` | `TooltipPosition \| TooltipPositionLegacy` | `'top'` | `top` \| `bottom` \| `left` \| `right` |
+| `theme` | `'dark' \| 'light'` | `'dark'` | `dark` = `bg-brand-primary text-white` |
+| `delay` | `number` | `150` | Delay de exibição (ms) |
+| `disabled` | `boolean` | `false` | Não exibe |
+
+- **Emits:** nenhum · **Slots:** `default` (gatilho, obrigatório), `content` (fallback: prop `content`).
+- **Posições:** 4 direções canônicas em inglês; **alias PT** `topo`/`rodape`/`esquerda`/`direita` aceitos (`TooltipPositionLegacy`, `@deprecated`); default do normalizador: `right`.
+- **Micro-seta:** bordas CSS triangulares na cor do tema; `z-50`, `pointer-events-none`, `whitespace-nowrap`.
+- **Comportamento:** mostra em `mouseenter`/`focusin` após `delay`, oculta em `mouseleave`/`focusout`; `<Transition>` fade + scale.
+- **Auto-ajuste de posição:** ao ficar visível, o balão mede o espaço realmente disponível — viewport e todos os ancestrais com `overflow` que recortam (ex.: painel do `UiModal` com `overflow-hidden`, corpo rolável) — e é deslocado pela propriedade CSS `translate` quando seria cortado, mantendo a `position` pedida (nunca troca de lado). A seta é contra-deslocada (limitada às margens do balão) para continuar apontando ao gatilho. Recalcula em `scroll` (fase de captura) e `resize`. Como `translate` não é propriedade de `transform`, a correção não interfere no `-translate-x-1/2` do centroamento nem na escala da `<Transition>`.
+- **Gotchas:** único componente do sistema com **posições PT pré-existentes aceitas como alias** (contrato de enums da spec).
+
+```vue
+<UiTooltip content="Exportar em XLS" position="top">
+  <UiButton variant="outline"><template #leftIcon><Download class="h-3.5 w-3.5" /></template>Exportar</UiButton>
+</UiTooltip>
+```
+
+### 5.6 Toast & useToast — seção 8 do `/design`
+
+**Arquivos:** `app/components/ui/ToastContainer.vue` + `app/composables/useToast.ts`
+
+- **Container:** montado globalmente em `app/app.vue`; `fixed top-5 right-5 z-50`, `role="status"` `aria-live="polite"`, `pointer-events-none` no container e `pointer-events-auto` nos cards; entra deslizando da direita (`TransitionGroup`).
+- **Tipos (`ToastType`):** `success` (esmeralda, `CheckCircle2`) · `warning` (laranja, `AlertTriangle`) · `danger` (rose, `AlertOctagon`) · `info` (sky, `Info`).
+- **Estrutura do card:** header com ícone em badge suave + título em destaque + botão X; corpo com `message`; **barra de progresso de 2.5 px** (`h-[2.5px]`, keyframe global `fp-toast-progress`) indicando o auto-dismiss.
+- **Cores do card** (fundo suave + borda fina): `bg-emerald-50/95 border-emerald-200/90 text-emerald-950` (análogas nas demais).
+- **API:** ver [4.6](#46-toasts-api-do-usetoast) — auto-dismiss 5000 ms; `duration <= 0` remove a barra e o toast fica persistente; um `setTimeout` por toast (cancelado ao fechar manualmente).
+- **Gotchas:** keyframe **fora de `<style scoped>`** de propósito (o Vue renomeia keyframes escopados e quebraria o `:style` dinâmico).
+
+```ts
+const { toast } = useToast()
+toast.success('Release Publicada', 'A Release Week #39 está disponível na Área Pública.')
+toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação.')
+```
+
+<!-- C4 -->
+### 5.7 Select — seção 9 do `/design`
+
+**Arquivo:** `app/components/ui/Select.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string \| number` | `''` | `v-model`; `clear` emite `''` |
+| `options` | `SelectOption[]` | `[]` | `{ value, label, badge?, description? }` |
+| `label` | `string` | `''` | Rótulo (`useId()` ↔ `for`/`aria-labelledby`) |
+| `placeholder` | `string` | `'Selecione uma opção...'` | Texto sem seleção |
+| `searchPlaceholder` | `string` | `'Digitar para pesquisar...'` | Placeholder da busca |
+| `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60`, `aria-disabled` |
+| `clearable` | `boolean` | `true` | Botão X (limpa emite `''`) |
+| `leftIcon` | `Component \| null` | `null` | Ícone à esquerda do gatilho |
+| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro no gatilho |
+| `labelClass` | `string` | `''` | Classes extras no label |
+
+- **Emits:** `update:modelValue(value: string | number)` · **`change(value: string | number)`** (valor, nunca `Event`).
+- **Slots:** `leftIcon` (com fallback para a prop), `rightIcon`.
+- **ARIA:** gatilho `role="combobox"` com `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls`, **`aria-activedescendant`**; lista `role="listbox"`; itens `role="option"` + `aria-selected`; label clicável foca o gatilho.
+- **Teclado:** `Enter`/`Space`/`↓` abrem · `Esc` fecha · `↑`/`↓` navegam · `Enter` seleciona · `Tab` passa adiante.
+- **Busca em tempo real:** normalização **NFD insensível a acentos e maiúsculas** sobre `label`, `value`, `description` e `badge`; contador "N opções encontradas"; foco automático no campo de busca ao abrir; vazio ⇒ "Nenhum resultado encontrado para ...".
+- **Visual:** gatilho `h-[34px]` (mesmo gabarito do `Input`); aberto = `border-b-brand-focus border-b-2` + chevron verde rotacionado; **erro** = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` + `AlertCircle` com `<UiTooltip>`; item destacado `bg-lime-50/60`, selecionado `font-semibold` + `Check` verde.
+- **Gotchas:** fecha com clique fora (listener global `window`); **auto-inversão vertical** — se não há espaço abaixo do gatilho para a lista, o dropdown abre **para cima** (`bottom-full mb-1`), medindo o limite do **ancestral rolável mais próximo** (container do formulário/corpo do modal, não só o viewport) × altura da lista, na abertura e a cada `scroll`/`resize` (listener em capture), evitando barra de rolagem no formulário; foco da busca usa `preventScroll` para não induzir scroll ao abrir; badges/contexto por item servem para listas densas (Catálogo de Publicações).
+
+```vue
+<UiSelect
+  v-model="tipo"
+  label="Tipo de Publicação"
+  :options="tiposPublicacao"
+  search-placeholder="Digitar para localizar..."
+  clearable
+/>
+```
+
+<!-- C5 -->
+### 5.8 DatePicker & Calendar — seção 10 do `/design`
+
+**Arquivos:** `app/components/ui/DatePicker.vue` + `app/components/ui/Calendar.vue`
+
+#### DatePicker (popover com máscara)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `Date \| string \| null` | `null` | `v-model` |
+| `label` | `string` | `''` | Rótulo associado (`useId()`) |
+| `placeholder` | `string` | `'DD/MM/AAAA'` | Placeholder da máscara |
+| `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
+| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro no campo |
+
+- **Emits:** `update:modelValue(date: Date | null)` · `change(date: Date | null)` — **só emite quando a máscara completa (10 chars) ou ao limpar** (valores intermediários não emitem).
+- **Máscara:** `DD/MM/AAAA` automática ao digitar (só dígitos, validação de data real no parse).
+- **Estados:** aberto/focado = `border-b-brand-focus border-b-2` (foco canônico) · erro = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` (sem contorno em toda a volta) + `AlertCircle` em `<UiTooltip>` · botão X limpa (`change(null)`).
+- **Popover:** `<Transition>` com o `Calendar`; fecha ao selecionar, com `Esc` ou clique fora (listener global); abre também no `focus` do campo.
+
+#### Calendar (embutido ou dentro do popover)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `Date \| string \| null` | *(sem default)* | Data selecionada |
+
+- **Emits:** `update:modelValue(date: Date)` · `change(date: Date)` · `select(date: Date)` — os três disparam juntos na seleção e no atalho "Hoje".
+- **Destaque mandatório do dia de hoje (regra da spec):** `border-[1.5px] border-emerald-700 bg-emerald-50/70 text-emerald-700 font-bold` + micro-dot inferior `bg-emerald-700`; selecionado = `bg-brand-primary text-white`, e **se hoje+selecionado** = `bg-emerald-700 text-white`.
+- **Estrutura ARIA:** `role="grid"` → `role="row"` → `role="gridcell"`; `aria-selected`, `aria-current="date"`, `aria-label` em pt-BR por extenso; grade fixa de **42 células**; labels Dom–Sáb e meses em pt-BR.
+- **Teclado (roving tabindex):** `←/→` ±1 dia, `↑/↓` ±7 dias; `tabindex=0` apenas na célula focável (foco explícito > selecionada > hoje > dia 1); troca de mês automática ao navegar para fora.
+- **Rodapé:** "Hoje: dd/mm/aaaa" + botão **Hoje** (emerald-700) que navega e seleciona a data corrente (`getToday()` dinâmico — nunca congelado na instância).
+
+```vue
+<UiDatePicker v-model="dataPublicacao" label="Data de Publicação" />
+<UiCalendar v-model="dataSelecionada" />
+```
+
+### 5.9 Família Checkbox — seção 11 do `/design`
+
+**Arquivos:** `Checkbox.vue`, `BadgeCheckbox.vue`, `CheckChip.vue`, `CheckCard.vue`, `CheckboxGroup.vue` (em `app/components/ui/`)
+
+Tipos compartilhados (exportados de `Checkbox.vue`):
+
+```ts
+type CheckboxSize     = 'sm' | 'md' | 'lg'          // 14px / 16px / 20px
+type CheckboxVariant  = 'lime' | 'slate' | 'emerald' | 'indigo' | 'rose' | 'sky'
+type CheckboxPosition = 'start' | 'end'
+```
+
+#### Checkbox (controle base)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `boolean \| any[]` | `false` | Bool simples **ou** array (modo coleção com `value`) |
+| `value` | `any` | `undefined` | Item representado (modo array) |
+| `label` / `description` / `error` | `string` | `''` | Rótulo, descrição, erro (label `text-rose-700`) |
+| `disabled` / `indeterminate` | `boolean` | `false` | Desabilitado / tri-state (ícone `Minus`) |
+| `size` | `CheckboxSize` | `'md'` | Tamanho da caixa |
+| `variant` | `CheckboxVariant` | `'lime'` | Cor checada |
+| `checkboxPosition` | `CheckboxPosition` | `'start'` | `'end'` inverte a ordem (`flex-row-reverse`) |
+| `id` / `name` / `required` | `string \| undefined` / `string \| undefined` / `boolean` | `undefined` / `undefined` / `false` | Atributos do input nativo |
+
+- **Emits:** `update:modelValue(boolean | any[])` · **`change(boolean | any[])`** (valor resultante, não `Event`).
+- **Slots:** `default` (substitui o `label`).
+- **A11y:** input nativo oculto `peer sr-only` + caixa customizada com `peer-focus-visible:ring-2`; `indeterminate` sincronizado na propriedade DOM nativa (`watch` + `onMounted`); id estável via `useId()` quando `id` não é passado.
+
+#### BadgeCheckbox (checkbox + badge de metadados)
+
+- Wrapper do `Checkbox` com badge à direita: props obrigatórias **`label`** e **`badge`**; `badgeVariant?: 'lime' | 'emerald' | 'indigo' | 'rose' | 'sky' | 'slate' | 'purple' | 'default'` (default `'default'`; `slate` = badge sólido escuro). Encaminha todos os props/emits do `Checkbox`.
+- **Caso de uso:** `[x] Módulo Escopo de Projetos [Gestão]` — seleção de módulos/permissões.
+
+#### CheckChip (toggle chip com contador)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `boolean` | `false` | Estado do chip |
+| `label` | `string` *(obrigatória)* | — | Rótulo do chip |
+| `count` | `number \| string` | `undefined` | Pill com contador (`font-mono tabular-nums`) |
+| `variant` | `ChipVariant = lime\|emerald\|indigo\|rose\|sky\|slate` | `'lime'` | Cor ativa |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Tamanho |
+| `disabled` | `boolean` | `false` | Desabilitado |
+| `icon` | `Component \| undefined` | `undefined` | Ícone (substituído por `Check` quando ativo) |
+
+- **Emits:** `update:modelValue(boolean)` · `change(boolean)`. É um `<button type="button">`.
+- **Visual:** inativo = branca `border-slate-300`; ativo = tinta clara da variante (`bg-lime-50 border-lime-300 text-lime-900`...), exceto `slate` = sólido `bg-brand-primary border-brand-primary text-white` (contador em `bg-brand-primary-raised text-brand-accent`).
+- **Caso de uso:** filtros rápidos no topo da `DataTable` — `[x] Liquidados (42)`.
+
+#### CheckCard (cartão rico de seleção)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` *(obrigatória)* | — | Título do cartão |
+| `description` | `string` | `''` | Subtítulo |
+| `badge` / `badgeVariant` | `string` / `'lime' \| 'emerald' \| 'indigo' \| 'slate' \| 'neutral'` | `''` / `'lime'` | Badge do cartão |
+| `icon` | `Component \| undefined` | `undefined` | Ícone setorial |
+| `variant` | `CheckboxVariant` | `'lime'` | Borda/fundo ao marcar |
+| `checkboxPosition` | `'start' \| 'end'` | `'end'` | Posição do checkbox no cartão |
+| `disabled` / `value` / `modelValue` / `id` | — | — | Como o `Checkbox` |
+
+- **Emits:** `update:modelValue` · `change` (bool ou array). **Slots:** `default` (conteúdo extra).
+- **Comportamento:** o cartão inteiro é clicável (`@click` + `@keydown.enter.prevent`), o checkbox usa `@click.stop`; checked = borda/fundo verde (`border-brand-accent bg-lime-50/30 ring-brand-accent/40`, análogos em indigo/emerald/slate); `aria-labelledby`/`aria-describedby` com ids de `useId()`.
+- **Caso de uso:** seleção de filiais, planos, pacotes de permissão.
+
+#### CheckboxGroup (gerenciador de coleções)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `any[]` | `[]` | Valores selecionados |
+| `options` | `CheckboxGroupOption[]` *(obrigatória)* | — | `{ value, label, description?, badge?, badgeVariant?, count?, disabled? }` |
+| `label` | `string` | `''` | Rótulo do grupo |
+| `showSelectAll` | `boolean` | `false` | Cabeçalho "Selecionar Todos" **tri-state** |
+| `selectAllLabel` | `string` | `'Selecionar Todos'` | Texto do select-all |
+| `layout` | `'vertical' \| 'horizontal' \| 'grid-2' \| 'grid-3'` | `'vertical'` | Disposição |
+| `type` | `'normal' \| 'badge' \| 'chip'` | `'normal'` | Componente interno: `Checkbox` / `BadgeCheckbox` / `CheckChip` |
+| `variant` | `CheckboxVariant` | `'lime'` | Cor herdada pelos itens |
+| `disabled` | `boolean` | `false` | Desabilita o grupo inteiro |
+
+- **Emits:** `update:modelValue(any[])` · `change(any[])`.
+- **Select-all:** tri-state calculado apenas sobre as opções **não desabilitadas**; marcar adiciona todos os `enabledOptions` ausentes, desmarcar remove apenas esses.
+- **Gotchas:** opções `disabled` herdam para o item interno; cabeçalho do grupo com divisória `border-b border-slate-100`.
+
+```vue
+<UiCheckbox label="Lembrar sessão" v-model="lembrar" />
+<UiBadgeCheckbox label="Módulo Escopo de Projetos" badge="Gestão" badge-variant="emerald" v-model="escopo" />
+<UiCheckChip label="Publicados" :count="42" v-model="filtro" />
+<UiCheckCard title="Release Week #39" description="Semana de 28/09 a 04/10" badge="Publicada" v-model="release" />
+<UiCheckboxGroup v-model="tipos" :options="tiposOptions" show-select-all layout="grid-3" type="badge" />
+```
+
+### 5.10 Kpi — seção 12 do `/design`
+
+**Arquivo:** `app/components/ui/Kpi.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `titulo` | `string` *(obrigatória)* | — | Rótulo da métrica |
+| `valor` | `string` *(obrigatória)* | — | Valor principal (`text-2xl font-bold`) |
+| `cor` | `string` | `'#2161ef'` | HEX da borda, do ícone e das ondas |
+| `icone` | `Component \| undefined` | `undefined` | Ícone no badge do canto |
+| `metrica` | `string` | `''` | Métrica complementar (ex.: `+1,8 p.p.`) |
+| `metricaRotulo` | `string` | `''` | Rótulo ao lado da métrica |
+| `tendencia` | `'up' \| 'down' \| 'neutral'` | `'neutral'` | `TrendingUp` esmeralda / `TrendingDown` rose / `Minus` slate |
+
+- **Emits:** nenhum · **Slots:** nenhum · raiz é um `<article>`.
+- **Estrutura:** título + valor + métrica com indicador de tendência; borda temática `:style="{ borderColor: cor }"`; badge do ícone com fundo `${cor}1a`.
+- **Ondas animadas:** duas camadas SVG no rodapé (`fill-opacity` 0.14/0.22) com `kpi-wave-drift` em loop (9s fundo / 6s frente, tile duplicado `translate(400,0)` para loop contínuo).
+- **Acessibilidade/motion:** `@media (prefers-reduced-motion: reduce)` desliga a animação das ondas (regra da spec); SVG `aria-hidden`.
+- **Gotchas:** o default `cor: '#2161ef'` (azul) **está fora da paleta oficial** — recomendam-se os 8 tokens da [seção 2](#21-as-8-cores-oficiais) em produção (ex.: `cor="#112051"`). Métrica só renderiza se `metrica || metricaRotulo`.
+
+```vue
+<UiKpi titulo="Publicações na Semana" valor="12" cor="#112051" metrica="+3" tendencia="up" />
+```
+
+### 5.11 DataTable — seção 13 do `/design`
+
+**Arquivo:** `app/components/ui/DataTable.vue` · **Tipos:** [`app/utils/dataGrid.ts`](../app/utils/dataGrid.ts)
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `data` | `any[]` *(obrigatória)* | — | Registros |
+| `columns` | `ColumnDef[]` *(obrigatória)* | — | Definição das colunas |
+| `title` / `subtitle` | `string` | `''` | Cabeçalho do topo com ícone `FileSpreadsheet` |
+| `initialGroupedColumns` | `string[]` | `[]` | Colunas agrupadas no início (máx. 3) |
+| `pageSizeOptions` | `number[]` | `[5, 10, 20, 50]` | Opções de "Linhas por página" |
+| `defaultPageSize` | `number` | `5` | Página inicial |
+| `showHeaderTop` | `boolean` | `false` | Exibe o campo de busca global |
+
+`ColumnDef` (de `app/utils/dataGrid.ts`):
+
+```ts
+interface ColumnDef<T = any> {
+  id: string; header: string; accessorKey: string
+  align?: 'left' | 'center' | 'right'; width?: number | string; minWidth?: number
+  isNumeric?: boolean   // habilita totalizadores no rodapé
+  groupable?: boolean; sortable?: boolean
+  format?: (val: any, row: T) => string
+}
+```
+
+- **Emits:** nenhum (todo estado é interno).
+- **Slots:** `cell(<col.id>)` com escopo `{ row, value }` (fallback: `col.format(value, row)` ou valor cru) — nome dinâmico por coluna; `actions` com escopo `{ row }` (cria a coluna "Ações").
+- **Cabeçalho corporativo:** linha `bg-brand-primary` (**`#112051`**, token `brand.primary` de `tailwind.config.js`) com textos e ícones em **`#f8fafc`**, hover de coluna `bg-white/10`, divisórias `divide-slate-700` (`#334155`); colunas redimensionáveis por handle à direita (hover/ativo `brand-accent`).
+- **Agrupamento ("Group By Box"):** arrastar `th` (`draggable`) para a faixa `Agrupamento:`; **até 3 níveis** com chips `bg-brand-primary` + badge verde `1º NÍVEL`/`2º`/`3º`; estado drag-over `bg-lime-50/80 ring-lime-500/30`; nó de nível 1 expandido por padrão, níveis 2/3 recolhidos; barra lateral da linha de grupo muda por nível (`border-l-lime-500` → `sky` → `slate-200`); cada nó exibe contagem de registros.
+- **Ordenação multi-coluna:** clique alterna `asc`/`desc` (setas `brand-accent`); **Shift+clique** encadeia regras com badge numérico `bg-brand-accent text-slate-950` (`sortMultiColumn` em `dataGrid.ts`, `localeCompare('pt-BR')` e parsing numérico para `isNumeric`).
+- **Totalizadores sob demanda:** **clique direito** em célula do rodapé de coluna `isNumeric` abre menu `<Teleport to="body">` estilo cxGrid: **Soma (SUM) · Média (AVG) · Contagem (COUNT) · Mínimo (MIN) · Máximo (MAX) · Nenhum (Limpar)** — `calculateAggregate` formata `R$ ...` em pt-BR; sem operação mostra `-`.
+- **Paginação:** indicador "Mostrando X a Y de Z entradas exibidas" (+ sufixo verde com nº de níveis de agrupamento quando agrupado), seletor de linhas, "Página X de Y" e botões `« ‹ › »` (`title` acessível); no modo agrupado pagina sobre as linhas efetivamente renderizadas.
+- **Busca global** (quando `showHeaderTop`): case-insensitive, com botão de limpar; estado vazio **"Nenhum dado encontrado com o filtro aplicado."**
+- **Gotchas (requisitos da spec):** sem conteúdo de demonstração quando usado sem props de conteúdo; **nenhum registro recebe tratamento visual especial por causa do seu valor**.
+
+```vue
+<UiDataTable
+  title="Releases Week Semanal"
+  :data="releases"
+  :columns="colunas"
+  :initial-grouped-columns="['tipo']"
+  show-header-top
+>
+  <template #cell(dataPublicacao)="{ value }">
+    <span class="font-mono tabular-nums">{{ value }}</span>
+  </template>
+  <template #actions="{ row }">
+    <UiButton size="sm" variant="outline" @click="ver(row)">Ver</UiButton>
+  </template>
+</UiDataTable>
+```
+
+### 5.12 UiModal & UiModalSection - seção 15 do `/design`
+
+**Arquivo:** `app/components/ui/Modal.vue` · `app/components/ui/ModalSection.vue`
+
+`UiModal` (dialog de cadastro com `v-model`):
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `boolean` *(obrigatória)* | — | Aberto/fechado (`v-model`) |
+| `title` | `string` *(obrigatória)* | — | Título do header |
+| `subtitle` | `string` | `''` | Subtítulo do header |
+| `icon` | component | `null` | Ícone lucide à esquerda do separador |
+| `size` | `'xs' \| 'sm' \| 'md' \| 'lg'` | `'md'` | Larguras 384 / 480 / 640 / 880px (`xs` é uso pontual, ex.: modal da câmera) |
+| `closeOnEsc` | `boolean` | `true` | Permite fechar por `Escape` |
+
+- **Emits:** `update:modelValue` (boolean) e `close` (todos os fechamentos — X, Escape, ações do footer).
+- **Slots:** `default` (corpo/sessões) e `footer` (ações; só renderiza se fornecido).
+- **Portal/camada:** `<Teleport to="body">` em `z-[60]` — acima dos toasts (`z-50`); backdrop cinza escuro `bg-zinc-900/50` (`#18181b` a 50%) que **não** fecha no clique (protege cadastros longos contra perda acidental).
+- **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto.
+- **Header:** fundo em degradê **`#112051` → `#0364f7`** (`bg-gradient-to-r from-brand-primary to-[#0364f7]`), `rounded-t-xl` (o filete esquerdo de accent `#4ed813` de **2.5px** acompanha o raio do canto superior esquerdo), ícone, título/subtítulo e `X` em `#f8fafc` (o `X` exibe tooltip "Fechar"), separador vertical branco/20.
+- **Corpo:** `bg-slate-100` com `max-h-[75vh]` e rolagem interna; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`), preservando `text-rose-*` em erro.
+- **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário).
+
+`UiModalSection` (sessão de campos dentro do `default`):
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` *(obrigatória)* | — | Título da sessão (**sem** caixa alta, peso fraco `font-light text-slate-500`) |
+| `icon` | component | `null` | Ícone da sessão em `text-lime-700` **sobre fundo branco** à esquerda do título |
+
+- **Slot:** `default` para os campos; card branco com divisória `slate-200` a **2px** do título e **8px** dos campos (`mt-0.5 mb-2`); o grid de campos aplica `min-w-0` nos filhos (`[&>*]:min-w-0`) para conteúdos de largura intrínseca (vídeo, selects) não gerarem scroll horizontal no corpo do modal.
+- **Gotchas:** o backdrop nunca fecha no clique — para permitir, use apenas X/footer/Escape; `size` segue a disciplina `xs`/`sm`/`md`/`lg` (384/480/640/880px) da spec, sem largura arbitrária.
+
+```vue
+<UiModal v-model="aberto" title="Nova Publicação" subtitle="Dados da publicação e distribuição" :icon="Building2">
+  <UiModalSection title="Dados da Publicação" :icon="Building2">
+    <UiInput v-model="titulo" label="Título" />
+    <UiInput v-model="slug" label="Slug" mono />
+  </UiModalSection>
+
+  <template #footer>
+    <UiButton variant="outline" @click="aberto = false">Cancelar</UiButton>
+    <UiButton variant="primary" @click="salvar">Salvar</UiButton>
+  </template>
+</UiModal>
+```
+
+<!-- C10 -->

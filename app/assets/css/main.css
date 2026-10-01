@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-slate-50 text-slate-900 antialiased;
+  }
+
+  /* Formatação numérica tabular obrigatória para dados contábeis */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Recorte padrão do destaque inferior: apenas os dois cantos arredondados.
+   Usado por Input/Select (foco/erro) para evitar clip-path mágico duplicado. */
+.ds-bottom-clip {
+  clip-path: inset(calc(100% - 9px) 0 0 0);
+}
+
+/* Hover das opções da sidebar: a opção assume a cor do item (--item-cor, vindo do
+   config/navigation.ts) e, quando o item não tem cor, cai no slate-900 (fallback). */
+.ds-item-hover:hover {
+  color: var(--item-cor, #0f172a);
+}
+
+/* Menu suspenso do Account (fundo escuro): mesma lógica do hover da sidebar,
+   mas o fallback é a cor clara do texto do menu — nunca o slate-900. */
+.ds-item-hover-dark:hover {
+  color: var(--item-cor, #f8fafc);
+}
+
+/* Ícones da sidebar: traço 1.5 (o traço padrão do Lucide, 2, pesava em 16px —
+   CSS vence o atributo stroke-width do SVG). Só a sidebar; menu/chevrons intactos. */
+.ds-icon-light {
+  stroke-width: 1.5;
+}
+
+/* Barra de rolagem discreta (menus escuros do shell e demo do /design).
+   A página /design mantém sua própria cópia em <style scoped>, que vence por escopo. */
+.scrollbar-discreta {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}
+
+.scrollbar-discreta::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scrollbar-discreta::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-discreta::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+}
+
+.scrollbar-discreta::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Folha de estilo de impressão contábil (@media print) */
+@media print {
+  header,
+  aside,
+  nav,
+  button:not(.print-visible),
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  .print-page-break {
+    page-break-before: always;
+  }
+
+  .print-clean {
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  /* Shell: header/aside/nav já são ocultados acima; o restante do shell
+     precisa liberar altura/rolagem para que só o conteúdo seja impresso. */
+  .fp-shell,
+  .fp-shell-body,
+  .fp-shell-content {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
