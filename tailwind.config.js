@@ -13,6 +13,12 @@ export default {
           focus: '#1a9e07',
         },
       },
+      fontFamily: {
+        // Fontes oficiais do design system (docs/01 §1) — carregadas via
+        // app.head.link no nuxt.config.ts; o preflight aplica `sans` no html.
+        sans: ['"Plus Jakarta Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
     },
   },
   plugins: [],

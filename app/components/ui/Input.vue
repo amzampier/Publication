@@ -42,6 +42,9 @@ const emit = defineEmits<{
 
 const isFocused = ref(false)
 const inputId = useId()
+// Id estável da mensagem de erro — referenciada por aria-describedby no input
+// e renderizada como região viva (role="alert") abaixo do campo.
+const erroId = `${inputId}-erro`
 
 const handleInput = (e: Event) => {
   const target = e.target as HTMLInputElement
@@ -100,6 +103,7 @@ const handleInput = (e: Event) => {
         :type="type"
         :placeholder="placeholder"
         :disabled="disabled"
+        :aria-describedby="error ? erroId : undefined"
         :class="[
           'w-full h-full bg-transparent text-slate-900 text-xs placeholder:text-slate-400',
           'border-none outline-none focus:outline-none ring-0 focus:ring-0 disabled:cursor-not-allowed',
@@ -139,6 +143,12 @@ const handleInput = (e: Event) => {
         <slot name="rightIcon" />
       </div>
     </div>
+
+    <!-- Erro: texto persistente abaixo do campo, anunciado por leitores de tela.
+         O ícone + tooltip interno permanecem apenas como reforço visual. -->
+    <p v-if="error" :id="erroId" role="alert" class="text-[11px] font-medium text-rose-700">
+      {{ error }}
+    </p>
 
     <!-- Helper Text -->
     <p v-if="helperText" class="text-[11px] text-slate-500">

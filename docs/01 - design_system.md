@@ -3,9 +3,9 @@
 **Versão:** 1.0.0 · **Data:** 2026-09-28 · **Idioma:** Português do Brasil (pt-BR)
 **Stack:** Nuxt 4 · Vue 3 (`<script setup>`) · Tailwind CSS · lucide-vue-next · Google Fonts (Plus Jakarta Sans + JetBrains Mono)
 **Autoridade de comportamento:** spec `openspec/specs/design-system/spec.md` — **ainda não criada**; até lá, este documento é a referência oficial dos padrões. Quando a spec existir, em caso de divergência ela prevalece sobre este documento.
-**Vitrine:** rota [`/design`](../app/pages/design.vue) (14 seções numeradas)
+**Vitrine:** rota [`/design`](../app/pages/design.vue) (16 seções numeradas)
 
-> Este documento descreve **apenas o que está implementado**: os 19 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
+> Este documento descreve **apenas o que está implementado**: os 21 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
 
 ---
 
@@ -18,7 +18,7 @@
 3. [Layout & Navegação](#3-layout--navegação)
 4. [Convenções Globais](#4-convenções-globais)
 
-**Componentes** (5.1–5.12 na ordem das seções do `/design`)
+**Componentes** (5.1–5.14 na ordem das seções do `/design`)
 
 5. [Componentes](#5-componentes)
    - [5.1 Button](#51-button--seção-3-do-design) (seção 3)
@@ -33,6 +33,8 @@
    - [5.10 Kpi](#510-kpi--seção-12-do-design) (seção 12)
    - [5.11 DataTable](#511-datatable--seção-13-do-design) (seção 13)
    - [5.12 UiModal & UiModalSection](#512-uimodal--uimodalsection--seção-15-do-design) (seção 15)
+   - [5.13 UiTabs](#513-uitabs--seção-16-do-design) (seção 16)
+   - [5.14 UiSlider](#514-uislider--seção-16-do-design) (seção 16)
 
 ## 1. Princípios & Tipografia
 
@@ -77,8 +79,8 @@ A classe utilitária `.tabular-nums` (aplicada em `app/assets/css/main.css` a `f
 
 | # | Token | HEX | Tailwind | Aplicação |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Navy (Ação Primária & Sidebar)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`); demais superfícies em cor sólida — cabeçalho executivo e sidebar da Área Administrativa (hover `brand.primary-raised` `#1b2e6b` no menu legado, §3.5) |
-| 2 | **Verde Accent (Accent & Prestígio)** | `#4ed813` | `bg-brand-accent` | Destaques executivos, ícones e chips sobre chrome escuro; foco de controles em `#1a9e07` |
+| 1 | **Navy (Ação Primária & Sidebar)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`; trilha preenchida do `UiSlider` começa em `#112051` e segue para `#0364f7`/`#4ed813` — §5.14); demais superfícies em cor sólida — cabeçalho executivo e sidebar da Área Administrativa (hover `brand.primary-raised` `#1b2e6b` no menu legado, §3.5) |
+| 2 | **Verde Accent (Accent & Prestígio)** | `#4ed813` | `bg-brand-accent` | Destaques executivos, ícones e chips sobre chrome escuro; foco de controles em `#1a9e07`; último trecho da trilha do `UiSlider` (§5.14) |
 | 3 | **Verde Esmeralda (Status Positivo)** | `#047857` | `bg-emerald-700` | Status "Publicado"/Concluído, confirmações, dia "Hoje" |
 | 4 | **Vermelho Rosa (Erro & Alerta)** | `#be123c` | `bg-rose-700` | Erros, validações falhas, alertas críticos |
 | 5 | **Índigo (Revisão & Auditoria)** | `#4338ca` | `bg-indigo-700` | Revisão aprovada, trilha de auditoria |
@@ -109,7 +111,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 
 - Fundo `bg-white` + `border-b border-slate-200`; textos herdados do container em `text-slate-900`
   (demo e real: `h-16 px-4` — nenhum filho declara cor própria de texto).
-- **Zona esquerda:** botão de alternância da sidebar (`aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-controls="app-sidebar"`, `aria-expanded`) + separador `w-px h-5 bg-slate-200` + logotipo — badge de destaque `bg-brand-primary/10 text-brand-primary` com ícone `Building2` e nome **`Publications`**. Sem seletor, texto ou badge de empresa/filial — o sistema tem escopo único; o shell identifica a **Área Administrativa pela rota `/admin`** (`/admin/**`, layout `app/layouts/admin.vue`), enquanto a raiz `/` é a Área Pública e renderiza sem ele (`app/layouts/default.vue`).
+- **Zona esquerda:** botão de alternância da sidebar (`aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-controls="app-sidebar"`, `aria-expanded`) + separador `w-px h-5 bg-slate-200` + logotipo — badge de destaque `bg-brand-primary/10 text-brand-primary` com ícone `Building2` e nome **`Publications`**; **se uma logo personalizada estiver definida** em Configurações Globais → Logomarcas (`useLogomarcaHeader`), o bloco vira `<img>` (`h-8 max-w-[180px] object-contain`) no lugar do ícone + nome, voltando ao padrão quando a logo é limpa. Sem seletor, texto ou badge de empresa/filial — o sistema tem escopo único; o shell identifica a **Área Administrativa pela rota `/admin`** (`/admin/**`, layout `app/layouts/admin.vue`), enquanto a raiz `/` é a Área Pública e renderiza sem ele (`app/layouts/default.vue`).
 - **Zona direita:** sino de notificações — painel `w-72 bg-white border-slate-200` com
   **cabeçalho `bg-brand-primary`** (banda navy: título `text-white`, contador `text-slate-300`),
   **lista de mensagens com fundo `#f9feee`** (área creme distintiva do corpo do painel), hover de
@@ -130,7 +132,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 
 - **Modo expandido:** `w-52` — títulos completos; **modo rail:** `w-[46px]` — só ícones centralizados, maximizando a área de conteúdo. Transição `transition-all duration-200`, fundo `bg-brand-primary` (navy `#112051`), borda `border-r border-white/10`.
 - **Item raiz:** **"Painel Executivo"** (`LayoutDashboard`), renderizado acima das sessões, sem cabeçalho — no rail vira apenas o ícone com tooltip.
-- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão. Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
+- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão (estado inicial configurável em Configurações Globais → Sidebar, via `useSessoesAbertas`). Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
 - **Cabeçalho de sessão:** `text-[9px] font-bold text-slate-400 uppercase tracking-widest`, com `hover:text-white` e `focus-visible:text-white` ao recolher — recolhimento individual, chevron rotaciona 180°.
 - **Tintas dos ícones sobre navy** (mistura 60% cor + 40% branco; aplicadas a ícone **e** a
   `--item-cor` pelo helper `tinta()` de [`app/composables/shellTintas.ts`](../app/composables/shellTintas.ts),
@@ -147,7 +149,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 | Perfis de Acesso (RBAC) | `#f5b302` | `#f9d167` |
 | Auditoria | `#2dd4bf` | `#81e5d9` |
 
-- **No rail:** `sessoesVisiveis` filtra para apenas as sessões abertas, sem chevrons, com divisor `h-px bg-white/15 mx-1 my-1.5` entre sessões; o estado (`aberto`) é preservado ao reexpandir. Cada item é envolto por `<UiTooltip position="right">` com o seu rótulo (desabilitado enquanto a sidebar está expandida), e a sidebar troca `overflow-hidden` por `overflow-visible` no rail para que o balão não seja cortado.
+- **No rail:** **todos os itens de todas as sessões** permanecem visíveis como ícones — o recolhimento das sessões (acordeão) vale **apenas no modo expandido** — sem chevrons, com divisor `h-px bg-white/15 mx-1 my-1.5` entre sessões; o estado (`aberto`) é preservado ao reexpandir. Cada item é envolto por `<UiTooltip position="right">` com o seu rótulo (desabilitado enquanto a sidebar está expandida), e a sidebar troca `overflow-hidden` por `overflow-visible` no rail para que o balão não seja cortado.
 - **Item ativo:** `bg-white/10 text-lime-300` (Q1 — `lime-700` daria ≈3:1 sobre navy, falha para 12px); o ícone colorido mantém a sua tinta. **Inativo:** `text-slate-300 hover:bg-white/10` + `.ds-item-hover` — no hover a opção inteira assume a **cor do próprio item** via `--item-cor` (tinta D9 para itens com `cor`; item sem `cor` cai no fallback `#f8fafc`); o item ativo não recebe a classe e não muda no hover.
 - Cada item é `<button>` com `aria-label` e rótulo `text-xs font-normal` (peso 400 — mais leve
   que o `font-medium` anterior; o item ativo se destaca pela cor/fundo, não pelo negrito).
@@ -325,11 +327,11 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | Prop | Tipo | Default | Descrição |
 | :--- | :--- | :--- | :--- |
 | `modelValue` | `string \| number` | `''` | `v-model` (emitido sempre como `string`) |
-| `label` | `string` | `''` | Rótulo associado (`useId()` no `[for]`); fica `text-rose-600` em erro |
+| `label` | `string` | `''` | Rótulo associado (`useId()` no `[for]`); fica `text-rose-700` em erro |
 | `type` | `string` | `'text'` | Tipo nativo do input |
 | `placeholder` | `string` | `''` | Placeholder (`text-slate-400`) |
 | `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
-| `error` | `string` | `''` | Mensagem exibida **via Tooltip** no ícone (nunca texto abaixo) |
+| `error` | `string` | `''` | Texto persistente abaixo do campo (`role="alert"` + `aria-describedby`) + ícone com tooltip como reforço |
 | `helperText` | `string` | `''` | Texto auxiliar abaixo (`11px slate-500`) |
 | `leftIcon` / `rightIcon` | `Component \| null` | `null` | Ícone interno esquerdo/direito |
 | `mono` | `boolean` | `false` | `font-mono tabular-nums font-medium` (códigos/valores) |
@@ -339,7 +341,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 - **Emits:** `update:modelValue(value: string)` · `rightIconClick()` (sem payload).
 - **Slots:** `labelRight` (à direita do label), `leftIcon`, `rightIcon` (alternativa à prop).
 - **Foco canônico:** overlay `border-2 border-brand-focus` com classe `.ds-bottom-clip` — apenas a borda inferior e os dois cantos arredondados inferiores (`h-[34px]`, `rounded-lg`).
-- **Erro:** overlay idêntico em `border-rose-700` + `AlertCircle` interno à direita dentro de `<UiTooltip position="top">`; **tem precedência sobre `rightIcon`**; nenhum texto de erro é renderizado abaixo do campo (não quebra o alinhamento do formulário).
+- **Erro:** overlay idêntico em `border-rose-700` + `AlertCircle` interno à direita dentro de `<UiTooltip position="top">` (reforço); **tem precedência sobre `rightIcon`**; a mensagem aparece também como texto persistente abaixo do campo (`role="alert"`, `text-[11px] text-rose-700`) — anunciável sem mouse.
 - **Gotchas:** input nativo com `outline:none` forçado; altura fixa `34px` — mesmo gabarito do `Select`; valor em `text-xs font-normal` (`mono` = `font-medium`, ver §1.2).
 
 ```vue
@@ -467,7 +469,7 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60`, `aria-disabled` |
 | `clearable` | `boolean` | `true` | Botão X (limpa emite `''`) |
 | `leftIcon` | `Component \| null` | `null` | Ícone à esquerda do gatilho |
-| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro no gatilho |
+| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro persistente abaixo do gatilho (`role="alert"`) |
 | `labelClass` | `string` | `''` | Classes extras no label |
 
 - **Emits:** `update:modelValue(value: string | number)` · **`change(value: string | number)`** (valor, nunca `Event`).
@@ -475,7 +477,7 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 - **ARIA:** gatilho `role="combobox"` com `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls`, **`aria-activedescendant`**; lista `role="listbox"`; itens `role="option"` + `aria-selected`; label clicável foca o gatilho.
 - **Teclado:** `Enter`/`Space`/`↓` abrem · `Esc` fecha · `↑`/`↓` navegam · `Enter` seleciona · `Tab` passa adiante.
 - **Busca em tempo real:** normalização **NFD insensível a acentos e maiúsculas** sobre `label`, `value`, `description` e `badge`; contador "N opções encontradas"; foco automático no campo de busca ao abrir; vazio ⇒ "Nenhum resultado encontrado para ...".
-- **Visual:** gatilho `h-[34px]` (mesmo gabarito do `Input`); aberto = `border-b-brand-focus border-b-2` + chevron verde rotacionado; **erro** = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` + `AlertCircle` com `<UiTooltip>`; item destacado `bg-lime-50/60`, selecionado `font-semibold` + `Check` verde.
+- **Visual:** gatilho `h-[34px]` (mesmo gabarito do `Input`); aberto = `border-b-brand-focus border-b-2` + chevron verde rotacionado; **erro** = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` + `AlertCircle` com `<UiTooltip>` como reforço + mensagem persistente abaixo (`role="alert"`); item destacado `bg-lime-50/60`, selecionado `font-semibold` + `Check` verde.
 - **Gotchas:** fecha com clique fora (listener global `window`); **auto-inversão vertical** — se não há espaço abaixo do gatilho para a lista, o dropdown abre **para cima** (`bottom-full mb-1`), medindo o limite do **ancestral rolável mais próximo** (container do formulário/corpo do modal, não só o viewport) × altura da lista, na abertura e a cada `scroll`/`resize` (listener em capture), evitando barra de rolagem no formulário; foco da busca usa `preventScroll` para não induzir scroll ao abrir; badges/contexto por item servem para listas densas (Catálogo de Publicações).
 
 ```vue
@@ -501,12 +503,12 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `label` | `string` | `''` | Rótulo associado (`useId()`) |
 | `placeholder` | `string` | `'DD/MM/AAAA'` | Placeholder da máscara |
 | `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
-| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro no campo |
+| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro persistente abaixo do campo (`role="alert"`) |
 
 - **Emits:** `update:modelValue(date: Date | null)` · `change(date: Date | null)` — **só emite quando a máscara completa (10 chars) ou ao limpar** (valores intermediários não emitem).
 - **Máscara:** `DD/MM/AAAA` automática ao digitar (só dígitos, validação de data real no parse).
-- **Estados:** aberto/focado = `border-b-brand-focus border-b-2` (foco canônico) · erro = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` (sem contorno em toda a volta) + `AlertCircle` em `<UiTooltip>` · botão X limpa (`change(null)`).
-- **Popover:** `<Transition>` com o `Calendar`; fecha ao selecionar, com `Esc` ou clique fora (listener global); abre também no `focus` do campo.
+- **Estados:** aberto/focado = `border-b-brand-focus border-b-2` (foco canônico) · erro = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` (sem contorno em toda a volta) + `AlertCircle` em `<UiTooltip>` como reforço + mensagem persistente abaixo (`role="alert"`) · botão X limpa (`change(null)`).
+- **Popover:** `<Transition>` com o `Calendar`; fecha ao selecionar, com `Esc` ou clique fora (listener global); abre também no `focus` do campo. **Auto-inversão vertical** — se não há espaço abaixo do campo para o calendário, o popover abre **para cima** (`bottom-full mb-1`), medindo o limite do ancestral rolável mais próximo à altura real do popover na abertura e a cada `scroll`/`resize` (listener em capture), mesmo padrão do `Select` (§4.81); **largura limitada** a `max-w-[min(100%,calc(100vw-1rem))]` (nunca maior que o campo nem que a janela) com alinhamento `right-0` quando o `left-0` transbordar a borda direita, e o `Calendar` usa `w-72 max-w-full`.
 
 #### Calendar (embutido ou dentro do popover)
 
@@ -570,6 +572,7 @@ type CheckboxPosition = 'start' | 'end'
 | `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Tamanho |
 | `disabled` | `boolean` | `false` | Desabilitado |
 | `icon` | `Component \| undefined` | `undefined` | Ícone (substituído por `Check` quando ativo) |
+| `showCheck` | `boolean` | `true` | `false` suprime o ✓ quando ativo (pill só com rótulo) |
 
 - **Emits:** `update:modelValue(boolean)` · `change(boolean)`. É um `<button type="button">`.
 - **Visual:** inativo = branca `border-slate-300`; ativo = tinta clara da variante (`bg-lime-50 border-lime-300 text-lime-900`...), exceto `slate` = sólido `bg-brand-primary border-brand-primary text-white` (contador em `bg-brand-primary-raised text-brand-accent`).
@@ -739,6 +742,63 @@ interface ColumnDef<T = any> {
     <UiButton variant="primary" @click="salvar">Salvar</UiButton>
   </template>
 </UiModal>
+```
+
+### 5.13 UiTabs — seção 16 do `/design`
+
+**Arquivo:** `app/components/ui/Tabs.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string` *(obrigatória)* | — | Id da aba ativa (`v-model`) |
+| `items` | `TabItem[]` *(obrigatória)* | — | `{ id, label, icon?, cor? }` — `cor` pinta o ícone |
+| `ariaLabel` | `string` | `'Abas'` | `aria-label` do tablist |
+| `idPrefix` | `string` | `useId()` | Prefixo dos ids de tab/painel; **repita o mesmo valor** nos painéis para `aria-controls`/`aria-labelledby` |
+
+- **Emits:** `update:modelValue(string)` · `change(string)` — sempre o **id**, nunca um `Event` (§4.2).
+- **Visual:** ativa = pill lime `bg-lime-50 border border-lime-300 text-lime-900 shadow-xs` (mesmo padrão do chip lime ativo, §5.9), com `hover:bg-lime-100`; inativa = `border-transparent text-slate-600 hover:bg-slate-50` (borda transparente evita salto de layout na troca); ícone `h-4 w-4` na `cor` do item (preservada na aba ativa); tablist **centralizada** horizontalmente (`justify-center`, mantida na quebra de linha — pedido do usuário).
+- **ARIA:** `role="tablist"` no container, `role="tab"` + `aria-selected` (só a vigente `true`) e `aria-controls` apontando ao painel; roving tabindex (ativa `0`, demais `-1`).
+- **Teclado:** `←`/`→` percorrem com wrap, `Home`/`End` vão à primeira/última — a troca seleciona **e** move o foco; foco visível `outline-brand-focus`.
+- **Uso:** o componente é só o tablist — os painéis ficam no consumidor com `role="tabpanel"`, `:id="prefixo-panel-<id>"` e `:aria-labelledby="prefixo-tab-<id>"`.
+
+```vue
+<UiTabs v-model="aba" :id-prefix="prefixo" :items="abas" aria-label="Configurações" />
+<div v-if="aba === 'retencao'" :id="`${prefixo}-panel-retencao`" role="tabpanel" :aria-labelledby="`${prefixo}-tab-retencao`">
+  ...
+</div>
+```
+
+### 5.14 UiSlider — seção 16 do `/design`
+
+**Arquivo:** `app/components/ui/Slider.vue` · estilo: `.ds-slider` em `app/assets/css/main.css`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `number` *(obrigatória)* | — | Valor corrente (`v-model`) |
+| `min` | `number` | `30` | Limite inferior |
+| `max` | `number` | `730` | Limite superior |
+| `step` | `number` | `1` | Passo |
+| `marks` | `{ value, label }[]` | `undefined` | Legenda de rótulos sob a track (só informativa; não é clicável) |
+| `valueText` | `string` | `'{n} dias'` | Texto acessível do valor (`{n}` = valor corrente) |
+| `ariaLabel` | `string` | `undefined` | `aria-label` do controle |
+
+- **Emits:** `update:modelValue(number)` · `change(number)` — sempre **number** (o `<input type="range">` nativo traz string; o componente converte).
+- **Visual:** `<input type="range">` nativo + `.ds-slider` — track preenchida em degradê **`#112051` → `#0364f7` → `#4ed813`** esticado da origem até o thumb (a CSS var `--pct` marca onde o degradê termina), resto `slate-200`; thumb navy redondo (webkit + moz); legenda sob a track com `flex-wrap` + `gap-x-2 gap-y-1` e `justify-center sm:justify-between` (em telas estreitas os rótulos quebram para a segunda linha em vez de se sobrepor; nenhum rótulo é abreviado).
+- **Foco:** `:focus-visible` em verde canônico `#1a9e07` (§2.2), nunca `lime-500`.
+- **Acessibilidade:** `aria-valuetext` com o texto de `valueText` (ex.: "180 dias") — o leitor anuncia unidades, não só o número.
+
+```vue
+<UiSlider
+  v-model="dias"
+  aria-label="Janela de retenção"
+  :marks="[
+    { value: 30, label: '30 dias (1 mês)' },
+    { value: 90, label: '90 dias (Trimestre)' },
+    { value: 180, label: '180 dias (Semestre)' },
+    { value: 365, label: '365 dias (1 ano)' },
+    { value: 730, label: '730 dias (2 anos)' }
+  ]"
+/>
 ```
 
 <!-- C10 -->

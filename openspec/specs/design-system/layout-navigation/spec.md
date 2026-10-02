@@ -74,15 +74,16 @@ Auditoria, Configurações Globais).
 - **WHEN** o cabeçalho de uma sessão é ativado
 - **THEN** apenas aquela sessão recolhe/expande, as demais mantêm o estado, e todas iniciam abertas
 
-### Requirement: A sidebar alterna entre modo expandido e rail preservando o estado
+### Requirement: A sidebar alterna entre modo expandido e rail exibindo todos os ícones e preservando o estado
 O sistema SHALL alternar a sidebar entre o modo expandido (títulos completos) e o modo rail (somente
-ícones), mantendo visíveis no rail apenas as sessões abertas, com divisor entre elas e um tooltip por
-item — e SHALL preservar o estado de recolhimento das sessões ao reexpandir.
+ícones), exibindo no rail **todos os ícones de todas as sessões — independentemente do estado de
+recolhimento das sessões**, que passa a valer apenas no modo expandido — com um divisor entre sessões
+e um tooltip por item — e SHALL preservar o estado de recolhimento das sessões ao reexpandir.
 
-#### Scenario: Rail mostra apenas ícones de sessões abertas
-- **WHEN** a sidebar é recolhida
-- **THEN** os cabeçalhos de sessão não são exibidos, os itens aparecem como ícones centralizados e há
-  um divisor entre sessões abertas
+#### Scenario: Rail mostra todos os ícones mesmo com todas as sessões recolhidas
+- **WHEN** a sidebar é recolhida com todas as sessões em modo acordeão (recolhidas)
+- **THEN** os cabeçalhos de sessão não são exibidos, todos os itens permanecem visíveis como ícones
+  centralizados (inclusive os de sessões recolhidas) e há um divisor entre sessões
 
 #### Scenario: Tooltip por item no rail
 - **WHEN** a sidebar está em rail e o usuário interage com um item
@@ -154,3 +155,60 @@ por página.
 #### Scenario: Páginas públicas não herdam o shell
 - **WHEN** uma página fora de `/admin/**` é renderizada sem o layout administrativo declarado
 - **THEN** ela não exibe header nem sidebar da Área Administrativa
+
+### Requirement: Itens de navegação podem declarar rota e o ativo reflete a rota atual
+Os itens da sidebar e do menu do Account SHALL poder declarar uma rota opcional (`to`); quando declarada, o clique do usuário navega para essa rota, e o item da sidebar correspondente à rota corrente é exibido como ativo. Itens sem rota continuam apenas marcando estado visual, como hoje.
+
+#### Scenario: Item com rota navega
+- **WHEN** o usuário clica em "Configurações Globais" na sidebar ou no menu do Account
+- **THEN** o navegador vai para `/admin/configuracoes-globais` e o menu do Account é fechado
+
+#### Scenario: Item ativo acompanha a rota
+- **WHEN** a rota corrente corresponde à rota declarada de um item da sidebar
+- **THEN** aquele item é exibido como ativo (mesmo estilo do item selecionado hoje), com `aria-current="page"`
+
+#### Scenario: Item sem rota preserva o comportamento atual
+- **WHEN** o usuário clica em um item sem rota declarada (ex.: Manuais)
+- **THEN** apenas o estado visual de item ativo muda, sem navegação, como no comportamento atual
+
+#### Scenario: Chegar por URL direta também marca o item
+- **WHEN** o usuário abre `/admin/configuracoes-globais` diretamente pelo endereço
+- **THEN** o item "Configurações Globais" da sidebar aparece como ativo
+
+### Requirement: O shell administrativo se adapta à largura da viewport
+O sistema SHALL adaptar o shell da Área Administrativa à largura da viewport: abaixo de `lg` (1024px), com a sidebar expandida, esta é exibida como drawer sobreposto ao conteúdo com backdrop, e a área de conteúdo ocupa 100% da largura disponível; a partir de `lg`, o shell mantém o comportamento atual (sidebar expandida `w-52` ou rail deslocando o conteúdo). Em nenhuma largura a área de conteúdo pode produzir overflow horizontal.
+
+#### Scenario: Drawer abaixo de lg
+- **WHEN** a viewport tem menos de 1024px e o usuário expande a sidebar
+- **THEN** a sidebar aparece como sobreposição com backdrop sobre o conteúdo e o `main` permanece com largura total, sem barra de rolagem horizontal
+
+#### Scenario: Configurações Globais utilizável a 375px
+- **WHEN** `/admin/configuracoes-globais` é aberto em viewport de 375px com a sidebar no estado padrão
+- **THEN** o conteúdo é utilizável sem overflow horizontal, o cabeçalho quebra em linhas (`flex-wrap`) e o botão "Salvar Alterações Globais" permanece visível sem corte
+
+#### Scenario: Telas intermediárias permanecem íntegras
+- **WHEN** as telas administrativas são exibidas em 768px e 1024px
+- **THEN** abas, cards e tabela renderizam íntegros — com rolagem horizontal na barra de abas quando os rótulos não couberem
+
+#### Scenario: A partir de lg o shell atual é preservado
+- **WHEN** a viewport tem 1024px ou mais
+- **THEN** a sidebar expandida ocupa sua largura ao lado do conteúdo e o rail recolhido continua comportando como hoje, com tooltip por item
+
+### Requirement: A sidebar inicia recolhida em telas estreitas preservando a escolha manual
+O sistema SHALL inicializar a sidebar recolhida em telas estreitas (menores que `lg`) na primeira carga, SHALL respeitar qualquer alternância manual do usuário na sessão como preferência prevalente sobre a largura e SHALL manter em qualquer largura a semântica de alternância (`aria-expanded`/`aria-controls`) e a preservação do estado das sessões definidas em `layout-navigation`.
+
+#### Scenario: Primeira carga em tela estreita começa recolhida
+- **WHEN** a aplicação é carregada pela primeira vez em viewport menor que `lg`
+- **THEN** a sidebar inicia recolhida (sem empurrar o conteúdo), em vez de expandida
+
+#### Scenario: Alternância manual prevalece sobre a largura
+- **WHEN** o usuário expande ou recolhe a sidebar manualmente na sessão
+- **THEN** o estado segue a escolha manual, não sendo sobreescrito por redimensionamentos subsequentes da janela
+
+#### Scenario: Semântica de alternância preservada em qualquer largura
+- **WHEN** o botão de alternância é acionado em qualquer largura
+- **THEN** ele atualiza `aria-expanded`, mantém `aria-controls` apontando para a sidebar e alterna para o modo definido (drawer abaixo de `lg`; expandido/rail a partir de `lg`)
+
+#### Scenario: Tooltips do rail não são cortados em telas estreitas
+- **WHEN** a sidebar está em rail em viewport estreita e o usuário interage com um item
+- **THEN** o tooltip do rótulo é exibido sem ser cortado pelas bordas da viewport ou da sidebar

@@ -10,6 +10,7 @@ import {
   Trash2
 } from '@lucide/vue'
 import type { Notificacao } from '../../config/navigation'
+import { useLogomarcaHeader } from '../../composables/useLogomarcaHeader'
 import {
   accountEncerrarSessao,
   accountMeuPerfil,
@@ -17,6 +18,9 @@ import {
   conta,
   notificacoesIniciais
 } from '../../config/navigation'
+
+// Logo escolhida em Configurações > Logomarcas (estado em memória, fase 1)
+const { preview: logomarcaHeader } = useLogomarcaHeader()
 
 const props = withDefaults(defineProps<{ sidebarOpen: boolean }>(), { sidebarOpen: true })
 const emit = defineEmits<{ 'update:sidebarOpen': [value: boolean] }>()
@@ -50,6 +54,12 @@ const alternarNotificacoes = () => {
 const fecharMenus = () => {
   contaAberto.value = false
   notificacoesAberto.value = false
+}
+
+// Item do menu Account com rota navega e fecha os menus
+const clicarItemMenu = (item: { to?: string }) => {
+  if (item.to) navigateTo(item.to)
+  fecharMenus()
 }
 
 // Visualizar = dispensar a notificação da lista (mock sem rotas)
@@ -107,10 +117,18 @@ onUnmounted(() => {
       <span class="w-px h-5 bg-slate-200 shrink-0" aria-hidden="true"></span>
 
       <div class="flex items-center gap-2 min-w-0 ml-3">
-        <span class="p-1.5 rounded-md bg-brand-primary/10 text-brand-primary shrink-0">
-          <Building2 class="h-4 w-4" aria-hidden="true" />
-        </span>
-        <span class="text-sm font-bold tracking-tight truncate">Publications</span>
+        <img
+          v-if="logomarcaHeader"
+          :src="logomarcaHeader"
+          alt="Logomarca do sistema"
+          class="h-8 max-w-[180px] object-contain shrink-0"
+        />
+        <template v-else>
+          <span class="p-1.5 rounded-md bg-brand-primary/10 text-brand-primary shrink-0">
+            <Building2 class="h-4 w-4" aria-hidden="true" />
+          </span>
+          <span class="text-sm font-bold tracking-tight truncate">Publications</span>
+        </template>
       </div>
     </div>
 
@@ -236,7 +254,7 @@ onUnmounted(() => {
             role="menuitem"
             class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 ds-item-hover-dark transition-colors text-left"
             :style="item.cor ? { '--item-cor': item.cor } : undefined"
-            @click="fecharMenus"
+            @click="clicarItemMenu(item)"
           >
             <component
               :is="item.icon"

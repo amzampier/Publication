@@ -45,7 +45,8 @@ state-management, auth, or DB tooling exists yet — don't assume any of it.
   - foco/abertura de controle = `brand-focus` `#1a9e07` — nunca `lime-500`
   - erro/validação = `rose-700` `#be123c` (overlay, label e ícone) — nunca `rose-500/600` nem `#b91c1c`
   - accent = `brand-accent` `#4ed813` — nunca `lime-400`
-  - degradê só no `Button variant="primary"` e no header do modal; demais superfícies sólidas
+  - degradê só no `Button variant="primary"`, no header do modal e na trilha preenchida do
+  `UiSlider` (`#112051` → `#0364f7` → `#4ed813`); demais superfícies sólidas
 - **Foco/erro recortado:** overlay `absolute -inset-[1px] rounded-lg border-2` com a classe
   `.ds-bottom-clip` (definida em `app/assets/css/main.css`, servida graças ao
   `tailwindcss.cssPath` em `nuxt.config.ts` — não remova essa linha; sem ela o CSS some em silêncio).

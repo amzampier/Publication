@@ -191,7 +191,7 @@ const dayRows = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs w-72 select-none">
+  <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs w-72 max-w-full select-none">
     <!-- Cabeçalho de Navegação -->
     <div class="flex items-center justify-between mb-3">
       <div class="flex items-center gap-1.5">

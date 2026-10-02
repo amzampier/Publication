@@ -48,13 +48,18 @@ spec `openspec/specs/design-system/layout-navigation/spec.md`
   <LayoutAppHeader :sidebar-open="sidebarOpen" />        ← Header claro (h-16)
   <div class="fp-shell-body flex flex-1 min-h-0">
     <LayoutAppSidebar :sidebar-open="sidebarOpen" />     ← Sidebar retrátil
-    <main class="fp-shell-content">…</main>              ← App Canvas (#f8fafc)
+    <main class="fp-shell-content overflow-y-auto scrollbar-discreta">…</main>  ← App Canvas (#f8fafc)
   </div>
 </div>
 ```
 
-- `sidebarOpen` é definido **no layout** e desce por prop para header (toggle) e sidebar (largura) —
-  o componente de largura não decide sozinho.
+- `sidebarOpen` vem da preferência compartilhada `useSidebarExpandida` (`useState`, definida no
+  layout `admin.vue`) e desce por prop para header (toggle) e sidebar (largura) — o componente de
+  largura não decide sozinho; o cartão "Comportamento Padrão da Barra Lateral" em
+  `/admin/configuracoes-globais` escreve na mesma fonte (espelho em tempo real nos dois sentidos).
+- **Barra de rolagem vertical discreta:** o `<main>` do canvas usa a classe utilitária
+  `.scrollbar-discreta` (`app/assets/css/main.css` — 5px, thumb translúcido `slate-400/30`,
+  trilho transparente), então a rolagem do conteúdo administrativo é sutil e não pesa visualmente.
 - **Convenção de área:** cada página de `app/pages/admin/**` declara
   `definePageMeta({ layout: 'admin' })` e renderiza dentro do shell. `app/layouts/default.vue` é o
   layout da Área Pública (conteúdo puro sobre `bg-slate-50`, sem header/sidebar) — página sem esse
@@ -75,7 +80,7 @@ Fundo `bg-white` · `border-b border-slate-200` · textos herdados do container 
 |---|---|
 | Botão de alternância | `PanelLeftClose` com sidebar aberta / `PanelLeftOpen` recolhida; `aria-label` dinâmico "Recolher sidebar"/"Expandir sidebar", `aria-expanded`, `aria-controls="app-sidebar"`; foco `ring-2 ring-brand-focus/50` |
 | Separador | `w-px h-5 bg-slate-200` |
-| Logotipo | badge `p-1.5 rounded-md bg-brand-primary/10 text-brand-primary` + ícone `Building2 h-4 w-4` + nome **`Publications`** (`text-sm font-bold tracking-tight truncate`) |
+| Logotipo | badge `p-1.5 rounded-md bg-brand-primary/10 text-brand-primary` + ícone `Building2 h-4 w-4` + nome **`Publications`** (`text-sm font-bold tracking-tight truncate`) — **quando há logo personalizada** (definida em `/admin/configuracoes-globais` → aba Logomarcas, via `useLogomarcaHeader`), o bloco é substituído por `<img class="h-8 max-w-[180px] object-contain shrink-0">` com a imagem no lugar do ícone + nome; limpar a logo restaura o padrão |
 
 **Não existe** seletor, texto ou badge de empresa/filial: o sistema tem **escopo único** (docs/02 §2.1) e a
 área atual (Pública/Administrativa) é evidente pela rota e pelo layout.
@@ -155,7 +160,9 @@ mesmo markup no modo expandido (`justify-center` no rail) e sempre visível.
 
 - Cabeçalho da sessão: `text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1
   hover:text-white focus-visible:text-white`,
-  chevron rotaciona 180°, `aria-expanded` — **recolhimento individual**, todas iniciam `aberto: true`.
+  chevron rotaciona 180°, `aria-expanded` — **recolhimento individual**; o estado `aberto` de cada
+  sessão vem da preferência compartilhada `useSessoesAbertas` (default `aberto: true`, configurável
+  em `/admin/configuracoes-globais` → aba Sidebar) e os cliques aqui atualizam essa preferência.
 - Item: `<button>` `flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left`, ícone `h-4 w-4`
   com **traço 1.5** (`.ds-icon-light` em `main.css` — o traço 2 do Lucide parecia em negrito em 16px;
   com `:style` de `tinta(item.cor)` quando o item tem cor), rótulo `text-xs font-normal truncate`,
@@ -168,11 +175,28 @@ mesmo markup no modo expandido (`justify-center` no rail) e sempre visível.
 
 ### 4.4 Comportamento no rail
 
-- Sem cabeçalhos de sessão; `sessoesVisiveis` mantém apenas sessões **abertas**.
+- Sem cabeçalhos de sessão; **todos os itens de todas as sessões** ficam visíveis como ícones — o
+  recolhimento das sessões (acordeão) vale **apenas no modo expandido** (bug corrigido: com "Todas
+  Recolhidas" + rail só o item raiz aparecia).
 - Divisor entre sessões: `h-px bg-white/15 mx-1 my-1.5`.
 - Cada item é envolto em `<UiTooltip content={label} position="right">` com
   `:disabled="sidebarOpen"` (tooltip só no rail).
 - O estado `aberto` de cada sessão **é preservado** ao recolher e reexpandir.
+
+### 4.5 Comportamento responsivo (viewport)
+
+- **Abaixo de `lg` (1024px):** com a sidebar expandida ela vira **drawer** — `fixed left-0 top-16
+  bottom-0 z-30` (sob o header, que é `z-40`), sobreposto ao conteúdo, acompanhado de **backdrop**
+  `fixed inset-0 z-20 bg-slate-900/40 lg:hidden` em `layouts/admin.vue` (clique no backdrop fecha);
+  o `main` permanece em largura total — nada é empurrado e não há overflow horizontal. Recolhida, a
+  sidebar fica **oculta** (`hidden lg:flex`) — não existe rail em tela estreita.
+- **A partir de `lg`:** comportamento original — expandida `w-52` em fluxo deslocando o conteúdo
+  (`lg:static lg:z-auto lg:inset-auto` restaura a posição estática) e rail `w-[46px]`.
+- **Estado inicial:** na primeira carga, viewport menor que `lg` inicia **recolhida**
+  (`aplicarLarguraInicial` no `onMounted` do layout, via `matchMedia('(min-width: 1024px)')`;
+  o valor SSR continua `true` porque o servidor não conhece a largura). Qualquer alternância
+  manual — toggle do header, clique no backdrop ou cartão de Configurações > Sidebar — marca
+  `preferenciaManual` e **prevalece sobre a largura** nos remounts do layout.
 
 ## 5. Árvore de navegação
 
@@ -244,9 +268,10 @@ empresas/filiais).
 
 | Estado | Onde vive | Observação |
 |---|---|---|
-| `sidebarOpen` | `layouts/default.vue` (`ref(true)`) | em memória; **não** persiste entre sessões |
-| `sessao.aberto` | `AppSidebar.vue` (cópia de `sessoes`) | individual, preservado ao recolher/reexpandir |
-| `itemAtivo` | `AppSidebar.vue` | mock de navegação **sem rotas** (clica e marca) |
+| `sidebarOpen` | `useSidebarExpandida` (`useState`, lido por `layouts/admin.vue`) | preferência compartilhada com Configurações > Sidebar; default `true` no SSR, espelho com o toggle do header; na primeira carga o cliente aplica `aplicarLarguraInicial` (recolhida abaixo de `lg`) salvo `preferenciaManual` (F5 zera) |
+| `preferenciaManual` | `useSidebarExpandida` (`useState`) | marcada por toggle/backdrop/cartão de Configurações — daí em diante a escolha manual prevalece sobre a largura da viewport (F5 zera) |
+| `sessao.aberto` | `useSessoesAbertas` (`useState`, lido por `AppSidebar`) | individual, preferência compartilhada com Configurações > Sidebar; default `true` em `navigation.ts`, preservado ao recolher/reexpandir (F5 zera) |
+| `itemAtivo` | `AppSidebar.vue` | deriva da rota quando a URL casa com um item que tem `to` (ex.: `/admin/configuracoes-globais`); fallback no ref local para itens sem rota (clica e marca) |
 | `contaAberto` / `notificacoesAberto` | `AppHeader.vue` | mútuamente exclusivos |
 | `notificacoes` | `AppHeader.vue` (cópia de `notificacoesIniciais`) | dispensar/remove, "Limpar tudo"/esvazia |
 
@@ -290,6 +315,14 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
 
 ## 11. Mudanças desta fase e pendências
 
+**Change OpenSpec `construir-configuracoes-globais` (atual):**
+
+| Arquivo | Mudança |
+|---|---|
+| `app/config/navigation.ts` | `to?: string` em `SidebarItem`/`MenuItem`; os 2 itens "Configurações Globais" (sidebar + menu Account) apontam para `/admin/configuracoes-globais` |
+| `app/components/layout/AppSidebar.vue` | clique navega via `navigateTo(item.to)` quando presente; `itemAtivo` sincroniza com a rota (fallback no ref local) |
+| `app/components/layout/AppHeader.vue` | item do menu Account com `to` navega e fecha os menus (`clicarItemMenu`) |
+
 **Change OpenSpec `adotar-shell-claro-escuro` (atual):**
 
 | Arquivo | Mudança |
@@ -327,6 +360,8 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
 1. ~~`/` ainda renderiza o shell administrativo~~ — **resolvida** por `separate-public-admin-areas`:
    a raiz `/` usa `app/layouts/default.vue` (Área Pública, sem shell) e o shell vive em
    `app/layouts/admin.vue`, aplicado sob `/admin/**`.
-2. Sem middleware de auth ou RBAC; os itens da sidebar ainda não têm rota própria (item ativo é
-   apenas estado visual) — existe apenas a home `/admin`.
+2. Sem middleware de auth ou RBAC; itens com o campo opcional `to` já navegam (sidebar e menu
+   Account — hoje só `Configurações Globais` aponta para `/admin/configuracoes-globais`), e o item
+   ativo da sidebar deriva da rota quando a URL casa com um `to`. Os demais itens seguem apenas
+   estado visual — existe apenas a home `/admin`.
 3. `Parceiros` e `Softwares` não têm spec de domínio (módulos ainda não construídos).

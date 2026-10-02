@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { Calendar as CalendarIcon, X, AlertCircle } from '@lucide/vue'
 import Calendar from './Calendar.vue'
 import Tooltip from './Tooltip.vue'
@@ -31,6 +31,9 @@ const isOpen = ref(false)
 const inputStr = ref('')
 const datePickerRef = ref<HTMLElement | null>(null)
 const inputId = useId()
+// Id estável da mensagem de erro — referenciada por aria-describedby no input
+// e renderizada como região viva (role="alert") abaixo do campo.
+const erroId = `${inputId}-erro`
 
 // Formatar Date para DD/MM/AAAA
 const formatDate = (d: Date | null): string => {
@@ -124,12 +127,67 @@ const handleClickOutside = (e: MouseEvent) => {
   }
 }
 
+// Auto-inversão do popover (espelha o UiSelect): abre para cima quando não há
+// espaço suficiente abaixo e há mais espaço acima do que abaixo.
+const abreParaCima = ref(false)
+const alinhaDireita = ref(false)
+const popoverRef = ref<HTMLElement | null>(null)
+
+function limitesDeRolagem(el: HTMLElement) {
+  let superior = 0
+  let inferior = window.innerHeight
+  let atual: HTMLElement | null = el
+  while (atual && atual !== document.documentElement) {
+    const estilo = getComputedStyle(atual)
+    if (estilo.overflowY !== 'visible' || estilo.overflowX !== 'visible') {
+      const rect = atual.getBoundingClientRect()
+      superior = Math.max(superior, rect.top)
+      inferior = Math.min(inferior, rect.bottom)
+    }
+    atual = atual.parentElement
+  }
+  return { superior, inferior }
+}
+
+function atualizarPosicao() {
+  const campo = datePickerRef.value
+  const popover = popoverRef.value
+  if (!campo || !popover) return
+  const rect = campo.getBoundingClientRect()
+  const alturaPopover = popover.offsetHeight
+  const larguraPopover = popover.offsetWidth
+  const { superior, inferior } = limitesDeRolagem(campo)
+  const espacoAbaixo = inferior - rect.bottom
+  const espacoAcima = rect.top - superior
+  abreParaCima.value = espacoAbaixo < alturaPopover && espacoAcima > espacoAbaixo
+  alinhaDireita.value = rect.left + larguraPopover > window.innerWidth - 8
+}
+
+function aoRolar() {
+  if (isOpen.value) atualizarPosicao()
+}
+
+watch(isOpen, (aberto) => {
+  if (aberto) {
+    nextTick(() => {
+      atualizarPosicao()
+      window.addEventListener('scroll', aoRolar, true)
+      window.addEventListener('resize', aoRolar)
+    })
+  } else {
+    window.removeEventListener('scroll', aoRolar, true)
+    window.removeEventListener('resize', aoRolar)
+  }
+})
+
 onMounted(() => {
   window.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
   window.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', aoRolar, true)
+  window.removeEventListener('resize', aoRolar)
 })
 </script>
 
@@ -169,6 +227,7 @@ onUnmounted(() => {
         :placeholder="placeholder"
         :disabled="disabled"
         maxlength="10"
+        :aria-describedby="error ? erroId : undefined"
         :class="[
           'w-full py-2 pl-2 bg-transparent text-slate-900 text-xs font-normal placeholder:text-slate-400 focus:outline-none tabular-nums',
           error ? 'pr-16' : 'pr-9'
@@ -206,6 +265,12 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- Erro: texto persistente abaixo do campo, anunciado por leitores de tela.
+         O ícone + tooltip interno permanecem apenas como reforço visual. -->
+    <p v-if="error" :id="erroId" role="alert" class="text-[11px] font-medium text-rose-700">
+      {{ error }}
+    </p>
+
     <!-- Popover com o Calendar -->
     <Transition
       enter-active-class="transition duration-150 ease-out"
@@ -215,7 +280,15 @@ onUnmounted(() => {
       leave-from-class="opacity-100 scale-100"
       leave-to-class="opacity-0 -translate-y-1 scale-95"
     >
-      <div v-if="isOpen" class="absolute top-full left-0 mt-1 z-50">
+      <div
+        v-if="isOpen"
+        ref="popoverRef"
+        :class="[
+          'absolute z-50 max-w-[min(100%,calc(100vw-1rem))]',
+          abreParaCima ? 'bottom-full mb-1' : 'top-full mt-1',
+          alinhaDireita ? 'right-0' : 'left-0'
+        ]"
+      >
         <Calendar
           :model-value="modelValue"
           @select="handleCalendarSelect"

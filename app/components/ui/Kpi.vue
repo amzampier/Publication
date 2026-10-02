@@ -46,7 +46,7 @@ withDefaults(defineProps<Props>(), {
           {{ titulo }}
         </p>
 
-        <p class="mt-1 truncate text-2xl font-bold text-slate-900">
+        <p class="mt-1 truncate text-2xl font-bold font-mono tabular-nums text-slate-900">
           {{ valor }}
         </p>
 

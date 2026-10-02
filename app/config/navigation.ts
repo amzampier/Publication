@@ -20,6 +20,8 @@ export interface SidebarItem {
   icon: Component
   /** Cor do ícone/rótulo no hover da sidebar (Tailwind não resolve cor dinâmica em classe) */
   cor?: string
+  /** Rota navegável; ausente = item sem rota (só muda o estado visual) */
+  to?: string
 }
 
 export interface SidebarSession {
@@ -33,6 +35,8 @@ export interface MenuItem {
   icon: Component
   /** Cor do ícone no menu do Account (Tailwind não resolve cor dinâmica em classe) */
   cor?: string
+  /** Rota navegável; ausente = item sem rota */
+  to?: string
 }
 
 export interface Notificacao {
@@ -82,7 +86,7 @@ export const sessoes: SidebarSession[] = [
       { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users, cor: '#b070ef' },
       { id: 'perfis-rbac', label: 'Perfis de Acesso (RBAC)', icon: ShieldCheck, cor: '#f5b302' },
       { id: 'auditoria', label: 'Auditoria', icon: ScrollText, cor: '#2dd4bf' },
-      { id: 'configuracoes-globais', label: 'Configurações Globais', icon: Settings, cor: '#50a1ff' }
+      { id: 'configuracoes-globais', label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais' }
     ]
   }
 ]
@@ -100,7 +104,7 @@ export const accountMeuPerfil: MenuItem = {
 }
 
 export const accountMenuItens: MenuItem[] = [
-  { label: 'Configurações Globais', icon: Settings, cor: '#50a1ff' },
+  { label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais' },
   { label: 'Gestão de Usuários', icon: Users, cor: '#b070ef' },
   { label: 'Configuração de Perfis (RBAC)', icon: ShieldCheck, cor: '#f5b302' },
   { label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf' }

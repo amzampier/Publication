@@ -54,6 +54,7 @@ const highlightedIndex = ref(0)
 const triggerId = useId()
 const labelId = `${triggerId}-label`
 const listboxId = `${triggerId}-listbox`
+const erroId = `${triggerId}-erro`
 const optionId = (idx: number) => `${triggerId}-opt-${idx}`
 const activeDescendant = computed(() =>
   isOpen.value && filteredOptions.value.length > 0 ? optionId(highlightedIndex.value) : undefined
@@ -248,6 +249,7 @@ watch(filteredOptions, () => {
         :aria-controls="listboxId"
         :aria-activedescendant="activeDescendant"
         :aria-labelledby="labelId"
+        :aria-describedby="error ? erroId : undefined"
         :aria-disabled="disabled"
         tabindex="0"
         :class="[
@@ -326,6 +328,12 @@ watch(filteredOptions, () => {
         </Tooltip>
       </div>
     </div>
+
+    <!-- Erro: texto persistente abaixo do gatilho, anunciado por leitores de tela.
+         O ícone + tooltip interno permanecem apenas como reforço visual. -->
+    <p v-if="error" :id="erroId" role="alert" class="text-[11px] font-medium text-rose-700">
+      {{ error }}
+    </p>
 
     <!-- Dropdown / Popover -->
     <Transition

@@ -13,6 +13,8 @@ interface Props {
   size?: ChipSize
   disabled?: boolean
   icon?: any
+  /** Exibe o ícone ✓ quando ativo (false = só o rótulo na pill) */
+  showCheck?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,7 +23,8 @@ const props = withDefaults(defineProps<Props>(), {
   variant: 'lime',
   size: 'md',
   disabled: false,
-  icon: undefined
+  icon: undefined,
+  showCheck: true
 })
 
 const emit = defineEmits<{
@@ -121,7 +124,7 @@ const countClasses = computed(() => {
   >
     <!-- Ícone de Check animado quando selecionado OU ícone temático customizado -->
     <span
-      v-if="modelValue"
+      v-if="modelValue && showCheck"
       class="flex items-center justify-center transition-transform scale-100 duration-150"
     >
       <Check :class="sizeClasses.icon" />

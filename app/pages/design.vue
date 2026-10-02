@@ -398,9 +398,9 @@ const toggleSessao = (sessao: { aberto: boolean }) => {
   sessao.aberto = !sessao.aberto
 }
 
-const sessoesVisiveis = computed(() =>
-  sidebarOpen.value ? sessoesDemo : sessoesDemo.filter((sessao) => sessao.aberto)
-)
+// Rail não filtra por sessões abertas: o recolhimento vale só no modo expandido (bug 6.35 —
+// com "Todas Recolhidas" + rail só o item raiz aparecia; o shell AppSidebar faz o mesmo)
+const sessoesVisiveis = computed(() => sessoesDemo)
 
 // Modelo da vitrine §14 (design D6): default = modelo atual (header claro + sidebar navy);
 // shellTradicional = true compara com o modelo antigo (header navy + sidebar branca).
@@ -485,6 +485,7 @@ const modalDemoTitulo = ref('Release Week #40 — Correções de Exibição')
 const modalDemoSlug = ref('release-week-2026-w40')
 const modalDemoEmail = ref('conteudo@dicasteorema.com.br')
 const modalDemoPeriodicidade = ref('semanal')
+const modalDemoData = ref('')
 const modalDemoPeriodicidadeOpcoes = [
   { value: 'avulsa', label: 'Publicação avulsa' },
   { value: 'semanal', label: 'Semanal' },
@@ -500,6 +501,23 @@ const salvarModalDemo = () => {
   modalDemoAberto.value = false
   toast.success('Publicação de Demonstração', 'Os dados do modal de exemplo foram salvos (apenas demo).')
 }
+
+// Demo da Seção 16 — UiTabs + UiSlider
+const tabsDemoAba = ref('design')
+const tabsDemoAbas = [
+  { id: 'design', label: 'Design Tokens', icon: Palette, cor: '#7c3aed' },
+  { id: 'acessibilidade', label: 'Acessibilidade', icon: Eye, cor: '#0364f7' },
+  { id: 'conteudo', label: 'Conteúdo', icon: Newspaper, cor: '#112051' },
+  { id: 'seguranca', label: 'Segurança', icon: Lock, cor: '#be123c' }
+]
+const sliderDemoDias = ref(180)
+const sliderDemoMarks = [
+  { value: 30, label: '30 dias (1 mês)' },
+  { value: 90, label: '90 dias (Trimestre)' },
+  { value: 180, label: '180 dias (Semestre)' },
+  { value: 365, label: '365 dias (1 ano)' },
+  { value: 730, label: '730 dias (2 anos)' }
+]
 
 // Navegação rápida de âncoras
 const secoes = [
@@ -517,7 +535,8 @@ const secoes = [
   { id: 'kpi', label: '12. Cards de Indicadores (Kpi)' },
   { id: 'datatable', label: '13. DataTable (cxGrid)' },
   { id: 'shell', label: '14. Shell & Impressão' },
-  { id: 'modal', label: '15. Modal de Cadastro' }
+  { id: 'modal', label: '15. Modal de Cadastro' },
+  { id: 'tabs-slider', label: '16. Tabs & Slider' }
 ]
 </script>
 
@@ -525,8 +544,8 @@ const secoes = [
   <div class="min-h-screen bg-slate-50 flex flex-col">
     <!-- Header Fixo de Apresentação do Design System (Full-Width Fluido) -->
     <header class="sticky top-0 z-40 bg-brand-primary border-b border-slate-800 text-white shadow-md no-print">
-      <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 h-16 flex items-center justify-between">
-        <div class="flex items-center gap-3">
+      <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 min-h-16 py-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div class="flex items-center gap-3 min-w-0">
           <div class="p-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-brand-accent">
             <Building2 class="h-5 w-5" />
           </div>
@@ -827,8 +846,8 @@ const secoes = [
         <!-- 5. COMPONENTE INPUT OFICIAL -->
         <section id="inputs" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
           <!-- Cabeçalho Idêntico ao Mockup -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-6">
-            <div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap border-b border-slate-100 pb-4 mb-6">
+            <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <h2 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
                   5. Componente Input Oficial (Foco Verde #1a9e07 & Ícones Configuráveis)
@@ -1089,8 +1108,8 @@ const secoes = [
         <!-- 8. SISTEMA DE TOASTS -->
         <section id="toasts" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
           <!-- Header da Seção -->
-          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
-            <div class="flex items-start gap-2.5">
+          <div class="flex items-start justify-between gap-4 flex-wrap border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5 min-w-0">
               <div class="p-1.5 rounded-lg bg-lime-500 text-slate-950 shrink-0 mt-0.5">
                 <Bell class="h-4 w-4" />
               </div>
@@ -1233,86 +1252,75 @@ const secoes = [
 
             <!-- Botões de Disparo Rápido -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
-              <button
-                type="button"
-                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-emerald-300 bg-white text-emerald-700 text-xs font-semibold hover:bg-emerald-50 transition-colors"
+              <UiButton
+                variant="outline"
                 @click="toast.success('Operação Concluída com Sucesso', 'A Release Week #39 foi publicada e distribuída para a Área Pública.')"
               >
-                <CheckCircle2 class="h-3.5 w-3.5" />
+                <template #leftIcon><CheckCircle2 class="h-3.5 w-3.5 text-emerald-600" /></template>
                 Disparar Sucess
-              </button>
+              </UiButton>
 
-              <button
-                type="button"
-                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-lime-300 bg-white text-lime-700 text-xs font-semibold hover:bg-lime-50 transition-colors"
+              <UiButton
+                variant="outline"
                 @click="toast.warning('Atenção aos Prazos de Publicação', 'O prazo da Releases Week encerra em 48 horas. Revise as pendências de conteúdo.')"
               >
-                <AlertTriangle class="h-3.5 w-3.5" />
+                <template #leftIcon><AlertTriangle class="h-3.5 w-3.5 text-lime-700" /></template>
                 Disparar Warning
-              </button>
+              </UiButton>
 
-              <button
-                type="button"
-                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-rose-300 bg-white text-rose-700 text-xs font-semibold hover:bg-rose-50 transition-colors"
+              <UiButton
+                variant="danger"
                 @click="toast.danger('Erro Crítico de Processamento', 'Falha na validação do conteúdo enviado. A publicação não pôde ser concluída.')"
               >
-                <AlertOctagon class="h-3.5 w-3.5" />
+                <template #leftIcon><AlertOctagon class="h-3.5 w-3.5" /></template>
                 Disparar Danger
-              </button>
+              </UiButton>
 
-              <button
-                type="button"
-                class="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg border border-sky-300 bg-white text-sky-700 text-xs font-semibold hover:bg-sky-50 transition-colors"
+              <UiButton
+                variant="outline"
                 @click="toast.info('Sincronização do Sistema', 'Novo manual disponível no catálogo para consulta em todas as áreas.')"
               >
-                <Info class="h-3.5 w-3.5" />
+                <template #leftIcon><Info class="h-3.5 w-3.5 text-sky-700" /></template>
                 Disparar Info
-              </button>
+              </UiButton>
             </div>
 
             <!-- Formulário Customizado -->
             <div class="flex items-end gap-2 flex-wrap">
-              <div class="flex flex-col gap-1 flex-1 min-w-[160px]">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Título Customizado do Header</label>
-                <input
+              <div class="flex-1 min-w-[160px]">
+                <UiInput
                   v-model="toastCustomTitle"
-                  type="text"
-                  class="h-[34px] w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none focus:border-brand-focus focus:ring-0 transition-colors placeholder:text-slate-400"
+                  label="Título Customizado do Header"
                   placeholder="Ex: Release Aprovada"
                 />
               </div>
 
-              <div class="flex flex-col gap-1 flex-[2] min-w-[220px]">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Mensagem do Usuário no Body</label>
-                <input
+              <div class="flex-[2] min-w-[220px]">
+                <UiInput
                   v-model="toastCustomMessage"
-                  type="text"
-                  class="h-[34px] w-full rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800 outline-none focus:border-brand-focus focus:ring-0 transition-colors placeholder:text-slate-400"
+                  label="Mensagem do Usuário no Body"
                   placeholder="Ex: As publicações foram atualizadas..."
                 />
               </div>
 
-              <div class="flex flex-col gap-1 min-w-[100px]">
-                <label class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Tipo</label>
-                <select
+              <div class="min-w-[140px]">
+                <UiSelect
                   v-model="toastCustomType"
-                  class="h-[34px] rounded-lg border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none focus:border-brand-focus focus:ring-0 transition-colors cursor-pointer"
-                >
-                  <option value="success">Sucess</option>
-                  <option value="warning">Warning</option>
-                  <option value="danger">Danger</option>
-                  <option value="info">Info</option>
-                </select>
+                  label="Tipo"
+                  :options="[
+                    { value: 'success', label: 'Sucess' },
+                    { value: 'warning', label: 'Warning' },
+                    { value: 'danger', label: 'Danger' },
+                    { value: 'info', label: 'Info' }
+                  ]"
+                  :clearable="false"
+                />
               </div>
 
-              <button
-                type="button"
-                class="h-[34px] flex items-center gap-2 px-4 rounded-lg bg-brand-primary text-brand-accent text-xs font-bold hover:bg-brand-primary-raised transition-colors whitespace-nowrap"
-                @click="dispararToastCustom"
-              >
-                <Sparkles class="h-3.5 w-3.5" />
+              <UiButton variant="primary" @click="dispararToastCustom">
+                <template #leftIcon><Sparkles class="h-3.5 w-3.5" /></template>
                 Disparar Personalizado
-              </button>
+              </UiButton>
             </div>
           </div>
 
@@ -1333,8 +1341,8 @@ const secoes = [
         <!-- 9. SELECT COM BUSCA EM TEMPO REAL -->
         <section id="select" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
           <!-- Header -->
-          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
-            <div class="flex items-start gap-2.5">
+          <div class="flex items-start justify-between gap-4 flex-wrap border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5 min-w-0">
               <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
                 <ListFilter class="h-4 w-4" />
               </div>
@@ -1453,7 +1461,7 @@ const secoes = [
 
           <!-- Rodapé -->
           <div class="mt-5 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-            <div class="flex items-center gap-2 text-slate-600">
+            <div class="flex flex-wrap items-center gap-2 min-w-0 text-slate-600">
               <span class="font-semibold text-slate-700">Implementação no Código:</span>
               <code class="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 text-slate-800 font-mono text-[11px]">
                 &lt;Select v-model="{val}" :options="opts" @change="{setVal}" searchPlaceholder="Digitar..." /&gt;
@@ -1500,8 +1508,8 @@ const secoes = [
         <!-- 11. FAMÍLIA DE COMPONENTES DE SELEÇÃO CHECKBOX (SEÇÃO 5.9) -->
         <section id="checkbox" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
           <!-- Cabeçalho Oficial -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-6">
-            <div class="flex items-start gap-2.5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap border-b border-slate-100 pb-4 mb-6">
+            <div class="flex items-start gap-2.5 min-w-0">
               <div class="p-1.5 rounded-lg bg-lime-500 text-slate-950 shrink-0 mt-0.5">
                 <CheckSquare class="h-4 w-4" />
               </div>
@@ -1864,8 +1872,8 @@ variant="lime"
         <!-- 14. SHELL DE LAYOUT & IMPRESSÃO -->
         <section id="shell" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
           <!-- Header da Seção -->
-          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
-            <div class="flex items-start gap-2.5">
+          <div class="flex items-start justify-between gap-4 flex-wrap border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5 min-w-0">
               <div class="p-1.5 rounded-lg bg-brand-primary text-white shrink-0 mt-0.5">
                 <Layout class="h-4 w-4" />
               </div>
@@ -2196,7 +2204,7 @@ variant="lime"
                   <template v-for="grupo in sessoesVisiveis" :key="grupo.label">
                     <!-- Divisor entre sessões no modo rail -->
                     <div
-                      v-if="!sidebarOpen && grupo.aberto"
+                      v-if="!sidebarOpen"
                       :class="['h-px mx-1 my-1.5', shellTradicional ? 'bg-slate-200' : 'bg-white/15']"
                       aria-hidden="true"
                     ></div>
@@ -2219,8 +2227,8 @@ variant="lime"
                       />
                     </button>
 
-                    <!-- Itens da sessão -->
-                    <template v-if="grupo.aberto">
+                    <!-- Itens da sessão (no rail sempre; no expandido só quando aberta) -->
+                    <template v-if="grupo.aberto || !sidebarOpen">
                       <UiTooltip
                         v-for="item in grupo.items"
                         :key="item.id"
@@ -2335,6 +2343,11 @@ variant="lime"
                 <div class="grid gap-4 sm:grid-cols-2">
                   <UiInput v-model="modalDemoTitulo" label="Título" placeholder="Título completo do conteúdo" />
                   <UiInput v-model="modalDemoSlug" label="Slug" mono placeholder="slug-da-publicacao" />
+                  <UiDatePicker
+                    v-model="modalDemoData"
+                    label="Data de Publicação"
+                    placeholder="DD/MM/AAAA"
+                  />
                 </div>
               </UiModalSection>
 
@@ -2359,6 +2372,60 @@ variant="lime"
               </UiButton>
             </template>
           </UiModal>
+        </section>
+
+        <!-- 16. Tabs & Slider -->
+        <section id="tabs-slider" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <Layers class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  16. Tabs & Slider (UiTabs + UiSlider)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Navegação por abas com pill ativa lime
+                  <code class="font-mono text-slate-700">bg-lime-50 border-lime-300</code>,
+                  teclado (<code class="font-mono text-slate-700">←/→/Home/End</code>) e ARIA
+                  <code class="font-mono text-slate-700">tablist/tab/tabpanel</code>; slider numérico com
+                  track preenchida em degradê navy → azul → verde e legenda opcional de marcas.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-3">UiTabs</p>
+            <UiTabs v-model="tabsDemoAba" id-prefix="demo" :items="tabsDemoAbas" aria-label="Abas de demonstração" />
+            <div
+              :id="`demo-panel-${tabsDemoAba}`"
+              role="tabpanel"
+              :aria-labelledby="`demo-tab-${tabsDemoAba}`"
+              class="mt-4 p-4 bg-white border border-slate-200 rounded-lg text-sm text-slate-600"
+            >
+              <template v-if="tabsDemoAba === 'design'">Conteúdo da aba <strong>Design Tokens</strong> — cores, tipografia e espaçamento.</template>
+              <template v-else-if="tabsDemoAba === 'acessibilidade'">Conteúdo da aba <strong>Acessibilidade</strong> — contraste, foco e ARIA.</template>
+              <template v-else-if="tabsDemoAba === 'conteudo'">Conteúdo da aba <strong>Conteúdo</strong> — publicações e manuais.</template>
+              <template v-else>Conteúdo da aba <strong>Segurança</strong> — auditoria e rate limits.</template>
+            </div>
+          </div>
+
+          <!-- Slider -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">UiSlider</p>
+              <span class="font-mono tabular-nums text-sm font-medium text-brand-primary">{{ sliderDemoDias }} dias</span>
+            </div>
+            <UiSlider
+              v-model="sliderDemoDias"
+              aria-label="Janela de retenção de demonstração"
+              :marks="sliderDemoMarks"
+            />
+          </div>
         </section>
       </main>
     </div>

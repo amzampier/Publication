@@ -785,7 +785,8 @@ onUnmounted(() => {
                   :class="[
                     'py-1 px-2.5 text-[11px] text-slate-800 truncate',
                     cIdx === 0 ? (row.level === 3 ? 'pl-20' : row.level === 2 ? 'pl-14' : 'pl-10') : '',
-                    col.align === 'right' ? 'text-right tabular-nums' : col.align === 'center' ? 'text-center' : 'text-left'
+                    col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
+                    col.isNumeric || col.align === 'right' ? 'tabular-nums' : ''
                   ]"
                 >
                   <slot :name="`cell(${col.id})`" :row="row.item" :value="row.item[col.accessorKey]">
@@ -812,7 +813,8 @@ onUnmounted(() => {
                 :style="getColumnStyle(col)"
                 :class="[
                   'py-1.5 px-2.5 text-[11px] text-slate-800 truncate',
-                  col.align === 'right' ? 'text-right tabular-nums' : col.align === 'center' ? 'text-center' : 'text-left'
+                  col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
+                  col.isNumeric || col.align === 'right' ? 'tabular-nums' : ''
                 ]"
               >
                 <slot :name="`cell(${col.id})`" :row="row" :value="row[col.accessorKey]">
