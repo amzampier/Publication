@@ -2,6 +2,7 @@
 import { ref, watch, type Ref } from 'vue'
 import { Building, Image as ImageIcon } from '@lucide/vue'
 import { useLogomarcaHeader } from '../../composables/useLogomarcaHeader'
+import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 
 // Avisa a página quando qualquer logo muda (habilita o botão "Salvar")
 const emit = defineEmits<{
@@ -10,6 +11,7 @@ const emit = defineEmits<{
 
 // Logo do header vive também no shell (AppHeader) via estado compartilhado
 const { caminho: caminhoHeaderGlobal, preview: previewHeaderGlobal } = useLogomarcaHeader()
+const { caminho: caminhoLoginGlobal, preview: previewLoginGlobal } = useLogomarcaLogin()
 
 // Estado em memória (fase 1 — sem persistência, sem chamada de rede)
 // `preview*` alimenta a prévia da caixa de upload (dataURL — sobrevive à troca de aba);
@@ -18,8 +20,8 @@ const logoHeader = ref(caminhoHeaderGlobal.value)
 const previewHeader = ref(previewHeaderGlobal.value)
 const uploadKeyHeader = ref(0)
 
-const logoLogin = ref('')
-const previewLogin = ref('')
+const logoLogin = ref(caminhoLoginGlobal.value)
+const previewLogin = ref(previewLoginGlobal.value)
 const uploadKeyLogin = ref(0)
 
 const caminhoDe = (arquivo: File) =>
@@ -78,7 +80,12 @@ watch([logoHeader, previewHeader], () => {
   emit('change')
 })
 
-watch([logoLogin, previewLogin], () => emit('change'))
+// Sincroniza o estado global (relatório de Auditoria) e avisa a página sobre alterações
+watch([logoLogin, previewLogin], () => {
+  caminhoLoginGlobal.value = logoLogin.value
+  previewLoginGlobal.value = previewLogin.value
+  emit('change')
+})
 </script>
 
 <template>

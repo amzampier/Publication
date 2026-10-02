@@ -14,7 +14,8 @@ import {
   Calculator,
   GripVertical,
   Search,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Funnel
 } from '@lucide/vue'
 import {
   type ColumnDef,
@@ -35,6 +36,10 @@ interface Props {
   pageSizeOptions?: number[]
   defaultPageSize?: number
   showHeaderTop?: boolean
+  /** Exibe o botao 'Filtros' na toolbar (opt-in; emite open-filters) */
+  showFilters?: boolean
+  /** Quantidade de filtros ativos exibida no badge do botao Filtros */
+  filtersCount?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,8 +48,14 @@ const props = withDefaults(defineProps<Props>(), {
   initialGroupedColumns: () => [],
   pageSizeOptions: () => [5, 10, 20, 50],
   defaultPageSize: 5,
-  showHeaderTop: false
+  showHeaderTop: false,
+  showFilters: false,
+  filtersCount: 0
 })
+
+const emit = defineEmits<{
+  (e: 'open-filters'): void
+}>()
 
 // Estado de Busca Global
 const searchQuery = ref('')
@@ -496,7 +507,7 @@ onUnmounted(() => {
   <div class="w-full bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden select-none">
     <!-- Top Bar Conforme Mockup: Título (se fornecido) + Campo de Busca (se habilitado) -->
     <div
-      v-if="(title || subtitle) || showHeaderTop"
+      v-if="(title || subtitle) || showHeaderTop || showFilters"
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border-b border-slate-200"
     >
       <div v-if="title || subtitle" class="flex items-start gap-3">
@@ -516,24 +527,34 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Campo de Busca em Tempo Real (Conforme Mockup) -->
-      <div v-if="showHeaderTop" class="relative w-full sm:w-64 shrink-0">
-        <Search class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Filtrar dados da tabela..."
-          class="w-full pl-9 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-brand-focus focus:bg-white transition-colors"
-        />
-        <button
-          v-if="searchQuery"
-          type="button"
-          class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-          title="Limpar busca"
-          @click="searchQuery = ''"
+      <!-- Busca no padrao do kit (UiInput) + botao Filtros opt-in -->
+      <div
+        v-if="showHeaderTop || showFilters"
+        class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end"
+      >
+        <div v-if="showHeaderTop" class="w-full min-w-0 sm:w-64 shrink-0">
+          <UiInput
+            v-model="searchQuery"
+            placeholder="Filtrar dados da tabela..."
+            :left-icon="Search"
+            :right-icon="searchQuery ? X : undefined"
+            @right-icon-click="searchQuery = ''"
+          />
+        </div>
+
+        <UiButton
+          v-if="showFilters"
+          variant="outline"
+          size="sm"
+          class="shrink-0"
+          @click="emit('open-filters')"
         >
-          <X class="h-3.5 w-3.5" />
-        </button>
+          <template #leftIcon><Funnel class="h-3.5 w-3.5" /></template>
+          Filtros
+          <UiBadge v-if="filtersCount > 0" variant="done" size="sm" class="ml-1.5">
+            {{ filtersCount }}
+          </UiBadge>
+        </UiButton>
       </div>
     </div>
 
@@ -599,15 +620,15 @@ onUnmounted(() => {
               draggable="true"
               :style="getColumnStyle(col)"
               :class="[
-                'py-1.5 px-2.5 tracking-tight select-none transition-colors group relative truncate cursor-grab active:cursor-grabbing hover:bg-white/10',
+                'py-1.5 px-2.5 tracking-tight select-none transition-colors group relative cursor-pointer hover:bg-white/10',
                 col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
               ]"
-              title="Arraste para a barra de agrupamento · Clique para ordenar (Shift+clique para multi-ordenação)"
               @dragstart="onDragStart($event, col.id)"
               @dragend="onDragEnd"
               @click="toggleSort(col, $event)"
             >
               <div
+
                 class="inline-flex items-center gap-1 w-full"
                 :class="col.align === 'right' ? 'justify-end' : 'justify-between'"
               >
@@ -650,7 +671,7 @@ onUnmounted(() => {
                   </template>
                   <ArrowUpDown
                     v-else
-                    class="h-2.5 w-2.5 text-white/70 opacity-30 group-hover:opacity-100 transition-opacity"
+                    class="h-3 w-3 text-white/85 stroke-[2.5] group-hover:text-brand-accent transition-colors"
                   />
                 </div>
               </div>
@@ -659,7 +680,6 @@ onUnmounted(() => {
               <div
                 class="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize select-none hover:bg-brand-accent/90 z-20 transition-colors"
                 :class="{ 'bg-brand-accent opacity-100': resizingColId === col.id }"
-                title="Arraste para redimensionar a coluna"
                 @mousedown.prevent.stop="startResize($event, col.id)"
                 @click.stop
               />

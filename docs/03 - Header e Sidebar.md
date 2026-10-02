@@ -215,7 +215,7 @@ CADASTROS
 ADMINISTRAÇÃO
 ├── Gestão de Usuários           Users
 ├── Perfis de Acesso (RBAC)      ShieldCheck
-├── Auditoria                    ScrollText
+├── Gestão de Auditoria          ScrollText
 └── Configurações Globais        Settings
 ```
 
@@ -232,7 +232,7 @@ Observações:
   - **Publicações:** Manuais `#f45f71`, Release Week `#1a9e07`, Escopo de Projetos `#50a1ff`
   - **Cadastros:** Parceiros `#047857` (Verde Esmeralda), Softwares `#0364f7` (azul Estrutural)
   - **Administração** (mesmas cores do `accountMenuItens`, mesmo item => mesma cor): Gestão de
-    Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações
+    Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Gestão de Auditoria `#2dd4bf`, Configurações
     Globais `#50a1ff`
   - Sem `cor`: apenas o item raiz **Painel Executivo**. Todas as cores já existem no design
     system ou no menu Account — nenhuma nova foi inventada.

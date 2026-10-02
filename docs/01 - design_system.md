@@ -427,7 +427,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 - **Emits:** nenhum · **Slots:** `default` (gatilho, obrigatório), `content` (fallback: prop `content`).
 - **Posições:** 4 direções canônicas em inglês; **alias PT** `topo`/`rodape`/`esquerda`/`direita` aceitos (`TooltipPositionLegacy`, `@deprecated`); default do normalizador: `right`.
 - **Micro-seta:** bordas CSS triangulares na cor do tema; `z-50`, `pointer-events-none`, `whitespace-nowrap`.
-- **Comportamento:** mostra em `mouseenter`/`focusin` após `delay`, oculta em `mouseleave`/`focusout`; `<Transition>` fade + scale.
+- **Comportamento:** mostra em `mouseenter` e no foco **de teclado** (`:focus-visible`) após `delay`, oculta em `mouseleave`/`focusout`; foco **programático** (ex.: `UiModal` focando o botão X na abertura) **não** abre o balão; `<Transition>` fade + scale.
 - **Auto-ajuste de posição:** ao ficar visível, o balão mede o espaço realmente disponível — viewport e todos os ancestrais com `overflow` que recortam (ex.: painel do `UiModal` com `overflow-hidden`, corpo rolável) — e é deslocado pela propriedade CSS `translate` quando seria cortado, mantendo a `position` pedida (nunca troca de lado). A seta é contra-deslocada (limitada às margens do balão) para continuar apontando ao gatilho. Recalcula em `scroll` (fase de captura) e `resize`. Como `translate` não é propriedade de `transform`, a correção não interfere no `-translate-x-1/2` do centroamento nem na escala da `<Transition>`.
 - **Gotchas:** único componente do sistema com **posições PT pré-existentes aceitas como alias** (contrato de enums da spec).
 
@@ -656,7 +656,9 @@ type CheckboxPosition = 'start' | 'end'
 | `initialGroupedColumns` | `string[]` | `[]` | Colunas agrupadas no início (máx. 3) |
 | `pageSizeOptions` | `number[]` | `[5, 10, 20, 50]` | Opções de "Linhas por página" |
 | `defaultPageSize` | `number` | `5` | Página inicial |
-| `showHeaderTop` | `boolean` | `false` | Exibe o campo de busca global |
+| `showHeaderTop` | `boolean` | `false` | Exibe o campo de busca global (`UiInput` do kit) |
+| `showFilters` | `boolean` | `false` | Exibe o botão "Filtros" à direita da busca (emite `open-filters`) |
+| `filtersCount` | `number` | `0` | Badge com a quantidade de filtros ativos no botão Filtros |
 
 `ColumnDef` (de `app/utils/dataGrid.ts`):
 
@@ -670,14 +672,15 @@ interface ColumnDef<T = any> {
 }
 ```
 
-- **Emits:** nenhum (todo estado é interno).
+- **Emits:** `open-filters` (somente com `showFilters` ativo — a página responde, ex.: abrindo seu modal de filtros); o demais estado é interno.
 - **Slots:** `cell(<col.id>)` com escopo `{ row, value }` (fallback: `col.format(value, row)` ou valor cru) — nome dinâmico por coluna; `actions` com escopo `{ row }` (cria a coluna "Ações").
-- **Cabeçalho corporativo:** linha `bg-brand-primary` (**`#112051`**, token `brand.primary` de `tailwind.config.js`) com textos e ícones em **`#f8fafc`**, hover de coluna `bg-white/10`, divisórias `divide-slate-700` (`#334155`); colunas redimensionáveis por handle à direita (hover/ativo `brand-accent`).
+- **Cabeçalho corporativo:** linha `bg-brand-primary` (**`#112051`**, token `brand.primary` de `tailwind.config.js`) com textos e ícones em **`#f8fafc`**, hover de coluna `bg-white/10`, divisórias `divide-slate-700` (`#334155`); colunas redimensionáveis por handle à direita (hover/ativo `brand-accent`); coluna com cursor `pointer` (**sem tooltip na header** — nem `title` nativo nem balão; as dicas vivem na faixa de agrupamento) e seta de ordenação padrão sempre visível (`h-3`, `stroke-[2.5]`, `white/85`, hover `brand-accent`).
 - **Agrupamento ("Group By Box"):** arrastar `th` (`draggable`) para a faixa `Agrupamento:`; **até 3 níveis** com chips `bg-brand-primary` + badge verde `1º NÍVEL`/`2º`/`3º`; estado drag-over `bg-lime-50/80 ring-lime-500/30`; nó de nível 1 expandido por padrão, níveis 2/3 recolhidos; barra lateral da linha de grupo muda por nível (`border-l-lime-500` → `sky` → `slate-200`); cada nó exibe contagem de registros.
 - **Ordenação multi-coluna:** clique alterna `asc`/`desc` (setas `brand-accent`); **Shift+clique** encadeia regras com badge numérico `bg-brand-accent text-slate-950` (`sortMultiColumn` em `dataGrid.ts`, `localeCompare('pt-BR')` e parsing numérico para `isNumeric`).
 - **Totalizadores sob demanda:** **clique direito** em célula do rodapé de coluna `isNumeric` abre menu `<Teleport to="body">` estilo cxGrid: **Soma (SUM) · Média (AVG) · Contagem (COUNT) · Mínimo (MIN) · Máximo (MAX) · Nenhum (Limpar)** — `calculateAggregate` formata `R$ ...` em pt-BR; sem operação mostra `-`.
 - **Paginação:** indicador "Mostrando X a Y de Z entradas exibidas" (+ sufixo verde com nº de níveis de agrupamento quando agrupado), seletor de linhas, "Página X de Y" e botões `« ‹ › »` (`title` acessível); no modo agrupado pagina sobre as linhas efetivamente renderizadas.
-- **Busca global** (quando `showHeaderTop`): case-insensitive, com botão de limpar; estado vazio **"Nenhum dado encontrado com o filtro aplicado."**
+- **Busca global** (quando `showHeaderTop`): controle `UiInput` do kit — lupa à esquerda, limpar à direita quando há texto, foco `brand-focus` recortado — case-insensitive; estado vazio **"Nenhum dado encontrado com o filtro aplicado."**
+- **Botão Filtros** (quando `showFilters`): `UiButton` outline à direita da busca, com badge do `filtersCount` quando > 0; clique emite `open-filters`. Sem `showFilters` a toolbar permanece como antes (nenhum consumidor existente ativa por padrão).
 - **Gotchas (requisitos da spec):** sem conteúdo de demonstração quando usado sem props de conteúdo; **nenhum registro recebe tratamento visual especial por causa do seu valor**.
 
 ```vue
@@ -687,6 +690,9 @@ interface ColumnDef<T = any> {
   :columns="colunas"
   :initial-grouped-columns="['tipo']"
   show-header-top
+  show-filters
+  :filters-count="2"
+  @open-filters="abrirFiltros"
 >
   <template #cell(dataPublicacao)="{ value }">
     <span class="font-mono tabular-nums">{{ value }}</span>

@@ -503,6 +503,18 @@ const salvarModalDemo = () => {
 }
 
 // Demo da Seção 16 — UiTabs + UiSlider
+// Demo da Seção 13 — botão Filtros da toolbar do UiDataTable (contador demonstrativo)
+const filtrosDemo = ref(0)
+const abrirFiltrosDemo = () => {
+  filtrosDemo.value = filtrosDemo.value ? 0 : 2
+  toast.info(
+    'Filtros',
+    filtrosDemo.value
+      ? '2 filtros aplicados — demonstração do contador no botão.'
+      : 'Filtros limpos — contador zerado.'
+  )
+}
+
 const tabsDemoAba = ref('design')
 const tabsDemoAbas = [
   { id: 'design', label: 'Design Tokens', icon: Palette, cor: '#7c3aed' },
@@ -1860,6 +1872,9 @@ variant="lime"
               :initial-grouped-columns="['tipo', 'projeto']"
               :default-page-size="5"
               show-header-top
+              show-filters
+              :filters-count="filtrosDemo"
+              @open-filters="abrirFiltrosDemo"
             >
               <!-- Slot customizado para célula de status -->
               <template #cell(status)="{ value }">

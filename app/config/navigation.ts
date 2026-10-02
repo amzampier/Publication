@@ -85,7 +85,7 @@ export const sessoes: SidebarSession[] = [
     items: [
       { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users, cor: '#b070ef' },
       { id: 'perfis-rbac', label: 'Perfis de Acesso (RBAC)', icon: ShieldCheck, cor: '#f5b302' },
-      { id: 'auditoria', label: 'Auditoria', icon: ScrollText, cor: '#2dd4bf' },
+      { id: 'auditoria', label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf', to: '/admin/auditoria' },
       { id: 'configuracoes-globais', label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais' }
     ]
   }
@@ -107,7 +107,7 @@ export const accountMenuItens: MenuItem[] = [
   { label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais' },
   { label: 'Gestão de Usuários', icon: Users, cor: '#b070ef' },
   { label: 'Configuração de Perfis (RBAC)', icon: ShieldCheck, cor: '#f5b302' },
-  { label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf' }
+  { label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf', to: '/admin/auditoria' }
 ]
 
 export const accountEncerrarSessao: MenuItem = {

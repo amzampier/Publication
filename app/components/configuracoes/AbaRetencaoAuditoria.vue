@@ -36,7 +36,7 @@ const marks = [
 
 const query = computed(
   () =>
-    `DELETE FROM logs_auditoria WHERE registrado_em < NOW() - INTERVAL ${props.modelValue} DAY`
+    `DELETE FROM auditoria WHERE registrado_em < NOW() - INTERVAL ${props.modelValue} DAY`
 )
 
 // Seleção única: o chip ativo emite change(false) e é ignorado — sempre um valor vigente.

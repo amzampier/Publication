@@ -198,6 +198,23 @@ const show = () => {
   }, props.delay)
 }
 
+const aoFocar = (e: FocusEvent) => {
+  // Foco só abre o balão quando é de teclado (:focus-visible). Foco programático
+  // (ex.: o UiModal foca o botão X ao abrir) não deve exibir tooltip — apenas o
+  // hover do mouse ou a navegação por teclado mostram o conteúdo.
+  const alvo = e.target as HTMLElement | null
+  let focoDeTeclado = true
+  if (alvo && typeof alvo.matches === 'function') {
+    try {
+      focoDeTeclado = alvo.matches(':focus-visible')
+    } catch {
+      focoDeTeclado = true
+    }
+  }
+  if (!focoDeTeclado) return
+  show()
+}
+
 const hide = () => {
   if (timer) {
     clearTimeout(timer)
@@ -227,7 +244,7 @@ onUnmounted(() => {
     class="relative inline-flex items-center"
     @mouseenter="show"
     @mouseleave="hide"
-    @focusin="show"
+    @focusin="aoFocar"
     @focusout="hide"
   >
     <slot />
