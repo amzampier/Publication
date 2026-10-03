@@ -542,6 +542,9 @@ onUnmounted(() => {
           />
         </div>
 
+        <!-- Slot opt-in imediatamente à esquerda do botão Filtros (ex.: botão Importar) -->
+        <slot name="filtersLeft" />
+
         <UiButton
           v-if="showFilters"
           variant="outline"
