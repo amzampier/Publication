@@ -132,7 +132,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 
 - **Modo expandido:** `w-52` — títulos completos; **modo rail:** `w-[46px]` — só ícones centralizados, maximizando a área de conteúdo. Transição `transition-all duration-200`, fundo `bg-brand-primary` (navy `#112051`), borda `border-r border-white/10`.
 - **Item raiz:** **"Painel Executivo"** (`LayoutDashboard`), renderizado acima das sessões, sem cabeçalho — no rail vira apenas o ícone com tooltip.
-- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão (estado inicial configurável em Configurações Globais → Sidebar, via `useSessoesAbertas`). Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
+- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Movimentos"** (Esteira de Revisão · Lançar as Chamadas), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão (estado inicial configurável em Configurações Globais → Sidebar, via `useSessoesAbertas`). Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Esteira de Revisão** `Workflow` `#8b5cf6`, **Lançar as Chamadas** `Megaphone` `#f59e0b`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
 - **Cabeçalho de sessão:** `text-[9px] font-bold text-slate-400 uppercase tracking-widest`, com `hover:text-white` e `focus-visible:text-white` ao recolher — recolhimento individual, chevron rotaciona 180°.
 - **Tintas dos ícones sobre navy** (mistura 60% cor + 40% branco; aplicadas a ícone **e** a
   `--item-cor` pelo helper `tinta()` de [`app/composables/shellTintas.ts`](../app/composables/shellTintas.ts),
@@ -143,6 +143,8 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 | Manuais | `#f45f71` | `#f89faa` |
 | Release Week | `#1a9e07` | `#76c56a` |
 | Escopo de Projetos · Configurações Globais | `#50a1ff` | `#96c7ff` |
+| Esteira de Revisão | `#8b5cf6` | `#b99dfa` |
+| Lançar as Chamadas | `#f59e0b` | `#f9c56d` |
 | Parceiros | `#047857` | `#68ae9a` |
 | Softwares | `#0364f7` | `#68a2fa` |
 | Gestão de Usuários | `#b070ef` | `#d0a9f5` |
@@ -194,7 +196,7 @@ Definida em [`app/assets/css/main.css`](../app/assets/css/main.css):
 | Divisor no rail | `bg-slate-200` | `bg-white/15` |
 | Sino/painel (demonstração) | painel navy integral, sem banda separada | banda `bg-brand-primary`, lista `bg-[#f9feee]`, "Limpar tudo" `text-[#0f7a06]` |
 
-- **Tintas dos ícones sobre navy:** a tabela das 8 tintas D9 migrou para [§3.3](#33-sidebar-retrátil-com-sessões-colapsáveis) —
+- **Tintas dos ícones sobre navy:** a tabela das 10 tintas D9 migrou para [§3.3](#33-sidebar-retrátil-com-sessões-colapsáveis) —
   tanto o shell real quanto a demo §14 as aplicam pelo mesmo helper `tinta()`
   (`app/composables/shellTintas.ts`).
 

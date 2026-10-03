@@ -60,7 +60,7 @@ O sistema SHALL exibir no painel "Identidade Visual & Logomarcas do Sistema" doi
 - **THEN** o card do header continua com a prévia da imagem, o campo desabilitado com o caminho e o badge "Personalizada"
 
 ### Requirement: O painel de sidebar controla a barra lateral por seleção única e as sessões por presets com escolha múltipla
-O sistema SHALL exibir no painel "Preferências Iniciais da Barra Lateral (Sidebar) & Sessões do Menu" dois containers empilhados em coluna única, cada um com seu conteúdo em duas colunas: (a) comportamento da barra lateral em seleção única (expandida/recolhida, iniciando expandida) e (b) comportamento das sessões do menu com os presets globais "Todas as Sessões Abertas" e "Todas as Sessões Recolhidas" mais um cartão por sessão (Publicações, Cadastros, Administração) em seleção múltipla — valendo as duas preferências também para a sidebar real do shell, em tempo real.
+O sistema SHALL exibir no painel "Preferências Iniciais da Barra Lateral (Sidebar) & Sessões do Menu" dois containers empilhados em coluna única, cada um com seu conteúdo em duas colunas: (a) comportamento da barra lateral em seleção única (expandida/recolhida, iniciando expandida) e (b) comportamento das sessões do menu com os presets globais "Todas as Sessões Abertas" e "Todas as Sessões Recolhidas" mais um cartão por sessão (Publicações, Movimentos, Cadastros, Administração) em seleção múltipla — valendo as duas preferências também para a sidebar real do shell, em tempo real.
 
 #### Scenario: Barra lateral em seleção única com opção não escolhida atenuada
 - **WHEN** o usuário seleciona "Recolhida / Compacta por padrão"
@@ -76,7 +76,7 @@ O sistema SHALL exibir no painel "Preferências Iniciais da Barra Lateral (Sideb
 
 #### Scenario: Escolha por sessão é múltipla e desmarca presets em estado misto
 - **WHEN** o usuário desmarcar "Cadastros" com todas as sessões abertas
-- **THEN** "Cadastros" fica desmarcada, "Publicações" e "Administração" permanecem marcadas e nenhum preset global fica marcado
+- **THEN** "Cadastros" fica desmarcada, "Publicações", "Movimentos" e "Administração" permanecem marcadas e nenhum preset global fica marcado
 
 #### Scenario: As sessões escolhidas refletem na sidebar real
 - **WHEN** o usuário marca ou desmarca uma sessão individual, ou aplica um preset

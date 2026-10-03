@@ -6,12 +6,14 @@ import {
   Handshake,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Rocket,
   ScrollText,
   Settings,
   ShieldCheck,
   User,
-  Users
+  Users,
+  Workflow
 } from '@lucide/vue'
 
 export interface SidebarItem {
@@ -68,6 +70,14 @@ export const sessoes: SidebarSession[] = [
       { id: 'manuais', label: 'Manuais', icon: BookOpen, cor: '#f45f71' },
       { id: 'release-week', label: 'Release Week', icon: Rocket, cor: '#1a9e07' },
       { id: 'escopo-projetos', label: 'Escopo de Projetos', icon: ClipboardList, cor: '#50a1ff' }
+    ]
+  },
+  {
+    label: 'Movimentos',
+    aberto: true,
+    items: [
+      { id: 'esteira-revisao', label: 'Esteira de Revisão', icon: Workflow, cor: '#8b5cf6' },
+      { id: 'lancar-chamadas', label: 'Lançar as Chamadas', icon: Megaphone, cor: '#f59e0b' }
     ]
   },
   {

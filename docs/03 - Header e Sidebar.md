@@ -209,6 +209,9 @@ PUBLICAÇÕES
 ├── Manuais                      BookOpen
 ├── Release Week                 Rocket
 └── Escopo de Projetos           ClipboardList
+MOVIMENTOS
+├── Esteira de Revisão           Workflow
+└── Lançar as Chamadas           Megaphone
 CADASTROS
 ├── Parceiros                    Handshake
 └── Softwares                    Boxes
@@ -221,21 +224,25 @@ ADMINISTRAÇÃO
 
 Observações:
 
-- Os três grupos cobrem as três frentes do sistema: **conteúdo publicado** (Área Pública lê Manuais,
-  Release Week e Escopo de Projetos), **cadastros de apoio** e **administração/governança**.
+- Os quatro grupos cobrem as frentes do sistema: **conteúdo publicado** (Área Pública lê Manuais,
+  Release Week e Escopo de Projetos), **movimentos de negócio** (Esteira de Revisão e Lançar as
+  Chamadas — itens ainda sem rota), **cadastros de apoio** e **administração/governança**.
 - **Cores dos ícones (`SidebarItem.cor`)** — o ícone fica colorido sempre e o hover da opção pinta
   rótulo/ícone com a mesma cor (`.ds-item-hover` + `--item-cor` em
   [`app/assets/css/main.css`](../app/assets/css/main.css)). As cores no config são **cheias** (mesma
   intensidade do menu suspenso do Account); sobre o navy da sidebar o helper `tinta()`
-  (`app/composables/shellTintas.ts`) aplica a tinta D9 correspondente — tabela das 8 tintas em
+  (`app/composables/shellTintas.ts`) aplica a tinta D9 correspondente — tabela das 10 tintas em
   [`01 - design_system.md`](01%20-%20design_system.md) §3.3:
   - **Publicações:** Manuais `#f45f71`, Release Week `#1a9e07`, Escopo de Projetos `#50a1ff`
+  - **Movimentos:** Esteira de Revisão `#8b5cf6` (roxo), Lançar as Chamadas `#f59e0b` (âmbar) —
+    cores novas, criadas para o grupo; as demais continuam sem mudança
   - **Cadastros:** Parceiros `#047857` (Verde Esmeralda), Softwares `#0364f7` (azul Estrutural)
   - **Administração** (mesmas cores do `accountMenuItens`, mesmo item => mesma cor): Gestão de
     Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Gestão de Auditoria `#2dd4bf`, Configurações
     Globais `#50a1ff`
-  - Sem `cor`: apenas o item raiz **Painel Executivo**. Todas as cores já existem no design
-    system ou no menu Account — nenhuma nova foi inventada.
+  - Sem `cor`: apenas o item raiz **Painel Executivo**. Antes do grupo Movimentos todas as cores
+    já existiam no design system ou no menu Account; `#f59e0b` e `#8b5cf6` são as primeiras
+    criadas de propósito para um grupo de navegação.
 - `Parceiros` e `Softwares` são módulos de cadastro ainda sem spec de domínio (ver [§11](#11-mudanças-desta-fase-e-pendências)).
 - Rótulos das sessões são gravados em caixa mista e renderizados em **caixa alta pelo CSS** (`uppercase`
   no cabeçalho) — não escrever em maiúsculas no dado.

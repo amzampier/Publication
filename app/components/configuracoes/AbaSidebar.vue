@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, watch, type Component } from 'vue'
 import {
+  ArrowLeftRight,
   BookOpen,
   Boxes,
   Folder,
@@ -28,11 +29,18 @@ const { abertas: sessoesAbertas } = useSessoesAbertas()
 
 const iconeDaSessao: Record<string, Component> = {
   'Publicações': BookOpen,
+  'Movimentos': ArrowLeftRight,
   'Cadastros': Boxes,
   'Administração': Settings
 }
 
-const estaAberta = (label: string) => !!sessoesAbertas.value[label]
+// Mesmo fallback do AppSidebar (`sessoesAbertas[label] ?? sessao.aberto`): se a chave
+// faltar no estado em memória (ex.: edição do navigation.ts sem reload), card e
+// sidebar concordam sobre o estado da sessão.
+const estaAberta = (label: string) =>
+  sessoesAbertas.value[label] ??
+  sessoes.find((sessao) => sessao.label === label)?.aberto ??
+  false
 
 const itensDaSessao = (label: string) =>
   sessoes

@@ -185,9 +185,9 @@ compartilhado com o shell — `useSidebarExpandida` e `useSessoesAbertas`):
     todas; o estado misto deixa ambos desmarcados.
   - **Coluna 2 — cartões por sessão (seleção múltipla, sem rótulo visível — removido a pedido
     do usuário):** um `UiCheckCard` por sessão de `navigation.ts`
-    (Publicações · Cadastros · Administração) com badge dinâmico (`Aberta` done / `Recolhida`
+    (Publicações · Movimentos · Cadastros · Administração) com badge dinâmico (`Aberta` done / `Recolhida`
     neutral), descrição = itens da sessão (`Manuais · Release Week · …`) e ícone semântico
-    (`BookOpen`/`Boxes`/`Settings`); cada uma é marcável/desmarcável de forma independente.
+    (`BookOpen`/`ArrowLeftRight`/`Boxes`/`Settings`); cada uma é marcável/desmarcável de forma independente.
 - **Reflexo no shell (Q&A com o usuário):** o estado das sessões mora em
   `useSessoesAbertas` (`app/composables/useSessoesAbertas.ts` — `useState<Record<label, boolean>>`
   com default vindo de `navigation.ts`); o `AppSidebar` o lê como fonte única e os cliques no

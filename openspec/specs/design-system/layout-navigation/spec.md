@@ -58,13 +58,13 @@ Auditoria**, divisor, **Encerrar Sessão**.
 
 ### Requirement: A sidebar apresenta o item raiz e as sessões com os itens canônicos
 O sistema SHALL exibir na sidebar, acima das sessões, o item raiz **Painel Executivo** e, em seguida,
-três sessões com estes itens, nesta ordem: **Publicações** (Manuais, Release Week, Escopo de Projetos),
-**Cadastros** (Parceiros, Softwares) e **Administração** (Gestão de Usuários, Perfis de Acesso (RBAC),
-Auditoria, Configurações Globais).
+quatro sessões com estes itens, nesta ordem: **Publicações** (Manuais, Release Week, Escopo de Projetos),
+**Movimentos** (Esteira de Revisão, Lançar as Chamadas), **Cadastros** (Parceiros, Softwares) e
+**Administração** (Gestão de Usuários, Perfis de Acesso (RBAC), Auditoria, Configurações Globais).
 
 #### Scenario: Árvore completa
 - **WHEN** a sidebar está expandida com todas as sessões abertas
-- **THEN** são exibidos o item raiz e os nove itens das três sessões, na ordem definida
+- **THEN** são exibidos o item raiz e os onze itens das quatro sessões, na ordem definida
 
 #### Scenario: Resquícios antigos ausentes
 - **WHEN** a sidebar é inspecionada
@@ -105,7 +105,7 @@ configuração, de modo que a seção 14 da vitrine `/design` exiba exatamente o
 
 #### Scenario: Vitrine espelha o item raiz e o menu
 - **WHEN** a seção 14 do `/design` é renderizada
-- **THEN** ela mostra o item raiz "Painel Executivo" acima das três sessões e o menu do Account com a
+- **THEN** ela mostra o item raiz "Painel Executivo" acima das quatro sessões e o menu do Account com a
   mesma ordem e divisores do shell real
 
 ### Requirement: O shell administrativo é restrito às rotas da Área Administrativa
