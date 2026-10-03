@@ -16,12 +16,12 @@ const emit = defineEmits<{
 const { registrosFiltrados, filtrosAtivosCount } = useAuditoriaDemo()
 
 const colunas: ColumnDef[] = [
-  { id: 'dataHora', header: 'Data / Hora', accessorKey: 'registradoEm', minWidth: 140, format: (v) => formatarDataHora(v) },
-  { id: 'usuario', header: 'Usuário', accessorKey: 'usuario', minWidth: 170, format: (v) => v.nome },
-  { id: 'acao', header: 'Ação', accessorKey: 'acao', minWidth: 130 },
-  { id: 'recurso', header: 'Recurso', accessorKey: 'recurso', minWidth: 150 },
-  { id: 'detalhes', header: 'Detalhes', accessorKey: 'detalhes', minWidth: 260 },
-  { id: 'ip', header: 'IP de Origem', accessorKey: 'ip', minWidth: 130 }
+  { id: 'dataHora', header: 'Data / Hora', accessorKey: 'registradoEm', minWidth: 130, format: (v) => formatarDataHora(v) },
+  { id: 'usuario', header: 'Usuário', accessorKey: 'usuario', minWidth: 160, format: (v) => v.nome },
+  { id: 'acao', header: 'Ação', accessorKey: 'acao', minWidth: 120 },
+  { id: 'recurso', header: 'Recurso', accessorKey: 'recurso', minWidth: 140 },
+  { id: 'detalhes', header: 'Detalhes', accessorKey: 'detalhes', minWidth: 220 },
+  { id: 'ip', header: 'IP de Origem', accessorKey: 'ip', minWidth: 120 }
 ]
 </script>
 

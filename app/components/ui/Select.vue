@@ -176,6 +176,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
   if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     closeDropdown()
   } else if (e.key === 'ArrowDown') {
     e.preventDefault()

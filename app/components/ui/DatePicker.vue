@@ -120,6 +120,13 @@ const clearDate = (e: MouseEvent) => {
   emit('change', null)
 }
 
+const onEsc = (e: KeyboardEvent) => {
+  if (isOpen.value) {
+    e.stopPropagation()
+    isOpen.value = false
+  }
+}
+
 // Fechar ao clicar fora
 const handleClickOutside = (e: MouseEvent) => {
   if (datePickerRef.value && !datePickerRef.value.contains(e.target as Node)) {
@@ -195,7 +202,7 @@ onUnmounted(() => {
   <div
     ref="datePickerRef"
     class="flex flex-col gap-1.5 w-full text-left relative select-none"
-    @keydown.esc="isOpen = false"
+    @keydown.esc="onEsc"
   >
     <label
       v-if="label"

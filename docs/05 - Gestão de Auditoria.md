@@ -61,7 +61,7 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
 ├── <AuditoriaTabela class="mt-5"
 │      @open-filters="filtrosAbertos = true"
 │      @open-details="abrirDetalhe" /> ← UiDataTable (busca + Filtros + badges + ações)
-├── <AuditoriaFiltros v-model="filtrosAbertos" />   ← UiModal com datas + chips
+├── <AuditoriaFiltros v-model="filtrosAbertos" />   ← UiModal com datas + selects
 ├── <AuditoriaDetalhe v-model="detalheAberto"
 │      :registro="registroDetalhe" />  ← UiModal de detalhe do registro
 └── <footer>                           ← nota de retenção + link p/ Configurações Globais
@@ -71,6 +71,9 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
   só oferece o menu Exportar — o botão **Filtros** vive na toolbar da tabela (decisão 13 do
   `design.md` da change), evitando duplicidade e seguindo o padrão herdados pelas próximas
   páginas de listagem.
+- **Largura:** o conteúdo vive num container `mx-auto max-w-7xl` dentro do padding
+  `p-4 sm:p-6 lg:p-8` (ampliado de `max-w-6xl` para dar folga à grid e evitar rolagem
+  horizontal — ver §3.4).
 - **Fluxo dos eventos:** `AuditoriaTabela` emite `open-filters` (vem do `UiDataTable`) e
   `open-details` (clique no olho da coluna Ações); a página coordena os dois `UiModal`.
 
@@ -82,8 +85,10 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
   `ScrollText` em `#2dd4bf` (cor do item de navegação), título "Gestão de Auditoria" e subtítulo.
 - **Menu "Exportar"** (`UiButton` outline + `ChevronDown`, `aria-haspopup="menu"` +
   `aria-expanded`): mini-menu `role="menu"` "Opções de exportação" com **Exportar em CSV** e
-  **Download em PDF** — fecha por `Escape` e por clique fora (mesma mecânica do menu da conta do
-  `AppHeader`; markup de domínio, **não** é componente de kit).
+  **Download em PDF** — itens em `text-xs font-light text-slate-700` (`px-3 py-2`), **idênticos
+  em fonte, tamanho e peso aos do menu suspenso da conta** do `AppHeader` (Plus Jakarta Sans
+  herdada do `body`); fecha por `Escape` e por clique fora (mesma mecânica do menu da conta;
+  markup de domínio, **não** é componente de kit).
 - **Exportar em CSV:** monta o CSV dos `registrosFiltrados` com `Blob` + **BOM UTF-8**
   (`'\uFEFF'`), cabeçalho escapado e linhas entre aspas separadas por `;`, baixado como
   `auditoria.csv`.
@@ -112,15 +117,27 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
 
 - `UiModal` `size="sm"` ("Filtros de Auditoria") **com `:icon` (`Funnel`)** — o cabeçalho tem
   ícone + separador + título/subtítulo, igual aos demais `UiModal` do kit.
-- **Cinco campos:** `UiDatePicker` **Data Inicial** e **Data Final** (`grid sm:grid-cols-2`,
-  valor `Date` do componente; estado gravado como `yyyy-mm-dd` e filtrado por dia local,
-  inclusivo) e os filtros **Usuário**, **Ação** e **Recurso** como **chips de seleção única**
-  (`UiCheckChip` com `Todos/Todas` + opções dos registros) — **sem `UiSelect`**: o dropdown
-  absoluto do select estendia a área rolável do corpo do modal e criava uma barra de rolagem
-  grande (os chips não têm popup).
+- **Corpo em três sessões `UiModalSection`** sobre o fundo cinza do modal: **"Período"**
+  (`CalendarDays`) com os dois `UiDatePicker`, **"Usuário"** (`User`) com um `UiSelect` e
+  **"Ação e Recurso"** (`Tags`) com dois `UiSelect`, espaçadas pelo grid nativo da sessão
+  (sem wrapper manual de espaçamento).
+- **Cinco campos:** `UiDatePicker` **Data Inicial** e **Data Final** (sessão "Período";
+  `grid sm:grid-cols-2`, valor `Date` do componente; estado gravado como `yyyy-mm-dd` e filtrado
+  por dia local, inclusivo) e os filtros **Usuário**, **Ação** e **Recurso** como **`UiSelect`
+  de seleção única** — sessão "Usuário" com um select **sem `label`** (o título da sessão
+  identifica o campo, evitando repetição; placeholder "Todos os usuários") e sessão "Ação e
+  Recurso" com labels **"Ação"**/"**Recurso**" (placeholders "Todas as ações"/"Todos os
+  recursos"). O estado vazio (`''`) equivale a "todos" — o placeholder exibe "Todos/Todas" e o
+  `X` do select (`clearable`) devolve o filtro a "todos"; o dropdown do `UiSelect` mede o corpo
+  rolável do modal e **abre para cima** quando não há espaço abaixo (auto-inversão do kit), sem
+  criar scrollbar no corpo.
 - **Rascunho local:** o modal edita uma cópia dos filtros; **Aplicar** grava no composable e
   fecha; **Cancelar** fecha **sem** aplicar (próxima abertura ressincroniza com o vigente);
   **Limpar Filtros** zera composable + rascunho (modal permanece aberto).
+- **`Escape` com precedência para o popup:** com o dropdown de um `UiSelect` (ou o calendário
+  de um `UiDatePicker`) aberto, o `Escape` fecha apenas o popup e preserva o rascunho — o
+  modal fecha no `Escape` seguinte, quando não há popup aberto (consumo no componente via
+  `stopPropagation`; ver `docs/01` §4.81/§5.11).
 - **Rodapé:** "Limpar Filtros" à esquerda; "Cancelar" (outline) + "Aplicar" (primary) à direita.
 
 ### 3.4 `Tabela.vue` → `<AuditoriaTabela>`
@@ -130,6 +147,13 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
   kit para a página).
 - Colunas: Data / Hora (formato pt-BR), Usuário, Ação, Recurso, Detalhes e IP — dados já em
   ordem decrescente (decisão 9).
+- **Sem rolagem horizontal nas larguras usuais:** `minWidth` das colunas 130/160/120/140/220/120
+  (soma 890px; com a coluna Ações `w-20` o chão da tabela é 970px) combinado ao container
+  `max-w-7xl` da página (§2) — as sete colunas cabem sem barra horizontal mesmo quando a
+  scrollbar vertical do `main` aparece ao aumentar "Linhas por página" (~15px que antes
+  estouravam o chão de 1060px); abaixo de ~1280px de janela a rolagem horizontal permanece
+  como fallback. Os `minWidth` só grampeiam o piso — em telas normais a tabela continua
+  `w-full` e distribui a largura extra.
 - **Ação em `UiBadge`** via slot `cell(acao)`: Inclusão → `done`, Alteração → `inReview`,
   Exclusão → `blocked` (dot pulsante — gotcha conhecida, aceita) e Homologação → `reconciled`.
 - **Coluna Ações:** slot `#actions` com `UiTooltip` "Ver detalhes" + botão `Eye` (padrão da aba
@@ -138,7 +162,9 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
 ### 3.5 `Detalhe.vue` → `<AuditoriaDetalhe>`
 
 `UiModal` `size="sm"` ("Detalhe do Registro") **com `:icon` (`Eye`)** no cabeçalho — ícone +
-separador + título/subtítulo, igual aos demais `UiModal` do kit — em `dl` de duas colunas:
+separador + título/subtítulo, igual aos demais `UiModal` do kit — com o corpo dentro de uma
+sessão **`UiModalSection` "Dados do Registro"** (`:icon="Eye"`; o `v-if` do registro vive na
+sessão, evitando card vazio) contendo um `dl` de duas colunas:
 Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; rodapé com
 "Fechar" como **botão primário** (X/Escape também fecham, pelo `UiModal`).
 
@@ -172,8 +198,9 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 
 - **Duas superfícies complementares:** a **busca** da `UiDataTable` é texto livre instantâneo
   (foco na digitação, limpar restaura); os **filtros** são estruturais (intervalo de datas +
-  chips), aplicados pelo modal com **Limpar Filtros / Cancelar / Aplicar** e refletidos no
-  badge do botão (`filtersCount` — até 5: data inicial, data final, usuário, ação e recurso).
+  selects de usuário/ação/recurso), aplicados pelo modal com **Limpar Filtros / Cancelar /
+  Aplicar** e refletidos no badge do botão (`filtersCount` — até 5: data inicial, data final,
+  usuário, ação e recurso).
 - **KPIs recalculam** a cada mudança de filtro (spec `auditoria`: "Registros" é a contagem do
   filtrado — não da base inteira).
 - **Exportação** opera sempre sobre os registros filtrados; o PDF é um **arquivo de relatório

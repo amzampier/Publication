@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { Funnel } from '@lucide/vue'
+import { ref, watch, computed } from 'vue'
+import { Funnel, CalendarDays, User, Tags } from '@lucide/vue'
 import {
   useAuditoriaDemo,
   ACOES,
@@ -10,14 +10,21 @@ import {
 } from './useAuditoriaDemo'
 
 // Modal de filtros estruturais — aberto pelo botão "Filtros" da toolbar da
-// tabela (spec auditoria: datas inicial/final + usuário/ação/recurso em chips,
-// com Limpar Filtros à esquerda e Cancelar + Aplicar à direita).
+// tabela (spec auditoria: sessões Período, Usuário e Ação e Recurso — datas em
+// UiDatePicker e os demais filtros em UiSelect — com Limpar Filtros à esquerda
+// e Cancelar + Aplicar à direita).
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
 const { filtros, opcoesUsuarios, opcoesRecursos, limparFiltros } = useAuditoriaDemo()
 
 const rascunho = ref<FiltrosAuditoria>({ ...filtros.value })
+
+// Opções dos UiSelect — o estado vazio ('') é representado pelo placeholder
+// ("Todos/Todas"), e o X do select (`clearable`) devolve o filtro a "todos"
+const opcoesUsuario = computed(() => opcoesUsuarios.value.map((u) => ({ value: u, label: u })))
+const opcoesAcao = computed(() => ACOES.map((a) => ({ value: a, label: a })))
+const opcoesRecurso = computed(() => opcoesRecursos.value.map((r) => ({ value: r, label: r })))
 
 // Ao abrir, o modal espelha o estado vigente; Cancelar simplesmente fecha
 // (na próxima abertura o watch ressincroniza com o estado vigente)
@@ -54,77 +61,50 @@ const limpar = () => {
     :icon="Funnel"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <!-- Intervalo de datas -->
-    <div class="grid gap-4 sm:grid-cols-2">
-      <UiDatePicker
-        :model-value="dataIsoParaDate(rascunho.dataInicial)"
-        label="Data Inicial"
-        placeholder="DD/MM/AAAA"
-        @update:model-value="rascunho.dataInicial = dateParaIso($event)"
-      />
-      <UiDatePicker
-        :model-value="dataIsoParaDate(rascunho.dataFinal)"
-        label="Data Final"
-        placeholder="DD/MM/AAAA"
-        @update:model-value="rascunho.dataFinal = dateParaIso($event)"
-      />
-    </div>
-
-    <!-- Seleção única em chips (sem menu suspenso — evita scrollbar no modal) -->
-    <div class="mt-5 space-y-4">
-      <div>
-        <p class="mb-2 text-xs font-medium text-slate-700">Usuário</p>
-        <div class="flex flex-wrap gap-2">
-          <UiCheckChip
-            label="Todos"
-            :model-value="rascunho.usuario === ''"
-            @update:model-value="(v: boolean) => { if (v) rascunho.usuario = '' }"
+    <div class="grid gap-4">
+      <!-- Intervalo de datas -->
+      <UiModalSection title="Período" :icon="CalendarDays">
+        <div class="grid gap-4 sm:grid-cols-2">
+          <UiDatePicker
+            :model-value="dataIsoParaDate(rascunho.dataInicial)"
+            label="Data Inicial"
+            placeholder="DD/MM/AAAA"
+            @update:model-value="rascunho.dataInicial = dateParaIso($event)"
           />
-          <UiCheckChip
-            v-for="u in opcoesUsuarios"
-            :key="u"
-            :label="u"
-            :model-value="rascunho.usuario === u"
-            @update:model-value="(v: boolean) => { if (v) rascunho.usuario = u }"
+          <UiDatePicker
+            :model-value="dataIsoParaDate(rascunho.dataFinal)"
+            label="Data Final"
+            placeholder="DD/MM/AAAA"
+            @update:model-value="rascunho.dataFinal = dateParaIso($event)"
           />
         </div>
-      </div>
+      </UiModalSection>
 
-      <div>
-        <p class="mb-2 text-xs font-medium text-slate-700">Ação</p>
-        <div class="flex flex-wrap gap-2">
-          <UiCheckChip
-            label="Todas"
-            :model-value="rascunho.acao === ''"
-            @update:model-value="(v: boolean) => { if (v) rascunho.acao = '' }"
-          />
-          <UiCheckChip
-            v-for="a in ACOES"
-            :key="a"
-            :label="a"
-            :model-value="rascunho.acao === a"
-            @update:model-value="(v: boolean) => { if (v) rascunho.acao = a }"
-          />
-        </div>
-      </div>
+      <UiModalSection title="Usuário" :icon="User">
+        <UiSelect
+          :model-value="rascunho.usuario"
+          :options="opcoesUsuario"
+          placeholder="Todos os usuários"
+          @update:model-value="rascunho.usuario = String($event)"
+        />
+      </UiModalSection>
 
-      <div>
-        <p class="mb-2 text-xs font-medium text-slate-700">Recurso</p>
-        <div class="flex flex-wrap gap-2">
-          <UiCheckChip
-            label="Todos"
-            :model-value="rascunho.recurso === ''"
-            @update:model-value="(v: boolean) => { if (v) rascunho.recurso = '' }"
-          />
-          <UiCheckChip
-            v-for="r in opcoesRecursos"
-            :key="r"
-            :label="r"
-            :model-value="rascunho.recurso === r"
-            @update:model-value="(v: boolean) => { if (v) rascunho.recurso = r }"
-          />
-        </div>
-      </div>
+      <UiModalSection title="Ação e Recurso" :icon="Tags">
+        <UiSelect
+          label="Ação"
+          :model-value="rascunho.acao"
+          :options="opcoesAcao"
+          placeholder="Todas as ações"
+          @update:model-value="rascunho.acao = String($event)"
+        />
+        <UiSelect
+          label="Recurso"
+          :model-value="rascunho.recurso"
+          :options="opcoesRecurso"
+          placeholder="Todos os recursos"
+          @update:model-value="rascunho.recurso = String($event)"
+        />
+      </UiModalSection>
     </div>
 
     <template #footer>
