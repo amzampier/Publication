@@ -1,13 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { UsuarioDemo, ModoUsuario } from '../../components/usuarios/useUsuariosDemo'
+import { nextTick, ref } from 'vue'
+import {
+  excluirUsuario,
+  useUsuariosDemo,
+  type UsuarioDemo,
+  type ModoUsuario
+} from '../../components/usuarios/useUsuariosDemo'
+import { useToast } from '../../composables/useToast'
 
 definePageMeta({ layout: 'admin' })
 
-// Coordenação do modal único (docs/06 §2): a página é dona do estado
+const { toast } = useToast()
+const { usuarios } = useUsuariosDemo()
+
+// Coordenação dos modais (docs/06 §2): a página é dona do estado
 const modalAberto = ref(false)
 const modo = ref<ModoUsuario>('novo')
 const usuarioAlvo = ref<UsuarioDemo | null>(null)
+
+const exclusaoAberta = ref(false)
+const usuarioExcluir = ref<UsuarioDemo | null>(null)
+const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 
 const abrirNovo = () => {
   modo.value = 'novo'
@@ -20,6 +33,25 @@ const abrirEdicao = (usuario: UsuarioDemo) => {
   usuarioAlvo.value = usuario
   modalAberto.value = true
 }
+
+const abrirExclusao = (usuario: UsuarioDemo) => {
+  usuarioExcluir.value = usuario
+  exclusaoAberta.value = true
+}
+
+const confirmarExclusao = () => {
+  const alvo = usuarioExcluir.value
+  if (!alvo) return
+
+  usuarios.value = excluirUsuario(usuarios.value, alvo.id).base
+  exclusaoAberta.value = false
+  usuarioExcluir.value = null
+  toast.success('Gestão de Usuários', 'Usuário excluído com sucesso.')
+
+  // O gatilho (Trash2) saiu do DOM com a linha: o UiModal devolve foco a um nó
+  // detachado (no-op) e o próximo tick move o foco à busca da tabela (docs/06 §5.6)
+  nextTick(() => tabelaRef.value?.focarBusca())
+}
 </script>
 
 <template>
@@ -29,12 +61,23 @@ const abrirEdicao = (usuario: UsuarioDemo) => {
 
       <UsuariosKpis class="mt-6" />
 
-      <UsuariosTabela class="mt-5" @editar="abrirEdicao" />
+      <UsuariosTabela
+        ref="tabelaRef"
+        class="mt-5"
+        @editar="abrirEdicao"
+        @excluir="abrirExclusao"
+      />
 
       <UsuariosFormulario
         v-model="modalAberto"
         :modo="modo"
         :usuario="usuarioAlvo"
+      />
+
+      <UsuariosExclusao
+        v-model="exclusaoAberta"
+        :usuario="usuarioExcluir"
+        @confirmar="confirmarExclusao"
       />
     </div>
   </div>

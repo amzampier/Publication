@@ -52,8 +52,9 @@ A Gestão de Usuários é a tela de administração de usuários da Área Admini
   em `useState('usuarios-base')`: as alterações sobrevivem à navegação interna e são descartadas
   na recarga.
 - **Modal único:** "Novo Usuário" e o lápis da linha abrem o **mesmo** `UsuariosFormulario`, em
-  modo de criação ou de edição (§3.4). Os demais gatilhos (Importar, Filtros, Convite, Bloquear,
-  Excluir e o ícone do CEP) seguem com toast de transição (§5).
+  modo de criação ou de edição (§3.4); o `Trash2` da linha abre o `UsuariosExclusao`, modal de
+  confirmação da exclusão (§5.6). Os demais gatilhos (Importar, Filtros, Convite, Bloquear e o
+  ícone do CEP) seguem com toast de transição (§5.5).
 
 ## 2. Estrutura da página (componentização)
 
@@ -62,16 +63,21 @@ change). Cada parte é um componente em `app/components/usuarios/` (auto-import 
 `Usuarios*`):
 
 ```
-admin/gestao-usuarios.vue            (page — definePageMeta + composição + estado do modal)
+admin/gestao-usuarios.vue            (page — definePageMeta + composição + estado dos modais)
 ├── <UsuariosCabecalho @novo />       ← título + menu "Relatórios" + "Novo Usuário"
 ├── <UsuariosKpis class="mt-6" />     ← 4 UiKpi do conjunto VIGENTE
-├── <UsuariosTabela class="mt-5" @editar />  ← UiDataTable (busca + badges + ações)
-└── <UsuariosFormulario v-model :modo :usuario />  ← modal único (5 blocos)
+├── <UsuariosTabela ref @editar @excluir class="mt-5" />  ← UiDataTable (busca + badges + ações)
+├── <UsuariosFormulario v-model :modo :usuario />  ← modal único (5 blocos)
+└── <UsuariosExclusao v-model :usuario @confirmar />  ← modal de exclusão (§5.6)
 ```
 
 - **Estado de coordenação na página:** `modalAberto: ref(false)`, `modo: ref<'novo' | 'editar'>`
   e `usuarioAlvo: ref<UsuarioDemo | null>`; `abrirNovo()` preenche `modo`/`usuarioAlvo` e abre,
-  `abrirEdicao(usuario)` idem com o registro da linha. Nada fora da página abre o diálogo.
+  `abrirEdicao(usuario)` idem com o registro da linha. Para a exclusão: `exclusaoAberta:
+  ref(false)`, `usuarioExcluir: ref<UsuarioDemo | null>` e `tabelaRef` (encadeia o
+  `focarBusca()` da tabela, §5.6) — `abrirExclusao(usuario)` guarda o alvo e abre;
+  `confirmarExclusao()` remove, avisa por toast, fecha e devolve o foco à busca. Nada fora da
+  página abre os diálogos.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8` (mesmo padrão
   da Auditoria).
 
@@ -129,7 +135,7 @@ admin/gestao-usuarios.vue            (page — definePageMeta + composição + e
   | Enviar o Convite | `MailCheck` | `text-sky-600` | toast de transição (§5) |
   | Bloquear usuário | `Lock` | `text-amber-600` | toast de transição (§5) |
   | Editar usuário | `Pencil` | `text-brand-focus` | **emite `@editar(usuario)` → abre o modal** |
-  | Excluir usuário | `Trash2` | `text-rose-700` | toast de transição (§5) |
+  | Excluir usuário | `Trash2` | `text-rose-700` | **emite `@excluir(usuario)` → abre o modal de exclusão (§5.6)** |
 
 ### 3.4 `Formulario.vue` → `<UsuariosFormulario>` (modal único)
 
@@ -267,7 +273,7 @@ modal permanecendo aberto e os demais dados preservados.
 
 ### 5.5 Gatilhos remanescentes com toast (contrato de transição)
 
-Cinco controles da tela + o ícone do CEP continuam exibindo
+Quatro controles da tela + o ícone do CEP continuam exibindo
 `toast.info('Gestão de Usuários', '<ação>: funcionalidade disponível na próxima etapa.')` com
 **nenhum `UiModal`** aberto:
 
@@ -277,7 +283,6 @@ Cinco controles da tela + o ícone do CEP continuam exibindo
 | Filtros | toolbar da `Tabela` (botão do `UiDataTable`) |
 | Enviar o Convite (`MailCheck`) | coluna Ações da `Tabela` |
 | Bloquear usuário (`Lock`) | coluna Ações da `Tabela` |
-| Excluir usuário (`Trash2`) | coluna Ações da `Tabela` |
 | Buscar CEP (ViaCEP) | `rightIcon` do campo CEP no modal |
 
 **Superfícies complementares:** a busca da `UiDataTable` é texto livre instantâneo e filtra só
@@ -285,6 +290,31 @@ as linhas da tabela; KPIs e exportação usam `usuariosFiltrados` do composable.
 estruturais** (perfil/status) já existem no composable, mas a UI ainda não chegou — o badge do
 botão reflete `filtrosAtivosCount`. **Exportação** opera sempre sobre o conjunto vigente, pelo
 menu "Relatórios".
+
+### 5.6 Modal de exclusão (confirmação destrutiva)
+
+- **Gatilho:** o `Trash2` da coluna Ações **não** exibe toast — `UsuariosTabela` emite
+  `@excluir(usuario)` e a página abre o `UsuariosExclusao` (`v-model` + `usuario`), guardando o
+  alvo em `usuarioExcluir`.
+- **Componente:** `app/components/usuarios/Exclusao.vue` — **apresentação pura** (sem escrita).
+  `UiModal size="sm"` com título "Excluir Usuário" e ícone `Trash2` (sem subtítulo); corpo em
+  `UiModalSection` ("Este usuário será excluído") com **nome** e **e-mail** do alvo em destaque
+  (nome `font-semibold`, e-mail abaixo em `font-mono`) e o aviso em `rose-700` de que a ação não
+  pode ser desfeita; rodapé **Cancelar** (`UiButton outline`) + **Excluir** (`UiButton danger`
+  com `Trash2`).
+- **Confirmação:** `confirmarExclusao()` na página → `excluirUsuario(base, id)` (função pura,
+  §3.5) → `usuarios.value` atualiza → a linha sai, os KPIs recalculam, `toast.success('Gestão de
+  Usuários', 'Usuário excluído com sucesso.')` e o modal fecha.
+- **Foco na busca:** com a linha fora do DOM o gatilho `Trash2` não existe mais, então a página
+  agenda `nextTick(() => tabelaRef.value?.focarBusca())` — o `UiDataTable` expõe `focarBusca()`
+  (encadeado pela `UsuariosTabela`; `docs/01` §5.11) e o foco do teclado cai no campo de busca;
+  a devolução de foco do `UiModal` ao nó detachado é no-op silencioso.
+- **Descarte:** "Cancelar", `Escape` ou o `X` do cabeçalho só fecham — a base não muda e nenhum
+  toast é exibido.
+- **Sem guarda e sem rede:** a exclusão é irrestrita (qualquer perfil, inclusive Administrador),
+  não tem "desfazer" e não emite nenhuma requisição; a recarga restaura a semente, como o resto
+  do CRUD em memória. A tabela não precisa de tratamento especial: o `UiDataTable` colapsa a
+  página atual quando o total de linhas cai.
 
 ## 6. Dados de demonstração
 
@@ -319,12 +349,15 @@ menu "Relatórios".
 
 ## 9. Vitrine `/design`
 
-Duas demonstrações novas acompanham o kit alterado:
+Três demonstrações novas acompanharam o kit alterado:
 
 - **Seção 5 (Input):** card "MÁSCARA DE DIGITAÇÃO (MASK)" com campo CEP (`99999-999`) e telefone
   `((99) 99999-9999)`.
 - **Seção 15 (Modal):** botão "Abrir modal filho" dentro do modal de cadastro → `UiModal xs` filho
   — `Escape` fecha só o filho, `Tab` circula só no filho e o pai mantém os campos intactos.
+- **Seção 15 (Modal):** botão **"Abrir Modal de Confirmação"** → `UiModal sm` com
+  `UiModalSection` e rodapé **Cancelar (`outline`) + Excluir (`danger`)** — o mesmo padrão do
+  modal de exclusão de usuário (§5.6); confirmar fecha e mostra um `toast.success` de demo.
 
 A seção **13. DataTable** continua sendo a referência da toolbar (busca + Filtros).
 
@@ -340,6 +373,15 @@ Change `openspec/changes/gestao-usuarios-modal-cadastro` (spec-driven):
 `design-system/layout-navigation` **não sofre delta** — declarar a rota desta tela é uso do
 requisito existente. Após o archive, as deltas são sincronizadas para `openspec/specs/`.
 
+Change `openspec/changes/gestao-usuarios-modal-exclusao` (spec-driven):
+
+| Capability | Operação |
+| :--- | :--- |
+| `gestao-usuarios` | **MODIFIED** — o "Excluir" sai da lista de gatilhos com toast e passa a abrir o modal de confirmação (Convite, Bloquear, Importar, Filtros e CEP seguem com toast); **ADDED** — requirement do modal de exclusão (conteúdo do diálogo, confirmação remove do conjunto com KPIs + `toast.success`, descarte por Cancelar/`Escape`/`X`, foco devolvido à busca, operação só em memória) |
+
+`design-system/modais` e `vitrine` **não sofrem delta**: o diálogo abre em nível único (o
+empilhamento já existe) e a demo da vitrine obedece aos requisitos já vigentes.
+
 ## 11. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório).
@@ -352,17 +394,25 @@ requisito existente. Após o archive, as deltas são sincronizadas para `openspe
     estados do SMTP com porta `250` (Falha) e `587` (Conectado) + "Enviar teste" com toast;
     avatar com câmera empilhada (`Escape` fecha só a câmera); CEP com ícone → toast sem preencher;
     criar → Total 17, `Último acesso` `-`, toast de sucesso; editar → linha e "Última
-    Atualização" novos; recarga → base de 16 restaurada; **6 toasts remanescentes** (Importar,
-    Filtros, Convite, Bloquear, Excluir, CEP) sem modal; sem rolagem horizontal ≥1280px.
-  - **`/design`:** máscara na seção 5 e modal filho na seção 15 (`Escape`/`Tab` só no filho).
+    Atualização" novos; recarga → base de 16 restaurada; **5 toasts remanescentes** (Importar,
+    Filtros, Convite, Bloquear, CEP) sem modal; sem rolagem horizontal ≥1280px.
+  - **Exclusão (§5.6):** `Trash2` → modal `sm` com nome + e-mail em destaque no corpo, aviso em
+    `rose-700` e **nenhum toast**; **Excluir** → linha sai, KPIs recalculam (Total 15),
+    `toast.success` e o **foco cai no campo de busca** (Tab a partir dele percorre a tabela);
+    Cancelar/`Escape`/`X` → base intacta sem toast; última linha da última página → tabela colapsa
+    para página válida; recarga → base de 16 com o usuário de volta; qualquer perfil (inclusive
+    Administrador) excluível.
+  - **`/design`:** máscara na seção 5, modal filho na seção 15 (`Escape`/`Tab` só no filho) e
+    **modal de confirmação** da seção 15 (rodapé `outline` + `danger`, fecha por `Escape`).
   - **Regressão do kit empilhado:** Auditoria com Filtros e Detalhe intactos (modais de 1 nível).
 
 ## 12. Pendências e próximos passos
 
 - **Importar em lote** (ícone `Import` da tabela) e **Filtros de perfil/status** (botão
   "Filtros") — hoje toast; a estrutura de filtros já existe no composable.
-- **Ações de linha:** excluir, bloquear e enviar o convite seguem com toast (confirmação/modal
-  próprio); reativar usuário e redefinir senha ainda não existem.
+- **Ações de linha:** bloquear e enviar o convite seguem com toast (confirmação/modal próprio —
+  o **excluir** já tem o modal de confirmação, §5.6); reativar usuário e redefinir senha ainda
+  não existem.
 - **ViaCEP:** busca real de CEP no modal (hoje toast + preenchimento manual).
 - **SMTP real:** trocar a simulação por conexão efetiva (hoje `setTimeout` + portas fixas).
 - **Backend:** `server/` com endpoints de CRUD de `usuarios`, autenticação JWT e RBAC real

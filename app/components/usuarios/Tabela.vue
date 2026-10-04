@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Import, MailCheck, Lock, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
 import {
@@ -13,10 +14,15 @@ import { useToast } from '../../composables/useToast'
 const { toast } = useToast()
 const { usuariosFiltrados, filtrosAtivosCount } = useUsuariosDemo()
 
-// Abre o modal de usuário em modo de edição (coordenação na página da fase 2)
+// Abre modais na página (coordenação dela): edição e confirmação de exclusão
 const emit = defineEmits<{
   (e: 'editar', usuario: UsuarioDemo): void
+  (e: 'excluir', usuario: UsuarioDemo): void
 }>()
+
+// Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
+const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
+defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
 // Demais ações seguem o contrato de transição da fase 1: toast, sem modal
 const avisoProximaEtapa = (acao: string) => {
@@ -41,6 +47,7 @@ const colunas: ColumnDef[] = [
 <template>
   <section aria-label="Usuários cadastrados">
     <UiDataTable
+      ref="tabelaRef"
       title="Usuários"
       subtitle="Base de demonstração — fase 1 em memória"
       :data="usuariosFiltrados"
@@ -113,7 +120,7 @@ const colunas: ColumnDef[] = [
               type="button"
               aria-label="Excluir usuário"
               class="inline-flex items-center justify-center rounded p-0.5 text-rose-700 hover:bg-rose-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-              @click="avisoProximaEtapa('Excluir usuário')"
+              @click="emit('excluir', row)"
             >
               <Trash2 class="h-3.5 w-3.5" />
             </button>

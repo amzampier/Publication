@@ -59,6 +59,15 @@ const emit = defineEmits<{
 
 // Estado de Busca Global
 const searchQuery = ref('')
+// Wrapper do campo de busca - alvo do foco devolvido por focarBusca()
+const buscaRef = ref<HTMLElement | null>(null)
+
+// Devolve o foco ao campo de busca (ex.: quando o gatilho que abriu um modal
+// saiu do DOM junto com a linha que ele alterava)
+const focarBusca = () => {
+  buscaRef.value?.querySelector('input')?.focus()
+}
+defineExpose({ focarBusca })
 
 // Estado de Agrupamento (até 3 níveis)
 const groupedColumns = ref<string[]>([...props.initialGroupedColumns.slice(0, 3)])
@@ -532,7 +541,7 @@ onUnmounted(() => {
         v-if="showHeaderTop || showFilters"
         class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end"
       >
-        <div v-if="showHeaderTop" class="w-full min-w-0 sm:w-64 shrink-0">
+        <div v-if="showHeaderTop" ref="buscaRef" class="w-full min-w-0 sm:w-64 shrink-0">
           <UiInput
             v-model="searchQuery"
             placeholder="Filtrar dados da tabela..."

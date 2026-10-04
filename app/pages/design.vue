@@ -520,6 +520,14 @@ const salvarModalDemo = () => {
 const modalFilhoAberto = ref(false)
 const modalFilhoCampo = ref('conteúdo do modal filho')
 
+// Demo de modal de confirmação destrutiva (docs/06 §5.6): UiModal sm com rodapé
+// outline + danger, no mesmo padrão do modal de exclusão de usuário.
+const modalConfirmacaoAberto = ref(false)
+const confirmarDemoExclusao = () => {
+  modalConfirmacaoAberto.value = false
+  toast.success('Exclusão de Demonstração', 'Registro excluído (apenas demo).')
+}
+
 // Demo da Seção 16 — UiTabs + UiSlider
 // Demo da Seção 13 — botão Filtros da toolbar do UiDataTable (contador demonstrativo)
 const filtrosDemo = ref(0)
@@ -2402,6 +2410,8 @@ variant="lime"
                   acento verde, sessões de campos em cards brancos sobre corpo cinza e footer com
                   botões do sistema. O backdrop não fecha; <code class="font-mono text-slate-700">Escape</code>,
                   o <code class="font-mono text-slate-700">X</code> e as ações do footer fecham.
+                  Inclui a demo do <strong>modal de confirmação destrutiva</strong> (rodapé com a
+                  variante <code class="font-mono text-slate-700">danger</code>).
                 </p>
               </div>
             </div>
@@ -2412,6 +2422,10 @@ variant="lime"
             <UiButton variant="primary" @click="modalDemoAberto = true">
               <template #leftIcon><FormInput class="h-3.5 w-3.5" /></template>
               Abrir Modal de Cadastro
+            </UiButton>
+            <UiButton variant="danger" @click="modalConfirmacaoAberto = true">
+              <template #leftIcon><Trash2 class="h-3.5 w-3.5" /></template>
+              Abrir Modal de Confirmação
             </UiButton>
             <span class="text-xs text-slate-500">
               Tamanhos disponíveis: <code class="font-mono text-slate-700">sm (480px)</code>,
@@ -2490,6 +2504,37 @@ variant="lime"
               <UiButton variant="primary" @click="salvarModalDemo">
                 <template #leftIcon><Save class="h-3.5 w-3.5" /></template>
                 Salvar
+              </UiButton>
+            </template>
+          </UiModal>
+
+          <!-- Modal de confirmação destrutiva (mesmo padrão do modal de exclusão de usuário) -->
+          <UiModal
+            v-model="modalConfirmacaoAberto"
+            title="Excluir Registro"
+            subtitle="Confirmação destrutiva"
+            :icon="Trash2"
+            size="sm"
+          >
+            <UiModalSection title="Este registro será excluído" :icon="AlertTriangle">
+              <p class="text-sm font-medium text-slate-900 font-mono break-all">
+                release-week-2026-w40
+              </p>
+              <p class="flex items-start gap-2 text-xs text-rose-700">
+                <AlertTriangle class="h-3.5 w-3.5 shrink-0 mt-px" aria-hidden="true" />
+                <span>
+                  Esta ação não pode ser desfeita: o registro sai da base em memória e
+                  só volta na recarga da página.
+                </span>
+              </p>
+            </UiModalSection>
+            <template #footer>
+              <UiButton variant="outline" size="md" @click="modalConfirmacaoAberto = false">
+                Cancelar
+              </UiButton>
+              <UiButton variant="danger" size="md" @click="confirmarDemoExclusao">
+                <template #leftIcon><Trash2 class="h-3.5 w-3.5" /></template>
+                Excluir
               </UiButton>
             </template>
           </UiModal>

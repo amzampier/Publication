@@ -685,6 +685,7 @@ interface ColumnDef<T = any> {
 - **Totalizadores sob demanda:** **clique direito** em célula do rodapé de coluna `isNumeric` abre menu `<Teleport to="body">` estilo cxGrid: **Soma (SUM) · Média (AVG) · Contagem (COUNT) · Mínimo (MIN) · Máximo (MAX) · Nenhum (Limpar)** — `calculateAggregate` formata `R$ ...` em pt-BR; sem operação mostra `-`.
 - **Paginação:** indicador "Mostrando X a Y de Z entradas exibidas" (+ sufixo verde com nº de níveis de agrupamento quando agrupado), seletor de linhas, "Página X de Y" e botões `« ‹ › »` (`title` acessível); no modo agrupado pagina sobre as linhas efetivamente renderizadas.
 - **Busca global** (quando `showHeaderTop`): controle `UiInput` do kit — lupa à esquerda, limpar à direita quando há texto, foco `brand-focus` recortado — case-insensitive; estado vazio **"Nenhum dado encontrado com o filtro aplicado."**
+- **API exposta (`defineExpose`):** `focarBusca()` move o foco do teclado para o campo de busca (no-op quando `showHeaderTop` está desligado) — uso típico: devolver o foco após o gatilho de uma linha sair do DOM (exclusão em Gestão de Usuários). Encadeie pelo componente consumidor (`ref` no `UiDataTable` + `defineExpose` próprio).
 - **Botão Filtros** (quando `showFilters`): `UiButton` outline à direita da busca, com badge do `filtersCount` quando > 0; clique emite `open-filters`. O slot `filtersLeft` (quando presente) ocupa a posição imediatamente à esquerda desse botão. Sem `showFilters` a toolbar permanece como antes (nenhum consumidor existente ativa por padrão).
 - **Gotchas (requisitos da spec):** sem conteúdo de demonstração quando usado sem props de conteúdo; **nenhum registro recebe tratamento visual especial por causa do seu valor**.
 
@@ -730,7 +731,7 @@ interface ColumnDef<T = any> {
 - **Empilhamento:** os modais abertos formam uma pilha em escopo de módulo e **só o topo recebe `Escape` e `Tab`** — um modal filho (ex.: câmera sobre um formulário) fecha sozinho sem fechar nem roubar o foco do modal subjacente, e ao fechar devolve o foco ao gatilho dentro dele. Com um único modal aberto o comportamento é idêntico ao anterior. Demo na seção 15 do `/design` ("Abrir modal filho").
 - **Header:** fundo em degradê **`#112051` → `#0364f7`** (`bg-gradient-to-r from-brand-primary to-[#0364f7]`), `rounded-t-xl` (o filete esquerdo de accent `#4ed813` de **2.5px** acompanha o raio do canto superior esquerdo), ícone, título/subtítulo e `X` em `#f8fafc` (o `X` exibe tooltip "Fechar"), separador vertical branco/20.
 - **Corpo:** `bg-slate-100` com `max-h-[75vh]` e rolagem interna; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`), preservando `text-rose-*` em erro.
-- **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário).
+- **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário; diálogos de confirmação destrutiva também usam a variante `danger` — ex.: modal de exclusão de usuário, `docs/06` §5.6).
 
 `UiModalSection` (sessão de campos dentro do `default`):
 

@@ -222,6 +222,18 @@ export const salvarUsuario = (
   return { base: base.map((u) => (u.id === usuario.id ? usuario : u)), usuario }
 }
 
+/**
+ * Remove o registro do id indicado (puro): devolve a base nova sem ele; id
+ * inexistente devolve a base intacta. Quem tem o `useState` é quem atribui
+ * `usuarios.value = base`.
+ */
+export const excluirUsuario = (
+  base: UsuarioDemo[],
+  id: string
+): { base: UsuarioDemo[] } => ({
+  base: base.filter((u) => u.id !== id)
+})
+
 /** 'dd/mm/yyyy HH:mm'; null/vazio -> '-' (nunca gravado) */
 export const formatarDataHora = (iso: string | null): string => {
   if (!iso) return '-'
