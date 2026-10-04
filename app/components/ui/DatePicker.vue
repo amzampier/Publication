@@ -272,9 +272,10 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Erro: texto persistente abaixo do campo, anunciado por leitores de tela.
-         O ícone + tooltip interno permanecem apenas como reforço visual. -->
-    <p v-if="error" :id="erroId" role="alert" class="text-[11px] font-medium text-rose-700">
+    <!-- Erro: visualmente só o AlertCircle interno + borda vermelha (sem texto abaixo);
+         a mensagem permanece no DOM oculta (sr-only), anunciada por role="alert" e
+         referenciada pelo aria-describedby do campo. -->
+    <p v-if="error" :id="erroId" role="alert" class="sr-only">
       {{ error }}
     </p>
 

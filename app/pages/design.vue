@@ -41,7 +41,8 @@ import {
   Newspaper,
   Upload,
   Calendar as CalendarIcon,
-  CheckSquare
+  CheckSquare,
+  ToggleRight
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -111,8 +112,20 @@ const inputVersao = ref('v1.4.0')
 const inputTitulo = ref('Release Week #40 — Correções de Exibição')
 const inputSlugComErro = ref('release week 40')
 const erroSlug = ref('O slug não pode conter espaços nem caracteres maiúsculos.')
+// Demo da prop `mask` (docs/01 §5.3)
+const inputCep = ref('')
+const inputTelefone = ref('')
 
 const publicacaoSelecionada = ref('rel-2026-w40')
+
+// Demo do UiSegmented (seção 9)
+const segmentosStatusDemo: { value: string; label: string; tone?: 'emerald' | 'slate' }[] = [
+  { value: 'Ativo', label: 'Ativo', tone: 'emerald' },
+  { value: 'Inativo', label: 'Inativo', tone: 'slate' }
+]
+const statusSegmentado = ref('Ativo')
+const statusSegmentadoDesabilitado = ref('Inativo')
+const statusSegmentadoErro = ref('')
 const dataSelecionadaCalendar = ref<Date | null>(new Date())
 const dataPublicacao = ref<Date | null>(new Date())
 
@@ -502,6 +515,11 @@ const salvarModalDemo = () => {
   toast.success('Publicação de Demonstração', 'Os dados do modal de exemplo foram salvos (apenas demo).')
 }
 
+// Demo de modal filho (empilhamento — docs/01 §5.12): abre um modal xs sobre o
+// modal de cadastro; Escape/Tab devem atingir somente o topo da pilha.
+const modalFilhoAberto = ref(false)
+const modalFilhoCampo = ref('conteúdo do modal filho')
+
 // Demo da Seção 16 — UiTabs + UiSlider
 // Demo da Seção 13 — botão Filtros da toolbar do UiDataTable (contador demonstrativo)
 const filtrosDemo = ref(0)
@@ -866,7 +884,7 @@ const secoes = [
                 </h2>
               </div>
               <p class="text-xs text-slate-500 mt-1">
-                Ao receber o foco, a borda inferior e seus dois cantos arredondados destacam-se na cor <span class="font-mono text-lime-700 font-semibold">#1a9e07</span>. Suporta ícone ao lado esquerdo e/ou direito com ação de clique.
+                Ao receber o foco, a borda inferior e seus dois cantos arredondados destacam-se na cor <span class="font-mono text-lime-700 font-semibold">#1a9e07</span>. Suporta ícone ao lado esquerdo e/ou direito com ação de clique e máscara de digitação (<code class="font-mono">mask</code>).
               </p>
             </div>
             <div class="shrink-0">
@@ -998,6 +1016,29 @@ const secoes = [
               </div>
               <p class="text-[11px] text-slate-400 mt-3 font-normal">
                 Passe o mouse sobre o ícone de exclamação vermelho à direita para visualizar a mensagem de erro.
+              </p>
+            </div>
+
+            <!-- Card 7: MÁSCARA DE DIGITAÇÃO (MASK) -->
+            <div class="p-4 rounded-xl border border-slate-200/80 bg-white shadow-2xs flex flex-col justify-between">
+              <div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2.5">
+                  MÁSCARA DE DIGITAÇÃO (MASK)
+                </div>
+                <div class="grid gap-4">
+                  <UiInput v-model="inputCep" label="CEP" mask="99999-999" placeholder="00000-000" />
+                  <UiInput
+                    v-model="inputTelefone"
+                    label="Telefone"
+                    mask="(99) 99999-9999"
+                    placeholder="(00) 00000-0000"
+                  />
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-3 font-normal">
+                A digitação formata na hora (<code class="font-mono">9</code> = dígito,
+                <code class="font-mono">A</code> = alfanumérico) e o <code class="font-mono">v-model</code>
+                recebe a string já formatada.
               </p>
             </div>
           </div>
@@ -1467,6 +1508,41 @@ const secoes = [
                 search-placeholder="Buscar idioma..."
                 :disabled="true"
                 helper-text="Bloqueado: traduções liberadas apenas pela equipe editorial."
+              />
+            </div>
+          </div>
+
+          <!-- Controle Segmentado (UiSegmented) -->
+          <div class="mt-5 border border-slate-200 rounded-xl p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <ToggleRight class="h-3.5 w-3.5 text-slate-500" />
+                <span class="text-xs font-bold text-slate-900">Controle Segmentado (&lt;UiSegmented /&gt;)</span>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-sky-100 text-sky-700 border border-sky-200">Escolha Única sem Dropdown</span>
+            </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed mt-1 mb-3">
+              Opções em uma única linha, um único ponto de parada de <code class="font-mono">Tab</code>, setas/Home/End para alternar e os recortes de foco
+              <span class="font-mono font-semibold text-lime-700">#1a9e07</span> / erro <span class="font-mono font-semibold text-rose-700">rose-700</span> do kit —
+              usado pelo campo Status do modal de usuário.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <UiSegmented
+                v-model="statusSegmentado"
+                label="Status"
+                :options="segmentosStatusDemo"
+              />
+              <UiSegmented
+                v-model="statusSegmentadoDesabilitado"
+                label="Status (desabilitado)"
+                :options="segmentosStatusDemo"
+                :disabled="true"
+              />
+              <UiSegmented
+                v-model="statusSegmentadoErro"
+                label="Status (erro)"
+                :options="segmentosStatusDemo"
+                error="Selecione o status."
               />
             </div>
           </div>
@@ -2378,6 +2454,36 @@ variant="lime"
                 </div>
               </UiModalSection>
             </div>
+
+            <!-- Empilhamento de modais (docs/01 §5.12) -->
+            <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-lg border border-slate-200 bg-slate-50">
+              <span class="text-xs text-slate-500">
+                Modal filho: <code class="font-mono text-slate-700">Escape</code> e
+                <code class="font-mono text-slate-700">Tab</code> chegam somente ao topo da pilha.
+              </span>
+              <UiButton variant="outline" size="sm" @click="modalFilhoAberto = true">
+                <template #leftIcon><Layers class="h-3.5 w-3.5" /></template>
+                Abrir modal filho
+              </UiButton>
+            </div>
+
+            <UiModal
+              v-model="modalFilhoAberto"
+              title="Modal filho"
+              subtitle="Empilhado sobre o modal de cadastro"
+              :icon="Layers"
+              size="xs"
+            >
+              <UiModalSection title="Conteúdo do filho" :icon="Layers">
+                <UiInput v-model="modalFilhoCampo" label="Campo do filho" />
+                <p class="text-[11px] text-slate-500">
+                  Ao fechar este modal, o foco volta ao botão acima e o modal pai permanece aberto.
+                </p>
+              </UiModalSection>
+              <template #footer>
+                <UiButton variant="outline" @click="modalFilhoAberto = false">Fechar filho</UiButton>
+              </template>
+            </UiModal>
 
             <template #footer>
               <UiButton variant="outline" @click="fecharModalDemo">Cancelar</UiButton>

@@ -137,16 +137,23 @@ const openDropdown = () => {
   })
 }
 
-const closeDropdown = () => {
+const closeDropdown = (devolverFoco = false) => {
   isOpen.value = false
   searchQuery.value = ''
   window.removeEventListener('scroll', aoRolar, true)
   window.removeEventListener('resize', aoRolar)
+  // Seleção/Escape/toggle devolvem o foco ao gatilho de forma determinística.
+  // Sem isso, no caminho do mouse o mousedown na opção arrasta o foco para o
+  // ancestral focável mais próximo (painel do UiModal, tabindex="-1"), o Tab
+  // seguinte cai no botão X do cabeçalho e o Enter fecha o modal (perda de dados).
+  if (devolverFoco) {
+    nextTick(() => triggerRef.value?.focus())
+  }
 }
 
 const toggleDropdown = () => {
   if (isOpen.value) {
-    closeDropdown()
+    closeDropdown(true)
   } else {
     openDropdown()
   }
@@ -155,17 +162,25 @@ const toggleDropdown = () => {
 const selectOption = (opt: SelectOption) => {
   emit('update:modelValue', opt.value)
   emit('change', opt.value)
-  closeDropdown()
+  closeDropdown(true)
 }
 
 const clearSelection = (e: MouseEvent) => {
   e.stopPropagation()
   emit('update:modelValue', '')
   emit('change', '')
+  // O X é desmontado (v-if) enquanto estava focado — sem devolver o foco ao gatilho
+  // ele cai no <body> e o Tab seguinte salta para o cabeçalho do modal.
+  nextTick(() => triggerRef.value?.focus())
 }
 
 // Navegação por teclado
 const handleKeyDown = (e: KeyboardEvent) => {
+  // Botões nativos dentro do select (ex.: X "limpar") tratam Enter/Space por conta
+  // própria — sem esse guard o preventDefault de abrir dropdown cancela o click
+  // gerado pelo Enter e o teclado não consegue limpar a seleção.
+  if ((e.target as HTMLElement).closest('button')) return
+
   if (!isOpen.value) {
     if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === ' ') {
       e.preventDefault()
@@ -177,7 +192,7 @@ const handleKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
-    closeDropdown()
+    closeDropdown(true)
   } else if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (highlightedIndex.value < filteredOptions.value.length - 1) {
@@ -294,6 +309,7 @@ watch(filteredOptions, () => {
           <button
             v-if="clearable && selectedOption && !disabled"
             type="button"
+            aria-label="Limpar seleção"
             class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none"
             @click="clearSelection"
           >
@@ -330,9 +346,10 @@ watch(filteredOptions, () => {
       </div>
     </div>
 
-    <!-- Erro: texto persistente abaixo do gatilho, anunciado por leitores de tela.
-         O ícone + tooltip interno permanecem apenas como reforço visual. -->
-    <p v-if="error" :id="erroId" role="alert" class="text-[11px] font-medium text-rose-700">
+    <!-- Erro: visualmente só o AlertCircle interno + borda vermelha (sem texto abaixo);
+         a mensagem permanece no DOM oculta (sr-only), anunciada por role="alert" e
+         referenciada pelo aria-describedby do gatilho. -->
+    <p v-if="error" :id="erroId" role="alert" class="sr-only">
       {{ error }}
     </p>
 
@@ -361,6 +378,7 @@ watch(filteredOptions, () => {
               ref="searchInputRef"
               v-model="searchQuery"
               type="text"
+              data-busca
               :placeholder="searchPlaceholder"
               class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
               style="outline: none !important; box-shadow: none !important;"

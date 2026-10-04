@@ -5,14 +5,20 @@ import {
   useUsuariosDemo,
   formatarUltimoAcesso,
   VARIANTE_POR_PERFIL,
-  VARIANTE_POR_STATUS
+  VARIANTE_POR_STATUS,
+  type UsuarioDemo
 } from './useUsuariosDemo'
 import { useToast } from '../../composables/useToast'
 
 const { toast } = useToast()
 const { usuariosFiltrados, filtrosAtivosCount } = useUsuariosDemo()
 
-// Fase 1 sem modais: os gatilhos avisam que a funcionalidade vem na próxima etapa
+// Abre o modal de usuário em modo de edição (coordenação na página da fase 2)
+const emit = defineEmits<{
+  (e: 'editar', usuario: UsuarioDemo): void
+}>()
+
+// Demais ações seguem o contrato de transição da fase 1: toast, sem modal
 const avisoProximaEtapa = (acao: string) => {
   toast.info('Gestão de Usuários', `${acao}: funcionalidade disponível na próxima etapa.`)
 }
@@ -97,7 +103,7 @@ const colunas: ColumnDef[] = [
               type="button"
               aria-label="Editar usuário"
               class="inline-flex items-center justify-center rounded p-0.5 text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-              @click="avisoProximaEtapa('Editar usuário')"
+              @click="emit('editar', row)"
             >
               <Pencil class="h-3.5 w-3.5" />
             </button>

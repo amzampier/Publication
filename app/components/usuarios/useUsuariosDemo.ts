@@ -1,11 +1,38 @@
-// Estado da página de Gestão de Usuários — fase 1 em memória (sem persistência,
-// sem chamadas de rede). Campos conforme docs/02 §3.5 (tabela usuarios) restritos
-// ao escopo da fase: nome, e-mail, perfil, status e último acesso.
+// Estado da página de Gestão de Usuários — fase em memória (sem persistência,
+// sem chamadas de rede). Campos do núcleo conforme docs/02 §3.5 (tabela usuarios);
+// telefone/função/departamento/endereço/SMTP/avatar/datas são o modelo estendido
+// do modal de cadastro, documentado no docs/06 (docs/02 permanece intocado).
 import { computed } from 'vue'
 import { useState } from '#app'
 
 export type PerfilUsuario = 'Administrador' | 'Editor' | 'Revisor' | 'Leitor'
 export type StatusUsuario = 'Ativo' | 'Inativo'
+/** Modo do modal de usuário — um componente, dois usos. */
+export type ModoUsuario = 'novo' | 'editar'
+/** Status da Configuração de E-mail (badge do bloco SMTP). */
+export type StatusSmtp = 'nao-testado' | 'testando' | 'conectado' | 'falha'
+
+export interface EnderecoUsuario {
+  cep: string
+  logradouro: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidade: string
+  /** Sigla da UF ('' = não informado) */
+  estado: string
+  regiao: string
+}
+
+export interface ConfigSmtpUsuario {
+  email: string
+  senha: string
+  provedor: string
+  servidor: string
+  porta: string
+  seguranca: string
+  status: StatusSmtp
+}
 
 export interface UsuarioDemo {
   id: string
@@ -15,6 +42,16 @@ export interface UsuarioDemo {
   status: StatusUsuario
   /** ISO; null = nunca acessou o sistema (exibe "-" na tabela) */
   ultimoAcesso: string | null
+  telefone: string
+  funcao: string
+  departamento: string
+  endereco: EnderecoUsuario
+  smtp: ConfigSmtpUsuario
+  /** dataURL do avatar; '' = sem avatar */
+  avatar: string
+  /** ISO; null = ainda não gravado (criação pendente) */
+  dataCadastro: string | null
+  atualizadoEm: string | null
 }
 
 export interface FiltrosUsuarios {
@@ -39,6 +76,27 @@ export const VARIANTE_POR_STATUS: Record<StatusUsuario, 'done' | 'neutral'> = {
   Inativo: 'neutral'
 }
 
+export const enderecoVazio = (): EnderecoUsuario => ({
+  cep: '',
+  logradouro: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
+  regiao: ''
+})
+
+export const smtpVazio = (): ConfigSmtpUsuario => ({
+  email: '',
+  senha: '',
+  provedor: '',
+  servidor: '',
+  porta: '',
+  seguranca: '',
+  status: 'nao-testado'
+})
+
 const agora = Date.now()
 // Data relativa a "hoje" — mantém o "Último acesso" sempre coerente na demo
 const dataAtras = (dias: number, horas: number, minutos = 0) => {
@@ -48,7 +106,16 @@ const dataAtras = (dias: number, horas: number, minutos = 0) => {
 }
 
 // Base de demonstração — 16 usuários cobrindo os 4 perfis e os 2 status
-export const USUARIOS: UsuarioDemo[] = [
+interface SementeUsuario {
+  id: string
+  nome: string
+  email: string
+  perfil: PerfilUsuario
+  status: StatusUsuario
+  ultimoAcesso: string | null
+}
+
+const SEMENTE: SementeUsuario[] = [
   { id: 'u-001', nome: 'Ana Carolina Ribeiro', email: 'ana.carolina@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(0, 9, 12) },
   { id: 'u-002', nome: 'Rafael Souza', email: 'rafael.souza@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(0, 8, 47) },
   { id: 'u-003', nome: 'Mariana Lopes', email: 'mariana.lopes@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(1, 17, 5) },
@@ -67,7 +134,30 @@ export const USUARIOS: UsuarioDemo[] = [
   { id: 'u-016', nome: 'Thiago Ramos', email: 'thiago.ramos@empresa.com.br', perfil: 'Editor', status: 'Inativo', ultimoAcesso: dataAtras(30, 11, 22) }
 ]
 
+/** Semente com o modelo estendido vazio — base de demonstração completa. */
+export const USUARIOS: UsuarioDemo[] = SEMENTE.map((u) => ({
+  ...u,
+  telefone: '',
+  funcao: '',
+  departamento: '',
+  endereco: enderecoVazio(),
+  smtp: smtpVazio(),
+  avatar: '',
+  dataCadastro: null,
+  atualizadoEm: null
+}))
+
+const clonar = (u: UsuarioDemo): UsuarioDemo => ({
+  ...u,
+  endereco: { ...u.endereco },
+  smtp: { ...u.smtp }
+})
+
 export const useUsuariosDemo = () => {
+  // Base reativa (fase 2): criado/editado em memória, perdido na recarga.
+  // Clone profundo da semente — a constante USUARIOS nunca é mutada.
+  const usuarios = useState<UsuarioDemo[]>('usuarios-base', () => USUARIOS.map(clonar))
+
   const filtros = useState<FiltrosUsuarios>('usuarios-filtros', () => ({
     perfil: '',
     status: ''
@@ -75,7 +165,7 @@ export const useUsuariosDemo = () => {
 
   const usuariosFiltrados = computed<UsuarioDemo[]>(() => {
     const f = filtros.value
-    return USUARIOS.filter((u) => {
+    return usuarios.value.filter((u) => {
       if (f.perfil && u.perfil !== f.perfil) return false
       if (f.status && u.status !== f.status) return false
       return true
@@ -91,7 +181,51 @@ export const useUsuariosDemo = () => {
     filtros.value = { perfil: '', status: '' }
   }
 
-  return { filtros, usuariosFiltrados, filtrosAtivosCount, limparFiltros }
+  return { usuarios, filtros, usuariosFiltrados, filtrosAtivosCount, limparFiltros }
+}
+
+/**
+ * Grava o rascunho do modal em memória (puro): cria com id novo e datas iguais
+ * ao instante; edita preservando a Data Cadastro e atualizando a Última.
+ * Devolve a base nova (imutável) e o registro gravado — quem tem o `useState`
+ * é quem atribui `usuarios.value = base`.
+ */
+export const salvarUsuario = (
+  base: UsuarioDemo[],
+  rascunho: UsuarioDemo,
+  modo: ModoUsuario
+): { base: UsuarioDemo[]; usuario: UsuarioDemo } => {
+  const instante = new Date().toISOString()
+
+  if (modo === 'novo') {
+    const maiorId = base.reduce((max, u) => {
+      const n = Number(u.id.replace(/\D/g, ''))
+      return Number.isFinite(n) && n > max ? n : max
+    }, 0)
+    const usuario: UsuarioDemo = {
+      ...clonar(rascunho),
+      id: `u-${String(maiorId + 1).padStart(3, '0')}`,
+      ultimoAcesso: null,
+      dataCadastro: instante,
+      atualizadoEm: instante
+    }
+    return { base: [...base, usuario], usuario }
+  }
+
+  const original = base.find((u) => u.id === rascunho.id)
+  const usuario: UsuarioDemo = {
+    ...clonar(rascunho),
+    dataCadastro: original?.dataCadastro ?? rascunho.dataCadastro,
+    atualizadoEm: instante,
+    ultimoAcesso: original?.ultimoAcesso ?? rascunho.ultimoAcesso
+  }
+  return { base: base.map((u) => (u.id === usuario.id ? usuario : u)), usuario }
+}
+
+/** 'dd/mm/yyyy HH:mm'; null/vazio -> '-' (nunca gravado) */
+export const formatarDataHora = (iso: string | null): string => {
+  if (!iso) return '-'
+  return formatarUltimoAcesso(iso)
 }
 
 /** 'dd/mm/yyyy HH:mm'; null/vazio -> '-' (usuário nunca acessou) */

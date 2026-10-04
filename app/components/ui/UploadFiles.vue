@@ -12,6 +12,7 @@ interface Props {
   mostrarCamera?: boolean
   preview?: string
   forma?: 'circular' | 'retrato' | 'retangular'
+  compacto?: boolean
   alt?: string
 }
 
@@ -24,6 +25,7 @@ const props = withDefaults(defineProps<Props>(), {
   mostrarCamera: true,
   preview: '',
   forma: 'circular',
+  compacto: false,
   alt: 'Pré-visualização do arquivo'
 })
 
@@ -100,14 +102,15 @@ function aoSoltar(ev: DragEvent) {
     <!-- Pré-visualização da imagem -->
     <div
       v-if="previewAtual"
-      class="relative flex h-28 items-center justify-center bg-slate-50 p-2"
+      class="relative flex h-28 items-center justify-center bg-slate-50"
+      :class="props.compacto ? 'p-1.5' : 'p-2'"
     >
       <img
         :src="previewAtual"
         :alt="props.alt"
         class="drop-shadow-sm"
         :class="props.forma === 'circular'
-          ? 'h-24 w-24 rounded-full object-contain'
+          ? 'h-24 w-24 rounded-full object-cover'
           : props.forma === 'retrato'
             ? 'h-24 w-[72px] rounded-xl object-cover'
             : 'max-h-20 max-w-full object-contain'"
@@ -118,11 +121,15 @@ function aoSoltar(ev: DragEvent) {
     <button
       v-else
       type="button"
-      class="flex min-h-28 w-full cursor-pointer flex-col items-center justify-center gap-1 px-4 py-3 text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+      class="flex min-h-28 w-full cursor-pointer flex-col items-center justify-center text-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+      :class="props.compacto ? 'gap-0.5 px-2 py-2' : 'gap-1 px-4 py-3'"
       @click="abrirPicker"
     >
-      <span class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:text-lime-700">
-        <Cloud class="h-4 w-4" />
+      <span
+        class="flex items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:text-lime-700"
+        :class="props.compacto ? 'h-6 w-6' : 'h-8 w-8'"
+      >
+        <Cloud :class="props.compacto ? 'h-3.5 w-3.5' : 'h-4 w-4'" />
       </span>
       <span class="text-xs font-semibold text-lime-700">{{ props.rotulo }}</span>
       <span class="text-[11px] text-slate-400">{{ props.dica }}</span>
@@ -152,16 +159,18 @@ function aoSoltar(ev: DragEvent) {
 
     <!-- Ícones no canto inferior direito: sempre no mobile; no desktop, no hover/foco -->
     <div
-      class="absolute bottom-2 right-2 z-10 flex gap-1.5 opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
+      class="absolute z-10 flex opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
+      :class="props.compacto ? 'bottom-1 right-1 gap-1' : 'bottom-2 right-2 gap-1.5'"
     >
       <Tooltip content="Incluir arquivo" position="top">
         <button
           type="button"
           aria-label="Incluir arquivo"
-          class="size-11 sm:size-8 rounded-lg bg-white/90 shadow-sm backdrop-blur-sm border border-slate-200 flex items-center justify-center text-lime-700 hover:bg-white hover:text-lime-700 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="rounded-lg bg-white/90 shadow-sm backdrop-blur-sm border border-slate-200 flex items-center justify-center text-lime-700 hover:bg-white hover:text-lime-700 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          :class="props.compacto ? 'size-6' : 'size-11 sm:size-8'"
           @click.stop="abrirPicker"
         >
-          <Plus class="h-4 w-4" />
+          <Plus :class="props.compacto ? 'h-3.5 w-3.5' : 'h-4 w-4'" />
         </button>
       </Tooltip>
 
@@ -173,10 +182,11 @@ function aoSoltar(ev: DragEvent) {
         <button
           type="button"
           aria-label="Tirar foto com a câmera"
-          class="size-11 sm:size-8 rounded-lg bg-white/90 shadow-sm backdrop-blur-sm border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-white hover:text-slate-900 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="rounded-lg bg-white/90 shadow-sm backdrop-blur-sm border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-white hover:text-slate-900 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          :class="props.compacto ? 'size-6' : 'size-11 sm:size-8'"
           @click.stop="emit('camera')"
         >
-          <Camera class="h-4 w-4" />
+          <Camera :class="props.compacto ? 'h-3.5 w-3.5' : 'h-4 w-4'" />
         </button>
       </Tooltip>
 
@@ -184,12 +194,15 @@ function aoSoltar(ev: DragEvent) {
         <button
           type="button"
           aria-label="Excluir arquivo"
-          class="size-11 sm:size-8 rounded-lg bg-white/90 shadow-sm backdrop-blur-sm border border-slate-200 flex items-center justify-center text-rose-500 hover:bg-white hover:text-rose-600 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="rounded-lg bg-white/90 shadow-sm backdrop-blur-sm border border-slate-200 flex items-center justify-center text-rose-500 hover:bg-white hover:text-rose-600 transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          :class="[
+            props.compacto ? 'size-6' : 'size-11 sm:size-8',
+            (!previewAtual && totalSelecionado === 0) ? 'opacity-40 cursor-not-allowed' : ''
+          ]"
           :disabled="!previewAtual && totalSelecionado === 0"
-          :class="(!previewAtual && totalSelecionado === 0) ? 'opacity-40 cursor-not-allowed' : ''"
           @click.stop="aoRemover"
         >
-          <Trash2 class="h-4 w-4" />
+          <Trash2 :class="props.compacto ? 'h-3.5 w-3.5' : 'h-4 w-4'" />
         </button>
       </Tooltip>
     </div>

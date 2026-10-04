@@ -1,3 +1,13 @@
+<script lang="ts">
+// Pilha de modais abertos, em ordem de abertura (docs/01 §5.12): só o topo da
+// pilha reage a Escape/Tab. Um modal filho (ex.: câmera sobre um formulário)
+// não fecha nem rouba o foco do modal subjacente; com um único modal aberto a
+// pilha tem um elemento e o comportamento é o mesmo de sempre.
+// Escopo de módulo: declarado no <script> comum para ser compartilhado por
+// todas as instâncias (<script setup> roda por instância).
+const pilhaModais: symbol[] = []
+</script>
+
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { X } from '@lucide/vue'
@@ -25,6 +35,15 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
   (e: 'close'): void
 }>()
+
+const idModal = Symbol('ui-modal')
+
+const desempilhar = () => {
+  const i = pilhaModais.indexOf(idModal)
+  if (i > -1) pilhaModais.splice(i, 1)
+}
+
+const ehTopoDaPilha = () => pilhaModais.at(-1) === idModal
 
 const panelRef = ref<HTMLElement | null>(null)
 const previousFocus = ref<HTMLElement | null>(null)
@@ -61,6 +80,8 @@ const getFocusable = () => {
 
 const handleKeydown = (e: KeyboardEvent) => {
   if (!props.modelValue) return
+  // Modal subjacente não responde enquanto outro está aberto por cima
+  if (!ehTopoDaPilha()) return
 
   if (e.key === 'Escape' && props.closeOnEsc) {
     e.preventDefault()
@@ -109,6 +130,7 @@ watch(
     if (import.meta.server) return
 
     if (open) {
+      pilhaModais.push(idModal)
       previousFocus.value = document.activeElement as HTMLElement | null
       lockScroll()
       window.addEventListener('keydown', handleKeydown)
@@ -118,6 +140,7 @@ watch(
         else panelRef.value?.focus()
       })
     } else {
+      desempilhar()
       window.removeEventListener('keydown', handleKeydown)
       unlockScroll()
       previousFocus.value?.focus()
@@ -128,6 +151,7 @@ watch(
 )
 
 onUnmounted(() => {
+  desempilhar()
   window.removeEventListener('keydown', handleKeydown)
   unlockScroll()
 })

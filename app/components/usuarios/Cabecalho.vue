@@ -5,17 +5,11 @@ import { useUsuariosDemo, formatarUltimoAcesso } from './useUsuariosDemo'
 import { gerarPdfUsuarios } from './gerarPdfUsuarios'
 import { gerarPdfFichaCadastral } from './gerarPdfFichaCadastral'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
-import { useToast } from '../../composables/useToast'
 
-const { toast } = useToast()
-
-// Fase 1: cadastro/edição vêm com os modais na próxima etapa (spec gestao-usuarios)
-const novoUsuario = () => {
-  toast.info(
-    'Gestão de Usuários',
-    'Cadastro de usuário: funcionalidade disponível na próxima etapa.'
-  )
-}
+// Abre o modal de usuário em modo de criação (coordenação na página da fase 2)
+const emit = defineEmits<{
+  (e: 'novo'): void
+}>()
 
 // Menu "Relatórios" (mini-menu role=menu — padrão do menu da conta do AppHeader)
 const menuAberto = ref(false)
@@ -161,7 +155,7 @@ const relacaoCompletaPdf = async () => {
         variant="primary"
         size="md"
         class="w-full sm:w-auto"
-        @click="novoUsuario"
+        @click="emit('novo')"
       >
         <template #leftIcon><Plus class="h-4 w-4" /></template>
         Novo Usuário

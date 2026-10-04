@@ -333,17 +333,19 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `type` | `string` | `'text'` | Tipo nativo do input |
 | `placeholder` | `string` | `''` | Placeholder (`text-slate-400`) |
 | `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
-| `error` | `string` | `''` | Texto persistente abaixo do campo (`role="alert"` + `aria-describedby`) + ícone com tooltip como reforço |
+| `error` | `string` | `''` | Erro do campo: **sem texto visível abaixo** — só overlay vermelho + `AlertCircle` à direita com tooltip; a mensagem fica no DOM oculta (`sr-only`, `role="alert"` + `aria-describedby`) para leitores de tela |
 | `helperText` | `string` | `''` | Texto auxiliar abaixo (`11px slate-500`) |
 | `leftIcon` / `rightIcon` | `Component \| null` | `null` | Ícone interno esquerdo/direito |
 | `mono` | `boolean` | `false` | `font-mono tabular-nums font-medium` (códigos/valores) |
 | `labelClass` / `inputClass` | `string` | `''` | Classes extras de label/input |
 | `forceFocus` | `boolean` | `false` | Simula o destaque de foco sem foco real |
+| `mask` | `string` | `''` | Máscara de digitação: `9` = dígito, `A` = alfanumérico, demais = literal fixo (ex.: `99999-999`, `(99) 99999-9999`) |
 
 - **Emits:** `update:modelValue(value: string)` · `rightIconClick()` (sem payload).
 - **Slots:** `labelRight` (à direita do label), `leftIcon`, `rightIcon` (alternativa à prop).
+- **Máscara:** formata durante a digitação (deleção no meio desloca os caracteres seguintes, padrão de máscara) e **o `v-model` recebe sempre a string já formatada** — quem grava o valor leva o texto com os literais; `maxlength` assume o tamanho da máscara.
 - **Foco canônico:** overlay `border-2 border-brand-focus` com classe `.ds-bottom-clip` — apenas a borda inferior e os dois cantos arredondados inferiores (`h-[34px]`, `rounded-lg`).
-- **Erro:** overlay idêntico em `border-rose-700` + `AlertCircle` interno à direita dentro de `<UiTooltip position="top">` (reforço); **tem precedência sobre `rightIcon`**; a mensagem aparece também como texto persistente abaixo do campo (`role="alert"`, `text-[11px] text-rose-700`) — anunciável sem mouse.
+- **Erro:** overlay idêntico em `border-rose-700` + `AlertCircle` interno à direita dentro de `<UiTooltip position="top">` (mensagem no hover); **tem precedência sobre `rightIcon`**; **nenhum texto aparece abaixo do componente** — a mensagem permanece no DOM oculta (`sr-only`) com `role="alert"` e `aria-describedby`, anunciada por leitores de tela.
 - **Gotchas:** input nativo com `outline:none` forçado; altura fixa `34px` — mesmo gabarito do `Select`; valor em `text-xs font-normal` (`mono` = `font-medium`, ver §1.2).
 
 ```vue
@@ -376,13 +378,14 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `mostrarCamera` | `boolean` | `true` | Exibe a ação "Tirar foto" |
 | `preview` | `string` | `''` | URL de preview externo (sobrepõe a interna) |
 | `forma` | `'circular' \| 'retrato' \| 'retangular'` | `'circular'` | Forma do preview |
+| `compacto` | `boolean` | `false` | Modo enxuto para colunas estreitas: padding `p-1.5`, ações `size-6` (`bottom-1 right-1 gap-1`) e estado vazio com `px-2 gap-0.5` + nuvem `h-6` |
 | `alt` | `string` | `'Pré-visualização do arquivo'` | Texto alternativo da imagem |
 
 - **Emits:** `change(arquivos: File[] | null)` — lista selecionada, ou `null` ao excluir · `camera()` (sem payload, para abrir o `CameraWeb`).
 - **Slots:** nenhum.
 - **Estados visuais** (borda `rounded-xl border-2`): **vazio** = tracejada `slate-300` + fundo `slate-50/50`, círculo com ícone `Cloud`, rótulo verde, dica e sugestão; **arrastando** = tracejada verde `border-lime-500 bg-lime-50/60`; **preenchido** = sólida `border-slate-200 bg-white`, altura equivalente (`min-h-28`).
-- **Preview por `forma`:** `circular` 96px `object-contain` (sem distorção) · `retrato` 96×72 `object-cover` · `retangular` `max-h-20 contain` (logo integral, sem corte).
-- **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`). Excluir desabilitado sem arquivo.
+- **Preview por `forma`:** `circular` 96px `object-cover` (preenche o círculo, corte centralizado — fotos horizontais da câmera não ficam "achadas") · `retrato` 96×72 `object-cover` · `retangular` `max-h-20 contain` (logo integral, sem corte).
+- **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`). Excluir desabilitado sem arquivo. No modo `compacto` as ações viram `size-6` com ícones `h-3.5` e recuo `bottom-1 right-1 gap-1` (cabe em colunas de ~88px sem vazar/ser cortado pelo `overflow-hidden`).
 - **Gotchas:** aceita clique e drag & drop (`dragover/dragleave/drop`); no single-file a prévia usa o 1º arquivo `image/*`; `URL.createObjectURL` é liberada com `revokeObjectURL` ao trocar/remover; no modo múltiplo lista os nomes + contagem.
 
 ```vue
@@ -471,16 +474,16 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60`, `aria-disabled` |
 | `clearable` | `boolean` | `true` | Botão X (limpa emite `''`) |
 | `leftIcon` | `Component \| null` | `null` | Ícone à esquerda do gatilho |
-| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro persistente abaixo do gatilho (`role="alert"`) |
+| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro **sem texto visível** (só overlay + `AlertCircle`; mensagem `sr-only` com `role="alert"`) |
 | `labelClass` | `string` | `''` | Classes extras no label |
 
 - **Emits:** `update:modelValue(value: string | number)` · **`change(value: string | number)`** (valor, nunca `Event`).
 - **Slots:** `leftIcon` (com fallback para a prop), `rightIcon`.
 - **ARIA:** gatilho `role="combobox"` com `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls`, **`aria-activedescendant`**; lista `role="listbox"`; itens `role="option"` + `aria-selected`; label clicável foca o gatilho.
-- **Teclado:** `Enter`/`Space`/`↓` abrem · `Esc` fecha · `↑`/`↓` navegam · `Enter` seleciona · `Tab` passa adiante. Com o dropdown **aberto** o `Esc` é consumido no próprio select (`stopPropagation`) — **não fecha um `UiModal` aberto por baixo**; o `Esc` seguinte, sem popup, fecha o modal (precedência: popup → modal).
+- **Teclado:** `Enter`/`Space`/`↓` abrem · `Esc` fecha · `↑`/`↓` navegam · `Enter` seleciona · `Tab` passa adiante. Com o dropdown **aberto** o `Esc` é consumido no próprio select (`stopPropagation`) — **não fecha um `UiModal` aberto por baixo**; o `Esc` seguinte, sem popup, fecha o modal (precedência: popup → modal). Ao fechar por **seleção (mouse ou teclado)**, `Esc` ou toggle, o foco **volta ao gatilho de forma determinística** — sem isso o `mousedown` na opção arrastava o foco para o ancestral focável mais próximo (o painel do `UiModal`, `tabindex="-1"`): o `Tab` seguinte caía no `X` do cabeçalho e o `Enter` fechava o modal, perdendo o formulário.
 - **Busca em tempo real:** normalização **NFD insensível a acentos e maiúsculas** sobre `label`, `value`, `description` e `badge`; contador "N opções encontradas"; foco automático no campo de busca ao abrir; vazio ⇒ "Nenhum resultado encontrado para ...".
-- **Visual:** gatilho `h-[34px]` (mesmo gabarito do `Input`); aberto = `border-b-brand-focus border-b-2` + chevron verde rotacionado; **erro** = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` + `AlertCircle` com `<UiTooltip>` como reforço + mensagem persistente abaixo (`role="alert"`); item destacado `bg-lime-50/60`, selecionado `font-semibold` + `Check` verde.
-- **Gotchas:** fecha com clique fora (listener global `window`); **auto-inversão vertical** — se não há espaço abaixo do gatilho para a lista, o dropdown abre **para cima** (`bottom-full mb-1`), medindo o limite do **ancestral rolável mais próximo** (container do formulário/corpo do modal, não só o viewport) × altura da lista, na abertura e a cada `scroll`/`resize` (listener em capture), evitando barra de rolagem no formulário; foco da busca usa `preventScroll` para não induzir scroll ao abrir; badges/contexto por item servem para listas densas (Catálogo de Publicações).
+- **Visual:** gatilho `h-[34px]` (mesmo gabarito do `Input`); aberto = `border-b-brand-focus border-b-2` + chevron verde rotacionado; **erro** = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` + `AlertCircle` com `<UiTooltip>` (mensagem no hover) e **sem texto abaixo do gatilho** (mensagem `sr-only` com `role="alert"`); item destacado `bg-lime-50/60`, selecionado `font-semibold` + `Check` verde.
+- **Gotchas:** fecha com clique fora (listener global `window`); o **X de limpar** tem `aria-label="Limpar seleção"`, responde a `Enter`/`Space` nativamente (o `handleKeyDown` ignora keydown originado em `button`, caso contrário o `preventDefault` de abrir o dropdown cancelaria o `click` gerado pelo `Enter`) e devolve o foco ao gatilho ao limpar (o próprio X é desmontado); **auto-inversão vertical** — se não há espaço abaixo do gatilho para a lista, o dropdown abre **para cima** (`bottom-full mb-1`), medindo o limite do **ancestral rolável mais próximo** (container do formulário/corpo do modal, não só o viewport) × altura da lista, na abertura e a cada `scroll`/`resize` (listener em capture), evitando barra de rolagem no formulário; foco da busca usa `preventScroll` para não induzir scroll ao abrir; badges/contexto por item servem para listas densas (Catálogo de Publicações).
 
 ```vue
 <UiSelect
@@ -505,11 +508,11 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `label` | `string` | `''` | Rótulo associado (`useId()`) |
 | `placeholder` | `string` | `'DD/MM/AAAA'` | Placeholder da máscara |
 | `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
-| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro persistente abaixo do campo (`role="alert"`) |
+| `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro **sem texto visível** (só overlay + `AlertCircle`; mensagem `sr-only` com `role="alert"`) |
 
 - **Emits:** `update:modelValue(date: Date | null)` · `change(date: Date | null)` — **só emite quando a máscara completa (10 chars) ou ao limpar** (valores intermediários não emitem).
 - **Máscara:** `DD/MM/AAAA` automática ao digitar (só dígitos, validação de data real no parse).
-- **Estados:** aberto/focado = `border-b-brand-focus border-b-2` (foco canônico) · erro = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` (sem contorno em toda a volta) + `AlertCircle` em `<UiTooltip>` como reforço + mensagem persistente abaixo (`role="alert"`) · botão X limpa (`change(null)`).
+- **Estados:** aberto/focado = `border-b-brand-focus border-b-2` (foco canônico) · erro = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` (sem contorno em toda a volta) + `AlertCircle` em `<UiTooltip>` (mensagem no hover) e **sem texto abaixo do campo** (mensagem `sr-only` com `role="alert"`) · botão X limpa (`change(null)`).
 - **Popover:** `<Transition>` com o `Calendar`; fecha ao selecionar, com `Esc` ou clique fora (listener global) — com o popover **aberto** o `Esc` é consumido aqui (`stopPropagation`) e não fecha um `UiModal` por baixo; sem popover, o `Esc` propaga (fecha o modal). Abre também no `focus` do campo. **Auto-inversão vertical** — se não há espaço abaixo do campo para o calendário, o popover abre **para cima** (`bottom-full mb-1`), medindo o limite do ancestral rolável mais próximo à altura real do popover na abertura e a cada `scroll`/`resize` (listener em capture), mesmo padrão do `Select` (§4.81); **largura limitada** a `max-w-[min(100%,calc(100vw-1rem))]` (nunca maior que o campo nem que a janela) com alinhamento `right-0` quando o `left-0` transbordar a borda direita, e o `Calendar` usa `w-72 max-w-full`.
 
 #### Calendar (embutido ou dentro do popover)
@@ -724,6 +727,7 @@ interface ColumnDef<T = any> {
 - **Slots:** `default` (corpo/sessões) e `footer` (ações; só renderiza se fornecido).
 - **Portal/camada:** `<Teleport to="body">` em `z-[60]` — acima dos toasts (`z-50`); backdrop cinza escuro `bg-zinc-900/50` (`#18181b` a 50%) que **não** fecha no clique (protege cadastros longos contra perda acidental).
 - **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto.
+- **Empilhamento:** os modais abertos formam uma pilha em escopo de módulo e **só o topo recebe `Escape` e `Tab`** — um modal filho (ex.: câmera sobre um formulário) fecha sozinho sem fechar nem roubar o foco do modal subjacente, e ao fechar devolve o foco ao gatilho dentro dele. Com um único modal aberto o comportamento é idêntico ao anterior. Demo na seção 15 do `/design` ("Abrir modal filho").
 - **Header:** fundo em degradê **`#112051` → `#0364f7`** (`bg-gradient-to-r from-brand-primary to-[#0364f7]`), `rounded-t-xl` (o filete esquerdo de accent `#4ed813` de **2.5px** acompanha o raio do canto superior esquerdo), ícone, título/subtítulo e `X` em `#f8fafc` (o `X` exibe tooltip "Fechar"), separador vertical branco/20.
 - **Corpo:** `bg-slate-100` com `max-h-[75vh]` e rolagem interna; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`), preservando `text-rose-*` em erro.
 - **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário).
@@ -810,3 +814,45 @@ interface ColumnDef<T = any> {
 ```
 
 <!-- C10 -->
+
+### 5.15 UiSegmented — seção 9 do `/design`
+
+**Arquivo:** `app/components/ui/Segmented.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string` | `''` | Valor escolhido (`v-model`); `''` = nenhum segmento marcado |
+| `options` | `{ value, label, tone? }[]` *(obrigatória)* | — | Segmentos, na ordem exibida; `tone` colore o segmento marcado |
+| `label` | `string` | `''` | Rótulo acima (vira `aria-labelledby` do `radiogroup`) |
+| `labelClass` | `string` | `''` | Classes extras no rótulo |
+| `error` | `string` | `''` | Mensagem de erro (ícone + `sr-only`, sem texto visível abaixo) |
+| `disabled` | `boolean` | `false` | Desabilita todos os segmentos |
+
+- **Emits:** `update:modelValue(string)` · `change(string)`.
+- **Tom do segmento marcado** (`tone`): `emerald` (`#047857`, Ativo — mesma cor do KPI), `slate`
+  (`#64748b`, Inativo), `navy` (`brand-primary`), `rose`, `sky`, `indigo`, `lime`
+  (`brand-focus`) — fundo pleno com texto branco; desmarcado transparente sobre a track com hover
+  `white/70`.
+- **Visual:** track `h-[34px]` (alinha com `Input`/`Select`) em `bg-slate-100 border-slate-200
+  rounded-lg p-1`; segmentos `rounded-md text-xs font-medium` `flex-1`; com `error` a track ganha
+  `pr-7` para o ícone `AlertCircle` não cobrir o último segmento.
+- **Foco:** recorte `brand-focus` com `.ds-bottom-clip` no container quando focado (mesmo canônico do
+  `Input`); **erro tem precedência** — recorte `rose-700`, rótulo `rose-700`, ícone `AlertCircle` com
+  tooltip e mensagem `sr-only` (`role="alert"`) ligada por `aria-describedby`.
+- **Teclado (`radiogroup`):** **um único ponto de parada de `Tab`** (segmento marcado; o primeiro
+  quando vazio) · `↑` `↓` `←` `→`, `Home`/`End` movem **e selecionam** (roving tabindex) ·
+  `Enter`/`Space` acionam o segmento focado (clique nativo do `<button>`).
+- **Gotchas:** o `v-model` pode ficar vazio — a obrigatoriedade fica a cargo do formulário (o Status
+  do modal de usuário valida e move o foco ao primeiro campo inválido); `data-campo` cai no root e o
+  `focarCampo` do formulário localiza o segmento via `[role="radio"][tabindex="0"]`.
+
+```vue
+<UiSegmented
+  v-model="status"
+  label="Status"
+  :options="[
+    { value: 'Ativo', label: 'Ativo', tone: 'emerald' },
+    { value: 'Inativo', label: 'Inativo', tone: 'slate' }
+  ]"
+/>
+```
