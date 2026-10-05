@@ -22,6 +22,9 @@ const exclusaoAberta = ref(false)
 const usuarioExcluir = ref<UsuarioDemo | null>(null)
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 
+// Modal de filtros (docs/06 §3.7): a página é dona do estado, como os demais
+const filtrosAbertos = ref(false)
+
 const abrirNovo = () => {
   modo.value = 'novo'
   usuarioAlvo.value = null
@@ -64,6 +67,7 @@ const confirmarExclusao = () => {
       <UsuariosTabela
         ref="tabelaRef"
         class="mt-5"
+        @filtros="filtrosAbertos = true"
         @editar="abrirEdicao"
         @excluir="abrirExclusao"
       />
@@ -79,6 +83,8 @@ const confirmarExclusao = () => {
         :usuario="usuarioExcluir"
         @confirmar="confirmarExclusao"
       />
+
+      <UsuariosFiltros v-model="filtrosAbertos" />
     </div>
   </div>
 </template>

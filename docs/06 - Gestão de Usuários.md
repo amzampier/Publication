@@ -11,8 +11,8 @@
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md) — componentes do kit usados
 (`UiModal`, `UiModalSection`, `UiInput`, `UiSelect`, `UiButton`, `UiBadge`, `UiKpi`,
 `UiDataTable`, `UiTooltip`, `UiUploadFiles`, `UiCameraWeb`)
-**Autoridade de comportamento:** specs da change `openspec/changes/gestao-usuarios-modal-cadastro`
-(`gestao-usuarios` + `design-system/modais`)
+**Autoridade de comportamento:** specs da capability `gestao-usuarios`
+(`openspec/specs/gestao-usuarios`) + deltas da change vigente `openspec/changes/gestao-usuarios-modal-filtros`
 
 > Este documento é a referência da tela `/admin/gestao-usuarios` e de tudo o que foi criado para
 > ela: componentes de domínio, o modal de usuário, a gravação em memória e os gatilhos remanescentes
@@ -53,7 +53,8 @@ A Gestão de Usuários é a tela de administração de usuários da Área Admini
   na recarga.
 - **Modal único:** "Novo Usuário" e o lápis da linha abrem o **mesmo** `UsuariosFormulario`, em
   modo de criação ou de edição (§3.4); o `Trash2` da linha abre o `UsuariosExclusao`, modal de
-  confirmação da exclusão (§5.6). Os demais gatilhos (Importar, Filtros, Convite, Bloquear e o
+  confirmação da exclusão (§5.6); o botão "Filtros" da tabela abre o `UsuariosFiltros`, modal de
+  filtros estruturais (§3.7). Os demais gatilhos (Importar, Convite, Bloquear e o
   ícone do CEP) seguem com toast de transição (§5.5).
 
 ## 2. Estrutura da página (componentização)
@@ -66,9 +67,10 @@ change). Cada parte é um componente em `app/components/usuarios/` (auto-import 
 admin/gestao-usuarios.vue            (page — definePageMeta + composição + estado dos modais)
 ├── <UsuariosCabecalho @novo />       ← título + menu "Relatórios" + "Novo Usuário"
 ├── <UsuariosKpis class="mt-6" />     ← 4 UiKpi do conjunto VIGENTE
-├── <UsuariosTabela ref @editar @excluir class="mt-5" />  ← UiDataTable (busca + badges + ações)
+├── <UsuariosTabela ref @filtros @editar @excluir class="mt-5" />  ← UiDataTable (busca + badges + ações)
 ├── <UsuariosFormulario v-model :modo :usuario />  ← modal único (5 blocos)
-└── <UsuariosExclusao v-model :usuario @confirmar />  ← modal de exclusão (§5.6)
+├── <UsuariosExclusao v-model :usuario @confirmar />  ← modal de exclusão (§5.6)
+└── <UsuariosFiltros v-model />       ← modal de filtros (§3.7)
 ```
 
 - **Estado de coordenação na página:** `modalAberto: ref(false)`, `modo: ref<'novo' | 'editar'>`
@@ -76,7 +78,9 @@ admin/gestao-usuarios.vue            (page — definePageMeta + composição + e
   `abrirEdicao(usuario)` idem com o registro da linha. Para a exclusão: `exclusaoAberta:
   ref(false)`, `usuarioExcluir: ref<UsuarioDemo | null>` e `tabelaRef` (encadeia o
   `focarBusca()` da tabela, §5.6) — `abrirExclusao(usuario)` guarda o alvo e abre;
-  `confirmarExclusao()` remove, avisa por toast, fecha e devolve o foco à busca. Nada fora da
+  `confirmarExclusao()` remove, avisa por toast, fecha e devolve o foco à busca. Para os filtros:
+  `filtrosAbertos: ref(false)` — o `@filtros` da tabela simplesmente o liga
+  (`filtrosAbertos = true`), sem alvo a guardar. Nada fora da
   página abre os diálogos.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8` (mesmo padrão
   da Auditoria).
@@ -120,22 +124,24 @@ admin/gestao-usuarios.vue            (page — definePageMeta + composição + e
 ### 3.3 `Tabela.vue` → `<UsuariosTabela>`
 
 - `UiDataTable` com `show-header-top` (busca), `show-filters` + `:filters-count="filtrosAtivosCount"`
-  + `@open-filters` → toast, e slot **`#filtersLeft`** com o **ícone `Import` solto** (plain
+  + `@open-filters` → **emite `@filtros` para a página, que abre o modal de filtros (§3.7)**, e
+  slot **`#filtersLeft`** com o **ícone `Import` solto** (plain
   `<button>`) + `UiTooltip` **"Importar Novos Usuários"** → toast.
 - **Colunas** (`minWidth`): Nome (170), E-mail (220), Perfil (110), Status (95), Último acesso
   (135, `format` → `formatarUltimoAcesso`, `null` vira `-`) + coluna Ações. **Sem rolagem
   horizontal** ≥ ~1280px (soma ≈ 830px dentro do `max-w-7xl`).
 - **Badges via slot `#cell`:** perfil → `reconciled`/`inReview`/`pending`/`neutral`
   (`VARIANTE_POR_PERFIL`); status → `done`/`neutral` (`VARIANTE_POR_STATUS`), ambos `size="sm"`.
-- **Coluna Ações:** slot `#actions` com `UiTooltip` + `aria-label` por ícone e cor semântica
-  permanente:
+- **Coluna Ações:** slot `#actions` com `UiTooltip` + `aria-label` por ícone; **ícone em
+  cinza claro (`text-slate-400`) por padrão, ganhando a cor semântica só no hover** (fundo
+  tinta correspondente; foco `brand-focus` recortado):
 
-  | Ação | Ícone | Cor | Comportamento |
+  | Ação | Ícone | Cor no hover | Comportamento |
   | :--- | :--- | :--- | :--- |
-  | Enviar o Convite | `MailCheck` | `text-sky-600` | toast de transição (§5) |
-  | Bloquear usuário | `Lock` | `text-amber-600` | toast de transição (§5) |
-  | Editar usuário | `Pencil` | `text-brand-focus` | **emite `@editar(usuario)` → abre o modal** |
-  | Excluir usuário | `Trash2` | `text-rose-700` | **emite `@excluir(usuario)` → abre o modal de exclusão (§5.6)** |
+  | Enviar o Convite | `MailCheck` | `hover:text-sky-600 hover:bg-sky-50` | toast de transição (§5) |
+  | Bloquear usuário | `Lock` | `hover:text-amber-600 hover:bg-amber-50` | toast de transição (§5) |
+  | Editar usuário | `Pencil` | `hover:text-brand-focus hover:bg-lime-50` | **emite `@editar(usuario)` → abre o modal** |
+  | Excluir usuário | `Trash2` | `hover:text-rose-700 hover:bg-rose-50` | **emite `@excluir(usuario)` → abre o modal de exclusão (§5.6)** |
 
 ### 3.4 `Formulario.vue` → `<UsuariosFormulario>` (modal único)
 
@@ -153,7 +159,7 @@ Recebe `v-model` (aberto), `modo: 'novo' | 'editar'` e `usuario: UsuarioDemo | n
   | 1 | Dados do Usuário (`User`) | avatar (`UiUploadFiles forma="circular" compacto` em coluna de 200px + `UiCameraWeb`), Nome\|E-mail na mesma linha; Telefone\|Função\|Departamento na mesma linha; **linha seguinte de largura total começando abaixo do avatar** (`sm:grid-cols-4`): **Status** em `UiSegmented` (controle segmentado Ativo\|Inativo, sem dropdown; rótulo trocado de "Situação"), Perfil, Senha, Confirmar Senha (olho `Eye`/`EyeOff` no `rightIcon`) — **sem seção/cabeçalho próprio "Acesso ao Sistema"** (removido) |
   | 2 | Endereço (`MapPin`) | `grid-cols-12` em 2 linhas — **1ª:** CEP (3, com ícone de busca **fora do input**, à direita), Endereço (**5**, maior), Número (**2**, menor), Complemento (2) · **2ª:** Bairro (3), Cidade (**4**, maior), Estado (**2**, menor, 27 `UFS`), Região (3, 5 `REGIOES`) |
   | 3 | Configurações de E-mail (`Mail`) | E-mail SMTP, Senha SMTP (1ª linha, 6+6); Provedor (3), Servidor SMTP (3), **Segurança (4, antes da Porta)**, Porta (**2**, menor) + ações de teste + badge de Status |
-  | 4 | Informações de Cadastro (`Clock`) | **somente na edição** — Data Cadastro e Última Atualização (`UiInput disabled`) |
+  | 4 | Informações de Cadastro (`Clock`) | **somente na edição** — Data Cadastro e Última Atualização (`UiInput disabled`, datas formatadas); **a criação não exibe esta seção** (modal abre com os blocos 1 a 3) |
 
 - **Máscaras (`UiInput mask`, §4):** CEP `99999-999`, Telefone `(99) 99999-9999` e Porta `9999` —
   o valor gravado é a **string formatada**.
@@ -168,8 +174,9 @@ Recebe `v-model` (aberto), `modo: 'novo' | 'editar'` e `usuario: UsuarioDemo | n
   caixa larga de 200px (borda tracejada só no vazio; ações `size-6` no canto inferior direito);
   converte a imagem em dataURL no `change`; o botão de câmera emite `@camera` e abre `UiCameraWeb` —
   captura atualiza a pré-visualização e fecha só a câmera (empilhamento, §4).
-- **Informações de Cadastro:** exibida **apenas ao editar**; criação exibe `-` com `helperText`
-  "Preenchidos ao salvar"; edição exibe `dd/mm/aaaa HH:mm` (`formatarDataHora`).
+- **Informações de Cadastro:** exibida **somente na edição**, com as datas em `dd/mm/aaaa HH:mm`
+  (`formatarDataHora`) — **a criação não exibe a seção** (o modal de criação tem os blocos
+  "Dados do Usuário", "Endereço" e "Configurações de E-mail").
 
 ### 3.5 `useUsuariosDemo.ts` — composable de estado (base reativa)
 
@@ -177,14 +184,18 @@ Recebe `v-model` (aberto), `modo: 'novo' | 'editar'` e `usuario: UsuarioDemo | n
   telefone, funcao, departamento, `endereco: EnderecoUsuario`, `smtp: ConfigSmtpUsuario`, avatar,
   dataCadastro, atualizadoEm), `PerfilUsuario`, `StatusUsuario`, `ModoUsuario`
   (`'novo' | 'editar'`), `StatusSmtp` (`'nao-testado' | 'testando' | 'conectado' | 'falha'`) e
-  `FiltrosUsuarios`.
+  `FiltrosUsuarios` (`{ usuario, perfil, status }` — `''` = todos em cada campo; `usuario`
+  guarda o **nome** do usuário, comparado por igualdade exata).
 - Constantes e helpers: `PERFIS`, `STATUSES`, `VARIANTE_POR_PERFIL`, `VARIANTE_POR_STATUS`,
   `enderecoVazio()`, `smtpVazio()`.
 - **Semente:** `USUARIOS` — os 16 usuários (2 Administradores, 5 Editores, 4 Revisores, 5
   Leitores; 13 Ativos, 3 Inativos, 1 sem acesso) com os campos estendidos vazios/`null`.
 - **Base reativa:** `useState('usuarios-base')` semeada com **clone profundo** da semente (a
-  constante nunca é mutada); `usuariosFiltrados` lê desse estado, junto com
-  `useState('usuarios-filtros')`, `filtrosAtivosCount` e `limparFiltros`.
+  constante nunca é mutada); `usuariosFiltrados` aplica os três predicados de
+  `useState('usuarios-filtros')`, junto com `filtrosAtivosCount` (0–3), `opcoesUsuarios`
+  (**nomes distintos da base** — não do conjunto filtrado, para um filtro de Status não
+  esconder opções do select de Usuário —, ordenados com `localeCompare(…, 'pt-BR')`) e
+  `limparFiltros` (zera os três campos).
 - **Gravação pura:** `salvarUsuario(base, rascunho, modo)` devolve `{ base, usuario }` — cria com
   id novo, `ultimoAcesso: null` e `dataCadastro`/`atualizadoEm` iguais ao instante; edita
   preservando `dataCadastro` e `ultimoAcesso`, atualizando `atualizadoEm`.
@@ -198,6 +209,35 @@ Espelho do `gerarPdfAuditoria.ts` (mesmo helper `rasterizarLogo`, estilos navy d
 rodapé "Página X de Y"): `gerarPdfUsuarios.ts` (A4 paisagem, autotable) e
 `gerarPdfFichaCadastral.ts` (A4 retrato, 1 página por usuário). **Nenhuma dependência nova**
 (`jspdf` + `jspdf-autotable` já existiam).
+
+### 3.7 `Filtros.vue` → `<UsuariosFiltros>` (modal de filtros)
+
+Espelho do `app/components/auditoria/Filtros.vue` (design D2 — os dois módulos de filtro são
+irmãos visuais e de contrato):
+
+- **Abertura:** `UiDataTable` da `Tabela` emite `@open-filters` → a tabela repassa como
+  `@filtros` → a página liga `filtrosAbertos` (§2). **Sem toast.**
+- **`UiModal size="sm"`** com título "Filtros de Usuários", subtítulo "Usuário, perfil e
+  status", ícone `Funnel` no cabeçalho (padrão dos `UiModal` do kit).
+- **Corpo em duas `UiModalSection`:**
+
+  | Seção (ícone) | Controle | Placeholder |
+  | :--- | :--- | :--- |
+  | Usuário (`User`) | `UiSelect` único — opções de `opcoesUsuarios` (nomes da **base**, sort `pt-BR`) | "Todos os usuários" |
+  | Perfil e Status (`ShieldCheck`) | dois `UiSelect` com `label` — `PERFIS` e `STATUSES` | "Todos os perfis" / "Todos os status" |
+
+  Em todos, `''` = "todos" e o **X** do select (`clearable`, default do kit) devolve o critério a
+  "todos".
+- **Rascunho local:** o modal edita uma cópia dos filtros (`watch` do `modelValue` ressincroniza
+  ao abrir); **Aplicar** grava no composable e fecha; **Cancelar**/`Escape`/`X` do cabeçalho
+  só fecham, descartando o rascunho; **Limpar Filtros** zera rascunho **e** composable
+  (o badge cai a 0 e a base completa volta) mantendo o modal aberto.
+- **Rodapé:** "Limpar Filtros" à esquerda; "Cancelar" (`outline`) + "Aplicar" (`primary`) à
+  direita — mesmo layout do irmão.
+- **Recálculo sem toque extra:** `filtros.value` é lido por `usuariosFiltrados`, então tabela,
+  KPIs (§3.2) e exportações (§3.1) recalculam sozinhos; o badge `filtersCount` da toolbar
+  reflete `filtrosAtivosCount` (0–3) **somente do estado aplicado** — o rascunho não o altera
+  (design D6).
 
 ## 4. Componentes de kit (alterados)
 
@@ -217,9 +257,9 @@ Nenhum componente novo; **dois itens de kit alterados** nesta change:
 
 ### 5.1 Abertura do modal (dois modos)
 
-- **Criação:** "Novo Usuário" (`Cabecalho` emite `@novo`) → modal vazio, Perfil e Situação sem
-  seleção, datas `-` + "Preenchidos ao salvar", Status da Configuração "Não testado" e senhas
-  vazias.
+- **Criação:** "Novo Usuário" (`Cabecalho` emite `@novo`) → modal vazio com os **três blocos**
+  (Dados do Usuário, Endereço, Configurações de E-mail — **sem** "Informações de Cadastro"),
+  Perfil e Situação sem seleção, Status da Configuração "Não testado" e senhas vazias.
 - **Edição:** lápis da linha (`Tabela` emite `@editar(usuario)`) → modal preenchido com o
   registro (datas formatadas, `smtp.status` reiniciado para "Não testado") e **campos de senha
   vazios**.
@@ -273,23 +313,22 @@ modal permanecendo aberto e os demais dados preservados.
 
 ### 5.5 Gatilhos remanescentes com toast (contrato de transição)
 
-Quatro controles da tela + o ícone do CEP continuam exibindo
+Três controles da tela + o ícone do CEP continuam exibindo
 `toast.info('Gestão de Usuários', '<ação>: funcionalidade disponível na próxima etapa.')` com
-**nenhum `UiModal`** aberto:
+**nenhum `UiModal`** aberto — **quatro toasts remanescentes** no total:
 
 | Gatilho | Onde |
 | :--- | :--- |
 | Importar novos usuários (`Import`) | toolbar da `Tabela` (slot `#filtersLeft`, tooltip "Importar Novos Usuários") |
-| Filtros | toolbar da `Tabela` (botão do `UiDataTable`) |
 | Enviar o Convite (`MailCheck`) | coluna Ações da `Tabela` |
 | Bloquear usuário (`Lock`) | coluna Ações da `Tabela` |
 | Buscar CEP (ViaCEP) | `rightIcon` do campo CEP no modal |
 
 **Superfícies complementares:** a busca da `UiDataTable` é texto livre instantâneo e filtra só
 as linhas da tabela; KPIs e exportação usam `usuariosFiltrados` do composable. **Filtros
-estruturais** (perfil/status) já existem no composable, mas a UI ainda não chegou — o badge do
-botão reflete `filtrosAtivosCount`. **Exportação** opera sempre sobre o conjunto vigente, pelo
-menu "Relatórios".
+estruturais** (usuário/perfil/status) têm UI desde o modal de filtros (§3.7) — o badge do botão
+reflete `filtrosAtivosCount` (0–3, só do estado aplicado). **Exportação** opera sempre sobre o
+conjunto vigente — filtrado, quando há filtros aplicados —, pelo menu "Relatórios".
 
 ### 5.6 Modal de exclusão (confirmação destrutiva)
 
@@ -382,6 +421,16 @@ Change `openspec/changes/gestao-usuarios-modal-exclusao` (spec-driven):
 `design-system/modais` e `vitrine` **não sofrem delta**: o diálogo abre em nível único (o
 empilhamento já existe) e a demo da vitrine obedece aos requisitos já vigentes.
 
+Change `openspec/changes/gestao-usuarios-modal-filtros` (spec-driven):
+
+| Capability | Operação |
+| :--- | :--- |
+| `gestao-usuarios` | **MODIFIED** — o botão "Filtros" sai da lista de gatilhos com toast e passa a abrir o modal de filtros (Importar, Convite, Bloquear e CEP seguem com toast); **ADDED** — requirement do modal de filtros (duas `UiModalSection` — Usuário e Perfil e Status —, três `UiSelect` com `''` = todos, rodapé Limpar/Cancelar/Aplicar, rascunho sincronizado na abertura, badge 0–3 só do estado aplicado, tabela/KPIs/exportação sobre o conjunto filtrado, operação só em memória) |
+
+`design-system/*` e `vitrine` **não sofrem delta**: nenhum componente de kit é criado ou
+alterado (o modal recompõe `UiModal`, `UiModalSection` e `UiSelect` já vigentes), o diálogo
+abre em nível único e a vitrine não muda.
+
 ## 11. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório).
@@ -394,8 +443,16 @@ empilhamento já existe) e a demo da vitrine obedece aos requisitos já vigentes
     estados do SMTP com porta `250` (Falha) e `587` (Conectado) + "Enviar teste" com toast;
     avatar com câmera empilhada (`Escape` fecha só a câmera); CEP com ícone → toast sem preencher;
     criar → Total 17, `Último acesso` `-`, toast de sucesso; editar → linha e "Última
-    Atualização" novos; recarga → base de 16 restaurada; **5 toasts remanescentes** (Importar,
-    Filtros, Convite, Bloquear, CEP) sem modal; sem rolagem horizontal ≥1280px.
+    Atualização" novos; recarga → base de 16 restaurada; **4 toasts remanescentes** (Importar,
+    Convite, Bloquear, CEP) sem modal;     ações de linha **em cinza claro (`text-slate-400`) e com a cor
+    semântica só no hover**; sem rolagem horizontal ≥1280px.
+  - **Filtros (§3.7):** botão "Filtros" → modal `sm` com ícone `Funnel`, seções "Usuário" e
+    "Perfil e Status" e **nenhum toast**; escolher perfil + Aplicar → modal fecha, tabela/KPIs
+    filtram, badge = 1 e CSV/PDF saem sobre o conjunto filtrado; rascunho alterado +
+    Cancelar/`Escape`/`X` → tudo idêntico ao anterior; "Limpar Filtros" com 2 aplicados →
+    selects zerados, badge some, base completa volta e **modal segue aberto**; X de um select +
+    Aplicar → critério volta a "todos"; combinação sem correspondência → estado vazio da
+    `DataTable` sem erro; recarga → filtros zerados.
   - **Exclusão (§5.6):** `Trash2` → modal `sm` com nome + e-mail em destaque no corpo, aviso em
     `rose-700` e **nenhum toast**; **Excluir** → linha sai, KPIs recalculam (Total 15),
     `toast.success` e o **foco cai no campo de busca** (Tab a partir dele percorre a tabela);
@@ -408,8 +465,7 @@ empilhamento já existe) e a demo da vitrine obedece aos requisitos já vigentes
 
 ## 12. Pendências e próximos passos
 
-- **Importar em lote** (ícone `Import` da tabela) e **Filtros de perfil/status** (botão
-  "Filtros") — hoje toast; a estrutura de filtros já existe no composable.
+- **Importar em lote** (ícone `Import` da tabela) — hoje toast.
 - **Ações de linha:** bloquear e enviar o convite seguem com toast (confirmação/modal próprio —
   o **excluir** já tem o modal de confirmação, §5.6); reativar usuário e redefinir senha ainda
   não existem.

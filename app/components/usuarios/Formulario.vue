@@ -370,12 +370,9 @@ const buscarCep = () => {
   )
 }
 
-// --- Datas de cadastro (desabilitadas) ---
+// --- Datas de cadastro (desabilitadas; seção só na edição) ---
 const dataCadastroTexto = computed(() => formatarDataHora(rascunho.value.dataCadastro))
 const atualizadoTexto = computed(() => formatarDataHora(rascunho.value.atualizadoEm))
-const textoAuxiliarData = computed(() =>
-  props.modo === 'novo' ? 'Preenchidos ao salvar' : ''
-)
 
 const opcoesPerfil = PERFIS.map((p) => ({ value: p, label: p }))
 const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emerald' | 'slate' }[] = [
@@ -636,7 +633,8 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
         </div>
       </UiModalSection>
 
-      <!-- 4. Informações de Cadastro (somente na edição) -->
+      <!-- 4. Informações de Cadastro — somente na edição; a criação abre com os
+           blocos 1 a 3, sem esta seção -->
       <UiModalSection
         v-if="modo === 'editar'"
         title="Informações de Cadastro"
@@ -647,13 +645,11 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
             label="Data Cadastro"
             :model-value="dataCadastroTexto"
             disabled
-            :helper-text="textoAuxiliarData"
           />
           <UiInput
             label="Última Atualização"
             :model-value="atualizadoTexto"
             disabled
-            :helper-text="textoAuxiliarData"
           />
         </div>
       </UiModalSection>

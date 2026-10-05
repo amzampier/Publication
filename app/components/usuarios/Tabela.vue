@@ -14,8 +14,9 @@ import { useToast } from '../../composables/useToast'
 const { toast } = useToast()
 const { usuariosFiltrados, filtrosAtivosCount } = useUsuariosDemo()
 
-// Abre modais na página (coordenação dela): edição e confirmação de exclusão
+// Abre modais na página (coordenação dela): filtros, edição e confirmação de exclusão
 const emit = defineEmits<{
+  (e: 'filtros'): void
   (e: 'editar', usuario: UsuarioDemo): void
   (e: 'excluir', usuario: UsuarioDemo): void
 }>()
@@ -56,7 +57,7 @@ const colunas: ColumnDef[] = [
       show-header-top
       show-filters
       :filters-count="filtrosAtivosCount"
-      @open-filters="avisoProximaEtapa('Filtros')"
+      @open-filters="emit('filtros')"
     >
       <template #filtersLeft>
         <UiTooltip content="Importar Novos Usuários" position="top">
@@ -89,7 +90,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Enviar o Convite"
-              class="inline-flex items-center justify-center rounded p-0.5 text-sky-600 hover:bg-sky-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="avisoProximaEtapa('Enviar o Convite')"
             >
               <MailCheck class="h-3.5 w-3.5" />
@@ -99,7 +100,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Bloquear usuário"
-              class="inline-flex items-center justify-center rounded p-0.5 text-amber-600 hover:bg-amber-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="avisoProximaEtapa('Bloquear usuário')"
             >
               <Lock class="h-3.5 w-3.5" />
@@ -109,7 +110,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Editar usuário"
-              class="inline-flex items-center justify-center rounded p-0.5 text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('editar', row)"
             >
               <Pencil class="h-3.5 w-3.5" />
@@ -119,7 +120,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Excluir usuário"
-              class="inline-flex items-center justify-center rounded p-0.5 text-rose-700 hover:bg-rose-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('excluir', row)"
             >
               <Trash2 class="h-3.5 w-3.5" />

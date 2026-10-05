@@ -55,6 +55,8 @@ export interface UsuarioDemo {
 }
 
 export interface FiltrosUsuarios {
+  /** '' = todos; valor é o `nome` do usuário */
+  usuario: string
   /** '' = todos */
   perfil: string
   /** '' = todos */
@@ -159,6 +161,7 @@ export const useUsuariosDemo = () => {
   const usuarios = useState<UsuarioDemo[]>('usuarios-base', () => USUARIOS.map(clonar))
 
   const filtros = useState<FiltrosUsuarios>('usuarios-filtros', () => ({
+    usuario: '',
     perfil: '',
     status: ''
   }))
@@ -166,6 +169,7 @@ export const useUsuariosDemo = () => {
   const usuariosFiltrados = computed<UsuarioDemo[]>(() => {
     const f = filtros.value
     return usuarios.value.filter((u) => {
+      if (f.usuario && u.nome !== f.usuario) return false
       if (f.perfil && u.perfil !== f.perfil) return false
       if (f.status && u.status !== f.status) return false
       return true
@@ -174,14 +178,20 @@ export const useUsuariosDemo = () => {
 
   const filtrosAtivosCount = computed(() => {
     const f = filtros.value
-    return [!!f.perfil, !!f.status].filter(Boolean).length
+    return [!!f.usuario, !!f.perfil, !!f.status].filter(Boolean).length
   })
 
+  // Opções do select de Usuário derivam da BASE (não do conjunto filtrado):
+  // um filtro de Status não pode esconder opções do select de Usuário (design D5)
+  const opcoesUsuarios = computed(() =>
+    [...new Set(usuarios.value.map((u) => u.nome))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  )
+
   const limparFiltros = () => {
-    filtros.value = { perfil: '', status: '' }
+    filtros.value = { usuario: '', perfil: '', status: '' }
   }
 
-  return { usuarios, filtros, usuariosFiltrados, filtrosAtivosCount, limparFiltros }
+  return { usuarios, filtros, usuariosFiltrados, filtrosAtivosCount, opcoesUsuarios, limparFiltros }
 }
 
 /**
