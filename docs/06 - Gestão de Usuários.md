@@ -304,8 +304,8 @@ Espelho do contrato dos irmãos Filtros/Exclusão (design D1–D9 da change
   usuário(s) importado(s) com sucesso.')` e o modal fecha.
 - **Descarte:** o `watch` do `modelValue` zera linhas/erro/processando **na abertura**;
   Cancelar, `Escape` ou o `X` do cabeçalho só fecham — a base fica idêntica e nenhum toast é
-  exibido. Reabrir sempre recomeça do zero (reimportar o mesmo arquivo marca tudo como
-  "E-mail já cadastrado").
+  exibido. Reabrir sempre recomeça do zero (reimportar o mesmo arquivo marca como "E-mail já
+  cadastrado" as linhas cujo e-mail já consta na base; as demais mantêm sua situação).
 - **Filtros intactos:** a importação não toca `useState('usuarios-filtros')` — registros fora do
   filtro vigente só passam a aparecer na tabela e nos KPIs quando o filtro for limpo.
 - **Sem rede:** parse e gravação 100% locais; nada persiste além do `useState` (a recarga

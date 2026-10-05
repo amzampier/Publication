@@ -62,7 +62,7 @@ O sistema SHALL abrir um modal de importação de usuários ao acionar o ícone 
 - **WHEN** nenhum registro está selecionado
 - **THEN** o botão exibe "Importar (0)" e fica desabilitado
 
-#### Scenario: Reimportar o mesmo arquivo marca tudo como já cadastrado
+#### Scenario: Reimportar o mesmo arquivo marca como já cadastrado as linhas cujo e-mail consta na base
 - **WHEN** após importar o usuário carrega novamente o mesmo arquivo
 - **THEN** todas as linhas cujo e-mail consta na base exibem "E-mail já cadastrado" (as demais mantêm sua situação de validação) e nenhuma fica selecionada
 
