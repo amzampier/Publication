@@ -251,7 +251,7 @@ Change `openspec/changes/gestao-auditoria` (spec-driven):
 | `design-system/data-table` | **ADDED** — busca no controle do DS + botão Filtros opcional (`showFilters`/`filtersCount`/`open-filters`) |
 | `configuracoes-globais` | **MODIFIED** — query de expurgo usa a tabela canônica `auditoria` |
 
-Após o archive, as deltas são sincronizadas para `openspec/specs/`.
+As deltas são sincronizadas para `openspec/specs/` via `/opsx-sync` **antes do archive** (fluxo adotado: com o sync prévio, o `openspec archive` puro recusaria um ADDED já aplicado na main — o fluxo de archive reconhece o estado "já sincronizado" e apenas move a change para `archive/`).
 
 Change seguinte, `relatorio-pdf-auditoria` (spec-driven): capability `auditoria` **ADDED**
 (recriação da spec principal — o archive anterior foi feito sem sync — com o requirement de

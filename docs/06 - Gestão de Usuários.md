@@ -2,7 +2,8 @@
 
 **Versão:** 2.0.0 · **Data:** 2026-10-04 · **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela principal de Gestão de Usuários — listagem (base em memória) com cabeçalho
-(Relatórios + Novo Usuário), KPIs, tabela e **modal único de cadastro/edição com os cinco blocos**
+(Relatórios + Novo Usuário), KPIs, tabela e **modal único de cadastro/edição com os quatro
+blocos (três na criação)**
 **Arquivos-fonte:** [`app/pages/admin/gestao-usuarios.vue`](../app/pages/admin/gestao-usuarios.vue) ·
 [`app/components/usuarios/`](../app/components/usuarios) ·
 [`app/config/brasil.ts`](../app/config/brasil.ts) ·
@@ -10,9 +11,9 @@
 **Vitrine:** [`/design`](../app/pages/design.vue) — seção 5 (máscara) e seção 15 (modal filho)
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md) — componentes do kit usados
 (`UiModal`, `UiModalSection`, `UiInput`, `UiSelect`, `UiButton`, `UiBadge`, `UiKpi`,
-`UiDataTable`, `UiTooltip`, `UiUploadFiles`, `UiCameraWeb`)
+`UiDataTable`, `UiTooltip`, `UiUploadFiles`, `UiCheckbox`, `UiCameraWeb`)
 **Autoridade de comportamento:** specs da capability `gestao-usuarios`
-(`openspec/specs/gestao-usuarios`) + deltas da change vigente `openspec/changes/gestao-usuarios-modal-filtros`
+(`openspec/specs/gestao-usuarios`) + deltas da change vigente `openspec/changes/modal-importacao-usuarios`
 
 > Este documento é a referência da tela `/admin/gestao-usuarios` e de tudo o que foi criado para
 > ela: componentes de domínio, o modal de usuário, a gravação em memória e os gatilhos remanescentes
@@ -54,7 +55,8 @@ A Gestão de Usuários é a tela de administração de usuários da Área Admini
 - **Modal único:** "Novo Usuário" e o lápis da linha abrem o **mesmo** `UsuariosFormulario`, em
   modo de criação ou de edição (§3.4); o `Trash2` da linha abre o `UsuariosExclusao`, modal de
   confirmação da exclusão (§5.6); o botão "Filtros" da tabela abre o `UsuariosFiltros`, modal de
-  filtros estruturais (§3.7). Os demais gatilhos (Importar, Convite, Bloquear e o
+  filtros estruturais (§3.7); o ícone "Importar" da tabela abre o `UsuariosImportar`, modal de
+  importação de planilha (§3.8). Os demais gatilhos (Convite, Bloquear e o
   ícone do CEP) seguem com toast de transição (§5.5).
 
 ## 2. Estrutura da página (componentização)
@@ -67,10 +69,11 @@ change). Cada parte é um componente em `app/components/usuarios/` (auto-import 
 admin/gestao-usuarios.vue            (page — definePageMeta + composição + estado dos modais)
 ├── <UsuariosCabecalho @novo />       ← título + menu "Relatórios" + "Novo Usuário"
 ├── <UsuariosKpis class="mt-6" />     ← 4 UiKpi do conjunto VIGENTE
-├── <UsuariosTabela ref @filtros @editar @excluir class="mt-5" />  ← UiDataTable (busca + badges + ações)
-├── <UsuariosFormulario v-model :modo :usuario />  ← modal único (5 blocos)
+├── <UsuariosTabela ref @filtros @editar @excluir @importar class="mt-5" />  ← UiDataTable (busca + badges + ações)
+├── <UsuariosFormulario v-model :modo :usuario />  ← modal único (4 blocos: 3 na criação)
 ├── <UsuariosExclusao v-model :usuario @confirmar />  ← modal de exclusão (§5.6)
-└── <UsuariosFiltros v-model />       ← modal de filtros (§3.7)
+├── <UsuariosFiltros v-model />       ← modal de filtros (§3.7)
+└── <UsuariosImportar v-model />      ← modal de importação (§3.8)
 ```
 
 - **Estado de coordenação na página:** `modalAberto: ref(false)`, `modo: ref<'novo' | 'editar'>`
@@ -80,7 +83,9 @@ admin/gestao-usuarios.vue            (page — definePageMeta + composição + e
   `focarBusca()` da tabela, §5.6) — `abrirExclusao(usuario)` guarda o alvo e abre;
   `confirmarExclusao()` remove, avisa por toast, fecha e devolve o foco à busca. Para os filtros:
   `filtrosAbertos: ref(false)` — o `@filtros` da tabela simplesmente o liga
-  (`filtrosAbertos = true`), sem alvo a guardar. Nada fora da
+  (`filtrosAbertos = true`), sem alvo a guardar. Para a importação:
+  `importarAberto: ref(false)` — o `@importar` da tabela simplesmente o liga
+  (`importarAberto = true`), sem alvo a guardar. Nada fora da
   página abre os diálogos.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8` (mesmo padrão
   da Auditoria).
@@ -126,7 +131,8 @@ admin/gestao-usuarios.vue            (page — definePageMeta + composição + e
 - `UiDataTable` com `show-header-top` (busca), `show-filters` + `:filters-count="filtrosAtivosCount"`
   + `@open-filters` → **emite `@filtros` para a página, que abre o modal de filtros (§3.7)**, e
   slot **`#filtersLeft`** com o **ícone `Import` solto** (plain
-  `<button>`) + `UiTooltip` **"Importar Novos Usuários"** → toast.
+  `<button>`) + `UiTooltip` **"Importar Novos Usuários"** → **emite `@importar` para a página,
+  que abre o modal de importação (§3.8)** — sem toast.
 - **Colunas** (`minWidth`): Nome (170), E-mail (220), Perfil (110), Status (95), Último acesso
   (135, `format` → `formatarUltimoAcesso`, `null` vira `-`) + coluna Ações. **Sem rolagem
   horizontal** ≥ ~1280px (soma ≈ 830px dentro do `max-w-7xl`).
@@ -185,7 +191,8 @@ Recebe `v-model` (aberto), `modo: 'novo' | 'editar'` e `usuario: UsuarioDemo | n
   dataCadastro, atualizadoEm), `PerfilUsuario`, `StatusUsuario`, `ModoUsuario`
   (`'novo' | 'editar'`), `StatusSmtp` (`'nao-testado' | 'testando' | 'conectado' | 'falha'`) e
   `FiltrosUsuarios` (`{ usuario, perfil, status }` — `''` = todos em cada campo; `usuario`
-  guarda o **nome** do usuário, comparado por igualdade exata).
+  guarda o **nome** do usuário, comparado por igualdade exata) e `RegistroImportacao`
+  (`{ nome, email, perfil, status }` — linha válida selecionada na importação, §3.8).
 - Constantes e helpers: `PERFIS`, `STATUSES`, `VARIANTE_POR_PERFIL`, `VARIANTE_POR_STATUS`,
   `enderecoVazio()`, `smtpVazio()`.
 - **Semente:** `USUARIOS` — os 16 usuários (2 Administradores, 5 Editores, 4 Revisores, 5
@@ -199,6 +206,9 @@ Recebe `v-model` (aberto), `modo: 'novo' | 'editar'` e `usuario: UsuarioDemo | n
 - **Gravação pura:** `salvarUsuario(base, rascunho, modo)` devolve `{ base, usuario }` — cria com
   id novo, `ultimoAcesso: null` e `dataCadastro`/`atualizadoEm` iguais ao instante; edita
   preservando `dataCadastro` e `ultimoAcesso`, atualizando `atualizadoEm`.
+  `importarUsuarios(base, registros: RegistroImportacao[])` devolve `{ base }` e adiciona os
+  registros selecionados na importação (§3.8): ids `u-00N` na sequência da base,
+  `ultimoAcesso: null`, endereço/SMTP/avatar vazios, datas = instante e **sem senha**.
 - **Formatadores:** `formatarUltimoAcesso(iso)` e `formatarDataHora(iso)` (`dd/mm/aaaa HH:mm`;
   `null` → `-`).
 - Arquivo em `components/usuarios/` (não é auto-importado): consumidores importam explicitamente.
@@ -239,14 +249,79 @@ irmãos visuais e de contrato):
   reflete `filtrosAtivosCount` (0–3) **somente do estado aplicado** — o rascunho não o altera
   (design D6).
 
+### 3.8 `Importar.vue` → `<UsuariosImportar>` (modal de importação)
+
+Espelho do contrato dos irmãos Filtros/Exclusão (design D1–D9 da change
+`modal-importacao-usuarios`):
+
+- **Abertura:** o ícone `Import` da `Tabela` (slot `#filtersLeft`, tooltip "Importar Novos
+  Usuários") emite `@importar` → a página liga `importarAberto` (§2). **Sem toast** — o gatilho
+  deixou de avisar e passou a abrir o modal (spec).
+- **`UiModal size="lg"`** com título "Importar Usuários", subtítulo "Planilha modelo (.xlsx)" e
+  ícone `Import` no cabeçalho.
+- **Modelo oficial:** [`docs/modelos/modelo-importacao-usuarios.xlsx`](../docs/modelos/modelo-importacao-usuarios.xlsx)
+  — planilha única "Usuários" com **somente o cabeçalho** `Nome | E-mail | Perfil | Status`
+  (sem linhas de exemplo). Não há botão "Baixar modelo" no modal: o arquivo vive no repositório
+  para consulta da equipe.
+- **Seção 1 — Planilha modelo (`Import`):** `UiUploadFiles` em **modo lista separada**
+  (`lista-separada`, `aceitar=".xlsx"`, `multiple=false`, `mostrarCamera=false`,
+  `rotuloLista="Arquivo selecionado"`, `docs/01` §5.4): com um arquivo selecionado **só o
+  card verde** fica visível (ícone, nome, tamanho e remover) — a caixa tracejada "Clique para
+  selecionar arquivos / Formatos aceitos: .xlsx" **some**; remover no ícone de lixeira
+  **devolve a caixa** e limpa o parse. `processando` exibe
+  "Lendo planilha…"; arquivo ilegível, `.xls` legado ou cabeçalho
+  divergente → **alerta `role="alert"` em `rose-700` com o motivo, sem montar a tabela**.
+- **Parser (`lerPlanilhaUsuarios.ts`):** `exceljs` via `import()` dinâmico (o chunk só carrega
+  no uso); cabeçalho validado com `trim` e sem distinção de maiúsculas, em qualquer ordem de
+  colunas; linhas totalmente vazias ignoradas; células com `trim`; e-mail comparado
+  **case-insensitive** contra a base vigente. Classificação de cada linha (nesta ordem):
+  **inválida** (nome/e-mail ausentes, e-mail malformado, `Perfil`/`Status` fora de
+  `PERFIS`/`STATUSES`, com o motivo) → **repetida** (segunda ocorrência do mesmo e-mail no
+  arquivo) → **já cadastrada** (e-mail presente na base) → **pronta**.
+- **Seção 2 — Pré-visualização da importação (`BetweenHorizontalEnd`)** (renderizada só com
+  linhas): `UiDataTable` (`showFilters=false`, `showHeaderTop` com busca, `default-page-size=10`):
+
+  | Coluna | Slot | Conteúdo |
+  | :--- | :--- | :--- |
+  | (seleção) | `cell(selecao)` | `UiCheckbox size="sm"` — habilitado **só** em `pronto` |
+  | Nome, E-mail | — | texto puro |
+  | Perfil, Status | `cell(perfil)`/`cell(status)` | `UiBadge` `VARIANTE_POR_PERFIL`/`VARIANTE_POR_STATUS` |
+  | Situação | `cell(situacao)` | badge do kit + motivo (`text-[10px]` `rose-700`) quando inválida |
+
+  | Situação | Badge kit | Seleção |
+  | :--- | :--- | :--- |
+  | "Pronto para importar" | `done` (emerald) | habilitada, **pré-marcada no parse** |
+  | "E-mail já cadastrado" | `pending` (laranja) | desabilitada |
+  | "Repetido no arquivo" | `neutral` (slate) | desabilitada |
+  | "Linha inválida" | `blocked` (rose-700) | desabilitada, motivo visível |
+
+  Toolbar: **"Selecionar todos os prontos"** no slot `filtersLeft` (`UiCheckbox` com
+  `indeterminate` quando marcado parcialmente; desabilitado sem linhas prontas).
+- **Rodapé:** contador "n de N linha(s) selecionada(s)" à esquerda; **Cancelar** (`outline`) +
+  **Importar (n)** (`primary`, **desabilitado em 0**).
+- **Gravação:** `importarUsuarios` (§3.5) grava somente as linhas selecionadas →
+  `usuarios.value` atualiza, KPIs recalculam, `toast.success('Gestão de Usuários', 'N
+  usuário(s) importado(s) com sucesso.')` e o modal fecha.
+- **Descarte:** o `watch` do `modelValue` zera linhas/erro/processando **na abertura**;
+  Cancelar, `Escape` ou o `X` do cabeçalho só fecham — a base fica idêntica e nenhum toast é
+  exibido. Reabrir sempre recomeça do zero (reimportar o mesmo arquivo marca tudo como
+  "E-mail já cadastrado").
+- **Filtros intactos:** a importação não toca `useState('usuarios-filtros')` — registros fora do
+  filtro vigente só passam a aparecer na tabela e nos KPIs quando o filtro for limpo.
+- **Sem rede:** parse e gravação 100% locais; nada persiste além do `useState` (a recarga
+  restaura a semente, como o resto do CRUD em memória).
+
 ## 4. Componentes de kit (alterados)
 
-Nenhum componente novo; **dois itens de kit alterados** nesta change:
+Nenhum componente novo; **três itens de kit alterados** para esta tela — **nesta change apenas
+o `UiUploadFiles`** (`UiInput` com `mask` e `UiModal` com pilha de modais vieram das changes
+anteriores):
 
 | Kit | Alteração | Contrato |
 | :--- | :--- | :--- |
 | `UiInput` | **prop `mask`** (sintaxe `9` dígito, `A` alfanumérico, demais literais) | formata no `@input`, `update:modelValue` emite a **string formatada**, `maxlength` segue o tamanho da máscara, `backspace` apaga o literal junto; recorte de erro continua `rose-700` — ver `docs/01` §5.3 |
 | `UiModal` | **pilha de modais** (`pilhaModais` no escopo do módulo) | `Escape`/`Tab` só processados quando a instância é o **topo** da pilha; fechar o topo restaura o foco no subjacente — ver `docs/01` §5.12 |
+| `UiUploadFiles` | **modo opt-in `listaSeparada`** (+ prop `rotuloLista`) | cards `emerald` com ícone/nome/tamanho/remover **acima**; caixa de prompt **some** no single-file enquanto houver arquivo e **volta** ao remover (no `multiple` permanece); default clássico intacto — ver `docs/01` §5.4 e o delta `design-system/upload` |
 
 - Continua valendo o registro da fase anterior: `UiDataTable` ganhou o slot opt-in `#filtersLeft`.
 - Os demais `Ui*` (`UiSelect`, `UiButton`, `UiBadge`, `UiKpi`, `UiTooltip`, `UiUploadFiles`,
@@ -313,13 +388,12 @@ modal permanecendo aberto e os demais dados preservados.
 
 ### 5.5 Gatilhos remanescentes com toast (contrato de transição)
 
-Três controles da tela + o ícone do CEP continuam exibindo
+Dois controles de linha + o ícone do CEP continuam exibindo
 `toast.info('Gestão de Usuários', '<ação>: funcionalidade disponível na próxima etapa.')` com
-**nenhum `UiModal`** aberto — **quatro toasts remanescentes** no total:
+**nenhum `UiModal`** aberto — **três toasts remanescentes** no total:
 
 | Gatilho | Onde |
 | :--- | :--- |
-| Importar novos usuários (`Import`) | toolbar da `Tabela` (slot `#filtersLeft`, tooltip "Importar Novos Usuários") |
 | Enviar o Convite (`MailCheck`) | coluna Ações da `Tabela` |
 | Bloquear usuário (`Lock`) | coluna Ações da `Tabela` |
 | Buscar CEP (ViaCEP) | `rightIcon` do campo CEP no modal |
@@ -381,14 +455,15 @@ conjunto vigente — filtrado, quando há filtros aplicados —, pelo menu "Rela
 
 - **Nenhum CSS dedicado novo** — só tokens e utilitários do DS (`bg-brand-primary`,
   `text-[#b070ef]`, `brand-focus` nos focos, `rose-700` nos erros, variantes do `UiBadge`).
-- **Nenhuma dependência nova:** `jspdf` + `jspdf-autotable` já eram usados pela Auditoria.
+- **Dependências:** `jspdf` + `jspdf-autotable` já eram usados pela Auditoria; a importação de
+  planilha soma o **`exceljs`** (parse local com `import()` dinâmico, §3.8).
 - Layout do modal: corpo em `UiModalSection` (cards brancos) com grids `sm:grid-cols-2` e coluna
   fixa de avatar `md:grid-cols-[140px_1fr]`; altura controlada pelo `max-h-[75vh]` com rolagem
   interna do `UiModal`.
 
 ## 9. Vitrine `/design`
 
-Três demonstrações novas acompanharam o kit alterado:
+Quatro demonstrações novas acompanharam o kit alterado:
 
 - **Seção 5 (Input):** card "MÁSCARA DE DIGITAÇÃO (MASK)" com campo CEP (`99999-999`) e telefone
   `((99) 99999-9999)`.
@@ -397,6 +472,9 @@ Três demonstrações novas acompanharam o kit alterado:
 - **Seção 15 (Modal):** botão **"Abrir Modal de Confirmação"** → `UiModal sm` com
   `UiModalSection` e rodapé **Cancelar (`outline`) + Excluir (`danger`)** — o mesmo padrão do
   modal de exclusão de usuário (§5.6); confirmar fecha e mostra um `toast.success` de demo.
+- **Seção 6 (Upload):** demo **"Lista separada"** do `UiUploadFiles` (modo `listaSeparada`) —
+  cards `emerald` acima da caixa, que **some** no single-file enquanto houver arquivo e
+  **volta** ao remover (§3.8 e `docs/01` §5.4).
 
 A seção **13. DataTable** continua sendo a referência da toolbar (busca + Filtros).
 
@@ -410,13 +488,17 @@ Change `openspec/changes/gestao-usuarios-modal-cadastro` (spec-driven):
 | `design-system/modais` | **ADDED** — `Escape` fecha só o topo, armadilha de `Tab` restrita ao topo, fechar o topo restaura o foco no subjacente |
 
 `design-system/layout-navigation` **não sofre delta** — declarar a rota desta tela é uso do
-requisito existente. Após o archive, as deltas são sincronizadas para `openspec/specs/`.
+requisito existente. As deltas são sincronizadas para `openspec/specs/` via `/opsx-sync`
+**antes do archive** (fluxo adotado: com o sync prévio, o `openspec archive` puro recusaria um
+ADDED já aplicado na main — o fluxo de archive reconhece o estado "já sincronizado" e apenas
+move a change para `archive/`).
 
 Change `openspec/changes/gestao-usuarios-modal-exclusao` (spec-driven):
 
 | Capability | Operação |
 | :--- | :--- |
-| `gestao-usuarios` | **MODIFIED** — o "Excluir" sai da lista de gatilhos com toast e passa a abrir o modal de confirmação (Convite, Bloquear, Importar, Filtros e CEP seguem com toast); **ADDED** — requirement do modal de exclusão (conteúdo do diálogo, confirmação remove do conjunto com KPIs + `toast.success`, descarte por Cancelar/`Escape`/`X`, foco devolvido à busca, operação só em memória) |
+| `gestao-usuarios` | **MODIFIED** — o "Excluir" sai da lista de gatilhos com toast e passa a abrir o modal de confirmação (à época:
+Convite, Bloquear, Importar, Filtros e CEP seguiam com toast); **ADDED** — requirement do modal de exclusão (conteúdo do diálogo, confirmação remove do conjunto com KPIs + `toast.success`, descarte por Cancelar/`Escape`/`X`, foco devolvido à busca, operação só em memória) |
 
 `design-system/modais` e `vitrine` **não sofrem delta**: o diálogo abre em nível único (o
 empilhamento já existe) e a demo da vitrine obedece aos requisitos já vigentes.
@@ -425,11 +507,21 @@ Change `openspec/changes/gestao-usuarios-modal-filtros` (spec-driven):
 
 | Capability | Operação |
 | :--- | :--- |
-| `gestao-usuarios` | **MODIFIED** — o botão "Filtros" sai da lista de gatilhos com toast e passa a abrir o modal de filtros (Importar, Convite, Bloquear e CEP seguem com toast); **ADDED** — requirement do modal de filtros (duas `UiModalSection` — Usuário e Perfil e Status —, três `UiSelect` com `''` = todos, rodapé Limpar/Cancelar/Aplicar, rascunho sincronizado na abertura, badge 0–3 só do estado aplicado, tabela/KPIs/exportação sobre o conjunto filtrado, operação só em memória) |
+| `gestao-usuarios` | **MODIFIED** — o botão "Filtros" sai da lista de gatilhos com toast e passa a abrir o modal de filtros (à época: Importar, Convite, Bloquear e CEP seguiam com toast); **ADDED** — requirement do modal de filtros (duas `UiModalSection` — Usuário e Perfil e Status —, três `UiSelect` com `''` = todos, rodapé Limpar/Cancelar/Aplicar, rascunho sincronizado na abertura, badge 0–3 só do estado aplicado, tabela/KPIs/exportação sobre o conjunto filtrado, operação só em memória) |
 
 `design-system/*` e `vitrine` **não sofrem delta**: nenhum componente de kit é criado ou
 alterado (o modal recompõe `UiModal`, `UiModalSection` e `UiSelect` já vigentes), o diálogo
 abre em nível único e a vitrine não muda.
+
+Change `openspec/changes/modal-importacao-usuarios` (spec-driven):
+
+| Capability | Operação |
+| :--- | :--- |
+| `gestao-usuarios` | **MODIFIED** — o ícone "Importar" sai da lista de gatilhos com toast e passa a abrir o modal de importação (Convite, Bloquear e CEP seguem com toast); **ADDED** — requirement do modal de importação (modelo `.xlsx` em `docs/modelos/` com as 4 colunas, erro de arquivo sem montar a tabela, pré-visualização com os quatro estados de Situação, linhas prontas pré-selecionadas, `Importar (n)` desabilitado em 0, gravação em memória sem senha e com datas do instante, descarte por Cancelar/`Escape`/`X`, filtros preservados, operação sem HTTP e descartada na recarga) |
+| `design-system/upload` | **ADDED (capability nova)** — modo lista separada do `UiUploadFiles`: cards com ícone/nome/tamanho/remover, caixa de prompt sumindo no single-file enquanto houver arquivo e voltando ao remover, `multiple` mantendo a caixa e modo clássico (default) inalterado |
+
+Nenhuma capability `design-system/*` **existente** muda (a nova `design-system/upload` cobre o
+modo lista) e a vitrine `/design` ganha a demo **"Lista separada"** na seção 6.
 
 ## 11. Verificação
 
@@ -443,8 +535,8 @@ abre em nível único e a vitrine não muda.
     estados do SMTP com porta `250` (Falha) e `587` (Conectado) + "Enviar teste" com toast;
     avatar com câmera empilhada (`Escape` fecha só a câmera); CEP com ícone → toast sem preencher;
     criar → Total 17, `Último acesso` `-`, toast de sucesso; editar → linha e "Última
-    Atualização" novos; recarga → base de 16 restaurada; **4 toasts remanescentes** (Importar,
-    Convite, Bloquear, CEP) sem modal;     ações de linha **em cinza claro (`text-slate-400`) e com a cor
+    Atualização" novos; recarga → base de 16 restaurada; **3 toasts remanescentes** (Convite,
+    Bloquear, CEP) sem modal;     ações de linha **em cinza claro (`text-slate-400`) e com a cor
     semântica só no hover**; sem rolagem horizontal ≥1280px.
   - **Filtros (§3.7):** botão "Filtros" → modal `sm` com ícone `Funnel`, seções "Usuário" e
     "Perfil e Status" e **nenhum toast**; escolher perfil + Aplicar → modal fecha, tabela/KPIs
@@ -453,6 +545,20 @@ abre em nível único e a vitrine não muda.
     selects zerados, badge some, base completa volta e **modal segue aberto**; X de um select +
     Aplicar → critério volta a "todos"; combinação sem correspondência → estado vazio da
     `DataTable` sem erro; recarga → filtros zerados.
+  - **Importação (§3.8):** ícone `Import` → tooltip "Importar Novos Usuários" e modal `lg`
+    **sem toast**, vazio e **sem tabela**; modelo `docs/modelos/` (4 colunas) →
+    pré-visualização com os **quatro estados de Situação** e linhas "Pronto para importar"
+    **pré-marcadas** (+ "Selecionar todos os prontos" marcando/desmarcando todas as prontas,
+    desabilitado sem linhas prontas); linha com e-mail da base, e-mail repetido no arquivo e
+    Perfil fora de `PERFIS` → "E-mail já cadastrado"/"Repetido no arquivo"/"Linha inválida" com
+    motivo e **checkbox desabilitado**; cabeçalho divergente/ilegível → alerta `rose-700`
+    **sem tabela** (idem cabeçalho válido sem linhas de dados: "O arquivo não contém nenhuma
+    linha de dados."); desmarcar tudo → `Importar (0)` desabilitado; importar n → base cresce
+    (KPIs recalculam),
+    toast com a contagem e modal fecha; reimportar o mesmo arquivo → linhas com e-mail já na
+    base (inclusive as recém-importadas) "E-mail já cadastrado" e nada selecionado; Cancelar/`Escape`/`X` → base idêntica e sem toast; filtros
+    aplicados permanecem após importar registros fora do filtro (só aparecem ao limpar);
+    recarga → base de 16 restaurada.
   - **Exclusão (§5.6):** `Trash2` → modal `sm` com nome + e-mail em destaque no corpo, aviso em
     `rose-700` e **nenhum toast**; **Excluir** → linha sai, KPIs recalculam (Total 15),
     `toast.success` e o **foco cai no campo de busca** (Tab a partir dele percorre a tabela);
@@ -465,11 +571,12 @@ abre em nível único e a vitrine não muda.
 
 ## 12. Pendências e próximos passos
 
-- **Importar em lote** (ícone `Import` da tabela) — hoje toast.
 - **Ações de linha:** bloquear e enviar o convite seguem com toast (confirmação/modal próprio —
   o **excluir** já tem o modal de confirmação, §5.6); reativar usuário e redefinir senha ainda
   não existem.
 - **ViaCEP:** busca real de CEP no modal (hoje toast + preenchimento manual).
+- **Modelo de importação:** botão "Baixar modelo" no modal (hoje o `.xlsx` vive só em
+  `docs/modelos/`) e suporte a `.xls` legado (o `exceljs` não lê o formato binário antigo).
 - **SMTP real:** trocar a simulação por conexão efetiva (hoje `setTimeout` + portas fixas).
 - **Backend:** `server/` com endpoints de CRUD de `usuarios`, autenticação JWT e RBAC real
   (`requirePermission`, `docs/02` §3.5/§7) — a página troca o composable por dados reais sem

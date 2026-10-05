@@ -14,11 +14,12 @@ import { useToast } from '../../composables/useToast'
 const { toast } = useToast()
 const { usuariosFiltrados, filtrosAtivosCount } = useUsuariosDemo()
 
-// Abre modais na página (coordenação dela): filtros, edição e confirmação de exclusão
+// Abre modais na página (coordenação dela): filtros, edição, exclusão e importação
 const emit = defineEmits<{
   (e: 'filtros'): void
   (e: 'editar', usuario: UsuarioDemo): void
   (e: 'excluir', usuario: UsuarioDemo): void
+  (e: 'importar'): void
 }>()
 
 // Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
@@ -64,8 +65,8 @@ const colunas: ColumnDef[] = [
           <button
             type="button"
             aria-label="Importar novos usuários"
-            class="inline-flex items-center justify-center rounded p-1 text-slate-500 hover:text-brand-primary hover:bg-slate-100 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-            @click="avisoProximaEtapa('Importar novos usuários')"
+            class="inline-flex items-center justify-center rounded p-1 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            @click="emit('importar')"
           >
             <Import class="h-4 w-4" />
           </button>

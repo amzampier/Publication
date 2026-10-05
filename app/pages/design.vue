@@ -1074,11 +1074,11 @@ const secoes = [
             </div>
             <div>
               <h2 class="text-base font-bold text-slate-900">6. Upload de Arquivos, Avatares & Logos (UploadFiles & CameraWeb)</h2>
-              <p class="text-xs text-slate-500">Área com bordas pontilhadas para arrastar ou clicar; sem faixa de rodapé — no canto inferior direito ficam só os ícones (incluir, foto e excluir), aparecendo no hover; o nome do arquivo aparece abaixo da prévia.</p>
+              <p class="text-xs text-slate-500">Área com bordas pontilhadas para arrastar ou clicar; sem faixa de rodapé — no canto inferior direito ficam só os ícones (incluir, foto e excluir), aparecendo no hover; o nome do arquivo aparece abaixo da prévia. O modo <b>lista separada</b> mostra os arquivos em cards acima da caixa; no modo single-file a caixa some enquanto houver arquivo selecionado (volta ao remover) e no modo múltiplo permanece para acrescentar mais.</p>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <!-- Avatar com câmera -->
             <div class="p-4 border border-slate-200 rounded-lg">
               <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Avatar</span>
@@ -1117,6 +1117,18 @@ const secoes = [
                 rotulo="Anexos de documentos"
                 dica="Qualquer formato, vários arquivos"
                 multiple
+                :mostrar-camera="false"
+              />
+            </div>
+
+            <!-- Lista separada (modo opt-in) -->
+            <div class="p-4 border border-slate-200 rounded-lg">
+              <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Lista separada</span>
+              <UiUploadFiles
+                class="mt-2"
+                lista-separada
+                rotulo="Clique para selecionar arquivos"
+                dica="Formatos aceitos: .pdf, .xlsx"
                 :mostrar-camera="false"
               />
             </div>

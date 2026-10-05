@@ -2,7 +2,7 @@
 
 **Versão:** 1.0.0 · **Data:** 2026-09-28 · **Idioma:** Português do Brasil (pt-BR)
 **Stack:** Nuxt 4 · Vue 3 (`<script setup>`) · Tailwind CSS · lucide-vue-next · Google Fonts (Plus Jakarta Sans + JetBrains Mono)
-**Autoridade de comportamento:** spec `openspec/specs/design-system/spec.md` — **ainda não criada**; até lá, este documento é a referência oficial dos padrões. Quando a spec existir, em caso de divergência ela prevalece sobre este documento.
+**Autoridade de comportamento:** specs em [`openspec/specs/design-system/`](../openspec/specs/design-system) — uma spec por capability (ex.: `upload`, `modais`, `typography`, `form-control-states`); em caso de divergência, a spec prevalece sobre este documento. Quando a capability não tiver spec própria, este documento é a referência oficial do padrão.
 **Vitrine:** rota [`/design`](../app/pages/design.vue) (16 seções numeradas)
 
 > Este documento descreve **apenas o que está implementado**: os 21 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
@@ -380,13 +380,16 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `forma` | `'circular' \| 'retrato' \| 'retangular'` | `'circular'` | Forma do preview |
 | `compacto` | `boolean` | `false` | Modo enxuto para colunas estreitas: padding `p-1.5`, ações `size-6` (`bottom-1 right-1 gap-1`) e estado vazio com `px-2 gap-0.5` + nuvem `h-6` |
 | `alt` | `string` | `'Pré-visualização do arquivo'` | Texto alternativo da imagem |
+| `listaSeparada` | `boolean` | `false` | **Modo lista separada:** os arquivos aparecem em cards **acima** e a caixa tracejada (prompt) fica **abaixo**, sumindo no single-file enquanto houver arquivo selecionado |
+| `rotuloLista` | `string` | `'Novos arquivos (serão enviados ao salvar)'` | Rótulo da lista de arquivos no modo `listaSeparada` |
 
 - **Emits:** `change(arquivos: File[] | null)` — lista selecionada, ou `null` ao excluir · `camera()` (sem payload, para abrir o `CameraWeb`).
 - **Slots:** nenhum.
 - **Estados visuais** (borda `rounded-xl border-2`): **vazio** = tracejada `slate-300` + fundo `slate-50/50`, círculo com ícone `Cloud`, rótulo verde, dica e sugestão; **arrastando** = tracejada verde `border-lime-500 bg-lime-50/60`; **preenchido** = sólida `border-slate-200 bg-white`, altura equivalente (`min-h-28`).
+- **Modo `listaSeparada`:** a raiz fica **sem borda** (`grid gap-3`) e renderiza — quando há arquivo — o rótulo `rotuloLista` + um **card `emerald` por arquivo** (`border-emerald-200 bg-emerald-50`, ícone `FileText`, nome truncado e tamanho em pt-BR, remover à direita em `rose-600` no hover). A caixa tracejada abaixo usa ícone `Upload` (não `Cloud`) com `rotulo`/`dica` e **some enquanto houver arquivo no single-file** (fica só o card), **voltando** quando o arquivo é removido; no `multiple` ela permanece para acrescentar mais. Sem nome por dentro da caixa e **sem ações de canto** (remover é só do card).
 - **Preview por `forma`:** `circular` 96px `object-cover` (preenche o círculo, corte centralizado — fotos horizontais da câmera não ficam "achadas") · `retrato` 96×72 `object-cover` · `retangular` `max-h-20 contain` (logo integral, sem corte).
 - **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`). Excluir desabilitado sem arquivo. No modo `compacto` as ações viram `size-6` com ícones `h-3.5` e recuo `bottom-1 right-1 gap-1` (cabe em colunas de ~88px sem vazar/ser cortado pelo `overflow-hidden`).
-- **Gotchas:** aceita clique e drag & drop (`dragover/dragleave/drop`); no single-file a prévia usa o 1º arquivo `image/*`; `URL.createObjectURL` é liberada com `revokeObjectURL` ao trocar/remover; no modo múltiplo lista os nomes + contagem.
+- **Gotchas:** aceita clique e drag & drop (`dragover/dragleave/drop`); no single-file a prévia usa o 1º arquivo `image/*`; `URL.createObjectURL` é liberada com `revokeObjectURL` ao trocar/remover; no modo múltiplo lista os nomes + contagem; no modo `listaSeparada` a prévia de imagem não é montada (o arquivo vira card) e o drop funciona sobre a área da lista.
 
 ```vue
 <UiUploadFiles

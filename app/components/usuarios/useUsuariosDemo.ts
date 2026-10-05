@@ -63,6 +63,14 @@ export interface FiltrosUsuarios {
   status: string
 }
 
+/** Linha válida selecionada na importação de planilha — nasce sem senha (convite manual numa próxima etapa). */
+export interface RegistroImportacao {
+  nome: string
+  email: string
+  perfil: PerfilUsuario
+  status: StatusUsuario
+}
+
 export const PERFIS: PerfilUsuario[] = ['Administrador', 'Editor', 'Revisor', 'Leitor']
 export const STATUSES: StatusUsuario[] = ['Ativo', 'Inativo']
 
@@ -230,6 +238,45 @@ export const salvarUsuario = (
     ultimoAcesso: original?.ultimoAcesso ?? rascunho.ultimoAcesso
   }
   return { base: base.map((u) => (u.id === usuario.id ? usuario : u)), usuario }
+}
+
+/**
+ * Grava os registros selecionados na importação de planilha (puro): ids na
+ * sequência da base, datas iguais ao instante, campos cadastrais vazios e
+ * **sem senha** (o convite será enviado manualmente numa próxima etapa).
+ * Devolve a base nova (imutável) — quem tem o `useState` é quem atribui
+ * `usuarios.value = base`.
+ */
+export const importarUsuarios = (
+  base: UsuarioDemo[],
+  registros: RegistroImportacao[]
+): { base: UsuarioDemo[] } => {
+  if (!registros.length) return { base }
+  const instante = new Date().toISOString()
+  let maiorId = base.reduce((max, u) => {
+    const n = Number(u.id.replace(/\D/g, ''))
+    return Number.isFinite(n) && n > max ? n : max
+  }, 0)
+  const novos = registros.map<UsuarioDemo>((r) => {
+    maiorId += 1
+    return {
+      id: `u-${String(maiorId).padStart(3, '0')}`,
+      nome: r.nome,
+      email: r.email,
+      perfil: r.perfil,
+      status: r.status,
+      ultimoAcesso: null,
+      telefone: '',
+      funcao: '',
+      departamento: '',
+      endereco: enderecoVazio(),
+      smtp: smtpVazio(),
+      avatar: '',
+      dataCadastro: instante,
+      atualizadoEm: instante
+    }
+  })
+  return { base: [...base, ...novos] }
 }
 
 /**

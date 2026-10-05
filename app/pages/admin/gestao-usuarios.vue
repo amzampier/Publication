@@ -25,6 +25,9 @@ const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 // Modal de filtros (docs/06 §3.7): a página é dona do estado, como os demais
 const filtrosAbertos = ref(false)
 
+// Modal de importação (docs/06): a página é dona do estado, como os demais
+const importarAberto = ref(false)
+
 const abrirNovo = () => {
   modo.value = 'novo'
   usuarioAlvo.value = null
@@ -70,6 +73,7 @@ const confirmarExclusao = () => {
         @filtros="filtrosAbertos = true"
         @editar="abrirEdicao"
         @excluir="abrirExclusao"
+        @importar="importarAberto = true"
       />
 
       <UsuariosFormulario
@@ -85,6 +89,8 @@ const confirmarExclusao = () => {
       />
 
       <UsuariosFiltros v-model="filtrosAbertos" />
+
+      <UsuariosImportar v-model="importarAberto" />
     </div>
   </div>
 </template>
