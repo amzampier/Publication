@@ -167,6 +167,8 @@ Recebe `v-model` (aberto), `modo: 'novo' | 'editar'` e `usuario: UsuarioDemo | n
   | 3 | Configurações de E-mail (`Mail`) | E-mail SMTP, Senha SMTP (1ª linha, 6+6); Provedor (3), Servidor SMTP (3), **Segurança (4, antes da Porta)**, Porta (**2**, menor) + ações de teste + badge de Status |
   | 4 | Informações de Cadastro (`Clock`) | **somente na edição** — Data Cadastro e Última Atualização (`UiInput disabled`, datas formatadas); **a criação não exibe esta seção** (modal abre com os blocos 1 a 3) |
 
+- **Ritmo vertical do modal (‑5px):** os gaps **verticais** valem **11px** (`gap-y-[11px]`) — entre os cards de seção, entre os blocos internos de uma seção e entre as linhas quebradas dos grids de campos —, ficando **16px** apenas na horizontal (`gap-x-4` entre colunas). O ajuste é pontual deste formulário: o grid interno das `UiModalSection` é alcançado pelo override `class="[&>div.grid]:gap-y-[11px]"` passado nas quatro seções (o `class` cai por fallthrough no `<section>` raiz e mira o wrapper `div.grid` do slot — se o template de `ModalSection.vue` mudar, rever o seletor); os defaults do kit (`docs/01` §5.12) continuam `gap-4` (16px) e os demais modais (Filtros, Importar, Exclusão, Câmera, Auditoria) não mudam.
+
 - **Máscaras (`UiInput mask`, §4):** CEP `99999-999`, Telefone `(99) 99999-9999` e Porta `9999` —
   o valor gravado é a **string formatada**.
 - **Ícone do CEP:** **somente o ícone** `MapPinCheck` (sem caixa de botão) logo à direita do input,

@@ -390,10 +390,14 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
     size="lg"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <div class="grid gap-4" @keydown.enter="aoEnter">
+    <div class="grid gap-y-[11px]" @keydown.enter="aoEnter">
       <!-- 1. Dados do Usuário -->
-      <UiModalSection title="Dados do Usuário" :icon="User">
-        <div class="grid gap-4 md:grid-cols-[200px_1fr]">
+      <UiModalSection
+        title="Dados do Usuário"
+        :icon="User"
+        class="[&>div.grid]:gap-y-[11px]"
+      >
+        <div class="grid gap-x-4 gap-y-[11px] md:grid-cols-[200px_1fr]">
           <UiUploadFiles
             forma="circular"
             compacto
@@ -404,7 +408,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
             @change="aoTrocarAvatar"
             @camera="cameraAberta = true"
           />
-          <div class="grid gap-4 sm:grid-cols-6">
+          <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-6">
             <UiInput
               v-model="rascunho.nome"
               data-campo="nome"
@@ -444,7 +448,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
           </div>
         </div>
 
-        <div class="grid gap-4 sm:grid-cols-4">
+        <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-4">
           <UiSegmented
             v-model="rascunho.status"
             data-campo="status"
@@ -484,8 +488,12 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
       </UiModalSection>
 
       <!-- 2. Endereço -->
-      <UiModalSection title="Endereço" :icon="MapPin">
-        <div class="grid gap-4 sm:grid-cols-12">
+      <UiModalSection
+        title="Endereço"
+        :icon="MapPin"
+        class="[&>div.grid]:gap-y-[11px]"
+      >
+        <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-12">
           <div class="flex items-end gap-2 sm:col-span-3">
             <UiInput
               v-model="rascunho.endereco.cep"
@@ -555,8 +563,12 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
       </UiModalSection>
 
       <!-- 3. Configurações de E-mail -->
-      <UiModalSection title="Configurações de E-mail" :icon="Mail">
-        <div class="grid gap-4 sm:grid-cols-12">
+      <UiModalSection
+        title="Configurações de E-mail"
+        :icon="Mail"
+        class="[&>div.grid]:gap-y-[11px]"
+      >
+        <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-12">
           <UiInput
             v-model="rascunho.smtp.email"
             class="sm:col-span-6"
@@ -639,8 +651,9 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
         v-if="modo === 'editar'"
         title="Informações de Cadastro"
         :icon="Clock"
+        class="[&>div.grid]:gap-y-[11px]"
       >
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-2">
           <UiInput
             label="Data Cadastro"
             :model-value="dataCadastroTexto"
