@@ -223,8 +223,9 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 - **Sidebar:** sessão "Administração" → item "Gestão de Auditoria" com `to: '/admin/auditoria'` (rótulo unificado com a página e o menu da conta)
   (`app/config/navigation.ts`) — fica ativo na rota (spec `layout-navigation`).
 - **Menu da conta:** item "Gestão de Auditoria" com o mesmo `to`.
-- Os demais itens sem rota (Gestão de Usuários, RBAC, Painel Executivo) permanecem como estão
-  (MEL-03 do RL01).
+- Na Administração os quatro itens têm rota (Configurações Globais, Gestão de Usuários, Gestão de
+  Auditoria e Perfis de Acesso (RBAC)); seguem sem rota os itens das demais sessões e o Painel
+  Executivo (MEL-03 do RL01).
 
 ## 8. Estilo e CSS dedicado
 

@@ -126,7 +126,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 ### 3.2 Bloco Account
 
 - Gatilho: avatar `h-7 w-7` circular `bg-brand-structure` (foto ou iniciais), **nome completo** e perfil (ex.: `Administrador`) em **duas linhas alinhadas à esquerda** (`text-left`, perfil abaixo do nome) — nome `text-xs font-normal`, perfil `text-[10px] font-normal`, ambos sem negrito — e chevron rotacionável.
-- Menu (`role="menu"`, `w-56`, `bg-white border border-slate-200`, texto `text-slate-700`, hover `bg-slate-100` + pinta o rótulo com a cor do item via `.ds-item-hover-dark`/`--item-cor` (fallback `#0f172a` — superfície branca), ícones `h-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), **itens em `text-xs font-light`**), nesta ordem: **Meu Perfil** — divisor `my-1 h-px bg-slate-200` — **Configurações Globais · Gestão de Usuários · Configuração de Perfis (RBAC) · Gestão de Auditoria** — divisor — **Encerrar Sessão** (rótulo em `#f45f71`).
+- Menu (`role="menu"`, `w-56`, `bg-white border border-slate-200`, texto `text-slate-700`, hover `bg-slate-100` + pinta o rótulo com a cor do item via `.ds-item-hover-dark`/`--item-cor` (fallback `#0f172a` — superfície branca), ícones `h-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), **itens em `text-xs font-light`**), nesta ordem: **Meu Perfil** — divisor `my-1 h-px bg-slate-200` — **Configurações Globais · Gestão de Usuários · Perfis de Acesso (RBAC) · Gestão de Auditoria** — divisor — **Encerrar Sessão** (rótulo em `#f45f71`).
 - Fecha com clique fora (`pointerdown` global) e tecla `Escape`.
 - Cores dos ícones (`MenuItem.cor`, via `:style`): `#50a1ff`, `#b070ef`, `#f5b302`, `#2dd4bf`; Encerrar Sessão `#f45f71`.
 

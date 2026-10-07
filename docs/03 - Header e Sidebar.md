@@ -130,7 +130,7 @@ Ordem fixa (definida em `config/navigation.ts`):
 | — | *divisor* | | |
 | 2 | Configurações Globais | `Settings` | `#50a1ff` |
 | 3 | Gestão de Usuários | `Users` | `#b070ef` |
-| 4 | Configuração de Perfis (RBAC) | `ShieldCheck` | `#f5b302` |
+| 4 | Perfis de Acesso (RBAC) | `ShieldCheck` | `#f5b302` |
 | 5 | Gestão de Auditoria | `ScrollText` | `#2dd4bf` |
 | — | *divisor* | | |
 | 6 | Encerrar Sessão | `LogOut` | `#f45f71` (rótulo colorido) |
@@ -368,7 +368,8 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
    a raiz `/` usa `app/layouts/default.vue` (Área Pública, sem shell) e o shell vive em
    `app/layouts/admin.vue`, aplicado sob `/admin/**`.
 2. Sem middleware de auth ou RBAC; itens com o campo opcional `to` já navegam (sidebar e menu
-   Account — hoje só `Configurações Globais` aponta para `/admin/configuracoes-globais`), e o item
+   Account — na Administração, os quatro itens apontam para `/admin/configuracoes-globais`,
+   `/admin/gestao-usuarios`, `/admin/auditoria` e `/admin/perfis-acesso`), e o item
    ativo da sidebar deriva da rota quando a URL casa com um `to`. Os demais itens seguem apenas
    estado visual — existe apenas a home `/admin`.
 3. `Parceiros` e `Softwares` não têm spec de domínio (módulos ainda não construídos).
