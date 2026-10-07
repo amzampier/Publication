@@ -28,6 +28,15 @@ const filtrosAbertos = ref(false)
 // Modal de importação (docs/06): a página é dona do estado, como os demais
 const importarAberto = ref(false)
 
+// Modal de convite (docs/06 §5.7): a página é dona do estado, como os demais
+const conviteAberto = ref(false)
+const usuarioConvite = ref<UsuarioDemo | null>(null)
+
+const abrirConvite = (usuario: UsuarioDemo) => {
+  usuarioConvite.value = usuario
+  conviteAberto.value = true
+}
+
 const abrirNovo = () => {
   modo.value = 'novo'
   usuarioAlvo.value = null
@@ -74,6 +83,7 @@ const confirmarExclusao = () => {
         @editar="abrirEdicao"
         @excluir="abrirExclusao"
         @importar="importarAberto = true"
+        @convite="abrirConvite"
       />
 
       <UsuariosFormulario
@@ -91,6 +101,8 @@ const confirmarExclusao = () => {
       <UsuariosFiltros v-model="filtrosAbertos" />
 
       <UsuariosImportar v-model="importarAberto" />
+
+      <UsuariosConvite v-model="conviteAberto" :usuario="usuarioConvite" />
     </div>
   </div>
 </template>

@@ -40,6 +40,8 @@ export interface UsuarioDemo {
   email: string
   perfil: PerfilUsuario
   status: StatusUsuario
+  /** senha provisória de acesso em memória; '' = ainda não definida (definida no convite) */
+  senha: string
   /** ISO; null = nunca acessou o sistema (exibe "-" na tabela) */
   ultimoAcesso: string | null
   telefone: string
@@ -123,31 +125,37 @@ interface SementeUsuario {
   perfil: PerfilUsuario
   status: StatusUsuario
   ultimoAcesso: string | null
+  /** ausente = sem telefone (exercita o cartão de WhatsApp desabilitado no convite) */
+  telefone?: string
 }
 
 const SEMENTE: SementeUsuario[] = [
-  { id: 'u-001', nome: 'Ana Carolina Ribeiro', email: 'ana.carolina@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(0, 9, 12) },
-  { id: 'u-002', nome: 'Rafael Souza', email: 'rafael.souza@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(0, 8, 47) },
-  { id: 'u-003', nome: 'Mariana Lopes', email: 'mariana.lopes@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(1, 17, 5) },
-  { id: 'u-004', nome: 'Carlos Mendes', email: 'carlos.mendes@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(1, 14, 30) },
-  { id: 'u-005', nome: 'Juliana Prado', email: 'juliana.prado@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(2, 16, 22) },
-  { id: 'u-006', nome: 'Paulo Roberto Tavares', email: 'paulo.tavares@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(2, 10, 5) },
-  { id: 'u-007', nome: 'Camila Rocha', email: 'camila.rocha@empresa.com.br', perfil: 'Editor', status: 'Inativo', ultimoAcesso: dataAtras(18, 14, 58) },
-  { id: 'u-008', nome: 'João Lima', email: 'joao.lima@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(3, 15, 40) },
-  { id: 'u-009', nome: 'Beatriz Almeida', email: 'beatriz.almeida@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(4, 11, 48) },
-  { id: 'u-010', nome: 'Lucas Ferreira', email: 'lucas.ferreira@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(5, 16, 10) },
-  { id: 'u-011', nome: 'Paula Torres', email: 'paula.torres@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(6, 14, 25) },
-  { id: 'u-012', nome: 'Eduardo Nunes', email: 'eduardo.nunes@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(7, 10, 33) },
-  { id: 'u-013', nome: 'Fernanda Dias', email: 'fernanda.dias@empresa.com.br', perfil: 'Leitor', status: 'Inativo', ultimoAcesso: dataAtras(25, 9, 5) },
-  { id: 'u-014', nome: 'Marcos Vinícius Barros', email: 'marcos.barros@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(9, 9, 44) },
+  { id: 'u-001', nome: 'Ana Carolina Ribeiro', email: 'ana.carolina@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(0, 9, 12), telefone: '(11) 98888-1001' },
+  { id: 'u-002', nome: 'Rafael Souza', email: 'rafael.souza@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(0, 8, 47), telefone: '(11) 98888-1002' },
+  { id: 'u-003', nome: 'Mariana Lopes', email: 'mariana.lopes@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(1, 17, 5), telefone: '(21) 98888-1003' },
+  { id: 'u-004', nome: 'Carlos Mendes', email: 'carlos.mendes@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(1, 14, 30), telefone: '(11) 98888-1004' },
+  { id: 'u-005', nome: 'Juliana Prado', email: 'juliana.prado@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(2, 16, 22), telefone: '(31) 98888-1005' },
+  { id: 'u-006', nome: 'Paulo Roberto Tavares', email: 'paulo.tavares@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(2, 10, 5), telefone: '(11) 98888-1006' },
+  { id: 'u-007', nome: 'Camila Rocha', email: 'camila.rocha@empresa.com.br', perfil: 'Editor', status: 'Inativo', ultimoAcesso: dataAtras(18, 14, 58), telefone: '(41) 98888-1007' },
+  { id: 'u-008', nome: 'João Lima', email: 'joao.lima@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(3, 15, 40), telefone: '(21) 98888-1008' },
+  { id: 'u-009', nome: 'Beatriz Almeida', email: 'beatriz.almeida@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(4, 11, 48), telefone: '(11) 98888-1009' },
+  { id: 'u-010', nome: 'Lucas Ferreira', email: 'lucas.ferreira@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(5, 16, 10), telefone: '(51) 98888-1010' },
+  { id: 'u-011', nome: 'Paula Torres', email: 'paula.torres@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(6, 14, 25), telefone: '(11) 98888-1011' },
+  { id: 'u-012', nome: 'Eduardo Nunes', email: 'eduardo.nunes@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(7, 10, 33), telefone: '(19) 98888-1012' },
+  { id: 'u-013', nome: 'Fernanda Dias', email: 'fernanda.dias@empresa.com.br', perfil: 'Leitor', status: 'Inativo', ultimoAcesso: dataAtras(25, 9, 5), telefone: '(85) 98888-1013' },
+  { id: 'u-014', nome: 'Marcos Vinícius Barros', email: 'marcos.barros@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(9, 9, 44), telefone: '(11) 98888-1014' },
   { id: 'u-015', nome: 'Sofia Mendonça', email: 'sofia.mendonca@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: null },
   { id: 'u-016', nome: 'Thiago Ramos', email: 'thiago.ramos@empresa.com.br', perfil: 'Editor', status: 'Inativo', ultimoAcesso: dataAtras(30, 11, 22) }
 ]
 
-/** Semente com o modelo estendido vazio — base de demonstração completa. */
+/** Senha provisória fixa da base de demonstração (fase 1, em memória). */
+export const SENHA_DEMO = 'Public@2026'
+
+/** Semente com o modelo estendido — base de demonstração completa. */
 export const USUARIOS: UsuarioDemo[] = SEMENTE.map((u) => ({
   ...u,
-  telefone: '',
+  senha: SENHA_DEMO,
+  telefone: u.telefone ?? '',
   funcao: '',
   departamento: '',
   endereco: enderecoVazio(),
@@ -243,7 +251,7 @@ export const salvarUsuario = (
 /**
  * Grava os registros selecionados na importação de planilha (puro): ids na
  * sequência da base, datas iguais ao instante, campos cadastrais vazios e
- * **sem senha** (o convite será enviado manualmente numa próxima etapa).
+ * **sem senha** (a senha provisória é atribuída no envio do convite).
  * Devolve a base nova (imutável) — quem tem o `useState` é quem atribui
  * `usuarios.value = base`.
  */
@@ -265,6 +273,7 @@ export const importarUsuarios = (
       email: r.email,
       perfil: r.perfil,
       status: r.status,
+      senha: '',
       ultimoAcesso: null,
       telefone: '',
       funcao: '',

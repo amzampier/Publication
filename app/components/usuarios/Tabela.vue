@@ -14,19 +14,20 @@ import { useToast } from '../../composables/useToast'
 const { toast } = useToast()
 const { usuariosFiltrados, filtrosAtivosCount } = useUsuariosDemo()
 
-// Abre modais na página (coordenação dela): filtros, edição, exclusão e importação
+// Abre modais na página (coordenação dela): filtros, edição, exclusão, importação e convite
 const emit = defineEmits<{
   (e: 'filtros'): void
   (e: 'editar', usuario: UsuarioDemo): void
   (e: 'excluir', usuario: UsuarioDemo): void
   (e: 'importar'): void
+  (e: 'convite', usuario: UsuarioDemo): void
 }>()
 
 // Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
-// Demais ações seguem o contrato de transição da fase 1: toast, sem modal
+// Só a ação de bloqueio segue o contrato de transição da fase 1: toast, sem modal
 const avisoProximaEtapa = (acao: string) => {
   toast.info('Gestão de Usuários', `${acao}: funcionalidade disponível na próxima etapa.`)
 }
@@ -92,7 +93,7 @@ const colunas: ColumnDef[] = [
               type="button"
               aria-label="Enviar o Convite"
               class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-sky-600 hover:bg-sky-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-              @click="avisoProximaEtapa('Enviar o Convite')"
+              @click="emit('convite', row)"
             >
               <MailCheck class="h-3.5 w-3.5" />
             </button>

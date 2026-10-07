@@ -24,6 +24,7 @@ const cancelar = () => emit('update:modelValue', false)
   <UiModal
     :model-value="modelValue"
     title="Excluir Usuário"
+    subtitle="Confirme a exclusão do usuário da base em memória"
     :icon="Trash2"
     size="sm"
     @update:model-value="emit('update:modelValue', $event)"

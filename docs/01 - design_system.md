@@ -18,7 +18,7 @@
 3. [Layout & Navegação](#3-layout--navegação)
 4. [Convenções Globais](#4-convenções-globais)
 
-**Componentes** (5.1–5.14 na ordem das seções do `/design`)
+**Componentes** (5.1–5.16)
 
 5. [Componentes](#5-componentes)
    - [5.1 Button](#51-button--seção-3-do-design) (seção 3)
@@ -35,6 +35,8 @@
    - [5.12 UiModal & UiModalSection](#512-uimodal--uimodalsection--seção-15-do-design) (seção 15)
    - [5.13 UiTabs](#513-uitabs--seção-16-do-design) (seção 16)
    - [5.14 UiSlider](#514-uislider--seção-16-do-design) (seção 16)
+   - [5.15 UiSegmented](#515-uisegmented--seção-9-do-design) (seção 9)
+   - [5.16 UiChoiceCard](#516-uichoicecard--seção-17-do-design) (seção 17)
 
 ## 1. Princípios & Tipografia
 
@@ -724,7 +726,7 @@ interface ColumnDef<T = any> {
 | `title` | `string` *(obrigatória)* | — | Título do header |
 | `subtitle` | `string` | `''` | Subtítulo do header |
 | `icon` | component | `null` | Ícone lucide à esquerda do separador |
-| `size` | `'xs' \| 'sm' \| 'md' \| 'lg'` | `'md'` | Larguras 384 / 480 / 640 / 880px (`xs` é uso pontual, ex.: modal da câmera) |
+| `size` | `'xs' \| 'sm' \| 'md' \| 'lg' \| 'xl'` | `'md'` | Larguras 384 / 480 / 640 / 880 / 1120px (`xs` é uso pontual, ex.: modal da câmera; `xl` é o modal de convite — `docs/06` §3.9) |
 | `closeOnEsc` | `boolean` | `true` | Permite fechar por `Escape` |
 
 - **Emits:** `update:modelValue` (boolean) e `close` (todos os fechamentos — X, Escape, ações do footer).
@@ -733,7 +735,8 @@ interface ColumnDef<T = any> {
 - **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto.
 - **Empilhamento:** os modais abertos formam uma pilha em escopo de módulo e **só o topo recebe `Escape` e `Tab`** — um modal filho (ex.: câmera sobre um formulário) fecha sozinho sem fechar nem roubar o foco do modal subjacente, e ao fechar devolve o foco ao gatilho dentro dele. Com um único modal aberto o comportamento é idêntico ao anterior. Demo na seção 15 do `/design` ("Abrir modal filho").
 - **Header:** fundo em degradê **`#112051` → `#0364f7`** (`bg-gradient-to-r from-brand-primary to-[#0364f7]`), `rounded-t-xl` (o filete esquerdo de accent `#4ed813` de **2.5px** acompanha o raio do canto superior esquerdo), ícone, título/subtítulo e `X` em `#f8fafc` (o `X` exibe tooltip "Fechar"), separador vertical branco/20.
-- **Corpo:** `bg-slate-100` com `max-h-[75vh]` e rolagem interna; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`), preservando `text-rose-*` em erro.
+- **Altura:** o **painel** é limitado por `max-h-[calc(100vh-2rem)]` (o `p-4` da camada) e o **corpo** ocupa o restante via `flex-1 min-h-0` — a rolagem interna só aparece quando o conteúdo excede `100vh − header − footer − 32px`, eliminando a barra antes inevitável em telas de 768px.
+- **Corpo:** `bg-slate-100` com rolagem interna (`overflow-y-auto`); espaçamento lateral/inferior de 20px (`px-5 pb-5`) e **topo de 15px** (`pt-[15px]`) até a primeira sessão; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`), preservando `text-rose-*` em erro.
 - **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário; diálogos de confirmação destrutiva também usam a variante `danger` — ex.: modal de exclusão de usuário, `docs/06` §5.6).
 
 `UiModalSection` (sessão de campos dentro do `default`):
@@ -744,7 +747,7 @@ interface ColumnDef<T = any> {
 | `icon` | component | `null` | Ícone da sessão em `text-lime-700` **sobre fundo branco** à esquerda do título |
 
 - **Slot:** `default` para os campos; card branco com divisória `slate-200` a **2px** do título e **8px** dos campos (`mt-0.5 mb-2`); o grid de campos aplica `min-w-0` nos filhos (`[&>*]:min-w-0`) para conteúdos de largura intrínseca (vídeo, selects) não gerarem scroll horizontal no corpo do modal.
-- **Gotchas:** o backdrop nunca fecha no clique — para permitir, use apenas X/footer/Escape; `size` segue a disciplina `xs`/`sm`/`md`/`lg` (384/480/640/880px) da spec, sem largura arbitrária.
+- **Gotchas:** o backdrop nunca fecha no clique — para permitir, use apenas X/footer/Escape; `size` segue a escala `xs`/`sm`/`md`/`lg`/`xl` (384/480/640/880/1120px), sem largura arbitrária.
 
 ```vue
 <UiModal v-model="aberto" title="Nova Publicação" subtitle="Dados da publicação e distribuição" :icon="Building2">
@@ -859,4 +862,64 @@ interface ColumnDef<T = any> {
     { value: 'Inativo', label: 'Inativo', tone: 'slate' }
   ]"
 />
+```
+
+### 5.16 UiChoiceCard — seção 17 do `/design`
+
+**Arquivo:** `app/components/ui/ChoiceCard.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string` | `''` | Valor escolhido **no grupo** (`v-model` compartilhado por todos os cartões); `''` = nenhum marcado |
+| `value` | `string` *(obrigatória)* | — | Valor deste cartão dentro do grupo |
+| `title` | `string` *(obrigatória)* | — | Título do cartão (associado ao cartão via `aria-labelledby`) |
+| `description` | `string` | `''` | Texto secundário (associado via `aria-describedby`) |
+| `icon` | componente | `undefined` | Ícone renderizado no tile superior esquerdo |
+| `badge` | `string` | `''` | Pílula de metadados ao lado do tile (ex.: "Recomendado") |
+| `badgeVariant` | `'lime' \| 'emerald' \| 'indigo' \| 'slate' \| 'neutral'` | `'lime'` | Cor da pílula (mesmo vocabulário do `CheckCard`, §5.9) |
+| `tone` | `'sky' \| 'emerald' \| 'lime' \| 'indigo' \| 'slate'` | `'slate'` | Tom aplicado ao cartão **selecionado** (borda + anel + fundo + tile do ícone) |
+| `disabled` | `boolean` | `false` | Desabilita o cartão (`aria-disabled`, fora de clique e teclado) |
+| `disabledHint` | `string` | `''` | Dica exibida no cartão desabilitado, com ícone `AlertCircle` |
+
+- **Emits:** `update:modelValue(string)` · `change(string)` — sempre o `value` do cartão acionado,
+  nunca um `Event` (§4.2).
+- **Contêiner `radiogroup`:** o componente **é o cartão** (`role="radio"`); o consumidor fornece o
+  contêiner `<div role="radiogroup" aria-label="…">` em volta dos cartões e nele aplica o layout
+  (a seção 17 do `/design` usa `grid sm:grid-cols-2|3 gap-3`). Cada grupo tem seu próprio
+  `v-model`.
+- **Seleção:** `aria-checked="true"` somente no cartão selecionado; clique, `Enter` ou `Space`
+  marcam o cartão e desmarcam os demais do grupo, emitindo o valor; o grupo pode iniciar vazio.
+- **Teclado:** **um único ponto de parada de `Tab`** (cartão selecionado; o primeiro navegável
+  quando o grupo está vazio) · `←` `→` `↑` `↓` movem foco **e seleção** em conjunto,
+  `Home`/`End` vão ao primeiro/último (navegação com wrap entre os irmãos do mesmo
+  `radiogroup`) · `Enter`/`Space` selecionam o cartão focado · cartões `disabled` ficam **fora**
+  da navegação e não alteram a seleção vigente.
+- **Visual:** selecionado = borda, `ring-1` e fundo tingidos no `tone` + tile do ícone acompanhando
+  o tom; neutro = superfície branca com borda `slate-200` e hover `slate-50`; marcador de rádio
+  (anel + ponto no tom) no canto superior direito; desabilitado = atenuado (`opacity-60`,
+  `bg-slate-50`) com a dica legível no próprio cartão.
+- **Foco:** recorte canônico `outline-brand-focus` via `focus-visible:` direto no cartão (§2.2) — nunca
+  `lime-500`.
+- **Espelhamento:** seção 17 do `/design` — três grupos: vazio (neutro + SMS desabilitado com
+  dica), tom `sky` e tom `emerald` pré-selecionados; a seção 17 é a fonte visual deste item.
+
+```vue
+<div role="radiogroup" aria-label="Canal de envio" class="grid gap-3">
+  <UiChoiceCard
+    v-model="canal"
+    value="email"
+    title="E-mail"
+    description="Envio pelo sistema em simulação — nenhum cliente de e-mail é aberto."
+    :icon="Mail"
+    tone="sky"
+  />
+  <UiChoiceCard
+    v-model="canal"
+    value="whatsapp"
+    title="WhatsApp"
+    description="Abre o aplicativo desktop com a mensagem preenchida."
+    :icon="MessageCircle"
+    tone="emerald"
+  />
+</div>
 ```

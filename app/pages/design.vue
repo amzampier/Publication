@@ -42,7 +42,10 @@ import {
   Upload,
   Calendar as CalendarIcon,
   CheckSquare,
-  ToggleRight
+  ToggleRight,
+  LayoutGrid,
+  MessageCircle,
+  Smartphone
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -557,6 +560,39 @@ const sliderDemoMarks = [
   { value: 730, label: '730 dias (2 anos)' }
 ]
 
+// Demonstração do UiChoiceCard (seção 17) — três grupos com estados iniciais distintos
+const choiceCardVazio = ref('')
+const choiceCardSky = ref('email')
+const choiceCardEmerald = ref('whatsapp')
+const choiceCardCanais = [
+  {
+    value: 'email',
+    title: 'E-mail',
+    description: 'Abre o cliente de e-mail padrão com a mensagem pronta.',
+    icon: Mail,
+    tone: 'sky'
+  },
+  {
+    value: 'whatsapp',
+    title: 'WhatsApp',
+    description: 'Abre o aplicativo desktop com a mensagem preenchida.',
+    icon: MessageCircle,
+    tone: 'emerald'
+  }
+]
+const choiceCardCanaisComSms = [
+  ...choiceCardCanais,
+  {
+    value: 'sms',
+    title: 'SMS',
+    description: 'Envio por mensagem de texto curta.',
+    icon: Smartphone,
+    tone: 'indigo',
+    disabled: true,
+    disabledHint: 'Canal previsto para uma próxima fase.'
+  }
+]
+
 // Navegação rápida de âncoras
 const secoes = [
   { id: 'principios', label: '1. Princípios & Tipografia' },
@@ -574,7 +610,8 @@ const secoes = [
   { id: 'datatable', label: '13. DataTable (cxGrid)' },
   { id: 'shell', label: '14. Shell & Impressão' },
   { id: 'modal', label: '15. Modal de Cadastro' },
-  { id: 'tabs-slider', label: '16. Tabs & Slider' }
+  { id: 'tabs-slider', label: '16. Tabs & Slider' },
+  { id: 'choice-card', label: '17. Cards de Escolha (UiChoiceCard)' }
 ]
 </script>
 
@@ -2603,6 +2640,85 @@ variant="lime"
               aria-label="Janela de retenção de demonstração"
               :marks="sliderDemoMarks"
             />
+          </div>
+        </section>
+
+        <!-- 17. Cards de Escolha -->
+        <section id="choice-card" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <LayoutGrid class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  17. Cards de Escolha (UiChoiceCard)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Escolha única com semântica
+                  <code class="font-mono text-slate-700">radiogroup/radio</code>, um único ponto de
+                  Tab, setas/Home/End movendo foco e seleção, tom por cartão
+                  (<code class="font-mono text-slate-700">sky</code>/<code class="font-mono text-slate-700">emerald</code>),
+                  recorte de foco <code class="font-mono text-slate-700">brand-focus</code> e cartão
+                  desabilitado com dica.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grupo vazio + desabilitado -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+                Sem seleção inicial — neutro e desabilitado com dica
+              </p>
+              <span class="font-mono text-xs text-slate-500">valor: {{ choiceCardVazio || '(vazio)' }}</span>
+            </div>
+            <div role="radiogroup" aria-label="Canal de envio — demonstração sem seleção" class="grid sm:grid-cols-3 gap-3">
+              <UiChoiceCard
+                v-for="op in choiceCardCanaisComSms"
+                :key="op.value"
+                v-model="choiceCardVazio"
+                v-bind="op"
+              />
+            </div>
+          </div>
+
+          <!-- Grupo com tom sky selecionado -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+                Seleção inicial no tom sky (E-mail)
+              </p>
+              <span class="font-mono text-xs text-slate-500">valor: {{ choiceCardSky }}</span>
+            </div>
+            <div role="radiogroup" aria-label="Canal de envio — demonstração tom sky" class="grid sm:grid-cols-2 gap-3">
+              <UiChoiceCard
+                v-for="op in choiceCardCanais"
+                :key="op.value"
+                v-model="choiceCardSky"
+                v-bind="op"
+              />
+            </div>
+          </div>
+
+          <!-- Grupo com tom emerald selecionado -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+                Seleção inicial no tom emerald (WhatsApp)
+              </p>
+              <span class="font-mono text-xs text-slate-500">valor: {{ choiceCardEmerald }}</span>
+            </div>
+            <div role="radiogroup" aria-label="Canal de envio — demonstração tom emerald" class="grid sm:grid-cols-2 gap-3">
+              <UiChoiceCard
+                v-for="op in choiceCardCanais"
+                :key="op.value"
+                v-model="choiceCardEmerald"
+                v-bind="op"
+              />
+            </div>
           </div>
         </section>
       </main>

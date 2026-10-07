@@ -13,7 +13,7 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { X } from '@lucide/vue'
 import Tooltip from './Tooltip.vue'
 
-export type ModalSize = 'xs' | 'sm' | 'md' | 'lg'
+export type ModalSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 
 interface Props {
   modelValue: boolean
@@ -60,6 +60,8 @@ const sizeClass = computed(() => {
       return 'max-w-[480px]'
     case 'lg':
       return 'max-w-[880px]'
+    case 'xl':
+      return 'max-w-[1120px]'
     case 'md':
     default:
       return 'max-w-[640px]'
@@ -168,7 +170,7 @@ onUnmounted(() => {
         aria-modal="true"
         :aria-label="title"
         tabindex="-1"
-        class="relative w-full bg-white rounded-xl shadow-2xl flex flex-col outline-none overflow-hidden"
+        class="relative w-full bg-white rounded-xl shadow-2xl flex flex-col outline-none overflow-hidden max-h-[calc(100vh-2rem)]"
         :class="sizeClass"
       >
         <div class="flex items-center gap-3 bg-gradient-to-r from-brand-primary to-brand-structure rounded-t-xl border-l-[2.5px] border-l-brand-accent px-4 py-3.5">
@@ -192,7 +194,7 @@ onUnmounted(() => {
           </Tooltip>
         </div>
 
-        <div class="bg-slate-100 p-5 overflow-y-auto max-h-[75vh] flex-1 fp-modal-body">
+        <div class="bg-slate-100 px-5 pb-5 pt-[15px] overflow-y-auto min-h-0 flex-1 fp-modal-body">
           <slot />
         </div>
 

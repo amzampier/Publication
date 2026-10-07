@@ -211,6 +211,9 @@ const salvar = () => {
   const { senha, confirmarSenha, perfil, status, ...base } = rascunho.value
   const registro: UsuarioDemo = {
     ...base,
+    // Senha provisória gravada em memória: a digitada, ou a vigente na edição
+    // quando os campos ficam vazios (a validação já garante o par na troca)
+    senha: senha || props.usuario?.senha || '',
     perfil: perfil as PerfilUsuario,
     status: status as StatusUsuario
   }
