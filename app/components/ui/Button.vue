@@ -39,14 +39,16 @@ const variantClasses = computed(() => {
 })
 
 const sizeClasses = computed(() => {
+  // Altura fixa por size (docs/01 §5.1): borda contida no box — outline/danger/accent
+  // medem o mesmo que primary em cada size (M-06 da QA-ux).
   switch (props.size) {
     case 'sm':
-      return 'px-2.5 py-1.5 text-[11px] gap-1.5'
+      return 'h-7 px-2.5 text-[11px] gap-1.5'
     case 'lg':
-      return 'px-5 py-2.5 text-sm gap-2.5'
+      return 'h-10 px-5 text-sm gap-2.5'
     case 'md':
     default:
-      return 'px-3.5 py-2 text-xs gap-2'
+      return 'h-8 px-3.5 text-xs gap-2'
   }
 })
 

@@ -58,7 +58,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Configurar permissões do perfil"
-              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('permissoes', row)"
             >
               <KeyRound class="h-3.5 w-3.5" />
@@ -69,7 +69,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Editar perfil"
-              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 hover:text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('editar', row)"
             >
               <Pencil class="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ const colunas: ColumnDef[] = [
             <button
               type="button"
               aria-label="Excluir perfil"
-              class="inline-flex items-center justify-center rounded p-0.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 hover:text-rose-700 hover:bg-rose-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('excluir', row)"
             >
               <Trash2 class="h-3.5 w-3.5" />

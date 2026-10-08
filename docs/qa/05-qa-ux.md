@@ -31,7 +31,7 @@ Verificar:
 
 Baseados na spec `design-system` e em `docs/01` (conferir sempre contra a implementação real; componente inexistente é escopo não aplicável):
 
-* **UI kit próprio em `app/components/ui/`** (19 componentes, auto-importados): `UiButton`, `UiBadge`, `UiBadgeCheckbox`, `UiInput`, `UiSelect`, `UiCheckbox`, `UiCheckboxGroup`, `UiCheckCard`, `UiCheckChip`, `UiCalendar`, `UiDatePicker`, `UiDataTable`, `UiKpi`, `UiTooltip`, `UiUploadFiles`, `UiCameraWeb`, `UiToastContainer`, `UiModal`, `UiModalSection`. **Preferir os componentes existentes em vez de novos.**
+* **UI kit próprio em `app/components/ui/`** (25 componentes, auto-importados): `UiBadge`, `UiBadgeCheckbox`, `UiButton`, `UiCalendar`, `UiCameraWeb`, `UiCheckbox`, `UiCheckboxGroup`, `UiCheckCard`, `UiCheckChip`, `UiChoiceCard`, `UiDataTable`, `UiDatePicker`, `UiInput`, `UiKpi`, `UiLoading`, `UiModal`, `UiModalSection`, `UiSegmented`, `UiSelect`, `UiSlider`, `UiTabs`, `UiTextarea`, `UiToastContainer`, `UiTooltip`, `UiUploadFiles`. **Preferir os componentes existentes em vez de novos.**
 * Feedback de usuário via `useToast()` (`success`, `warning`, `danger`, `info`); container montado em `app.vue`. Nenhum módulo deve usar feedback customizado inconsistente.
 * **Disciplina "Zero-Pill"**: badges operacionais `rounded-md` (nunca `rounded-full`); metadados/datas/categorias como texto limpo com separadores sutis.
 * **Numéricos e códigos**: `JetBrains Mono` com `font-variant-numeric: tabular-nums` e alinhamento à direita; códigos de publicação também em monoespaçada.

@@ -263,7 +263,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | Prop | Tipo | Default | Descrição |
 | :--- | :--- | :--- | :--- |
 | `variant` | `'primary' \| 'outline' \| 'danger' \| 'accent'` | `'primary'` | Hierarquia de ação |
-| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | `sm` 11px · `md` 12px · `lg` 14px |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | `sm` 11px · `md` 12px · `lg` 14px; **altura uniforme por size** (borda contida no box, idêntica entre variantes): `h-7` 28px · `h-8` 32px · `h-10` 40px |
 | `disabled` | `boolean` | `false` | `opacity-50 cursor-not-allowed`, suprime `click` |
 | `loading` | `boolean` | `false` | Spinner + `disabled` nativo; suprime `click` |
 | `type` | `'button' \| 'submit' \| 'reset'` | `'button'` | Tipo do `<button>` nativo |
