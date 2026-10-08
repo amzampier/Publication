@@ -128,6 +128,19 @@ const clonar = (p: PerfilDemo): PerfilDemo => ({
   ) as Record<ModuloId, Permissao[]>
 })
 
+/**
+ * Remove o perfil do id indicado (puro): devolve a base nova sem ele (a matriz de
+ * permissões vai junto, pois vive no próprio objeto) e id inexistente devolve a base
+ * intacta. Quem tem o `useState` é quem atribui `perfis.value = base` (mesmo contrato
+ * de `excluirUsuario`).
+ */
+export const excluirPerfil = (
+  base: PerfilDemo[],
+  id: string
+): { base: PerfilDemo[] } => ({
+  base: base.filter((p) => p.id !== id)
+})
+
 // Base de demonstração - os 4 perfis canônicos (mesmos do PERFIS de useUsuariosDemo),
 // todos Ativo: são os perfis em uso pelos 16 usuários da base (design D7).
 export const PERFIS_DEMO: PerfilDemo[] = [

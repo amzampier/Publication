@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
 import { usePerfisDemo, VARIANTE_POR_STATUS, type LinhaPerfil } from './usePerfisDemo'
 
-// Abre modais na página (coordenação dela): permissões, edição e exclusão — fase 2
+// Abre modais na página (coordenação dela): exclusão já tem modal; permissões e
+// edição continuam na fase 2
 const emit = defineEmits<{
   (e: 'permissoes', perfil: LinhaPerfil): void
   (e: 'editar', perfil: LinhaPerfil): void
   (e: 'excluir', perfil: LinhaPerfil): void
 }>()
+
+// Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
+const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
+defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
 const { linhas } = usePerfisDemo()
 
@@ -24,6 +30,7 @@ const colunas: ColumnDef[] = [
 <template>
   <section aria-label="Perfis de acesso cadastrados">
     <UiDataTable
+      ref="tabelaRef"
       title="Perfis de Acesso"
       subtitle="Base de demonstração — fase 1 em memória · Permissões: ações concedidas de 99 (11 módulos × 9 ações)"
       :data="linhas"

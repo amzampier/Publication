@@ -1,10 +1,11 @@
 # 07 - Perfis de Acesso (RBAC) — Área Administrativa
 
-**Versão:** 1.0.0 — **Data:** 2026-10-07 — **Idioma:** Português do Brasil (pt-BR)
+**Versão:** 1.1.0 — **Data:** 2026-10-08 — **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela principal de Perfis de Acesso (RBAC) - listagem (base em memória) com cabeçalho
-(Novo Perfil), KPIs e tabela com contagem de permissões e de usuários vinculados, **todas as
-ações em contrato de transição (toast, sem modal) — fase 1** — mais a **matriz normativa de
-permissões** (4 perfis × 11 módulos × 9 ações) que o modal da fase 2 implementará
+(Novo Perfil), KPIs e tabela com contagem de permissões e de usuários vinculados; **"Excluir"
+abre o modal de confirmação com guarda de vínculo na confirmação**, enquanto Novo Perfil,
+Editar e Permissões seguem em contrato de transição (toast, sem modal) — mais a **matriz
+normativa de permissões** (4 perfis × 11 módulos × 9 ações) que o modal da fase 2 implementará
 **Arquivos-fonte:** [`app/pages/admin/perfis-acesso.vue`](../app/pages/admin/perfis-acesso.vue) ·
 [`app/components/perfis/`](../app/components/perfis) ·
 [`app/config/navigation.ts`](../app/config/navigation.ts)
@@ -28,7 +29,7 @@ usados (`UiButton`, `UiBadge`, `UiKpi`, `UiDataTable`, `UiTooltip`)
 2. [Estrutura da página (componentização)](#2-estrutura-da-página-componentização)
 3. [Componentes de domínio](#3-componentes-de-domínio)
 4. [Componentes de kit (criados/alterados)](#4-componentes-de-kit-criadosalterados)
-5. [Comportamento: ações em contrato de transição](#5-comportamento-ações-em-contrato-de-transição)
+5. [Comportamento das ações (transição + modal de exclusão)](#5-comportamento-das-ações-transição--modal-de-exclusão)
 6. [Dados de demonstração](#6-dados-de-demonstração)
 7. [Matriz de permissões (normativa)](#7-matriz-de-permissões-normativa)
 8. [Navegação até a tela](#8-navegação-até-a-tela)
@@ -53,30 +54,39 @@ Administrativa:
   `permissoes_extras`).
 - **Fase 1:** listagem **inteiramente em memória** — `useState('perfis-base')`, sem `server/`,
   sem requisições de dados (API); a base se restaura a cada recarga.
-- **Sem modais:** "Novo Perfil" e as três ações de linha (Editar, Excluir, Permissões) exibem
-  **toast** de transição e não abrem nenhum `UiModal` (§5). Os modais de CRUD, filtros e
-  permissões são a fase 2 (§13).
+- **Modal de exclusão (change `perfis-acesso-modal-exclusao`):** "Excluir" (`Trash2`) **abre o
+  modal** `PerfisExclusao` (`UiModal size="sm"`); ao confirmar com usuários vinculados o modal
+  fecha e um `toast.warning` informa o bloqueio (sem tocar na base) — espelho da validação
+  futura do banco (docs/02 §3.5); sem vínculos a remoção acontece. **"Novo Perfil", "Editar" e
+  "Permissões"** continuam com **toast** de transição e sem `UiModal` (§5). Os demais modais da
+  fase 2 (cadastro/edição, filtros, permissões) continuam pendentes (§13).
 - **Matriz semeada:** a coluna "Permissões" e o KPI "Permissões concedidas" derivam da matriz
   declarada em `usePerfisDemo.ts` (§3.4) — a mesma que o §7 normatiza.
 
 ## 2. Estrutura da página (componentização)
 
-A página é fina e **não tem estado de modal nenhum** — só os handlers de toast (decisão D1 do
-`design.md` da change). Cada parte é um componente em `app/components/perfis/` (auto-import com
-prefixo `Perfis*`):
+A página é fina e **donas dos estados de coordenação** (modal de exclusão + toasts de
+transição). Cada parte é um componente em `app/components/perfis/` (auto-import com prefixo
+`Perfis*`):
 
 ```
-admin/perfis-acesso.vue            (page - definePageMeta + composição + toast de transição)
+admin/perfis-acesso.vue            (page - definePageMeta + composição + coordenação)
 ├── <PerfisCabecalho @novo />      → tile #f5b302 + título + "Novo Perfil"
 ├── <PerfisKpis class="mt-6" />    → 4 UiKpi do conjunto VIGENTE
-└── <PerfisTabela class="mt-5"
-                  @permissoes @editar @excluir />  → UiDataTable (busca + badges + ações)
+├── <PerfisTabela ref="tabelaRef"
+│                  class="mt-5"
+│                  @permissoes @editar @excluir />  → UiDataTable (busca + badges + ações)
+└── <PerfisExclusao v-model :perfil @confirmar />   → modal de confirmação (§3.5)
 ```
 
-- **Estado de coordenação:** nenhum `ref` de modal na página; os gatilhos dos componentes
-  **emitem** e a página responde com `avisoProximaEtapa(acao)` →
+- **Estado de coordenação:** `exclusaoAberta`, `perfilExcluir` e `tabelaRef<{ focarBusca }>`
+  (mesmo padrão de `gestao-usuarios`). `abrirExclusao(perfil)` sempre abre o modal;
+  `confirmarExclusao()` fecha e, **se `perfil.usuarios > 0`**, `toast.warning` de bloqueio
+  **sem tocar na base**; sem vínculos chama `excluirPerfil()` → `toast.success` →
+  `nextTick(focarBusca)`. Os gatilhos de Novo/Editar/Permissões continuam com
+  `avisoProximaEtapa(acao)` →
   `toast.info('Perfis de Acesso (RBAC)', '<Ação>: funcionalidade disponível na próxima etapa.')`
-  — os mesmos emits são o ponto de encaixe dos modais na fase 2, sem reescrever componentes.
+  — os emits são o ponto de encaixe dos modais restantes da fase 2, sem reescrever componentes.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8` (mesmo
   padrão de Usuários e Auditoria).
 
@@ -129,9 +139,13 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 | Ações | gatilhos | `KeyRound` · `Pencil` · `Trash2` (tooltip + `aria-label` próprios) |
 
 - As ações **emitem** `@permissoes`, `@editar` e `@excluir` com a linha (`LinhaPerfil`); a
-  página converte em toast. Ícones em `text-slate-400` com cor semântica só no hover
+  página converte Editar/Permissões em toast de transição e **Excluir em abertura do modal**
+  (`abrirExclusao`). Ícones em `text-slate-400` com cor semântica só no hover
   (âmbar para permissões, `brand-focus` para editar, `rose-700` para excluir) — mesmo padrão
   da tabela de usuários.
+- **`defineExpose({ focarBusca })`** encadeia a busca do `UiDataTable` (cópia de
+  `usuarios/Tabela.vue`): usado pela página após a exclusão confirmar, pois o `Trash2` sai do
+  DOM com a linha.
 
 ### 3.4 `usePerfisDemo.ts` — composable de estado (matriz e contagens)
 
@@ -142,7 +156,9 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 - **`MATRIZ_SEED`:** `Record<PerfilId, Record<ModuloId, Permissao[]>>` montado por regras
   (`ACOES_TUDO`, `CONTEIDO_EDITOR`, `CONTEIDO_REVISOR`, `CONTEIDO_LEITOR`) — declaração
   única das regras do §7; `matriz()` sempre copia as listas (sem referência compartilhada).
-- **Helpers puros:** `contarPermissoes(perfil)` → soma dos módulos (99/45/21/6).
+- **Helpers puros:** `contarPermissoes(perfil)` → soma dos módulos (99/45/21/6);
+  `excluirPerfil(base, id)` → devolve a base nova sem o perfil (matriz vai junto, pois vive no
+  objeto) — mesmo contrato imutável de `excluirUsuario`.
 - **Estado:** `useState('perfis-base', () => PERFIS_DEMO.map(clonar))` — clona a semente na
   carga; a recarga restaura.
 - **Derivados (design D2/D3):** `linhas` (a linha da tabela com `usuarios` e
@@ -152,28 +168,50 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   — criar/excluir um usuário em `/admin/gestao-usuarios` altera a coluna "Usuários" sem
   recarregar a página.
 
+### 3.5 `Exclusao.vue` → `<PerfisExclusao>` (modal de confirmação)
+
+- **Apresentação pura** (a página é dona do estado e da gravação — molde de
+  `usuarios/Exclusao.vue`): props `modelValue: boolean` + `perfil: LinhaPerfil | null`;
+  emite `update:modelValue` e `confirmar`; sem toasts nem escrita na base.
+- `UiModal` `size="sm"` com `title="Excluir Perfil"`, `subtitle="Confirme a exclusão do
+  perfil da base em memória"` e ícone `Trash2` (herda todo o comportamento do kit: backdrop
+  não fecha, `Escape`/`X`, focus-trap, devolução de foco — `docs/01` §5.12).
+- Corpo (`UiModalSection` "Este perfil será excluído", ícone `ShieldX`): **nome** do perfil,
+  **`Usuários Vinculados: N`** (`font-mono tabular-nums`) e o aviso rose `text-rose-700` com
+  `AlertTriangle` ("Esta ação não pode ser desfeita…"). Sem descrição (identificação mínima,
+  decisão da change).
+- Rodapé: `UiButton outline` "Cancelar" + `UiButton danger` "Excluir" (habilitado desde a
+  abertura — sem type-to-confirm; a trava é a guarda de vínculo na página, §2).
+
 ## 4. Componentes de kit (criados/alterados)
 
-- **Nenhum componente novo e nenhum alterado.** A fase 1 usa exclusivamente `UiButton`,
-  `UiBadge`, `UiKpi`, `UiDataTable` e `UiTooltip` já vigentes (`docs/01` §5).
+- **Nenhum componente de kit novo e nenhum alterado** (o `Exclusao.vue` é componente de
+  domínio, §3.5 — não entra no kit nem na vitrine). A tela usa exclusivamente `UiButton`,
+  `UiBadge`, `UiKpi`, `UiDataTable`, `UiTooltip`, `UiModal` e `UiModalSection` já vigentes
+  (`docs/01` §5).
 - **Nenhuma seção nova na vitrine `/design`** (§10) e **nenhum CSS dedicado** (§9).
-- O candidato a componente novo (toggle de permissão) só nasce com o modal da fase 2 — momento
-  em que entra com spec `design-system/*`, seção em `docs/01` §5 e seção na vitrine (§13).
+- O candidato a componente de kit novo (toggle de permissão) só nasce com o modal de
+  permissões da fase 2 — momento em que entra com spec `design-system/*`, seção em `docs/01`
+  §5 e seção na vitrine (§13).
 
-## 5. Comportamento: ações em contrato de transição
+## 5. Comportamento das ações (transição + modal de exclusão)
 
-Todos os gatilhos da fase 1 seguem o mesmo contrato (spec `perfis-acesso`): **toast
-informativo e nenhum `UiModal` aberto**.
+**Novo Perfil, Configurar permissões e Editar** seguem o contrato de transição da fase 1
+(spec `perfis-acesso`): **toast informativo e nenhum `UiModal` aberto**. **Excluir** saiu
+desse contrato: abre o modal de confirmação (§3.5) com guarda de vínculo na confirmação.
 
-| Gatilho | Local | Comportamento de fase 1 | Fase 2 |
+| Gatilho | Local | Comportamento atual | Pendência (fase 2) |
 | :--- | :--- | :--- | :--- |
 | **Novo Perfil** (`Plus`) | cabeçalho | toast "Novo Perfil: funcionalidade disponível na próxima etapa." | modal de criação |
 | **Configurar permissões** (`KeyRound`) | linha | toast "Configurar permissões: …" | modal de permissões do perfil |
 | **Editar perfil** (`Pencil`) | linha | toast "Editar perfil: …" | modal de edição |
-| **Excluir perfil** (`Trash2`) | linha | toast "Excluir perfil: …" | modal de confirmação |
+| **Excluir perfil** (`Trash2`) | linha | abre `PerfisExclusao` (§3.5); confirmar com vínculos → modal fecha + `toast.warning` de bloqueio (base intacta); sem vínculos → remove + `toast.success` + foco na busca | — (entregue) |
 
-- Mensagem padrão: `toast.info('Perfis de Acesso (RBAC)', '<Ação>: funcionalidade disponível
-  na próxima etapa.')`.
+- Mensagem padrão de transição: `toast.info('Perfis de Acesso (RBAC)', '<Ação>: funcionalidade
+  disponível na próxima etapa.')`.
+- **Guarda de vínculo:** `perfil.usuarios > 0` barra a exclusão **no clique de "Excluir"** do
+  modal (a contagem no corpo do modal antecipa o motivo) — espelho da validação de integridade
+  que o backend imporá (docs/02 §3.5).
 - **Busca** é recurso do `UiDataTable`: filtra a visualização **sem** alterar o conjunto
   vigente nem os KPIs.
 - **Sem botão "Filtros" e sem exportação** nesta fase — ambos entram junto dos seus modais/
@@ -337,17 +375,26 @@ Declarar a rota da sidebar é **uso** do requisito existente de itens com `to` (
 para esse requisito). As deltas são sincronizadas para `openspec/specs/` via `/opsx-sync`
 **antes do archive** (fluxo adotado em `docs/06` §10).
 
+Change `openspec/changes/perfis-acesso-modal-exclusao` (spec-driven) — modal de exclusão:
+
+| Capability | Operação |
+| :--- | :--- |
+| `perfis-acesso` | **MODIFIED** — "As ações da fase 1 avisam por toast e não abrem modal" passa a cobrir só Novo/Editar/Permissões; Excluir abre o modal |
+| `perfis-acesso` | **ADDED** — "O modal de exclusão confirma a remoção de um perfil": abertura sempre, identificação (nome + vínculos), bloqueio na confirmação (modal fecha + toast, base intacta), remoção sem vínculos com foco na busca, descarte, recarga |
+
 ## 12. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório) e
-  `openspec validate "pagina-perfis-acesso-rbac" --strict`.
+  `openspec validate "perfis-acesso-modal-exclusao" --strict`.
 - Smoke SSR da rota: `/admin/perfis-acesso` responde 200 com shell, título "Perfis de Acesso
-  (RBAC)", KPIs e **sem** marcação de modal.
+  (RBAC)", KPIs e **sem** marcação de modal (o `UiModal` só renderiza com `modelValue=true`).
 - Checagem visual no dev server (`http://localhost:3000`):
   - **`/admin/perfis-acesso`:** KPIs **4 / 4 / 0 / 171·396**; tabela com **6 colunas**, busca
     filtrando a visualização, valores **99/99 · 45/99 · 21/99 · 6/99** e usuários
-    **2 · 5 · 4 · 5**; badges de Status; os **4 gatilhos** exibem toast e **nenhum `UiModal`
-    abre**; recarga restaura a base; **sem rolagem horizontal** a 1280px (e layout íntegro a
+    **2 · 5 · 4 · 5**; badges de Status; Novo/Editar/Permissões exibem toast **sem modal**;
+    **Excluir abre o `PerfisExclusao`** (nome + `Usuários Vinculados: N` + aviso rose, sem
+    descrição) — confirmar com vínculos fecha o modal com `toast.warning` de bloqueio e base
+    intacta; recarga restaura a base; **sem rolagem horizontal** a 1280px (e layout íntegro a
     375px).
   - **Navegação:** clique na sidebar e no menu da conta navega (o menu fecha); item da sidebar
     ativo inclusive por URL direta; rótulo "Perfis de Acesso (RBAC)" nos dois lugares.
@@ -361,9 +408,9 @@ para esse requisito). As deltas são sincronizadas para `openspec/specs/` via `/
 
 ## 13. Pendências e próximos passos
 
-- **Fase 2 — modais:** cadastro/edição de perfil (nome, descrição, status), exclusão com
-  confirmação e **modal de permissões por perfil** implementando a matriz da §7 célula a célula
-  (hoje todos os gatilhos avisam por toast, §5).
+- **Fase 2 — modais:** cadastro/edição de perfil (nome, descrição, status) e **modal de
+  permissões por perfil** implementando a matriz da §7 célula a célula (Novo, Editar e
+  Permissões ainda avisam por toast; o modal de exclusão já foi entregue — §3.5/§5).
 - **Filtros e exportação** da listagem (junto dos respectivos modais/relatórios).
 - **Componente de kit para o toggle de permissão** (não existe `Switch`/`Toggle` no kit):
   nasce com o modal e entra com spec `design-system/*`, seção em `docs/01` §5 e seção na
