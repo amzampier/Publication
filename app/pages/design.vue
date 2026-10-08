@@ -668,7 +668,7 @@ const secoes = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 flex flex-col">
+  <div class="min-h-dvh bg-slate-50 flex flex-col">
     <!-- Header Fixo de Apresentação do Design System (Full-Width Fluido) -->
     <header class="sticky top-0 z-40 bg-brand-primary border-b border-slate-800 text-white shadow-md no-print">
       <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 min-h-16 py-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

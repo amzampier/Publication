@@ -304,7 +304,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `neutral` | Neutro | `bg-slate-100` / `border-slate-200` / `text-slate-700` | — |
 
 - **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
-- **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone.
+- **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone. Com `prefers-reduced-motion: reduce` a pulsão para (regra global de `main.css` — vale para animações e transições de todo o kit).
 
 **Mapeamento de status de publicação → variante** (guia de uso do Publications; as variantes acima são fixas no componente):
 

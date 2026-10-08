@@ -138,6 +138,21 @@
   }
 }
 
+/* Movimento reduzido — regra global (MEL-02 do RL01 / QA-ux M-05): qualquer
+   animação (animate-ping do badge, animate-spin, ondas) completa em ~0 e qualquer
+   transição (utilities duration-*, Vue Transition de toasts/dropdown, hover do
+   shell) aplica instantaneamente. `!important` vence as utilities do Tailwind.
+   Quem prefere menos movimento vê o mesmo conteúdo, só que estático. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Barra de rolagem discreta (menus escuros do shell e demo do /design).
    A página /design mantém sua própria cópia em <style scoped>, que vence por escopo. */
 .scrollbar-discreta {

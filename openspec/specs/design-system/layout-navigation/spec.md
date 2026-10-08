@@ -163,8 +163,13 @@ por página.
 - **WHEN** uma página fora de `/admin/**` é renderizada sem o layout administrativo declarado
 - **THEN** ela não exibe header nem sidebar da Área Administrativa
 
-### Requirement: Itens de navegação podem declarar rota e o ativo reflete a rota atual
-Os itens da sidebar e do menu do Account SHALL poder declarar uma rota opcional (`to`); quando declarada, o clique do usuário navega para essa rota, e o item da sidebar correspondente à rota corrente é exibido como ativo. Itens sem rota continuam apenas marcando estado visual, como hoje.
+### Requirement: Itens de navegação podem declarar rota e os sem rota avisam que estão em construção
+Os itens da sidebar e do menu do Account SHALL poder declarar uma rota opcional (`to`);
+quando declarada, o clique do usuário navega para essa rota, e o item da sidebar correspondente
+à rota corrente é exibido como ativo. Itens da sidebar **sem** rota declarada SHALL exibir, ao
+serem acionados, um `toast.info` com o rótulo do item e a mensagem "Módulo em construção.",
+sem navegação — os itens do menu do Account ("Meu Perfil", "Encerrar Sessão") mantêm seu
+comportamento próprio e ficam fora deste aviso.
 
 #### Scenario: Item com rota navega
 - **WHEN** o usuário clica em "Configurações Globais" na sidebar ou no menu do Account
@@ -174,9 +179,10 @@ Os itens da sidebar e do menu do Account SHALL poder declarar uma rota opcional 
 - **WHEN** a rota corrente corresponde à rota declarada de um item da sidebar
 - **THEN** aquele item é exibido como ativo (mesmo estilo do item selecionado hoje), com `aria-current="page"`
 
-#### Scenario: Item sem rota preserva o comportamento atual
-- **WHEN** o usuário clica em um item sem rota declarada (ex.: Manuais)
-- **THEN** apenas o estado visual de item ativo muda, sem navegação, como no comportamento atual
+#### Scenario: Item sem rota da sidebar exibe aviso de construção
+- **WHEN** o usuário clica em um item da sidebar sem rota declarada (ex.: Manuais)
+- **THEN** um `toast.info` exibe o rótulo do item com a mensagem "Módulo em construção." e
+  nenhuma navegação ocorre; o menu do Account não participa deste aviso
 
 #### Scenario: Chegar por URL direta também marca o item
 - **WHEN** o usuário abre `/admin/configuracoes-globais` diretamente pelo endereço

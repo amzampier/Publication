@@ -16,7 +16,7 @@ const alternar = (valor: boolean) => {
 </script>
 
 <template>
-  <div class="fp-shell h-screen flex flex-col overflow-hidden">
+  <div class="fp-shell h-dvh flex flex-col overflow-hidden">
     <LayoutAppHeader
       :sidebar-open="sidebarOpen"
       @update:sidebar-open="alternar($event)"

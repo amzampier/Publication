@@ -4,6 +4,7 @@ import { ChevronDown as ChevronDownIcon } from '@lucide/vue'
 import type { SidebarItem, SidebarSession } from '../../config/navigation'
 import { itemRaiz, sessoes as sessoesDefinidas } from '../../config/navigation'
 import { useSessoesAbertas } from '../../composables/useSessoesAbertas'
+import { useToast } from '../../composables/useToast'
 
 defineProps<{ sidebarOpen: boolean }>()
 
@@ -39,9 +40,17 @@ watch(
   { immediate: true }
 )
 
+const { toast } = useToast()
+
 const clicarItem = (item: SidebarItem) => {
   itemAtivo.value = item.id
-  if (item.to) navigateTo(item.to)
+  if (item.to) {
+    navigateTo(item.to)
+    return
+  }
+  // Item da sidebar sem rota: avisa que o módulo ainda não existe (spec
+  // layout-navigation; o menu da conta tem comportamento próprio e fica fora).
+  toast.info(item.label, 'Módulo em construção.')
 }
 
 const sessoesVisiveis = computed(() => sessoes.value.filter((sessao) => sessao.items.length > 0))

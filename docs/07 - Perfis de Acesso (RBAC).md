@@ -404,8 +404,9 @@ change, mantendo contagens, KPI e este documento idênticos (verificado na §12 
   com a sidebar e com a página (era "Configuração de Perfis (RBAC)"); o menu fecha após a
   navegação.
 - Os quatro itens da Administração têm rota (Configurações Globais, Gestão de Usuários, Gestão
-  de Auditoria e Perfis de Acesso (RBAC)); os itens das demais sessões seguem sem rota
-  (MEL-03 do `RL01`).
+  de Auditoria e Perfis de Acesso (RBAC)); os itens das demais sessões seguem sem rota e, ao
+  serem acionados, exibem o toast "Módulo em construção." (`docs/03` §Observações — MEL-03 do
+  `RL01` resolvido).
 
 ## 9. Estilo e CSS dedicado
 

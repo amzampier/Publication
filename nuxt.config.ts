@@ -10,6 +10,13 @@ export default defineNuxtConfig({
   },
   // Fontes oficiais do design system (docs/01 §1) — Plus Jakarta Sans + JetBrains Mono.
   app: {
+    // Indicador de navegação lenta (MEL-04 do RL01) nas cores da marca — só aparece
+    // quando a rota demorar (hoje raro: páginas em memória; preparação p/ listagens assíncronas).
+    loadingIndicator: {
+      name: 'circle',
+      color: '#4ed813',
+      background: '#112051'
+    },
     head: {
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },

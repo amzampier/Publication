@@ -24,7 +24,7 @@ const irParaAdmin = () => navigateTo('/admin')
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-50 font-sans flex items-center justify-center px-4 py-10">
+  <main class="min-h-dvh bg-slate-50 font-sans flex items-center justify-center px-4 py-10">
     <div class="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-xs p-8 text-center">
       <p class="font-mono font-bold text-brand-primary text-5xl leading-none tabular-nums">
         {{ error?.statusCode ?? 500 }}
