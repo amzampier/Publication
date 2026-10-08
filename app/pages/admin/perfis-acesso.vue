@@ -14,10 +14,18 @@ definePageMeta({ layout: 'admin' })
 const { toast } = useToast()
 const { perfis } = usePerfisDemo()
 
-// Ação de permissões ainda em transição (spec perfis-acesso): só o KeyRound avisa
-// por toast — Novo/Editar abrem o modal de cadastro/edição; Excluir tem o seu.
-const avisoPermissoesPendentes = () => {
-  toast.info('Perfis de Acesso (RBAC)', 'Configurar permissões: funcionalidade disponível na próxima etapa.')
+// Coordenação do modal de permissões: a página é dona do estado (mesmo padrão dos
+// demais modais desta tela). A ação Permissões (KeyRound) abre o modal com a matriz
+// do perfil — sem toast de transição (spec perfis-acesso).
+const permissoesAbertas = ref(false)
+const perfilPermissoes = ref<PerfilDemo | null>(null)
+
+const abrirPermissoes = (linha: LinhaPerfil) => {
+  // O modal precisa da matriz completa - resolve por id na base.
+  const registro = perfis.value.find((p) => p.id === linha.id)
+  if (!registro) return
+  perfilPermissoes.value = registro
+  permissoesAbertas.value = true
 }
 
 // Coordenação do modal de cadastro/edição: a página é dona do estado (mesmo padrão
@@ -89,7 +97,7 @@ const confirmarExclusao = () => {
       <PerfisTabela
         ref="tabelaRef"
         class="mt-5"
-        @permissoes="avisoPermissoesPendentes"
+        @permissoes="abrirPermissoes"
         @editar="abrirEdicao"
         @excluir="abrirExclusao"
       />
@@ -98,6 +106,11 @@ const confirmarExclusao = () => {
         v-model="modalAberto"
         :modo="modo"
         :perfil="perfilEditar"
+      />
+
+      <PerfisPermissoes
+        v-model="permissoesAbertas"
+        :perfil="perfilPermissoes"
       />
 
       <PerfisExclusao

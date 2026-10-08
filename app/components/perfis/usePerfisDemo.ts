@@ -35,18 +35,18 @@ export type Permissao = Acao | Extra
 export const ACOES: Acao[] = ['visualizar', 'criar', 'alterar', 'excluir']
 export const EXTRAS: Extra[] = ['publicar', 'arquivar', 'download', 'exportar', 'importar']
 
-export const MODULOS: { id: ModuloId; label: string }[] = [
-  { id: 'manuais', label: 'Manuais' },
-  { id: 'release-week', label: 'Release Week' },
-  { id: 'escopo-projetos', label: 'Escopo de Projetos' },
-  { id: 'esteira-revisao', label: 'Esteira de Revisão' },
-  { id: 'lancar-chamadas', label: 'Lançar as Chamadas' },
-  { id: 'parceiros', label: 'Parceiros' },
-  { id: 'softwares', label: 'Softwares' },
-  { id: 'gestao-usuarios', label: 'Gestão de Usuários' },
-  { id: 'perfis-acesso', label: 'Perfis de Acesso (RBAC)' },
-  { id: 'auditoria', label: 'Gestão de Auditoria' },
-  { id: 'configuracoes-globais', label: 'Configurações Globais' }
+export const MODULOS: { id: ModuloId; label: string; descricao: string }[] = [
+  { id: 'manuais', label: 'Manuais', descricao: 'Manuais de produto e documentação técnica' },
+  { id: 'release-week', label: 'Release Week', descricao: 'Notas de versão e divulgação de entregas' },
+  { id: 'escopo-projetos', label: 'Escopo de Projetos', descricao: 'Projetos, escopo e acompanhamento de entregas' },
+  { id: 'esteira-revisao', label: 'Esteira de Revisão', descricao: 'Fluxo de revisão e homologação de conteúdos' },
+  { id: 'lancar-chamadas', label: 'Lançar as Chamadas', descricao: 'Chamadas e movimentos de negócio' },
+  { id: 'parceiros', label: 'Parceiros', descricao: 'Cadastro e relacionamento de parceiros' },
+  { id: 'softwares', label: 'Softwares', descricao: 'Catálogo de softwares e integrações' },
+  { id: 'gestao-usuarios', label: 'Gestão de Usuários', descricao: 'Usuários, convites e acessos do sistema' },
+  { id: 'perfis-acesso', label: 'Perfis de Acesso (RBAC)', descricao: 'Perfis de acesso e matriz de permissões' },
+  { id: 'auditoria', label: 'Gestão de Auditoria', descricao: 'Trilha de auditoria e registros de atividade' },
+  { id: 'configuracoes-globais', label: 'Configurações Globais', descricao: 'Ajustes globais do sistema' }
 ]
 
 /** 99 = 11 módulos × 9 ações (4 fixas + 5 extras). */
@@ -171,6 +171,20 @@ export const salvarPerfil = (
   }
   return { base: base.map((p) => (p.id === registro.id ? clonar(registro) : p)) }
 }
+
+/**
+ * Grava a matriz de permissões do perfil id (puro): devolve a base nova com o
+ * registro clonado (matriz copiada célula a célula); id inexistente devolve a base
+ * intacta. Mesmo contrato de `salvarPerfil` — quem tem o `useState` é quem atribui
+ * `perfis.value = base`.
+ */
+export const salvarPermissoes = (
+  base: PerfilDemo[],
+  id: string,
+  permissoes: Record<ModuloId, Permissao[]>
+): { base: PerfilDemo[] } => ({
+  base: base.map((p) => (p.id === id ? clonar({ ...p, permissoes }) : p))
+})
 
 // Base de demonstração - os 4 perfis canônicos (mesmos do PERFIS de useUsuariosDemo),
 // todos Ativo: são os perfis em uso pelos 16 usuários da base (design D7).

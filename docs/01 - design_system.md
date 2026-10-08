@@ -39,6 +39,7 @@
    - [5.16 UiChoiceCard](#516-uichoicecard--seção-17-do-design) (seção 17)
    - [5.17 UiLoading](#517-uiloading--seção-18-do-design) (seção 18)
    - [5.18 UiTextarea](#518-uitextarea--seção-19-do-design) (seção 19)
+- [5.19 UiSwitch](#519-uiswitch--seção-20-do-design) (seção 20)
 
 ## 1. Princípios & Tipografia
 
@@ -1005,4 +1006,29 @@ interface ColumnDef<T = any> {
 ```vue
 <UiTextarea v-model="descricao" label="Descrição" placeholder="Detalhe as responsabilidades…" :rows="4" />
 <UiTextarea :model-value="'…'" label="Descrição" error="Informe a descrição." />
+```
+
+### 5.19 UiSwitch — seção 20 do `/design`
+
+**Arquivo:** `app/components/ui/Switch.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `boolean` | `false` | Estado do interruptor (`v-model` binário) |
+| `label` | `string` | `''` | Rótulo ao lado (associado via `for`/`id`; o clique nele alterna) |
+| `ariaLabel` | `string` | `''` | Nome acessível quando não há `label` visível (ex.: célula de matriz) |
+| `disabled` | `boolean` | `false` | Sem alternância, fora do Tab, `opacity-50 cursor-not-allowed` |
+
+- **Visual:** trilha `h-5 w-9 rounded-full` — desligada `bg-slate-300`, **ligada
+  `bg-brand-focus` `#1a9e07`** (verde canônico, sem novo `lime-*`); knob branco `h-4 w-4`
+  desliza 16px (`translate-x-0.5` → `translate-x-4`) com `transition-transform` (morre sob
+  `prefers-reduced-motion`, §3.5).
+- **Semântica:** `<button role="switch" aria-checked>` — Space/Enter alternam nativamente;
+  foco `focus-visible` `brand-focus` (`#1a9e07`). `disabled` usa o `disabled` nativo.
+- **Espelhamento:** seção 20 do `/design` — estados ligado, desligado e desabilitado.
+
+```vue
+<UiSwitch v-model="notificacoes" label="Notificações" />
+<UiSwitch :model-value="true" label="Sempre ativo" />
+<UiSwitch :model-value="false" label="Bloqueado" disabled />
 ```

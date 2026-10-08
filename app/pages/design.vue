@@ -642,6 +642,7 @@ onUnmounted(encerrarLoadingDemo)
 // Demo do UiTextarea (Seção 19) — campo livre com v-model e exemplo fixo em erro
 const textareaDemo = ref('')
 const textareaErroDemo = 'Informe a descrição.'
+const switchDemo = ref(true)
 
 // Navegação rápida de âncoras
 const secoes = [
@@ -663,7 +664,8 @@ const secoes = [
   { id: 'tabs-slider', label: '16. Tabs & Slider' },
   { id: 'choice-card', label: '17. Cards de Escolha (UiChoiceCard)' },
   { id: 'loading', label: '18. Loading (UiLoading)' },
-  { id: 'textarea', label: '19. Textarea (UiTextarea)' }
+  { id: 'textarea', label: '19. Textarea (UiTextarea)' },
+  { id: 'switch', label: '20. Switch (UiSwitch)' }
 ]
 </script>
 
@@ -2894,7 +2896,54 @@ variant="lime"
           <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
             <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
             <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiTextarea v-model="descricao" label="Descrição" placeholder="Detalhe as responsabilidades…" :rows="4" /&gt;
-&lt;UiTextarea label="Descrição" :model-value="'…'" error="Informe a descrição." /&gt;</pre>
+&lt;UiTextarea :model-value="'…'" label="Descrição" error="Informe a descrição." /&gt;</pre>
+          </div>
+        </section>
+
+        <section id="switch" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <ToggleRight class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  20. Switch (UiSwitch)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Interruptor binário do kit —
+                  <code class="font-mono text-slate-700">role="switch"</code> com
+                  <code class="font-mono text-slate-700">aria-checked</code>, trilha
+                  <code class="font-mono text-slate-700">slate-300</code> desligada e
+                  <code class="font-mono text-slate-700">brand-focus #1a9e07</code> ligada,
+                  Space/Enter alternam e o foco usa o verde canônico.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Demonstração -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="flex flex-wrap items-center gap-x-8 gap-y-4">
+              <UiSwitch v-model="switchDemo" label="Notificações" />
+              <UiSwitch :model-value="true" label="Sempre ativo" />
+              <UiSwitch :model-value="false" label="Bloqueado" disabled />
+              <UiSwitch :model-value="switchDemo" aria-label="Sem rótulo visível" />
+            </div>
+            <p class="mt-3 text-xs text-slate-500">
+              Estado da demo (v-model):
+              <span class="font-mono text-slate-700">{{ switchDemo ? 'ligado' : 'desligado' }}</span>
+              · o terceiro está desabilitado e o quarto usa apenas nome acessível.
+            </p>
+          </div>
+
+          <!-- Uso -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiSwitch v-model="ativo" label="Notificações" /&gt;
+&lt;UiSwitch :model-value="false" aria-label="Manuais: visualizar" /&gt;
+&lt;UiSwitch v-model="x" label="Bloqueado" disabled /&gt;</pre>
           </div>
         </section>
       </main>

@@ -1,26 +1,28 @@
 # 07 - Perfis de Acesso (RBAC) — Área Administrativa
 
-**Versão:** 1.2.0 — **Data:** 2026-10-08 — **Idioma:** Português do Brasil (pt-BR)
+**Versão:** 1.3.0 — **Data:** 2026-10-08 — **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela principal de Perfis de Acesso (RBAC) - listagem (base em memória) com cabeçalho
 (Novo Perfil), KPIs e tabela com contagem de permissões e de usuários vinculados; **"Novo
-Perfil" e "Editar" abrem o modal de cadastro/edição** (`PerfisFormulario`) e **"Excluir" abre
-o modal de confirmação com guarda de vínculo**, enquanto "Permissões" segue em contrato de
-transição (toast, sem modal) — mais a **matriz normativa de permissões** (4 perfis × 11
-módulos × 9 ações) que o modal de permissões SHALL implementar
+Perfil" e "Editar" abrem o modal de cadastro/edição** (`PerfisFormulario`), **"Excluir" abre
+o modal de confirmação com guarda de vínculo** e **"Configurar permissões" abre o modal da
+matriz** (`PerfisPermissoes` — 4 ações fixas em interruptores, Funcionalidades em chips
+clicáveis) — mais a **matriz normativa de
+permissões** (4 perfis × 11 módulos × 9 ações) que este modal implementa (§7/§3.7)
 **Arquivos-fonte:** [`app/pages/admin/perfis-acesso.vue`](../app/pages/admin/perfis-acesso.vue) ·
 [`app/components/perfis/`](../app/components/perfis) ·
 [`app/config/navigation.ts`](../app/config/navigation.ts)
-**Vitrine:** [`/design`](../app/pages/design.vue) — **seção 19** espelha o novo `UiTextarea`
-do kit (§4); a seção 14 espelha o rótulo unificado do menu da conta
+**Vitrine:** [`/design`](../app/pages/design.vue) — **seção 19** espelha o `UiTextarea` e a
+**seção 20** o `UiSwitch` do kit (§4); a seção 14 espelha o rótulo unificado do menu da conta
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md) — componentes do kit
 usados (`UiButton`, `UiBadge`, `UiKpi`, `UiDataTable`, `UiTooltip`, `UiInput`, `UiTextarea`,
-`UiSegmented`, `UiModal`)
+`UiSegmented`, `UiSwitch`, `UiModal`)
 **Autoridade de comportamento:** specs da capability `perfis-acesso`
 (`openspec/specs/perfis-acesso`, sincronizada nesta change via `/opsx-sync`)
 
 > Este documento é a referência da tela `/admin/perfis-acesso` e de tudo o que foi criado para
-> ela — componentes de domínio, contrato de transição e, sobretudo, da **matriz de permissões
-> normativa** (§7), a fonte que o modal de permissões por perfil da fase 2 SHALL implementar.
+> ela — componentes de domínio, modais de cadastro/exclusão/**permissões** e, sobretudo, da
+> **matriz de permissões normativa** (§7), a fonte que o modal de permissões por perfil (§3.7)
+> implementa célula a célula.
 > Toda alteração aqui deve manter as specs da change e a implementação coerentes.
 
 ---
@@ -68,16 +70,19 @@ Administrativa:
 - **Modal de exclusão (change `perfis-acesso-modal-exclusao`):** "Excluir" (`Trash2`) **abre o
   modal** `PerfisExclusao` (`UiModal size="sm"`); ao confirmar com usuários vinculados o modal
   fecha e um `toast.warning` informa o bloqueio (sem tocar na base) — espelho da validação
-  futura do banco (docs/02 §3.5); sem vínculos a remoção acontece. **"Permissões"** continua
-  com **toast** de transição e sem `UiModal` (§5). Filtros e o modal de permissões seguem
-  pendentes (§13).
+  futura do banco (docs/02 §3.5); sem vínculos a remoção acontece.
+- **Modal de permissões (change `perfis-acesso-modal-permissoes`):** "Configurar
+  permissões" (`KeyRound`) **abre o modal** `PerfisPermissoes` (`UiModal size="xl"`) com as
+  4 ações fixas em interruptores, Funcionalidades em chips clicáveis, abas por sessão,
+  rascunho isolado e gravação em memória (§3.7) — sem toast de
+  transição. **Filtros e exportação** seguem pendentes (§13).
 - **Matriz semeada:** a coluna "Permissões" e o KPI "Permissões concedidas" derivam da matriz
   declarada em `usePerfisDemo.ts` (§3.4) — a mesma que o §7 normatiza.
 
 ## 2. Estrutura da página (componentização)
 
-A página é fina e **dona dos estados de coordenação** (modais de cadastro/exclusão + toast de
-permissões pendente). Cada parte é um componente em `app/components/perfis/` (auto-import com
+A página é fina e **dona dos estados de coordenação** (modais de cadastro, exclusão e
+permissões). Cada parte é um componente em `app/components/perfis/` (auto-import com
 prefixo `Perfis*`):
 
 ```
@@ -88,19 +93,19 @@ admin/perfis-acesso.vue            (page - definePageMeta + composição + coord
 │                  class="mt-5"
 │                  @permissoes @editar @excluir />  → UiDataTable (busca + badges + ações)
 ├── <PerfisFormulario v-model :modo :perfil />      → modal de cadastro/edição (§3.6)
+├── <PerfisPermissoes v-model :perfil />            → modal da matriz — abas por sessão, fixas em switches + Funcionalidades em chips (§3.7)
 └── <PerfisExclusao v-model :perfil @confirmar />   → modal de confirmação (§3.5)
 ```
 
 - **Estado de coordenação:** `modalAberto`/`modo`/`perfilEditar` (cadastro/edição),
-  `exclusaoAberta`, `perfilExcluir` e `tabelaRef<{ focarBusca }>` (mesmo padrão de
+  `permissoesAbertas`/`perfilPermissoes` (permissões), `exclusaoAberta`,
+  `perfilExcluir` e `tabelaRef<{ focarBusca }>` (mesmo padrão de
   `gestao-usuarios`). `abrirNovo()` abre em modo criação; `abrirEdicao(linha)` resolve o
   registro **completo** por `id` na base vigente (timestamps e matriz) e abre em modo edição;
-  `abrirExclusao(perfil)` sempre abre o modal; `confirmarExclusao()` fecha e, **se
+  `abrirPermissoes(linha)` resolve o registro por `id` e abre a matriz; `abrirExclusao(perfil)`
+  sempre abre o modal; `confirmarExclusao()` fecha e, **se
   `perfil.usuarios > 0`**, `toast.warning` de bloqueio **sem tocar na base**; sem vínculos
-  chama `excluirPerfil()` → `toast.success` → `nextTick(focarBusca)`. O gatilho de
-  **Permissões** continua com `avisoPermissoesPendentes()` →
-  `toast.info('Perfis de Acesso (RBAC)', 'Configurar permissões: funcionalidade disponível na próxima etapa.')`
-  — o emit é o ponto de encaixe do modal de permissões (§13), sem reescrever componentes.
+  chama `excluirPerfil()` → `toast.success` → `nextTick(focarBusca)`.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8` (mesmo
   padrão de Usuários e Auditoria).
 
@@ -156,9 +161,9 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 | Ações | gatilhos | `KeyRound` · `Pencil` · `Trash2` (tooltip + `aria-label` próprios) |
 
 - As ações **emitem** `@permissoes`, `@editar` e `@excluir` com a linha (`LinhaPerfil`); a
-  página converte Permissões em toast de transição, **Editar em abertura do modal de
-  cadastro/edição** (`abrirEdicao`) e **Excluir em abertura do modal de exclusão**
-  (`abrirExclusao`). Ícones em `text-slate-400` com cor semântica só no hover
+  página converte Permissões em abertura do modal da matriz (`abrirPermissoes`), **Editar em
+  abertura do modal de cadastro/edição** (`abrirEdicao`) e **Excluir em abertura do modal de
+  exclusão** (`abrirExclusao`). Ícones em `text-slate-400` com cor semântica só no hover
   (âmbar para permissões, `brand-focus` para editar, `rose-700` para excluir) — mesmo padrão
   da tabela de usuários.
 - **`defineExpose({ focarBusca })`** encadeia a busca do `UiDataTable` (cópia de
@@ -171,7 +176,8 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   `atualizado_em`, `permissoes`), `SituacaoPerfil` (`'Ativo' | 'Inativo' | 'Bloqueado'`),
   `ModoPerfis` (`'novo' | 'editar'`), `ModuloId` (11), `Acao` (4), `Extra` (5),
   `Permissao = Acao | Extra`.
-- **Constantes:** `MODULOS` (11 rótulos idênticos aos da sidebar), `ACOES`, `EXTRAS`,
+- **Constantes:** `MODULOS` (11 rótulos idênticos aos da sidebar + `descricao` curta p/ a
+  lista do modal), `ACOES`, `EXTRAS`,
   `PERMISSOES_POR_PERFIL = 99`, `VARIANTE_POR_STATUS` (3 estados: `done`/`neutral`/`blocked`).
 - **`MATRIZ_SEED`:** `Record<PerfilId, Record<ModuloId, Permissao[]>>` montado por regras
   (`ACOES_TUDO`, `CONTEIDO_EDITOR`, `CONTEIDO_REVISOR`, `CONTEIDO_LEITOR`) — declaração
@@ -180,7 +186,9 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 - **Helpers puros:** `contarPermissoes(perfil)` → soma dos módulos (99/45/21/6);
   `excluirPerfil(base, id)` → devolve a base nova sem o perfil (matriz vai junto, pois vive no
   objeto); `salvarPerfil(base, registro, modo)` → criação acrescenta clone ao fim da base,
-  edição substitui o registro do mesmo id — mesmo contrato imutável de `excluirUsuario`.
+  edição substitui o registro do mesmo id — mesmo contrato imutável de `excluirUsuario`;
+  `salvarPermissoes(base, id, permissoes)` → troca a matriz do perfil (clone) — id
+  inexistente devolve a base intacta.
 - **Estado:** `useState('perfis-base', () => PERFIS_DEMO.map(clonar))` — clona a semente na
   carga; a recarga restaura.
 - **Derivados (design D2/D3):** `linhas` (a linha da tabela com `usuarios` e
@@ -236,6 +244,41 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   com `useUsuariosDemo`); universos desacoplados, restaurados na recarga — a consistência por
   construção vem quando o dropdown passar a derivar da base de perfis (§13, backend).
 
+### 3.7 `Permissoes.vue` → `<PerfisPermissoes>` (modal da matriz de permissões)
+
+- **Modal completo** (página dona da coordenação, mesmo padrão do `Formulario`): props
+  `modelValue: boolean` e `perfil: PerfilDemo | null`; emite `update:modelValue`; grava via
+  `salvarPermissoes()` + `toast.success` ("Permissões do perfil atualizadas com sucesso.").
+- `UiModal` `size="xl"`, `title="Permissões"`, `subtitle="<nome> · matriz de 11 módulos
+  (99 permissões)"` e ícone `KeyRound` (comportamento do kit: backdrop não fecha,
+  `Escape`/`X`, focus-trap — `docs/01` §5.12).
+- **Tabela-cartão própria** (modelo de referência do usuário): `<table>` dentro de
+  `rounded-xl border border-slate-200` com cabeçalho `bg-slate-50` (headers em versalete
+  `bold slate-500`) e 1ª coluna `sticky left-0` no scroll horizontal — **não** é
+  `UiDataTable`. Linhas = módulos da aba ativa com **nome em `font-semibold` + descrição
+  curta** (`MODULOS[].descricao`) embaixo; colunas = **as 4 ações fixas** (`visualizar`,
+  `criar`, `alterar`, `excluir`) com um **`UiSwitch` por célula** (`aria-label`
+  "<Módulo>: <ação>") e a coluna **Funcionalidades**, com os 5 **chips clicáveis**
+  (`UiCheckChip size="sm"`, rótulo capitalizado) das ações extras — ligar/desligar atualiza
+  o rascunho como os interruptores. **Sem atalhos de seleção em lote** (nenhum interruptor
+  de "selecionar todos" em linha/coluna) e **sem toolbar de filtros** (busca/segmentados
+  ficam para a arquitetura futura) — decisões do usuário.
+- **Identidade e navegação por sessão (fonte única):** cada linha exibe o **ícone e a cor
+  da sidebar** (`app/config/navigation.ts`, casados por rótulo — os 11 rótulos são
+  idênticos) numa pílula `rounded-md` com fundo `${cor}1a`; os módulos ficam repartidos em
+  **abas `UiTabs` pelas 4 sessões** da sidebar (Publicações/Movimentos/Cadastros/
+  Administração — aba ativa volta à primeira na abertura, `role="tabpanel"` com
+  `permissoes-panel-*`/`permissoes-tab-*`). O rodapé informativo com ícone `Info` explica a
+  régua (fixas com interruptor, Funcionalidades em chip, nada vale até "Salvar") e o
+  contador **"n/99"** **global** aparece num `UiBadge` (variant `done` em 99/99, `pending`
+  parcial, `neutral` em 0) — trocar de aba não muda o contador.
+- **Rascunho isolado:** a matriz é copiada para um `ref` na abertura; nada altera a base
+  antes de **Salvar** → `salvarPermissoes(perfis, id, rascunho)` → coluna Permissões + KPIs
+  recalculam (computeds da §3.4) e o modal fecha; **Cancelar/Escape/X** descartam. Recarga
+  restaura a semente.
+- **Administrador editável como os demais** (decisão do usuário — sem trava por papel) e
+  perfil novo (0/99) pode ter a matriz preenchida no mesmo modal.
+
 ## 4. Componentes de kit (criados/alterados)
 
 - **Criado: `UiTextarea`** (`app/components/ui/Textarea.vue`) — campo multilinha do kit para
@@ -245,25 +288,30 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   linha e Tab sai do campo. Entra pelas três portas da regra do repo: spec
   `design-system/textarea` (+ `form-control-states` atualizada para incluir `Textarea`),
   seção **§5.18** do `docs/01` e **seção 19** da vitrine `/design`.
+- **Criado: `UiSwitch`** (`app/components/ui/Switch.vue`) — interruptor binário para a matriz
+  de permissões: `<button role="switch" aria-checked>`, `v-model`, `label` opcional associada
+  e `ariaLabel` (células), trilha `slate-300` desligada → **`brand-focus #1a9e07`** ligada,
+  Space/Enter alternam, foco `brand-focus`, `disabled` nativo. Spec `design-system/switch`,
+  seção **§5.19** do `docs/01` e **seção 20** da vitrine.
 - Os demais componentes usados (`UiButton`, `UiBadge`, `UiKpi`, `UiDataTable`, `UiTooltip`,
   `UiInput`, `UiSegmented`, `UiModal`, `UiModalSection`) permanecem sem alteração.
 - **Nenhum CSS dedicado** (§9).
-- O candidato a componente de kit novo (toggle de permissão) só nasce com o modal de
-  permissões — momento em que entra com spec `design-system/*`, seção em `docs/01` §5 e
-  seção na vitrine (§13).
 
-## 5. Comportamento das ações (modais + transição)
+## 5. Comportamento das ações (modais)
 
 **Novo Perfil e Editar** abrem o `PerfisFormulario` (§3.6); **Excluir** abre o
-`PerfisExclusao` (§3.5); **Configurar permissões** segue o contrato de transição (spec
-`perfis-acesso`): **toast informativo e nenhum `UiModal` aberto**.
+`PerfisExclusao` (§3.5); **Configurar permissões** abre o `PerfisPermissoes` (§3.7) — nenhum
+controle de linha exibe mais toast de transição.
 
 | Gatilho | Local | Comportamento atual | Pendência |
 | :--- | :--- | :--- | :--- |
 | **Novo Perfil** (`Plus`) | cabeçalho | abre `PerfisFormulario` modo criação (§3.6) | — (entregue) |
-| **Configurar permissões** (`KeyRound`) | linha | toast "Configurar permissões: funcionalidade disponível na próxima etapa." | modal de permissões do perfil |
+| **Configurar permissões** (`KeyRound`) | linha | abre `PerfisPermissoes` com a matriz do perfil (§3.7) | — (entregue) |
 | **Editar perfil** (`Pencil`) | linha | abre `PerfisFormulario` modo edição com o registro completo (§3.6) | — (entregue) |
 | **Excluir perfil** (`Trash2`) | linha | abre `PerfisExclusao` (§3.5); confirmar com vínculos → modal fecha + `toast.warning` de bloqueio (base intacta); sem vínculos → remove + `toast.success` + foco na busca | — (entregue) |
+
+- Salvar no modal de permissões: `salvarPermissoes()` → linha/KPIs recalculam em memória →
+  `toast.success` → modal fecha; descartar (Cancelar/Escape/X) não toca na base.
 
 - Salvar no modal: validação OK → `salvarPerfil()` → linha/tabela/KPIs atualizados em memória
   → `toast.success` → modal fecha. Erro de validação → modal aberto, mensagem no campo, foco
@@ -300,8 +348,8 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 ## 7. Matriz de permissões (normativa)
 
 **Esta seção é a fonte da verdade das permissões do sistema** e é o que o modal de
-permissões por perfil da fase 2 SHALL implementar célula a célula. A tela da fase 1 exibe
-apenas a **contagem** derivada desta matriz (§3.4).
+permissões por perfil (`PerfisPermissoes`, §3.7) implementa célula a célula. A listagem
+exibe apenas a **contagem** derivada desta matriz (§3.4).
 
 **Legenda de ações** (9 por módulo — `docs/02` §3.5):
 
@@ -419,9 +467,11 @@ change, mantendo contagens, KPI e este documento idênticos (verificado na §12 
 
 ## 10. Vitrine `/design`
 
-- **Seção 19 (Textarea — `UiTextarea`)** espelha o componente novo do kit (§4): um campo com
+- **Seção 19 (Textarea — `UiTextarea`)** espelha o componente do kit (§4): um campo com
   `v-model` e outro fixado em erro/desabilitado para conferir o recorte `rose-700`, o ícone e
   a mensagem acessível (`docs/01` §5.18).
+- **Seção 20 (Switch — `UiSwitch`)** espelha o interruptor do kit (§4): estados ligado,
+  desligado, desabilitado e um sem `label` (só nome acessível) — `docs/01` §5.19.
 - **Seção 14 (Shell de Layout & Impressão)** espelha automaticamente o rótulo unificado do menu da conta: a
   vitrine lê `app/config/navigation.ts` (requisito "Fonte única" de
   `design-system/layout-navigation`), sem edição manual.
@@ -457,10 +507,20 @@ cadastro/edição + `UiTextarea`:
 | `design-system/textarea` | **ADDED (capability nova)** — contrato do `UiTextarea` (props/v-model, disabled, rows, foco/erro da família, Enter quebra linha/Tab sai, mensagem `role="alert"`) |
 | `design-system/form-control-states` | **MODIFIED** — foco, erro e mensagem persistente passam a incluir `Textarea` na família |
 
+Change `openspec/changes/perfis-acesso-modal-permissoes` (spec-driven) — modal da matriz +
+`UiSwitch`:
+
+| Capability | Operação |
+| :--- | :--- |
+| `perfis-acesso` | **REMOVED** "A ação de permissões avisa por toast e não abre modal" + **ADDED** "A ação de permissões abre o modal de configuração" (só `KeyRound`, sem toast) |
+| `perfis-acesso` | **ADDED** — "O modal de permissões configura a matriz do perfil": abertura com abas por sessão e linhas nome+descrição, interruptores das 4 ações fixas (rascunho + contador global), Funcionalidades em chips clicáveis, salvar em memória com recálculo, descarte, recarga, Admin editável e perfil novo 0/99 — sem atalhos de lote nem toolbar de filtros |
+| `perfis-acesso` | **MODIFIED** — KPIs: recálculo inclui edição de permissões; contagens: novo cenário "Salvar a matriz recalcula a coluna Permissões" |
+| `design-system/switch` | **ADDED (capability nova)** — contrato do `UiSwitch` (`role="switch"`/`aria-checked`, label associada, disabled, teclado Space/Enter, foco `#1a9e07`, espelhamento na vitrine) |
+
 ## 12. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório) e
-  `openspec validate "perfis-acesso-modal-cadastro-edicao" --strict`.
+  `openspec validate "perfis-acesso-modal-permissoes" --strict`.
 - Smoke SSR da rota: `/admin/perfis-acesso` responde 200 com shell, título "Perfis de Acesso
   (RBAC)", KPIs e **sem** marcação de modal (o `UiModal` só renderiza com `modelValue=true`).
 - Checagem visual no dev server (`http://localhost:3000`):
@@ -470,11 +530,17 @@ cadastro/edição + `UiTextarea`:
     **Novo/Editar abrem o `PerfisFormulario`** (sem toast) — sem campo de código (id UUID
     gerado na criação), criação validando nome, perfil novo 0/99 com KPI `171/495`, edição com
     datas `dd/mm/yyyy` desabilitadas, `Escape`/Cancelar descartam;
-    Permissões ainda exibe toast **sem modal**; **Excluir abre o `PerfisExclusao`** — confirmar
+    **Permissões (`KeyRound`) abre o `PerfisPermissoes`** (sem toast) — abas `UiTabs` por
+    sessão com a tabela-cartão de módulos (nome + descrição) × 4 ações fixas em `UiSwitch`
+    (sem atalhos de lote) + coluna "Funcionalidades" com chips `UiCheckChip` clicáveis,
+    contador `n/99` global ao vivo,
+    Salvar recalcula linha+KPIs com toast,
+    Cancelar/Escape/X descartam, Admin editável, 375px com rolagem interna da tabela;
+    **Excluir abre o `PerfisExclusao`** — confirmar
     com vínculos fecha o modal com `toast.warning` de bloqueio e base intacta; recarga
     restaura a base; **sem rolagem horizontal** a 1280px (e layout íntegro a 375px).
-  - **`/design` seção 19:** `UiTextarea` com campo `v-model` e exemplo em erro/desabilitado
-    (recorte `rose-700`, ícone, foco `brand-focus`).
+  - **`/design` seções 19 e 20:** `UiTextarea` (campo `v-model` + erro/desabilitado) e
+    `UiSwitch` (ligado, desligado, desabilitado, só `ariaLabel`).
   - **Navegação:** clique na sidebar e no menu da conta navega (o menu fecha); item da sidebar
     ativo inclusive por URL direta; rótulo "Perfis de Acesso (RBAC)" nos dois lugares.
   - **Regressão:** `/admin/gestao-usuarios` e demais seções da vitrine inalterados.
@@ -486,12 +552,8 @@ cadastro/edição + `UiTextarea`:
 
 ## 13. Pendências e próximos passos
 
-- **Modal de permissões por perfil** implementando a matriz da §7 célula a célula (a única
-  ação ainda em transição é "Configurar permissões" — §5).
-- **Filtros e exportação** da listagem (junto dos respectivos modais/relatórios).
-- **Componente de kit para o toggle de permissão** (não existe `Switch`/`Toggle` no kit):
-  nasce com o modal e entra com spec `design-system/*`, seção em `docs/01` §5 e seção na
-  vitrine `/design`.
+- **Filtros e exportação** da listagem (change 2 do bloco — junto dos respectivos
+  modais/relatórios; padrão pronto em `/admin/gestao-usuarios`).
 - **Backend:** `server/` com tabelas `perfis`/`perfil_permissoes` (DDL alvo em `docs/02` §3.5)
   e o helper `requirePermission(event, modulo, acao)` (docs/02 §3.5/§7) — a página troca o
   composable por dados reais sem mudar o contrato visual; a §7 vira os **seeds** da migration.
