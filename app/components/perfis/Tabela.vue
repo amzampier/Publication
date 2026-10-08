@@ -4,8 +4,8 @@ import { KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
 import { usePerfisDemo, VARIANTE_POR_STATUS, type LinhaPerfil } from './usePerfisDemo'
 
-// Abre modais na página (coordenação dela): exclusão já tem modal; permissões e
-// edição continuam na fase 2
+// Abre modais na página (coordenação dela): cadastro/edição e exclusão têm modal;
+// permissões continua em transição por toast (spec perfis-acesso)
 const emit = defineEmits<{
   (e: 'permissoes', perfil: LinhaPerfil): void
   (e: 'editar', perfil: LinhaPerfil): void
@@ -23,7 +23,7 @@ const colunas: ColumnDef[] = [
   { id: 'descricao', header: 'Descrição', accessorKey: 'descricao', minWidth: 240 },
   { id: 'usuarios', header: 'Usuários', accessorKey: 'usuarios', minWidth: 90, align: 'right' },
   { id: 'permissoesTexto', header: 'Permissões', accessorKey: 'permissoesTexto', minWidth: 110, align: 'right' },
-  { id: 'status', header: 'Status', accessorKey: 'status', minWidth: 95 }
+  { id: 'situacao', header: 'Status', accessorKey: 'situacao', minWidth: 95 }
 ]
 </script>
 
@@ -46,7 +46,7 @@ const colunas: ColumnDef[] = [
         <span class="font-mono tabular-nums">{{ value }}</span>
       </template>
 
-      <template #cell(status)="{ value }">
+      <template #cell(situacao)="{ value }">
         <UiBadge :variant="VARIANTE_POR_STATUS[value]" size="sm">
           {{ value }}
         </UiBadge>

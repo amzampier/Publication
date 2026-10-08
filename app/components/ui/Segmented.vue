@@ -116,8 +116,10 @@ const classeSegmento = (opt: SegmentedOption) => {
   if (props.disabled) {
     return [
       base,
+      // Seleção em pílula branca sobre a track slate-200: sem opacity no grupo,
+      // o valor escolhido continua legível no estado somente leitura (QA-UX).
       selecionado
-        ? 'bg-slate-200 text-slate-500'
+        ? 'bg-white text-slate-500 shadow-xs'
         : 'text-slate-400',
       'cursor-not-allowed'
     ]
@@ -156,9 +158,13 @@ const classeSegmento = (opt: SegmentedOption) => {
         :aria-label="label ? undefined : 'Seleção'"
         :aria-describedby="error ? erroId : undefined"
         :class="[
-          'flex items-center gap-0.5 rounded-lg border bg-slate-100 p-1 h-[34px] transition-all select-none',
-          error ? 'border-slate-200 pr-7' : 'border-slate-200 hover:border-slate-300',
-          disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : ''
+          'flex items-center gap-0.5 rounded-lg border p-1 h-[34px] transition-all select-none',
+          error
+            ? 'border-slate-200 pr-7'
+            : disabled
+              ? 'border-slate-200'
+              : 'border-slate-200 hover:border-slate-300',
+          disabled ? 'bg-slate-200 cursor-not-allowed' : 'bg-slate-100'
         ]"
       >
         <button

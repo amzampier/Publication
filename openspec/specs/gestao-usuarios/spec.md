@@ -225,7 +225,7 @@ O sistema SHALL exibir um único modal de usuário, aberto em modo de criação 
 - **THEN** a pré-visualização circular do avatar é atualizada, o modal de usuário permanece aberto com os demais campos intactos e o modal de câmera é encerrado
 
 ### Requirement: O formulário de usuário valida antes de gravar
-O sistema SHALL recusar o salvamento e manter o modal aberto quando: Nome, E-mail, Perfil ou Situação estiverem vazios; o E-mail estiver em formato inválido ou já pertencer a outro usuário da base vigente; na criação, Senha ou Confirmar Senha estiverem vazias, com menos de 8 caracteres ou divergentes entre si; na edição, exatamente um dos dois campos de senha estiver preenchido ou os dois divergirem. Cada campo inválido SHALL exibir a mensagem de erro de forma persistente abaixo do campo (label e recorte em `rose-700`) e o foco SHALL ir ao primeiro campo inválido.
+O sistema SHALL recusar o salvamento e manter o modal aberto quando: Nome, E-mail, Perfil ou Situação estiverem vazios; o E-mail estiver em formato inválido ou já pertencer a outro usuário da base vigente; na criação, Senha ou Confirmar Senha estiverem vazias, com menos de 8 caracteres ou divergentes entre si; na edição, exatamente um dos dois campos de senha estiver preenchido ou os dois divergirem. Cada campo inválido SHALL exibir o erro de forma persistente — ícone `AlertCircle` `rose-700` à direita dentro do campo com a mensagem em tooltip no hover, e a mensagem no DOM como região viva (`role="alert"`) associada ao controle —, com label e recorte em `rose-700`, e o foco SHALL ir ao primeiro campo inválido.
 
 #### Scenario: E-mail duplicado
 - **WHEN** em modo de criação o usuário informa um e-mail já existente na base e tenta salvar

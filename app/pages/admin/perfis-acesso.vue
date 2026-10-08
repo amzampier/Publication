@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import { excluirPerfil, usePerfisDemo, type LinhaPerfil } from '../../components/perfis/usePerfisDemo'
+import {
+  excluirPerfil,
+  usePerfisDemo,
+  type LinhaPerfil,
+  type PerfilDemo,
+  type ModoPerfis
+} from '../../components/perfis/usePerfisDemo'
 import { useToast } from '../../composables/useToast'
 
 definePageMeta({ layout: 'admin' })
@@ -8,10 +14,31 @@ definePageMeta({ layout: 'admin' })
 const { toast } = useToast()
 const { perfis } = usePerfisDemo()
 
-// Contrato da fase 1 (spec perfis-acesso): "Novo Perfil", "Editar" e "Permissões"
-// ainda avisam por toast; "Excluir" abre o modal de confirmação direto.
-const avisoProximaEtapa = (acao: string) => {
-  toast.info('Perfis de Acesso (RBAC)', `${acao}: funcionalidade disponível na próxima etapa.`)
+// Ação de permissões ainda em transição (spec perfis-acesso): só o KeyRound avisa
+// por toast — Novo/Editar abrem o modal de cadastro/edição; Excluir tem o seu.
+const avisoPermissoesPendentes = () => {
+  toast.info('Perfis de Acesso (RBAC)', 'Configurar permissões: funcionalidade disponível na próxima etapa.')
+}
+
+// Coordenação do modal de cadastro/edição: a página é dona do estado (mesmo padrão
+// de gestao-usuarios e do modal de exclusão desta tela).
+const modalAberto = ref(false)
+const modo = ref<ModoPerfis>('novo')
+const perfilEditar = ref<PerfilDemo | null>(null)
+
+const abrirNovo = () => {
+  modo.value = 'novo'
+  perfilEditar.value = null
+  modalAberto.value = true
+}
+
+const abrirEdicao = (linha: LinhaPerfil) => {
+  // O modal precisa do registro completo (timestamps, matriz) - resolve por id na base.
+  const registro = perfis.value.find((p) => p.id === linha.id)
+  if (!registro) return
+  modo.value = 'editar'
+  perfilEditar.value = registro
+  modalAberto.value = true
 }
 
 // Coordenação do modal de exclusão: a página é dona do estado (mesmo padrão de
@@ -55,16 +82,22 @@ const confirmarExclusao = () => {
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
     <div class="mx-auto max-w-7xl">
-      <PerfisCabecalho @novo="avisoProximaEtapa('Novo Perfil')" />
+      <PerfisCabecalho @novo="abrirNovo" />
 
       <PerfisKpis class="mt-6" />
 
       <PerfisTabela
         ref="tabelaRef"
         class="mt-5"
-        @permissoes="avisoProximaEtapa('Configurar permissões')"
-        @editar="avisoProximaEtapa('Editar perfil')"
+        @permissoes="avisoPermissoesPendentes"
+        @editar="abrirEdicao"
         @excluir="abrirExclusao"
+      />
+
+      <PerfisFormulario
+        v-model="modalAberto"
+        :modo="modo"
+        :perfil="perfilEditar"
       />
 
       <PerfisExclusao

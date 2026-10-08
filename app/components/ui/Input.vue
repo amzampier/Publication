@@ -104,8 +104,8 @@ const aplicarMascara = (valor: string, mascara: string): string => {
     <!-- Container do Input -->
     <div
       :class="[
-        'relative flex items-center bg-white border border-slate-200 rounded-lg transition-all h-[34px]',
-        disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : 'hover:border-slate-300'
+        'relative flex items-center border border-slate-200 rounded-lg transition-all h-[34px]',
+        disabled ? 'bg-slate-200 cursor-not-allowed opacity-60' : 'bg-white hover:border-slate-300'
       ]"
     >
       <!-- Destaque de Foco: Borda inferior e rigorosamente apenas os dois cantos inferiores arredondados em brand-focus (foco canônico) -->

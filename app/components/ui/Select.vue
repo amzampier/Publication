@@ -267,15 +267,17 @@ watch(filteredOptions, () => {
         :aria-labelledby="labelId"
         :aria-describedby="error ? erroId : undefined"
         :aria-disabled="disabled"
-        tabindex="0"
+        :tabindex="disabled ? -1 : 0"
         :class="[
-          'relative flex items-center justify-between bg-white border rounded-lg px-3 cursor-pointer transition-all select-none h-[34px] outline-none',
+          'relative flex items-center justify-between border rounded-lg px-3 transition-all select-none h-[34px] outline-none',
           error
             ? 'border-slate-200'
-            : isOpen
-              ? 'border-slate-300 border-b-brand-focus border-b-2 shadow-xs ring-0'
-              : 'border-slate-200 hover:border-slate-300 focus:border-b-brand-focus focus:border-b-2',
-          disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : ''
+            : disabled
+              ? 'border-slate-200'
+              : isOpen
+                ? 'border-slate-300 border-b-brand-focus border-b-2 shadow-xs ring-0'
+                : 'border-slate-200 hover:border-slate-300 focus:border-b-brand-focus focus:border-b-2',
+          disabled ? 'bg-slate-200 cursor-not-allowed opacity-60' : 'bg-white cursor-pointer'
         ]"
         @click="toggleDropdown"
       >

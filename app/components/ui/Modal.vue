@@ -137,8 +137,11 @@ watch(
       lockScroll()
       window.addEventListener('keydown', handleKeydown)
       nextTick(() => {
-        const firstNode = getFocusable().at(0)
-        if (firstNode) firstNode.focus()
+        // Foco inicial: primeiro controle do corpo/rodapé — o X do header é pulado
+        // só na abertura (docs/01 §5.12); ele segue na armadilha (Shift+Tab chega).
+        const nodes = getFocusable()
+        const alvo = nodes.find((el) => !el.closest('[data-modal-header]')) ?? nodes.at(0)
+        if (alvo) alvo.focus()
         else panelRef.value?.focus()
       })
     } else {
@@ -173,7 +176,7 @@ onUnmounted(() => {
         class="relative w-full bg-white rounded-xl shadow-2xl flex flex-col outline-none overflow-hidden max-h-[calc(100vh-2rem)]"
         :class="sizeClass"
       >
-        <div class="flex items-center gap-3 bg-gradient-to-r from-brand-primary to-brand-structure rounded-t-xl border-l-[2.5px] border-l-brand-accent px-4 py-3.5">
+        <div data-modal-header class="flex items-center gap-3 bg-gradient-to-r from-brand-primary to-brand-structure rounded-t-xl border-l-[2.5px] border-l-brand-accent px-4 py-3.5">
           <component :is="icon" v-if="icon" class="h-4 w-4 text-white shrink-0" aria-hidden="true" />
           <div class="w-px self-stretch bg-white/20 shrink-0" aria-hidden="true" />
           <div class="min-w-0 flex-1">
@@ -200,7 +203,7 @@ onUnmounted(() => {
 
         <div
           v-if="$slots.footer"
-          class="border-t-[1px] border-lime-500 bg-white px-5 py-3.5 flex items-center justify-end gap-2.5"
+          class="border-t-[1px] border-brand-focus bg-white px-5 py-3.5 flex items-center justify-end gap-2.5"
         >
           <slot name="footer" />
         </div>
@@ -210,8 +213,11 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.fp-modal-body :deep(label:not([class*='text-rose'])) {
+/* Peso fraco nos labels do corpo — inclusive em erro (cor rose-700 preservada). */
+.fp-modal-body :deep(label) {
   font-weight: 300;
+}
+.fp-modal-body :deep(label:not([class*='text-rose'])) {
   color: #64748b;
 }
 </style>

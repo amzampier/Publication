@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ShieldCheck, Plus } from '@lucide/vue'
 
-// Abre o modal de perfil em modo de criação (coordenação na página, fase 2)
+// Abre o modal de cadastro em modo de criação (coordenação na página)
 const emit = defineEmits<{
   (e: 'novo'): void
 }>()

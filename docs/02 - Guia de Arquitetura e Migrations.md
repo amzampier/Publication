@@ -246,6 +246,31 @@ O sistema implementa controle de acesso granular na tabela `perfil_permissoes`:
 - Ações especiais são tratadas no campo `permissoes_extras` (JSON), tais como: `publicar`, `arquivar`, `download`, `exportar`, `importar`.
 - O helper `requirePermission(event, modulo, acao)` valida diretamente no banco ou cache de sessão, negando a requisição com **HTTP 403 Forbidden** se o perfil não tiver a permissão concedida.
 
+A tabela de perfis (`perfis`) terá o schema alvo (migration futura — a página
+`/admin/perfis-acesso` hoje é demo em memória, `docs/07`):
+
+```sql
+CREATE TABLE IF NOT EXISTS perfis (
+  id UUID NOT NULL DEFAULT UUID() COMMENT 'Identificador único do perfil',
+  nome_perfil VARCHAR(100) NOT NULL COMMENT 'Nome amigável exibido nas telas de governança',
+  descricao TEXT NULL COMMENT 'Detalhamento das responsabilidades do perfil',
+  padrao_sistema TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Indica se é perfil nativo bloqueado para exclusão',
+  situacao ENUM('Ativo', 'Inativo', 'Bloqueado') NOT NULL DEFAULT 'Ativo' COMMENT 'Situação cadastral do perfil de acesso',
+  cor_identificacao VARCHAR(30) NOT NULL DEFAULT 'slate' COMMENT 'Cor do badge no painel visual',
+  criado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+  atualizado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+- O **UUID `id` é o identificador único** do perfil (não há `codigo_perfil` — decisão
+  registrada na change `perfis-acesso-modal-cadastro-edicao`).
+- **Colunas futuras fora do UI atual:** `padrao_sistema` (perfil nativo bloqueado para
+  exclusão — flag de integridade do banco, não editável no modal) e `cor_identificacao`
+  (badge colorido no painel — componente de cor ainda não existe no kit). O modal de
+  cadastro/edição (demo) cobre `nome_perfil`, `descricao`, `situacao` e
+  os timestamps (`docs/07` §3.6).
+
 ---
 
 ### 3.6. Sistema de Auditoria Centralizada (`server/utils/audit.ts`)

@@ -6,7 +6,10 @@ import { computed } from 'vue'
 import { useState } from '#app'
 import { useUsuariosDemo } from '../usuarios/useUsuariosDemo'
 
-export type StatusPerfil = 'Ativo' | 'Inativo'
+export type SituacaoPerfil = 'Ativo' | 'Inativo' | 'Bloqueado'
+
+/** Modo do modal de perfil - um componente, dois usos (mesmo contrato de ModoUsuario). */
+export type ModoPerfis = 'novo' | 'editar'
 
 export type PerfilId = 'Administrador' | 'Editor' | 'Revisor' | 'Leitor'
 
@@ -49,18 +52,24 @@ export const MODULOS: { id: ModuloId; label: string }[] = [
 /** 99 = 11 módulos × 9 ações (4 fixas + 5 extras). */
 export const PERMISSOES_POR_PERFIL = MODULOS.length * (ACOES.length + EXTRAS.length)
 
+/** Espelho demo do registro `perfis` (docs/02 §3.5): identificador UUID, situação de 3
+ *  estados e timestamps — sem `padrao_sistema`/`cor_identificacao` (colunas futuras). */
 export interface PerfilDemo {
   id: string
-  nome: PerfilId
+  nome: PerfilId | string
   descricao: string
-  status: StatusPerfil
+  situacao: SituacaoPerfil
+  /** ISO 8601 - fixos na semente (evita divergência de hidratação cliente/servidor). */
+  criado_em: string
+  atualizado_em: string
   /** Matriz do perfil: módulo -> ações concedidas (fonte única das contagens). */
   permissoes: Record<ModuloId, Permissao[]>
 }
 
-export const VARIANTE_POR_STATUS: Record<StatusPerfil, 'done' | 'neutral'> = {
+export const VARIANTE_POR_STATUS: Record<SituacaoPerfil, 'done' | 'neutral' | 'blocked'> = {
   Ativo: 'done',
-  Inativo: 'neutral'
+  Inativo: 'neutral',
+  Bloqueado: 'blocked'
 }
 
 // Regras por perfil (docs/07 §"Matriz de permissões"; design D2) - conjuntos declarados
@@ -90,6 +99,9 @@ const conteudo = (acoes: Permissao[]): Partial<Record<ModuloId, Permissao[]>> =>
   'release-week': acoes,
   'escopo-projetos': acoes
 })
+
+/** Matriz de um perfil recém-criado: 11 módulos sem nenhuma ação concedida (0/99). */
+export const matrizVazia = (): Record<ModuloId, Permissao[]> => matriz({})
 
 export const MATRIZ_SEED: Record<PerfilId, Record<ModuloId, Permissao[]>> = {
   Administrador: matriz(
@@ -141,35 +153,63 @@ export const excluirPerfil = (
   base: base.filter((p) => p.id !== id)
 })
 
+/**
+ * Grava o perfil no modo indicado (puro): criação gera `id` novo
+ * (`crypto.randomUUID()`) e acrescenta clone ao fim da base; edição substitui o registro do
+ * mesmo id (clone - `criado_em`/`atualizado_em` já resolvidos pelo chamador). Id
+ * inexistente na edição devolve a base intacta.
+ * Quem tem o `useState` é quem atribui `perfis.value = base` (mesmo contrato de
+ * `excluirPerfil`).
+ */
+export const salvarPerfil = (
+  base: PerfilDemo[],
+  registro: PerfilDemo,
+  modo: ModoPerfis
+): { base: PerfilDemo[] } => {
+  if (modo === 'novo') {
+    return { base: [...base, clonar({ ...registro, id: crypto.randomUUID() })] }
+  }
+  return { base: base.map((p) => (p.id === registro.id ? clonar(registro) : p)) }
+}
+
 // Base de demonstração - os 4 perfis canônicos (mesmos do PERFIS de useUsuariosDemo),
 // todos Ativo: são os perfis em uso pelos 16 usuários da base (design D7).
+// Timestamps fixos: nada de Date.now() no evaluate (hidratação cliente/servidor).
 export const PERFIS_DEMO: PerfilDemo[] = [
   {
     id: 'p-001',
     nome: 'Administrador',
     descricao: 'Acesso total ao sistema, incluindo perfis de acesso e configurações globais.',
-    status: 'Ativo',
+    situacao: 'Ativo',
+    criado_em: '2026-01-05T08:00:00.000Z',
+    atualizado_em: '2026-01-05T08:00:00.000Z',
     permissoes: MATRIZ_SEED.Administrador
   },
   {
     id: 'p-002',
     nome: 'Editor',
     descricao: 'Produz, publica e mantém conteúdos e cadastros do portal.',
-    status: 'Ativo',
+    situacao: 'Ativo',
+    criado_em: '2026-01-05T08:00:00.000Z',
+    atualizado_em: '2026-01-05T08:00:00.000Z',
     permissoes: MATRIZ_SEED.Editor
   },
   {
     id: 'p-003',
     nome: 'Revisor',
     descricao: 'Revisa e homologa conteúdos na esteira, sem criar nem excluir registros.',
-    status: 'Ativo',
+    situacao: 'Ativo',
+    criado_em: '2026-01-05T08:00:00.000Z',
+    atualizado_em: '2026-01-05T08:00:00.000Z',
     permissoes: MATRIZ_SEED.Revisor
   },
   {
     id: 'p-004',
     nome: 'Leitor',
     descricao: 'Consulta e baixa os conteúdos publicados.',
-    status: 'Ativo',
+    situacao: 'Ativo',
+    criado_em: '2026-01-05T08:00:00.000Z',
+    atualizado_em: '2026-01-05T08:00:00.000Z',
     permissoes: MATRIZ_SEED.Leitor
   }
 ]
@@ -177,9 +217,9 @@ export const PERFIS_DEMO: PerfilDemo[] = [
 /** Linha derivada da tabela: contagens nunca digitadas, sempre calculadas (design D2/D3). */
 export interface LinhaPerfil {
   id: string
-  nome: PerfilId
+  nome: string
   descricao: string
-  status: StatusPerfil
+  situacao: SituacaoPerfil
   usuarios: number
   permissoesTexto: string
 }
@@ -206,7 +246,7 @@ export const usePerfisDemo = () => {
       id: perfil.id,
       nome: perfil.nome,
       descricao: perfil.descricao,
-      status: perfil.status,
+      situacao: perfil.situacao,
       usuarios: usuariosPorPerfil.value[perfil.nome] ?? 0,
       permissoesTexto: `${contarPermissoes(perfil)}/${PERMISSOES_POR_PERFIL}`
     }))

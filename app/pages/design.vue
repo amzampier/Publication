@@ -46,7 +46,8 @@ import {
   LayoutGrid,
   MessageCircle,
   Smartphone,
-  LoaderCircle
+  LoaderCircle,
+  AlignLeft
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -638,6 +639,10 @@ const abrirLoadingDemo = (comProgresso: boolean) => {
 
 onUnmounted(encerrarLoadingDemo)
 
+// Demo do UiTextarea (Seção 19) — campo livre com v-model e exemplo fixo em erro
+const textareaDemo = ref('')
+const textareaErroDemo = 'Informe a descrição.'
+
 // Navegação rápida de âncoras
 const secoes = [
   { id: 'principios', label: '1. Princípios & Tipografia' },
@@ -657,7 +662,8 @@ const secoes = [
   { id: 'modal', label: '15. Modal de Cadastro' },
   { id: 'tabs-slider', label: '16. Tabs & Slider' },
   { id: 'choice-card', label: '17. Cards de Escolha (UiChoiceCard)' },
-  { id: 'loading', label: '18. Loading (UiLoading)' }
+  { id: 'loading', label: '18. Loading (UiLoading)' },
+  { id: 'textarea', label: '19. Textarea (UiTextarea)' }
 ]
 </script>
 
@@ -2828,6 +2834,67 @@ variant="lime"
             <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
             <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiLoading v-if="salvando" message="Importando 1.240 registros de usuários…" /&gt;
 &lt;UiLoading v-if="importando" message="Importando registros…" :current="1240" :total="5000" /&gt;</pre>
+          </div>
+        </section>
+
+        <!-- 19. Textarea -->
+        <section id="textarea" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <AlignLeft class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  19. Textarea (UiTextarea)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Campo multilinha do kit — mesmo DNA do
+                  <code class="font-mono text-slate-700">UiInput</code>: foco recortado na
+                  borda inferior em
+                  <code class="font-mono text-slate-700">brand-focus</code>
+                  <code class="font-mono text-slate-700">#1a9e07</code>, erro em
+                  <code class="font-mono text-slate-700">rose-700</code> com ícone+tooltip e
+                  mensagem <code class="font-mono text-slate-700">sr-only</code>
+                  <code class="font-mono text-slate-700">role="alert"</code> via
+                  <code class="font-mono text-slate-700">aria-describedby</code>; altura pelo
+                  <code class="font-mono text-slate-700">rows</code> (padrão 3) com
+                  <code class="font-mono text-slate-700">resize-y</code>, Enter quebra linha e
+                  Tab sai do campo.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Demonstração -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="grid gap-4 md:grid-cols-2">
+              <UiTextarea
+                v-model="textareaDemo"
+                label="Descrição"
+                placeholder="Detalhe as responsabilidades do perfil…"
+              />
+              <UiTextarea
+                label="Descrição"
+                :model-value="'Campo fixado em erro para conferir o recorte rose-700.'"
+                :error="textareaErroDemo"
+                disabled
+              />
+            </div>
+            <p class="mt-3 text-xs text-slate-500">
+              Valor da demo (v-model):
+              <span class="font-mono text-slate-700">{{ textareaDemo || '—' }}</span>
+              · o exemplo da direita está desabilitado e em erro (ícone, borda e
+              mensagem acessível no DOM).
+            </p>
+          </div>
+
+          <!-- Uso -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiTextarea v-model="descricao" label="Descrição" placeholder="Detalhe as responsabilidades…" :rows="4" /&gt;
+&lt;UiTextarea label="Descrição" :model-value="'…'" error="Informe a descrição." /&gt;</pre>
           </div>
         </section>
       </main>

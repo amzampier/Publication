@@ -214,13 +214,15 @@ onUnmounted(() => {
 
     <div
       :class="[
-        'relative flex items-center bg-white border rounded-lg transition-all',
+        'relative flex items-center border rounded-lg transition-all',
         error
           ? 'border-slate-200'
-          : isOpen
-            ? 'border-slate-300 border-b-brand-focus border-b-2 rounded-b-lg shadow-xs'
-            : 'border-slate-200 hover:border-slate-300',
-        disabled ? 'bg-slate-50 cursor-not-allowed opacity-60' : ''
+          : disabled
+            ? 'border-slate-200'
+            : isOpen
+              ? 'border-slate-300 border-b-brand-focus border-b-2 rounded-b-lg shadow-xs'
+              : 'border-slate-200 hover:border-slate-300',
+        disabled ? 'bg-slate-200 cursor-not-allowed opacity-60' : 'bg-white'
       ]"
     >
       <div class="pl-3 pr-1 text-slate-400 flex items-center pointer-events-none">

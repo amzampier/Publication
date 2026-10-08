@@ -3,9 +3,10 @@
 ## Purpose
 
 Definir o comportamento da página principal de Perfis de Acesso (RBAC) — listagem em memória
-(fase 1) com KPIs, tabela com a contagem de permissões e de usuários vinculados, modal de
-exclusão com guarda de vínculo e as demais ações sinalizadas como pendentes para a fase dos
-modais —, declarando o `docs/07` como fonte normativa
+(fase 1) com KPIs de 3 estados, tabela com a contagem de permissões e de usuários vinculados,
+modal de cadastro/edição (id UUID, situação de 3 estados), modal de exclusão com guarda de
+vínculo e apenas a ação Permissões ainda sinalizada como pendente —, declarando o `docs/07`
+como fonte normativa
 da matriz de permissões, para que a Área Administrativa visualize e administre os perfis de
 acesso conforme o modelo `perfis`/`perfil_permissoes` descrito no `docs/02` §3.5.
 
@@ -50,30 +51,31 @@ navegação e o item da sidebar correspondente apareça como ativo na rota.
 
 ### Requirement: Os KPIs refletem o conjunto vigente de perfis
 O sistema SHALL exibir no topo da página os KPIs "Total de perfis" (contagem do conjunto
-vigente), "Ativos", "Inativos" e "Permissões concedidas" (`<soma das permissões verdadeiras>/<perfis × 99>`),
-recalculados sempre que o conjunto de perfis muda.
+vigente), "Ativos", "Inativos", "Bloqueados" e "Permissões concedidas"
+(`<soma das permissões verdadeiras>/<perfis × 99>`), recalculados sempre que o conjunto de
+perfis muda.
 
 #### Scenario: Base de demonstração
 - **WHEN** a página é aberta com a base de demonstração (4 perfis, todos Ativos, matriz semeada)
-- **THEN** os KPIs exibem Total de perfis 4, Ativos 4, Inativos 0 e Permissões concedidas
-  171/396
+- **THEN** os KPIs exibem Total de perfis 4, Ativos 4, Inativos 0, Bloqueados 0 e Permissões
+  concedidas 171/396
 
 #### Scenario: Recalculo após mudança do conjunto
-- **WHEN** o conjunto vigente de perfis muda (criação, edição ou exclusão numa etapa futura)
-- **THEN** os quatro KPIs são recalculados a partir do conjunto vigente
+- **WHEN** o conjunto vigente de perfis muda (criação, edição, exclusão ou mudança de situação)
+- **THEN** os cinco KPIs são recalculados a partir do conjunto vigente
 
 ### Requirement: A listagem exibe perfis em UiDataTable com seis colunas
 O sistema SHALL exibir os perfis em `UiDataTable` com colunas **Nome**, **Descrição**,
 **Usuários** (contagem), **Permissões** (`n/99`), **Status** (badge) e **Ações**, com paginação,
-ordenação e busca textual do componente, badge de Status distinguível entre "Ativo" e "Inativo"
-— cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na área da tabela
-nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar
-a quantidade de registros exibidos por página.
+ordenação e busca textual do componente, badge de Status distinguível entre "Ativo", "Inativo"
+e "Bloqueado" — cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na
+área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida),
+inclusive após trocar a quantidade de registros exibidos por página.
 
 #### Scenario: Colunas e badges
 - **WHEN** a tabela é renderizada com a base de demonstração
 - **THEN** as seis colunas aparecem na ordem Nome, Descrição, Usuários, Permissões, Status,
-  Ações, com badge de Status distinguível entre Ativo e Inativo
+  Ações, com badge de Status distinguível entre Ativo, Inativo e Bloqueado
 
 #### Scenario: Sem rolagem horizontal
 - **WHEN** a janela está em ~1280px ou mais com a sidebar expandida, inclusive após mudar a
@@ -105,28 +107,85 @@ contagens pode ser um valor digitado ou fixado no template.
 - **THEN** a contagem da coluna Usuários e os KPIs derivados passam a refletir a base atual,
   sem recarregar a página
 
-### Requirement: As ações da fase 1 avisam por toast e não abrem modal
+### Requirement: A ação de permissões avisa por toast e não abre modal
 O sistema SHALL exibir toast informativo ("funcionalidade disponível na próxima etapa") quando
-o usuário aciona o botão "Novo Perfil" do cabeçalho ou as ações de linha **Editar** e
-**Permissões** (ícone `KeyRound`), permanecendo **nenhum `UiModal` aberto** por esses
-controles — os modais de cadastro/edição, de filtros e de permissões pertencem à fase 2.
-A ação de linha **Excluir** (`Trash2`) deixa de exibir o toast de transição e abre o modal de
-confirmação de exclusão, conforme o requisito "O modal de exclusão confirma a remoção de um
-perfil".
+o usuário aciona a ação de linha **Permissões** (ícone `KeyRound`), permanecendo **nenhum
+`UiModal` aberto** por esse controle — o modal de permissões por perfil pertence ao passo 2.
+O modal de cadastro/edição abre pelo cabeçalho e pela ação Editar, e o modal de confirmação
+de exclusão abre pela ação Excluir, conforme seus próprios requisitos.
 
-#### Scenario: Novo Perfil
+#### Scenario: Permissões ainda em transição
+- **WHEN** o usuário aciona na linha o controle Permissões (`KeyRound`), com tooltip e
+  `aria-label` próprios
+- **THEN** um toast informativo de "próxima etapa" é exibido e nenhum modal é aberto
+
+#### Scenario: Novo e Editar deixaram de avisar por toast
+- **WHEN** o usuário aciona "Novo Perfil" ou "Editar" numa linha
+- **THEN** nenhum toast de "próxima etapa" é exibido e o modal de cadastro/edição é aberto
+
+### Requirement: O modal de cadastro/edição cria e altera perfis
+O sistema SHALL abrir um modal de cadastro/edição (`UiModal`, molde do modal de usuários) ao
+acionar "Novo Perfil" do cabeçalho ou "Editar" (`Pencil`) de uma linha, contendo a seção
+"Dados do Perfil" com os campos **Nome** (`nome_perfil`), **Situação** (`situacao`,
+`UiSegmented` com as opções `Ativo`, `Inativo` e `Bloqueado`) e **Descrição** (`descricao`,
+área de texto `UiTextarea`). O identificador do perfil SHALL ser um UUID gerado no salvamento da criação
+(não há campo de código — a tabela alvo usa `id UUID`, `docs/02` §3.5).
+
+Na edição, o modal SHALL exibir ainda a seção "Informações de Cadastro" com **Data
+Cadastro** e **Data Alteração** desabilitados (fundo `slate-200`, somente leitura), no
+formato `dd/mm/yyyy` (**sem horário**); esta seção SHALL estar ausente na criação. O
+preenchimento inválido (nome vazio) SHALL impedir a
+gravação, exibindo a mensagem no campo e devolvendo o foco ao primeiro campo com erro.
+
+Ao salvar na criação, o sistema SHALL acrescentar o perfil ao conjunto vigente **em memória**
+com matriz de permissões vazia (`0/99`) e zero usuários vinculados — a linha aparece, os KPIs
+recalculam e um toast de sucesso é exibido. Ao salvar na edição, SHALL atualizar os campos
+editáveis mantendo `criado_em` preservado e fazendo `atualizado_em` refletir a edição, com
+toast de sucesso. "Cancelar", `Escape` ou o `X` do cabeçalho SHALL fechar o modal sem alterar
+a base. Toda gravação SHALL ocorrer sem nenhuma requisição HTTP e SHALL ser descartada na
+recarga da página junto com as demais alterações da fase em memória.
+
+#### Scenario: Abertura em modo novo
 - **WHEN** o usuário clica em "Novo Perfil"
-- **THEN** um toast informativo de "próxima etapa" é exibido e nenhum modal é aberto
+- **THEN** o modal "Novo Perfil" abre com a seção "Dados do Perfil" (Nome vazio, Situação com
+  `Ativo` pré-selecionado, Descrição), sem a seção "Informações de Cadastro", e com
+  "Cancelar" (outline) e "Salvar" (primary) no rodapé
 
-#### Scenario: Ações de linha
-- **WHEN** o usuário aciona na linha de um perfil os controles de Editar (`Pencil`) ou
-  Permissões (`KeyRound`), cada um com tooltip e `aria-label` próprios
-- **THEN** um toast informativo de "próxima etapa" é exibido e nenhum modal é aberto
+#### Scenario: Abertura em modo edição
+- **WHEN** o usuário aciona "Editar" na linha de um perfil
+- **THEN** o modal "Editar Perfil" abre pré-preenchido com os dados do perfil e a seção
+  "Informações de Cadastro" visível com Data Cadastro e Data Alteração desabilitados
 
-#### Scenario: Excluir deixou de avisar por toast
-- **WHEN** o usuário aciona na linha o controle Excluir (`Trash2`)
-- **THEN** nenhum toast de "próxima etapa" é exibido e o modal de confirmação de exclusão
-  é aberto
+#### Scenario: Nome obrigatório
+- **WHEN** o usuário salva sem informar o nome do perfil
+- **THEN** nada é acrescentado à base, a mensagem de erro aparece no campo Nome e o modal
+  permanece aberto
+
+#### Scenario: Salvar cria o perfil em memória
+- **WHEN** o usuário preenche os dados válidos e clica em "Salvar" na criação
+- **THEN** o perfil é acrescentado ao conjunto vigente com id UUID gerado no salvamento,
+  matriz vazia (0/99) e 0 usuários, a linha aparece na tabela, os KPIs recalculam (Permissões
+  concedidas passa de 171/396 para 171/495), um toast de sucesso é exibido e o modal fecha
+
+#### Scenario: Salvar edição preserva criado_em e atualiza atualizado_em
+- **WHEN** o usuário altera nome, descrição ou situação e clica em "Salvar" na edição
+- **THEN** os campos refletem a alteração, Data Cadastro mantém o valor original, Data
+  Alteração passa a refletir a edição, um toast de sucesso é exibido, o modal fecha e os KPIs
+  recalculam quando a situação muda
+
+#### Scenario: Situação de três estados
+- **WHEN** o usuário seleciona `Bloqueado` na Situação e salva
+- **THEN** a linha exibe o badge `Bloqueado` (variante `blocked`) e os KPIs "Ativos",
+  "Inativos" e "Bloqueados" recalculam a partir do conjunto vigente
+
+#### Scenario: Descarte preserva a base
+- **WHEN** o usuário aciona "Cancelar", `Escape` ou o `X` do cabeçalho com o modal aberto
+- **THEN** o modal fecha sem alterar o conjunto de perfis
+
+#### Scenario: Gravação é em memória e a recarga restaura
+- **WHEN** um perfil é criado ou editado e depois a página é recarregada
+- **THEN** a base volta aos 4 perfis de demonstração com a matriz semeada, sem nenhuma
+  requisição de dados (API)
 
 ### Requirement: O modal de exclusão confirma a remoção de um perfil
 O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao acionar o

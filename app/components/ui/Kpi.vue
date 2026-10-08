@@ -42,7 +42,9 @@ withDefaults(defineProps<Props>(), {
       </span>
 
       <div class="min-w-0">
-        <p class="truncate text-xs font-medium text-slate-500">
+        <!-- line-clamp-2: títulos longos (ex.: "Permissões concedidas") quebram em
+             2 linhas em vez de truncar quando o card fica estreito (xl 1280–1439px) -->
+        <p class="line-clamp-2 leading-tight text-xs font-medium text-slate-500">
           {{ titulo }}
         </p>
 

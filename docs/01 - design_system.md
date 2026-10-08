@@ -38,6 +38,7 @@
    - [5.15 UiSegmented](#515-uisegmented--seção-9-do-design) (seção 9)
    - [5.16 UiChoiceCard](#516-uichoicecard--seção-17-do-design) (seção 17)
    - [5.17 UiLoading](#517-uiloading--seção-18-do-design) (seção 18)
+   - [5.18 UiTextarea](#518-uitextarea--seção-19-do-design) (seção 19)
 
 ## 1. Princípios & Tipografia
 
@@ -335,7 +336,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `label` | `string` | `''` | Rótulo associado (`useId()` no `[for]`); fica `text-rose-700` em erro |
 | `type` | `string` | `'text'` | Tipo nativo do input |
 | `placeholder` | `string` | `''` | Placeholder (`text-slate-400`) |
-| `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
+| `disabled` | `boolean` | `false` | `bg-slate-200 opacity-60` |
 | `error` | `string` | `''` | Erro do campo: **sem texto visível abaixo** — só overlay vermelho + `AlertCircle` à direita com tooltip; a mensagem fica no DOM oculta (`sr-only`, `role="alert"` + `aria-describedby`) para leitores de tela |
 | `helperText` | `string` | `''` | Texto auxiliar abaixo (`11px slate-500`) |
 | `leftIcon` / `rightIcon` | `Component \| null` | `null` | Ícone interno esquerdo/direito |
@@ -477,7 +478,7 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `label` | `string` | `''` | Rótulo (`useId()` ↔ `for`/`aria-labelledby`) |
 | `placeholder` | `string` | `'Selecione uma opção...'` | Texto sem seleção |
 | `searchPlaceholder` | `string` | `'Digitar para pesquisar...'` | Placeholder da busca |
-| `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60`, `aria-disabled` |
+| `disabled` | `boolean` | `false` | `bg-slate-200 opacity-60`, `aria-disabled` |
 | `clearable` | `boolean` | `true` | Botão X (limpa emite `''`) |
 | `leftIcon` | `Component \| null` | `null` | Ícone à esquerda do gatilho |
 | `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro **sem texto visível** (só overlay + `AlertCircle`; mensagem `sr-only` com `role="alert"`) |
@@ -513,7 +514,7 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `modelValue` | `Date \| string \| null` | `null` | `v-model` |
 | `label` | `string` | `''` | Rótulo associado (`useId()`) |
 | `placeholder` | `string` | `'DD/MM/AAAA'` | Placeholder da máscara |
-| `disabled` | `boolean` | `false` | `bg-slate-50 opacity-60` |
+| `disabled` | `boolean` | `false` | `bg-slate-200 opacity-60` |
 | `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro **sem texto visível** (só overlay + `AlertCircle`; mensagem `sr-only` com `role="alert"`) |
 
 - **Emits:** `update:modelValue(date: Date | null)` · `change(date: Date | null)` — **só emite quando a máscara completa (10 chars) ou ao limpar** (valores intermediários não emitem).
@@ -734,11 +735,11 @@ interface ColumnDef<T = any> {
 - **Emits:** `update:modelValue` (boolean) e `close` (todos os fechamentos — X, Escape, ações do footer).
 - **Slots:** `default` (corpo/sessões) e `footer` (ações; só renderiza se fornecido).
 - **Portal/camada:** `<Teleport to="body">` em `z-[60]` — acima dos toasts (`z-50`); backdrop cinza escuro `bg-zinc-900/50` (`#18181b` a 50%) que **não** fecha no clique (protege cadastros longos contra perda acidental).
-- **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto.
+- **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, **foco inicial no primeiro controle do corpo/rodapé** (o `X` do header é pulado só na abertura e segue alcançável por `Shift+Tab`), devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto.
 - **Empilhamento:** os modais abertos formam uma pilha em escopo de módulo e **só o topo recebe `Escape` e `Tab`** — um modal filho (ex.: câmera sobre um formulário) fecha sozinho sem fechar nem roubar o foco do modal subjacente, e ao fechar devolve o foco ao gatilho dentro dele. Com um único modal aberto o comportamento é idêntico ao anterior. Demo na seção 15 do `/design` ("Abrir modal filho").
 - **Header:** fundo em degradê **`#112051` → `#0364f7`** (`bg-gradient-to-r from-brand-primary to-[#0364f7]`), `rounded-t-xl` (o filete esquerdo de accent `#4ed813` de **2.5px** acompanha o raio do canto superior esquerdo), ícone, título/subtítulo e `X` em `#f8fafc` (o `X` exibe tooltip "Fechar"), separador vertical branco/20.
 - **Altura:** o **painel** é limitado por `max-h-[calc(100vh-2rem)]` (o `p-4` da camada) e o **corpo** ocupa o restante via `flex-1 min-h-0` — a rolagem interna só aparece quando o conteúdo excede `100vh − header − footer − 32px`, eliminando a barra antes inevitável em telas de 768px.
-- **Corpo:** `bg-slate-100` com rolagem interna (`overflow-y-auto`); espaçamento lateral/inferior de 20px (`px-5 pb-5`) e **topo de 15px** (`pt-[15px]`) até a primeira sessão; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`), preservando `text-rose-*` em erro.
+- **Corpo:** `bg-slate-100` com rolagem interna (`overflow-y-auto`); espaçamento lateral/inferior de 20px (`px-5 pb-5`) e **topo de 15px** (`pt-[15px]`) até a primeira sessão; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`) — **inclusive em erro**, preservando apenas a cor `text-rose-700`.
 - **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário; diálogos de confirmação destrutiva também usam a variante `danger` — ex.: modal de exclusão de usuário, `docs/06` §5.6).
 
 `UiModalSection` (sessão de campos dentro do `default`):
@@ -835,7 +836,7 @@ interface ColumnDef<T = any> {
 | `label` | `string` | `''` | Rótulo acima (vira `aria-labelledby` do `radiogroup`) |
 | `labelClass` | `string` | `''` | Classes extras no rótulo |
 | `error` | `string` | `''` | Mensagem de erro (ícone + `sr-only`, sem texto visível abaixo) |
-| `disabled` | `boolean` | `false` | Desabilita todos os segmentos |
+| `disabled` | `boolean` | `false` | Desabilita todos os segmentos — track `bg-slate-200` (sem `opacity`), seleção em pílula `bg-white text-slate-500`, `cursor-not-allowed` |
 
 - **Emits:** `update:modelValue(string)` · `change(string)`.
 - **Tom do segmento marcado** (`tone`): `emerald` (`#047857`, Ativo — mesma cor do KPI), `slate`
@@ -970,4 +971,38 @@ interface ColumnDef<T = any> {
 ```vue
 <UiLoading v-if="salvando" message="Importando 1.240 registros de usuários…" />
 <UiLoading v-if="importando" message="Importando registros…" :current="1240" :total="5000" />
+```
+
+### 5.18 UiTextarea — seção 19 do `/design`
+
+**Arquivo:** `app/components/ui/Textarea.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string` | `''` | Valor do campo (`v-model` bidirecional) |
+| `label` | `string` | `''` | Rótulo acima do campo (associado via `for`/`id`) |
+| `labelClass` | `string` | `''` | Classes extras no label |
+| `placeholder` | `string` | `''` | Texto exibido apenas com o valor vazio |
+| `disabled` | `boolean` | `false` | Campo não editável (fundo `slate-200`, `opacity-60`, `cursor-not-allowed`) |
+| `error` | `string` | `''` | Mensagem de erro — aplica o mesmo recorte `rose-700` da família |
+| `rows` | `number` | `3` | Linhas visíveis do campo |
+| `textareaClass` | `string` | `''` | Classes extras no `<textarea>` |
+
+- **Visual:** mesmo DNA do `UiInput` (§5.3) adaptado a multilinha — caixa branca,
+  `border-slate-200` `rounded-lg`, texto `text-xs`; **sem altura fixa**: cresce pelo `rows`
+  e aceita `resize-y`. Foco e erro usam o overlay `absolute -inset-[1px] border-2`
+  recortado com `.ds-bottom-clip` (verde `brand-focus` `#1a9e07` no foco; `rose-700`
+  `#be123c` no erro, com precedência) — §2.2 e `design-system/form-control-states`.
+- **Erro:** ícone `AlertCircle` `rose-700` no canto superior direito com tooltip da
+  mensagem (mesmo padrão do `Input`); a mensagem permanece no DOM como texto oculto
+  (`sr-only`) com `role="alert"`, associada ao campo por `aria-describedby`.
+- **Teclado:** `Enter` insere quebra de linha (comportamento nativo do `<textarea>` — não
+  avança campo nem submete formulário) e `Tab` sai do campo para o próximo focável.
+- **Sem emits próprios:** apenas `update:modelValue`. Sem slots além de `labelRight`.
+- **Espelhamento:** seção 19 do `/design` — um campo de demonstração com `v-model` e outro
+  fixado em erro para conferir o recorte, o ícone e a mensagem acessível.
+
+```vue
+<UiTextarea v-model="descricao" label="Descrição" placeholder="Detalhe as responsabilidades…" :rows="4" />
+<UiTextarea :model-value="'…'" label="Descrição" error="Informe a descrição." />
 ```
