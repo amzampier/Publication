@@ -98,6 +98,46 @@
   outline-offset: 3px;
 }
 
+/* UiLoading (§5.17): borda da caixa em degradê cônico giratório, na mesma ordem das
+   demais superfícies de degradê da marca (#112051 -> #0364f7 -> #4ed813).
+   O ::before é um DISCO circular de 150vmax centrado na caixa: a pegada de um círculo
+   não muda com a rotação, então o disco cobre a borda inteira em qualquer proporção de
+   caixa enquanto o gradiente gira (só `transform: rotate` — composto na GPU). O wrapper
+   recorta o disco com overflow:hidden + border-radius; o fundo navy é fallback para o
+   caso extremo de a caixa extrapolar a viewport. */
+.ds-loading {
+  position: relative;
+  padding: 2px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: #112051;
+}
+
+.ds-loading::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150vmax;
+  height: 150vmax;
+  margin-left: -75vmax;
+  margin-top: -75vmax;
+  background: conic-gradient(#112051, #0364f7, #4ed813, #112051);
+  animation: ds-loading-rotate 2.4s linear infinite;
+}
+
+@keyframes ds-loading-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-loading::before {
+    animation: none;
+  }
+}
+
 /* Barra de rolagem discreta (menus escuros do shell e demo do /design).
    A página /design mantém sua própria cópia em <style scoped>, que vence por escopo. */
 .scrollbar-discreta {

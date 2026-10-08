@@ -18,7 +18,7 @@
 3. [Layout & Navegação](#3-layout--navegação)
 4. [Convenções Globais](#4-convenções-globais)
 
-**Componentes** (5.1–5.16)
+**Componentes** (5.1–5.17)
 
 5. [Componentes](#5-componentes)
    - [5.1 Button](#51-button--seção-3-do-design) (seção 3)
@@ -37,6 +37,7 @@
    - [5.14 UiSlider](#514-uislider--seção-16-do-design) (seção 16)
    - [5.15 UiSegmented](#515-uisegmented--seção-9-do-design) (seção 9)
    - [5.16 UiChoiceCard](#516-uichoicecard--seção-17-do-design) (seção 17)
+   - [5.17 UiLoading](#517-uiloading--seção-18-do-design) (seção 18)
 
 ## 1. Princípios & Tipografia
 
@@ -81,7 +82,7 @@ A classe utilitária `.tabular-nums` (aplicada em `app/assets/css/main.css` a `f
 
 | # | Token | HEX | Tailwind | Aplicação |
 | :--- | :--- | :--- | :--- | :--- |
-| 1 | **Navy (Ação Primária & Sidebar)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`; trilha preenchida do `UiSlider` começa em `#112051` e segue para `#0364f7`/`#4ed813` — §5.14); demais superfícies em cor sólida — cabeçalho executivo e sidebar da Área Administrativa (hover `brand.primary-raised` `#1b2e6b` no menu legado, §3.5) |
+| 1 | **Navy (Ação Primária & Sidebar)** | `#112051` | `bg-brand-primary` | Ação máxima em degradê (`Button` `primary` e cabeçalho de modal: da esquerda `#112051` para a direita `#0364f7`; trilha preenchida do `UiSlider` começa em `#112051` e segue para `#0364f7`/`#4ed813` — §5.14; borda em degradê cônico giratório e barra de progresso do `UiLoading` percorrem as mesmas três cores — §5.17); demais superfícies em cor sólida — cabeçalho executivo e sidebar da Área Administrativa (hover `brand.primary-raised` `#1b2e6b` no menu legado, §3.5) |
 | 2 | **Verde Accent (Accent & Prestígio)** | `#4ed813` | `bg-brand-accent` | Destaques executivos, ícones e chips sobre chrome escuro; foco de controles em `#1a9e07`; último trecho da trilha do `UiSlider` (§5.14) |
 | 3 | **Verde Esmeralda (Status Positivo)** | `#047857` | `bg-emerald-700` | Status "Publicado"/Concluído, confirmações, dia "Hoje" |
 | 4 | **Vermelho Rosa (Erro & Alerta)** | `#be123c` | `bg-rose-700` | Erros, validações falhas, alertas críticos |
@@ -602,6 +603,7 @@ type CheckboxPosition = 'start' | 'end'
 
 - **Emits:** `update:modelValue` · `change` (bool ou array). **Slots:** `default` (conteúdo extra).
 - **Comportamento:** o cartão inteiro é clicável (`@click` + `@keydown.enter.prevent`), o checkbox usa `@click.stop`; checked = borda/fundo verde (`border-brand-accent bg-lime-50/30 ring-brand-accent/40`, análogos em indigo/emerald/slate); `aria-labelledby`/`aria-describedby` com ids de `useId()`.
+- **Largura apertada:** o cabeçalho é `flex-wrap` — quando ícone + badge + checkbox não cabem, o checkbox quebra para a segunda linha (nunca sai do cartão) e o badge trunca com reticências (`min-w-0 truncate`); em largura folgada o layout é o mesmo de sempre (uma linha, badge completo).
 - **Caso de uso:** seleção de filiais, planos, pacotes de permissão.
 
 #### CheckboxGroup (gerenciador de coleções)
@@ -922,4 +924,50 @@ interface ColumnDef<T = any> {
     tone="emerald"
   />
 </div>
+```
+
+### 5.17 UiLoading — seção 18 do `/design`
+
+**Arquivo:** `app/components/ui/Loading.vue` — estilo: `.ds-loading` em `app/assets/css/main.css`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `message` | `string` | `'Carregando…'` | Mensagem exibida ao lado do ícone (região viva) |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Tamanho do ícone e respiro da caixa |
+| `current` | `number` | — | Valor atual da operação; junto com `total` válido ativa a barra de progresso |
+| `total` | `number` | — | Total da operação (`> 0` e numérico); sem ambos válidos a caixa fica sem barra |
+
+- **Exibição:** o consumidor monta/desmonta com `v-if` (`<UiLoading v-if="salvando" … />`) — **não
+  há fechamento próprio**: clique no backdrop e `Escape` não fecham; o overlay some quando o `v-if`
+  fica falso. Sem emits.
+- **Visual:** overlay `fixed inset-0` em **`z-[70]`** (acima do `z-[60]` do `UiModal` — a hierarquia
+  é header `z-40` < dropdowns/toasts `z-50` < modal `z-60` < loading `z-70`) com backdrop
+  `bg-zinc-900/50` (o mesmo do modal) e caixa centralizada: a **borda é um degradê cônico
+  giratório `#112051` → `#0364f7` → `#4ed813`** (disco `.ds-loading` recortado pelo
+  `overflow:hidden` do wrapper — mesma ordem das demais superfícies de degradê da marca, §2), painel
+  branco interno com `LoaderCircle` em `brand-structure` girando à esquerda — `h-5`/`h-6`/`h-8` em
+  `sm`/`md`/`lg` — e a mensagem à direita.
+- **Progresso (opcional):** com `current`/`total` válidos (`total > 0`, numéricos), um bloco abaixo
+  da linha de ícone/mensagem: barra `h-1.5` com trilha `slate-200` e preenchimento no **degradê
+  horizontal `#112051` → `#0364f7` → `#4ed813`** (mesmo da trilha do `UiSlider`, §5.14), além da
+  linha do contador — `1.240 / 5.000` à esquerda e `25%` (percentual inteiro arredondado) à
+  direita, em `font-mono tabular-nums`. A largura transiciona (`transition-[width]`, sem transição
+  com movimento reduzido). Sem as props (ou com `total ≤ 0`), a caixa é a mesma de sempre.
+- **Interação:** enquanto montado trava a rolagem do documento (`body.overflow`) e o backdrop
+  bloqueia os cliques da página subjacente; um toast disparado durante o loading fica **atrás** do
+  backdrop até o overlay ser removido.
+- **Acessibilidade:** a mensagem é região viva (`role="status"` + `aria-live="polite"`), a barra
+  expõe `role="progressbar"` com `aria-valuenow` (arredondado), `aria-valuemin="0"`,
+  `aria-valuemax="100"` e `aria-valuetext` com o contador, o backdrop
+  é `aria-hidden`, a camada leva `aria-busy`, o foco **não** se move (sem controles focáveis) e o
+  overlay tem `no-print` (não vai ao papel). Com `prefers-reduced-motion` a borda e o ícone param
+  de girar e a largura da barra atualiza sem transição, mantendo as cores visíveis.
+- **Espelhamento:** seção 18 do `/design` — dois botões: "Abrir loading" (sem progresso) e "Abrir
+  com progresso" (contador de 0 a 5.000 em ~3,5 s), ambos com `setTimeout` de ~3,5 s que desmonta
+  o overlay (a demo usa timer porque o componente não fecha por conta própria; o modo progresso
+  também limpa o `setInterval` no unmount).
+
+```vue
+<UiLoading v-if="salvando" message="Importando 1.240 registros de usuários…" />
+<UiLoading v-if="importando" message="Importando registros…" :current="1240" :total="5000" />
 ```

@@ -119,8 +119,8 @@ const badgeStyle = computed(() => {
     @keydown.enter.prevent="toggleCard"
   >
     <!-- Topo: Ícone Setorial, Badge e Checkbox -->
-    <div class="flex items-start justify-between gap-3 mb-2.5">
-      <div class="flex items-center gap-2.5">
+    <div class="flex flex-wrap items-start justify-between gap-3 mb-2.5">
+      <div class="flex items-center gap-2.5 min-w-0">
         <div
           v-if="icon"
           :class="[
@@ -149,7 +149,7 @@ const badgeStyle = computed(() => {
 
         <span
           v-if="badge"
-          :class="['px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider', badgeStyle]"
+          :class="['px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider min-w-0 truncate', badgeStyle]"
         >
           {{ badge }}
         </span>

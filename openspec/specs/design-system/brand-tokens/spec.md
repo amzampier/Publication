@@ -49,7 +49,13 @@ O sistema SHALL tratar como paleta oficial as oito cores de marca, com Navy em `
 - **THEN** ambos exibem `#be123c`, sem restar `#b91c1c`
 
 ### Requirement: Botão primário e header de modal usam degradê
-O sistema SHALL renderizar com degradê horizontal, da esquerda para a direita: o botão na variante `primary` e o cabeçalho do modal (do `brand.primary` ao `brand.structure`) e a região preenchida do slider `UiSlider` (de `#112051` por `#0364f7` até `#4ed813`, esticada da origem até o thumb).
+O sistema SHALL renderizar com degradê: o botão na variante `primary`, o cabeçalho do modal (do
+`brand.primary` ao `brand.structure`), a região preenchida do slider `UiSlider` (de `#112051`
+por `#0364f7` até `#4ed813`, esticada da origem até o thumb) e a região preenchida da barra de
+progresso do `UiLoading` (de `#112051` por `#0364f7` até `#4ed813`, da origem até a posição
+atual) com degradê horizontal, da esquerda para a direita; e a borda da caixa do `UiLoading` com
+degradê cônico giratório percorrendo as
+mesmas três cores na mesma ordem (`#112051` → `#0364f7` → `#4ed813`) ao redor da caixa.
 
 #### Scenario: Degradê no botão primário
 - **WHEN** um `Button` com `variant="primary"` é renderizado
@@ -62,6 +68,14 @@ O sistema SHALL renderizar com degradê horizontal, da esquerda para a direita: 
 #### Scenario: Degradê na trilha do slider
 - **WHEN** um `UiSlider` é renderizado com um valor intermediário
 - **THEN** a região preenchida da track exibe o degradê `#112051` → `#0364f7` → `#4ed813` terminando junto ao thumb, e a região não preenchida é `slate-200`
+
+#### Scenario: Degradê na barra de progresso do UiLoading
+- **WHEN** o `UiLoading` é renderizado com `current`/`total` informados
+- **THEN** a região preenchida da barra exibe o degradê `#112051` → `#0364f7` → `#4ed813` da esquerda até a posição atual, e a trilha não preenchida é `slate-200`
+
+#### Scenario: Degradê na borda do UiLoading
+- **WHEN** o overlay do `UiLoading` está aberto
+- **THEN** a borda da caixa exibe o degradê giratório `#112051` → `#0364f7` → `#4ed813` na mesma ordem das demais superfícies de degradê da marca
 
 #### Scenario: Demais superfícies primárias continuam sólidas
 - **WHEN** superfícies como o cabeçalho da `DataTable`, tooltip, checkbox marcada, dia selecionado do calendário e menus dark são renderizadas

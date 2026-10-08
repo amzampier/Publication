@@ -45,7 +45,8 @@ import {
   ToggleRight,
   LayoutGrid,
   MessageCircle,
-  Smartphone
+  Smartphone,
+  LoaderCircle
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -593,6 +594,50 @@ const choiceCardCanaisComSms = [
   }
 ]
 
+// Demo do UiLoading (Seção 18) — o componente não fecha sozinho (clique/Escape não
+// fecham), então a demo desmonta o overlay com um timer e limpa ao desmontar a página.
+// O modo progresso incrementa `loadingProgressCurrent` via setInterval (~100 ms) até
+// `LOADING_TOTAL`, sincronizado com o auto-fecho de ~3,5 s.
+const loadingDemo = ref(false)
+const loadingDemoComProgresso = ref(false)
+const LOADING_TOTAL = 5000
+const loadingProgressCurrent = ref(0)
+let loadingDemoTimer: ReturnType<typeof setTimeout> | null = null
+let loadingDemoInterval: ReturnType<typeof setInterval> | null = null
+
+const encerrarLoadingDemo = () => {
+  loadingDemo.value = false
+  loadingDemoComProgresso.value = false
+  if (loadingDemoTimer) {
+    clearTimeout(loadingDemoTimer)
+    loadingDemoTimer = null
+  }
+  if (loadingDemoInterval) {
+    clearInterval(loadingDemoInterval)
+    loadingDemoInterval = null
+  }
+}
+
+const abrirLoadingDemo = (comProgresso: boolean) => {
+  if (loadingDemoTimer) clearTimeout(loadingDemoTimer)
+  if (loadingDemoInterval) clearInterval(loadingDemoInterval)
+  loadingDemoComProgresso.value = comProgresso
+  loadingDemo.value = true
+  if (comProgresso) {
+    loadingProgressCurrent.value = 0
+    const passo = Math.ceil(LOADING_TOTAL / 35)
+    loadingDemoInterval = setInterval(() => {
+      loadingProgressCurrent.value = Math.min(
+        LOADING_TOTAL,
+        loadingProgressCurrent.value + passo
+      )
+    }, 100)
+  }
+  loadingDemoTimer = setTimeout(encerrarLoadingDemo, 3500)
+}
+
+onUnmounted(encerrarLoadingDemo)
+
 // Navegação rápida de âncoras
 const secoes = [
   { id: 'principios', label: '1. Princípios & Tipografia' },
@@ -611,7 +656,8 @@ const secoes = [
   { id: 'shell', label: '14. Shell & Impressão' },
   { id: 'modal', label: '15. Modal de Cadastro' },
   { id: 'tabs-slider', label: '16. Tabs & Slider' },
-  { id: 'choice-card', label: '17. Cards de Escolha (UiChoiceCard)' }
+  { id: 'choice-card', label: '17. Cards de Escolha (UiChoiceCard)' },
+  { id: 'loading', label: '18. Loading (UiLoading)' }
 ]
 </script>
 
@@ -932,7 +978,7 @@ const secoes = [
                 Ao receber o foco, a borda inferior e seus dois cantos arredondados destacam-se na cor <span class="font-mono text-lime-700 font-semibold">#1a9e07</span>. Suporta ícone ao lado esquerdo e/ou direito com ação de clique e máscara de digitação (<code class="font-mono">mask</code>).
               </p>
             </div>
-            <div class="shrink-0">
+            <div class="min-w-0">
               <span class="px-2.5 py-1 rounded text-xs font-mono font-medium bg-lime-50 text-lime-800 border border-lime-200">
                 Componente: &lt;Input /&gt;
               </span>
@@ -1233,7 +1279,7 @@ const secoes = [
                 </p>
               </div>
             </div>
-            <div class="shrink-0">
+            <div class="min-w-0">
               <span class="px-2.5 py-1 rounded text-xs font-mono font-medium bg-lime-50 text-lime-800 border border-lime-200 whitespace-nowrap">
                 Componente: &lt;Toast /&gt; &amp; useToast()
               </span>
@@ -1672,7 +1718,7 @@ const secoes = [
                 </p>
               </div>
             </div>
-            <div class="shrink-0">
+            <div class="min-w-0">
               <span class="px-2.5 py-1 rounded text-xs font-mono font-medium bg-lime-50 text-lime-800 border border-lime-200">
                 &lt;Checkbox /&gt;, &lt;BadgeCheckbox /&gt;, &lt;CheckChip /&gt;, &lt;CheckCard /&gt;, &lt;CheckboxGroup /&gt;
               </span>
@@ -1871,7 +1917,7 @@ variant="lime"
                 Cartões interativos com realce visual de borda e fundo ao selecionar.
               </p>
 
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-3">
                 <UiCheckCard
                   v-model="cardReleases"
                   title="Releases Week Semanal"
@@ -2721,6 +2767,69 @@ variant="lime"
             </div>
           </div>
         </section>
+
+        <!-- 18. Loading -->
+        <section id="loading" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <LoaderCircle class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  18. Loading (UiLoading)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Overlay com backdrop <code class="font-mono text-slate-700">bg-zinc-900/50</code>,
+                  caixa com borda em degradê cônico giratório (Navy
+                  <code class="font-mono text-slate-700">#112051</code> → Estrutural
+                  <code class="font-mono text-slate-700">#0364f7</code> → Accent
+                  <code class="font-mono text-slate-700">#4ed813</code>), ícone
+                  <code class="font-mono text-slate-700">LoaderCircle</code> girando à esquerda
+                  (<code class="font-mono text-slate-700">h-5</code>/<code class="font-mono text-slate-700">h-6</code>/<code class="font-mono text-slate-700">h-8</code>
+                  em sm/md/lg) e mensagem viva <code class="font-mono text-slate-700">role="status"</code>;
+                  com <code class="font-mono text-slate-700">current</code>/<code class="font-mono text-slate-700">total</code>
+                  exibe barra de progresso com degradê da marca e contador pt-BR
+                  (<code class="font-mono text-slate-700">role="progressbar"</code>); camada
+                  <code class="font-mono text-slate-700">z-[70]</code> acima dos modais, sem
+                  fechamento pelo usuário, rolagem travada e movimento reduzido respeitado.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Demonstração do overlay (abre e fecha sozinha) -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide">
+                Demonstração — abre o overlay e fecha sozinho em ~3,5 s
+              </p>
+              <span class="font-mono text-xs text-slate-500"
+                >v-if: {{ loadingDemo }} · progresso: {{ loadingDemoComProgresso }}</span
+              >
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+              <UiButton variant="primary" @click="abrirLoadingDemo(false)">
+                Abrir loading
+              </UiButton>
+              <UiButton variant="outline" @click="abrirLoadingDemo(true)">
+                Abrir com progresso
+              </UiButton>
+              <span class="text-xs text-slate-500">
+                Enquanto aberto: clique bloqueado, rolagem travada,
+                <code class="font-mono">Escape</code> não fecha.
+              </span>
+            </div>
+          </div>
+
+          <!-- Uso -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiLoading v-if="salvando" message="Importando 1.240 registros de usuários…" /&gt;
+&lt;UiLoading v-if="importando" message="Importando registros…" :current="1240" :total="5000" /&gt;</pre>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -2729,6 +2838,18 @@ variant="lime"
       v-if="cameraAberta"
       @foto="aoFotoCapturada"
       @fechar="cameraAberta = false"
+    />
+
+    <!-- Demo do UiLoading (Seção 18) — desmonta pelo timer de encerrarLoadingDemo -->
+    <UiLoading
+      v-if="loadingDemo"
+      :message="
+        loadingDemoComProgresso
+          ? 'Importando registros de usuários…'
+          : 'Importando 1.240 registros de usuários…'
+      "
+      :current="loadingDemoComProgresso ? loadingProgressCurrent : undefined"
+      :total="loadingDemoComProgresso ? LOADING_TOTAL : undefined"
     />
   </div>
 </template>
