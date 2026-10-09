@@ -6,6 +6,10 @@
 // Escopo de módulo: declarado no <script> comum para ser compartilhado por
 // todas as instâncias (<script setup> roda por instância).
 const pilhaModais: symbol[] = []
+// O `body` é único, então o scroll-lock precisa de um contador global: com
+// modais empilhados (filho sobre pai) o lock só libera quando o último deles
+// fecha (docs/01 §5.12 — travado enquanto algum modal estiver aberto).
+let locksScroll = 0
 </script>
 
 <script setup lang="ts">
@@ -113,17 +117,17 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 const lockScroll = () => {
-  if (!scrollLocked) {
-    document.body.style.overflow = 'hidden'
-    scrollLocked = true
-  }
+  if (scrollLocked) return
+  scrollLocked = true
+  locksScroll += 1
+  document.body.style.overflow = 'hidden'
 }
 
 const unlockScroll = () => {
-  if (scrollLocked) {
-    document.body.style.overflow = ''
-    scrollLocked = false
-  }
+  if (!scrollLocked) return
+  scrollLocked = false
+  locksScroll -= 1
+  if (locksScroll === 0) document.body.style.overflow = ''
 }
 
 watch(

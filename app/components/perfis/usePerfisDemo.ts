@@ -94,6 +94,11 @@ const matriz = (parcial: Partial<Record<ModuloId, Permissao[]>>): Record<ModuloI
   return completa
 }
 
+/** Clone de matriz completa: 11 módulos com listas novas (sem referência compartilhada). */
+export const clonarMatriz = (
+  origem: Record<ModuloId, Permissao[]>
+): Record<ModuloId, Permissao[]> => matriz(origem)
+
 const conteudo = (acoes: Permissao[]): Partial<Record<ModuloId, Permissao[]>> => ({
   manuais: acoes,
   'release-week': acoes,
@@ -135,9 +140,7 @@ export const contarPermissoes = (perfil: PerfilDemo): number =>
 
 const clonar = (p: PerfilDemo): PerfilDemo => ({
   ...p,
-  permissoes: Object.fromEntries(
-    MODULOS.map((m) => [m.id, [...(p.permissoes[m.id] ?? [])]])
-  ) as Record<ModuloId, Permissao[]>
+  permissoes: clonarMatriz(p.permissoes)
 })
 
 /**

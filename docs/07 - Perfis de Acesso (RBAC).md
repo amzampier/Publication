@@ -1,6 +1,6 @@
 # 07 - Perfis de Acesso (RBAC) — Área Administrativa
 
-**Versão:** 1.3.0 — **Data:** 2026-10-08 — **Idioma:** Português do Brasil (pt-BR)
+**Versão:** 1.4.0 — **Data:** 2026-10-09 — **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela principal de Perfis de Acesso (RBAC) - listagem (base em memória) com cabeçalho
 (Novo Perfil), KPIs e tabela com contagem de permissões e de usuários vinculados; **"Novo
 Perfil" e "Editar" abrem o modal de cadastro/edição** (`PerfisFormulario`), **"Excluir" abre
@@ -256,7 +256,8 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   `rounded-xl border border-slate-200` com cabeçalho `bg-slate-50` (headers em versalete
   `bold slate-500`) e 1ª coluna `sticky left-0` no scroll horizontal — **não** é
   `UiDataTable`. Linhas = módulos da aba ativa com **nome em `font-semibold` + descrição
-  curta** (`MODULOS[].descricao`) embaixo; colunas = **as 4 ações fixas** (`visualizar`,
+  curta** (`MODULOS[].descricao`, em `slate-500` para contraste AA) embaixo — o hover da
+  linha (`slate-50/70`) cobre também a coluna sticky; colunas = **as 4 ações fixas** (`visualizar`,
   `criar`, `alterar`, `excluir`) com um **`UiSwitch` por célula** (`aria-label`
   "<Módulo>: <ação>") e a coluna **Funcionalidades**, com os 5 **chips clicáveis**
   (`UiCheckChip size="sm"`, rótulo capitalizado) das ações extras — ligar/desligar atualiza
@@ -271,13 +272,30 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   `permissoes-panel-*`/`permissoes-tab-*`). O rodapé informativo com ícone `Info` explica a
   régua (fixas com interruptor, Funcionalidades em chip, nada vale até "Salvar") e o
   contador **"n/99"** **global** aparece num `UiBadge` (variant `done` em 99/99, `pending`
-  parcial, `neutral` em 0) — trocar de aba não muda o contador.
+  parcial, `neutral` em 0; região viva `aria-live="polite"` — leitores de tela ouvem a nova
+  contagem) — trocar de aba não muda o contador.
 - **Rascunho isolado:** a matriz é copiada para um `ref` na abertura; nada altera a base
   antes de **Salvar** → `salvarPermissoes(perfis, id, rascunho)` → coluna Permissões + KPIs
   recalculam (computeds da §3.4) e o modal fecha; **Cancelar/Escape/X** descartam. Recarga
   restaura a semente.
 - **Administrador editável como os demais** (decisão do usuário — sem trava por papel) e
   perfil novo (0/99) pode ter a matriz preenchida no mesmo modal.
+- **Cópia entre perfis (rodapé):** dois ícones **alinhados à esquerda** do rodapé (grupo
+  `mr-auto` no slot; `Cancelar`/`Salvar` seguem à direita) — `ClipboardPaste` **"Copiar
+  permissões de outro perfil"** (tooltip "Copiar de outro perfil — vale após Salvar") abre
+  o modal filho (`UiModal size="sm"`, subtítulo "Origem — substitui o rascunho; só vale após
+  Salvar") com um `UiChoiceCard` por perfil candidato (nome, descrição e badge `n/99` com
+  `badge-mono` — o perfil atual nunca aparece; sem candidatos, estado vazio) e **substitui o
+  rascunho** por inteiro (clone via `clonarMatriz`, sem mescla) com `toast.info` reforçando
+  "vale após Salvar"; `ClipboardCopy` **"Copiar permissões para outro perfil"** (tooltip
+  "Copiar para outro perfil — grava imediatamente") abre o mesmo seletor (subtítulo
+  "Destino — grava já a matriz salva; Cancelar não desfaz") e grava **imediatamente** no
+  alvo a **matriz salva** do perfil corrente (nunca o rascunho, mesmo com células editadas)
+  via `salvarPermissoes` + `toast.success` com o valor substituído (ex.: "substituiu 6/99") —
+  a linha do alvo e os KPIs recalculam na hora e o Cancelar/Escape/X do modal pai **não
+  desfaz** a cópia. O
+  fechamento do filho devolve o foco ao ícone que o abriu (pilha de modais, `docs/01`
+  §5.12); nenhuma das duas cópias faz HTTP e ambas se perdem na recarga.
 
 ## 4. Componentes de kit (criados/alterados)
 
@@ -312,6 +330,10 @@ controle de linha exibe mais toast de transição.
 
 - Salvar no modal de permissões: `salvarPermissoes()` → linha/KPIs recalculam em memória →
   `toast.success` → modal fecha; descartar (Cancelar/Escape/X) não toca na base.
+- **Cópias no rodapé do modal de permissões:** importar (`ClipboardPaste`) só substitui o
+  rascunho (efeito no Salvar); exportar (`ClipboardCopy`) grava a matriz **salva** do
+  perfil corrente no alvo na hora, com toast próprio — o descarte do modal corrente não
+  desfaz a exportação.
 
 - Salvar no modal: validação OK → `salvarPerfil()` → linha/tabela/KPIs atualizados em memória
   → `toast.success` → modal fecha. Erro de validação → modal aberto, mensagem no campo, foco
@@ -517,6 +539,13 @@ Change `openspec/changes/perfis-acesso-modal-permissoes` (spec-driven) — modal
 | `perfis-acesso` | **MODIFIED** — KPIs: recálculo inclui edição de permissões; contagens: novo cenário "Salvar a matriz recalcula a coluna Permissões" |
 | `design-system/switch` | **ADDED (capability nova)** — contrato do `UiSwitch` (`role="switch"`/`aria-checked`, label associada, disabled, teclado Space/Enter, foco `#1a9e07`, espelhamento na vitrine) |
 
+Change `openspec/changes/perfis-acesso-copiar-permissoes` (spec-driven) — cópia de matriz
+entre perfis:
+
+| Capability | Operação |
+| :--- | :--- |
+| `perfis-acesso` | **ADDED** — "O modal de permissões copia a matriz entre perfis": ícones `ClipboardPaste`/`ClipboardCopy` no rodapé esquerdo (Cancelar/Salvar à direita), importar substitui o rascunho (vale no Salvar), exportar grava a matriz **salva** no alvo imediatamente com toast (descarte não desfaz) e o seletor (modal filho com `UiChoiceCard`, `n/99`) exclui o perfil atual e oferece estado vazio |
+
 ## 12. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório) e
@@ -536,6 +565,12 @@ Change `openspec/changes/perfis-acesso-modal-permissoes` (spec-driven) — modal
     contador `n/99` global ao vivo,
     Salvar recalcula linha+KPIs com toast,
     Cancelar/Escape/X descartam, Admin editável, 375px com rolagem interna da tabela;
+    **cópias no rodapé:** ícones `ClipboardPaste`/`ClipboardCopy` agrupados à esquerda
+    (Cancelar/Salvar à direita), seletor filho sem o perfil atual (Esc/Tab só no filho,
+    foco volta ao ícone), importar no Editor a matriz do Leitor → contador `6/99` com base
+    intacta até Salvar (linha `6/99` e KPI `132/396` após salvar), exportar do Editor para
+    o Leitor → linha `45/99` e KPI `210/396` na hora com toast, descarte não desfaz a
+    exportação;
     **Excluir abre o `PerfisExclusao`** — confirmar
     com vínculos fecha o modal com `toast.warning` de bloqueio e base intacta; recarga
     restaura a base; **sem rolagem horizontal** a 1280px (e layout íntegro a 375px).

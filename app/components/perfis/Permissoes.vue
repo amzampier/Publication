@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { KeyRound, Info } from '@lucide/vue'
+import { KeyRound, Info, ClipboardCopy, ClipboardPaste } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
 import { sessoes, type SidebarItem } from '../../config/navigation'
 import {
@@ -9,6 +9,8 @@ import {
   ACOES,
   EXTRAS,
   PERMISSOES_POR_PERFIL,
+  clonarMatriz,
+  contarPermissoes,
   salvarPermissoes,
   type PerfilDemo,
   type ModuloId,
@@ -67,9 +69,7 @@ watch(
   (aberto) => {
     if (aberto && props.perfil) {
       const perfil = props.perfil
-      rascunho.value = Object.fromEntries(
-        MODULOS.map((m) => [m.id, [...(perfil.permissoes[m.id] ?? [])]])
-      ) as Record<ModuloId, Permissao[]>
+      rascunho.value = clonarMatriz(perfil.permissoes)
       aba.value = SESSOES[0]?.id ?? ''
     }
   },
@@ -116,6 +116,45 @@ const salvar = () => {
 }
 
 const cancelar = () => emit('update:modelValue', false)
+
+// Cópia entre perfis (ações do rodapé — design D2/D3): "de" substitui o rascunho (vale
+// após Salvar); "para" grava imediatamente a matriz SALVA do perfil corrente no alvo.
+const copia = ref<'de' | 'para' | null>(null)
+const perfilCopia = ref('')
+
+const candidatos = computed(() =>
+  props.perfil ? perfis.value.filter((p) => p.id !== props.perfil!.id) : []
+)
+
+const abrirCopia = (direcao: 'de' | 'para', e: MouseEvent) => {
+  ;(e.currentTarget as HTMLElement).focus()
+  perfilCopia.value = ''
+  copia.value = direcao
+}
+
+const cancelarCopia = () => {
+  copia.value = null
+  perfilCopia.value = ''
+}
+
+const confirmarCopia = () => {
+  const alvo = perfis.value.find((p) => p.id === perfilCopia.value)
+  if (!alvo || !copia.value || !props.perfil) return
+  if (copia.value === 'de') {
+    rascunho.value = clonarMatriz(alvo.permissoes)
+    toast.info('Perfis de Acesso (RBAC)', `Matriz de ${alvo.nome} copiada — vale após "Salvar".`)
+  } else {
+    const origem = perfis.value.find((p) => p.id === props.perfil!.id)
+    if (!origem) return
+    const antes = contarPermissoes(alvo)
+    perfis.value = salvarPermissoes(perfis.value, alvo.id, origem.permissoes).base
+    toast.success(
+      'Perfis de Acesso (RBAC)',
+      `Matriz de ${origem.nome} copiada para ${alvo.nome} (substituiu ${antes}/${PERMISSOES_POR_PERFIL}).`
+    )
+  }
+  cancelarCopia()
+}
 </script>
 
 <template>
@@ -141,7 +180,7 @@ const cancelar = () => emit('update:modelValue', false)
             extras. Nada vale até "Salvar".
           </span>
         </p>
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex items-center gap-2 shrink-0" aria-live="polite">
           <span class="text-[11px] text-slate-500">Permissões</span>
           <UiBadge :variant="varianteTotal" class="font-mono tabular-nums">
             {{ total }}/{{ PERMISSOES_POR_PERFIL }}
@@ -193,11 +232,11 @@ const cancelar = () => emit('update:modelValue', false)
               <tr
                 v-for="modulo in modulosDaAba"
                 :key="modulo.id"
-                class="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 transition-colors"
+                class="group border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70 transition-colors"
               >
                 <th
                   scope="row"
-                  class="sticky left-0 z-10 bg-white text-left font-normal px-3 py-2.5"
+                  class="sticky left-0 z-10 bg-white group-hover:bg-slate-50/70 text-left font-normal px-3 py-2.5 transition-colors"
                 >
                   <div class="flex items-center gap-2.5">
                     <span
@@ -218,7 +257,7 @@ const cancelar = () => emit('update:modelValue', false)
                       <span class="block text-xs font-semibold text-slate-800 whitespace-nowrap">
                         {{ modulo.label }}
                       </span>
-                      <span class="block text-[11px] font-normal text-slate-400 truncate max-w-[220px]">
+                      <span class="block text-[11px] font-normal text-slate-500 truncate max-w-[220px]">
                         {{ modulo.descricao }}
                       </span>
                     </div>
@@ -258,8 +297,78 @@ const cancelar = () => emit('update:modelValue', false)
     </UiModalSection>
 
     <template #footer>
+      <div class="flex items-center gap-1.5 mr-auto">
+        <UiTooltip content="Copiar de outro perfil — vale após Salvar" position="top">
+          <button
+            type="button"
+            aria-label="Copiar permissões de outro perfil"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 hover:text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            @click="abrirCopia('de', $event)"
+          >
+            <ClipboardPaste class="h-4 w-4" aria-hidden="true" />
+          </button>
+        </UiTooltip>
+        <UiTooltip content="Copiar para outro perfil — grava imediatamente" position="top">
+          <button
+            type="button"
+            aria-label="Copiar permissões para outro perfil"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 hover:text-brand-focus hover:bg-lime-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            @click="abrirCopia('para', $event)"
+          >
+            <ClipboardCopy class="h-4 w-4" aria-hidden="true" />
+          </button>
+        </UiTooltip>
+      </div>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
       <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+    </template>
+  </UiModal>
+
+  <!-- Modal filho: seletor de perfil da cópia (pilha do kit — Esc/Tab/foco só no topo) -->
+  <UiModal
+    :model-value="copia !== null"
+    title="Copiar permissões"
+    :subtitle="
+      copia === 'para'
+        ? 'Destino — grava já a matriz salva; Cancelar não desfaz'
+        : 'Origem — substitui o rascunho; só vale após Salvar'
+    "
+    :icon="copia === 'para' ? ClipboardCopy : ClipboardPaste"
+    size="sm"
+    @update:model-value="cancelarCopia"
+  >
+    <UiModalSection
+      :title="copia === 'para' ? 'Escolha o perfil de destino' : 'Escolha o perfil de origem'"
+      :icon="copia === 'para' ? ClipboardCopy : ClipboardPaste"
+    >
+      <div
+        v-if="candidatos.length"
+        role="radiogroup"
+        :aria-label="copia === 'para' ? 'Perfis de destino' : 'Perfis de origem'"
+        class="grid gap-2"
+      >
+        <UiChoiceCard
+          v-for="candidato in candidatos"
+          :key="candidato.id"
+          :value="candidato.id"
+          :title="candidato.nome"
+          :description="candidato.descricao"
+          :badge="`${contarPermissoes(candidato)}/${PERMISSOES_POR_PERFIL}`"
+          badge-variant="neutral"
+          badge-mono
+          :model-value="perfilCopia"
+          @update:model-value="perfilCopia = $event"
+        />
+      </div>
+      <p v-else class="text-xs text-slate-500">
+        Nenhum outro perfil disponível para cópia.
+      </p>
+    </UiModalSection>
+    <template #footer>
+      <UiButton variant="outline" size="md" @click="cancelarCopia">Cancelar</UiButton>
+      <UiButton variant="primary" size="md" :disabled="!perfilCopia" @click="confirmarCopia">
+        Copiar
+      </UiButton>
     </template>
   </UiModal>
 </template>

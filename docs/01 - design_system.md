@@ -736,12 +736,12 @@ interface ColumnDef<T = any> {
 - **Emits:** `update:modelValue` (boolean) e `close` (todos os fechamentos — X, Escape, ações do footer).
 - **Slots:** `default` (corpo/sessões) e `footer` (ações; só renderiza se fornecido).
 - **Portal/camada:** `<Teleport to="body">` em `z-[60]` — acima dos toasts (`z-50`); backdrop cinza escuro `bg-zinc-900/50` (`#18181b` a 50%) que **não** fecha no clique (protege cadastros longos contra perda acidental).
-- **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, **foco inicial no primeiro controle do corpo/rodapé** (o `X` do header é pulado só na abertura e segue alcançável por `Shift+Tab`), devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto.
+- **Fechamento:** `Escape` (via `closeOnEsc`), botão `X` e ações do footer; `role="dialog"` + `aria-modal`, focus-trap de Tab preso no dialog, **foco inicial no primeiro controle do corpo/rodapé** (o `X` do header é pulado só na abertura e segue alcançável por `Shift+Tab`), devolução do foco ao gatilho e scroll-lock do `body` enquanto aberto — o lock usa um **contador global em escopo de módulo**: com modais empilhados (filho sobre pai) o `body` só destrava quando o **último** deles fecha.
 - **Empilhamento:** os modais abertos formam uma pilha em escopo de módulo e **só o topo recebe `Escape` e `Tab`** — um modal filho (ex.: câmera sobre um formulário) fecha sozinho sem fechar nem roubar o foco do modal subjacente, e ao fechar devolve o foco ao gatilho dentro dele. Com um único modal aberto o comportamento é idêntico ao anterior. Demo na seção 15 do `/design` ("Abrir modal filho").
 - **Header:** fundo em degradê **`#112051` → `#0364f7`** (`bg-gradient-to-r from-brand-primary to-[#0364f7]`), `rounded-t-xl` (o filete esquerdo de accent `#4ed813` de **2.5px** acompanha o raio do canto superior esquerdo), ícone, título/subtítulo e `X` em `#f8fafc` (o `X` exibe tooltip "Fechar"), separador vertical branco/20.
 - **Altura:** o **painel** é limitado por `max-h-[calc(100vh-2rem)]` (o `p-4` da camada) e o **corpo** ocupa o restante via `flex-1 min-h-0` — a rolagem interna só aparece quando o conteúdo excede `100vh − header − footer − 32px`, eliminando a barra antes inevitável em telas de 768px.
 - **Corpo:** `bg-slate-100` com rolagem interna (`overflow-y-auto`); espaçamento lateral/inferior de 20px (`px-5 pb-5`) e **topo de 15px** (`pt-[15px]`) até a primeira sessão; sessões renderizadas como cards brancos; dentro do corpo os **labels dos campos** ficam com peso fraco (`font-light text-slate-500` via seletor `.fp-modal-body`) — **inclusive em erro**, preservando apenas a cor `text-rose-700`.
-- **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário; diálogos de confirmação destrutiva também usam a variante `danger` — ex.: modal de exclusão de usuário, `docs/06` §5.6).
+- **Footer:** filete superior de accent `#1a9e07` de **1px**, ações alinhadas à direita com os `UiButton` existentes (`outline` secundário + `primary` primário; diálogos de confirmação destrutiva também usam a variante `danger` — ex.: modal de exclusão de usuário, `docs/06` §5.6). O slot aceita um **grupo à esquerda** quando o consumidor abre com um elemento `mr-auto` (absorve o espaço livre do `justify-end` e mantém as ações principais à direita — ex.: os ícones de cópia do modal de permissões, `docs/07` §3.7); o kit não muda.
 
 `UiModalSection` (sessão de campos dentro do `default`):
 
@@ -881,6 +881,7 @@ interface ColumnDef<T = any> {
 | `icon` | componente | `undefined` | Ícone renderizado no tile superior esquerdo |
 | `badge` | `string` | `''` | Pílula de metadados ao lado do tile (ex.: "Recomendado") |
 | `badgeVariant` | `'lime' \| 'emerald' \| 'indigo' \| 'slate' \| 'neutral'` | `'lime'` | Cor da pílula (mesmo vocabulário do `CheckCard`, §5.9) |
+| `badgeMono` | `boolean` | `false` | `true` aplica `font-mono` ao badge numérico (ex.: `n/99` — disciplina de numéricos); sem ele a pílula segue em sans (badges de texto) |
 | `tone` | `'sky' \| 'emerald' \| 'lime' \| 'indigo' \| 'slate'` | `'slate'` | Tom aplicado ao cartão **selecionado** (borda + anel + fundo + tile do ícone) |
 | `disabled` | `boolean` | `false` | Desabilita o cartão (`aria-disabled`, fora de clique e teclado) |
 | `disabledHint` | `string` | `''` | Dica exibida no cartão desabilitado, com ícone `AlertCircle` |

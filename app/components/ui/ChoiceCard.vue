@@ -11,6 +11,7 @@ export interface ChoiceCardOption {
   icon?: any
   badge?: string
   badgeVariant?: 'lime' | 'emerald' | 'indigo' | 'slate' | 'neutral'
+  badgeMono?: boolean
   tone?: ChoiceCardTone
   disabled?: boolean
   disabledHint?: string
@@ -24,6 +25,7 @@ interface Props {
   icon?: any
   badge?: string
   badgeVariant?: 'lime' | 'emerald' | 'indigo' | 'slate' | 'neutral'
+  badgeMono?: boolean
   tone?: ChoiceCardTone
   disabled?: boolean
   disabledHint?: string
@@ -34,6 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
   description: '',
   badge: '',
   badgeVariant: 'lime',
+  badgeMono: false,
   icon: undefined,
   tone: 'slate',
   disabled: false,
@@ -184,7 +187,11 @@ const classeTile = computed(() => [
 ])
 
 const classeBadge = computed(() => [
-  'px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider',
+  // tabular-nums sempre (dígitos alinhados); font-mono só quando o badge é numérico
+  // (disciplina de numéricos do DS — § docs/qa/05) para não trocar a fonte de
+  // badges de texto como "Recomendado"/"Aberta".
+  'px-2 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider tabular-nums',
+  props.badgeMono && 'font-mono',
   BADGE_CLASSE[props.badgeVariant] ?? BADGE_CLASSE.lime
 ])
 </script>
