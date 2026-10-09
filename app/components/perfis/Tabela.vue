@@ -10,13 +10,14 @@ const emit = defineEmits<{
   (e: 'permissoes', perfil: LinhaPerfil): void
   (e: 'editar', perfil: LinhaPerfil): void
   (e: 'excluir', perfil: LinhaPerfil): void
+  (e: 'open-filters'): void
 }>()
 
 // Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
-const { linhas } = usePerfisDemo()
+const { linhas, filtrosAtivosCount } = usePerfisDemo()
 
 const colunas: ColumnDef[] = [
   { id: 'nome', header: 'Nome', accessorKey: 'nome', minWidth: 150 },
@@ -37,6 +38,9 @@ const colunas: ColumnDef[] = [
       :columns="colunas"
       :default-page-size="5"
       show-header-top
+      show-filters
+      :filters-count="filtrosAtivosCount"
+      @open-filters="emit('open-filters')"
     >
       <template #cell(usuarios)="{ value }">
         <span class="font-mono tabular-nums">{{ value }}</span>

@@ -72,6 +72,16 @@ export const VARIANTE_POR_STATUS: Record<SituacaoPerfil, 'done' | 'neutral' | 'b
   Bloqueado: 'blocked'
 }
 
+/** Opções do select de Status do modal de filtros (na ordem do enum). */
+export const SITUACOES: SituacaoPerfil[] = ['Ativo', 'Inativo', 'Bloqueado']
+
+export interface FiltrosPerfis {
+  /** '' = todos; valor é o `nome` do perfil */
+  perfil: string
+  /** '' = todos */
+  situacao: string
+}
+
 // Regras por perfil (docs/07 §"Matriz de permissões"; design D2) - conjuntos declarados
 // uma única vez e reutilizados pelos módulos do mesmo grupo.
 const ACOES_TUDO: Permissao[] = [...ACOES, ...EXTRAS]
@@ -245,13 +255,46 @@ export const usePerfisDemo = () => {
   // Base reativa (fase 1): criada na carga, perdida na recarga. Clone da semente.
   const perfis = useState<PerfilDemo[]>('perfis-base', () => PERFIS_DEMO.map(clonar))
 
+  // Filtros estruturais (spec perfis-acesso: modal de filtros refina o conjunto
+  // vigente) — em memória, descartados na recarga (mesmo contrato de usuarios).
+  const filtros = useState<FiltrosPerfis>('perfis-filtros', () => ({
+    perfil: '',
+    situacao: ''
+  }))
+
+  const perfisFiltrados = computed<PerfilDemo[]>(() => {
+    const f = filtros.value
+    return perfis.value.filter((p) => {
+      if (f.perfil && p.nome !== f.perfil) return false
+      if (f.situacao && p.situacao !== f.situacao) return false
+      return true
+    })
+  })
+
+  const filtrosAtivosCount = computed(() => {
+    const f = filtros.value
+    return [!!f.perfil, !!f.situacao].filter(Boolean).length
+  })
+
+  // Opções do select de Perfil derivam da BASE (não do conjunto filtrado): um
+  // filtro de Status não pode esconder opções do select de Perfil (espelho da
+  // regra de opcoesUsuarios de useUsuariosDemo).
+  const opcoesPerfis = computed(() =>
+    perfis.value.map((p) => p.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+  )
+
+  const limparFiltros = () => {
+    filtros.value = { perfil: '', situacao: '' }
+  }
+
   // Contagem de usuários por perfil deriva da base vigente de usuários (design D3):
   // criar/excluir um usuário em /admin/gestao-usuarios acompanha aqui, sem reload.
+  // Incide sobre o CONJUNTO FILTRADO (KPIs/linhas seguem o filtro — spec).
   const { usuarios } = useUsuariosDemo()
 
   const usuariosPorPerfil = computed<Record<string, number>>(() => {
     const contagem: Record<string, number> = {}
-    for (const perfil of perfis.value) contagem[perfil.nome] = 0
+    for (const perfil of perfisFiltrados.value) contagem[perfil.nome] = 0
     for (const usuario of usuarios.value) {
       if (usuario.perfil in contagem) contagem[usuario.perfil] += 1
     }
@@ -259,7 +302,7 @@ export const usePerfisDemo = () => {
   })
 
   const linhas = computed<LinhaPerfil[]>(() =>
-    perfis.value.map((perfil) => ({
+    perfisFiltrados.value.map((perfil) => ({
       id: perfil.id,
       nome: perfil.nome,
       descricao: perfil.descricao,
@@ -270,13 +313,20 @@ export const usePerfisDemo = () => {
   )
 
   const totalPermissoesConcedidas = computed(() =>
-    perfis.value.reduce((total, perfil) => total + contarPermissoes(perfil), 0)
+    perfisFiltrados.value.reduce((total, perfil) => total + contarPermissoes(perfil), 0)
   )
 
-  const totalPermissoesPossiveis = computed(() => perfis.value.length * PERMISSOES_POR_PERFIL)
+  const totalPermissoesPossiveis = computed(
+    () => perfisFiltrados.value.length * PERMISSOES_POR_PERFIL
+  )
 
   return {
     perfis,
+    filtros,
+    perfisFiltrados,
+    filtrosAtivosCount,
+    opcoesPerfis,
+    limparFiltros,
     linhas,
     usuariosPorPerfil,
     totalPermissoesConcedidas,

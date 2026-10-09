@@ -4,13 +4,14 @@ import { ShieldCheck, UserCheck, UserX, ShieldOff, KeyRound } from '@lucide/vue'
 import { usePerfisDemo } from './usePerfisDemo'
 
 // KPIs derivam do conjunto VIGENTE (spec perfis-acesso: recalculam quando o
-// conjunto de perfis muda; na fase 1 o conjunto é a base de demonstração)
-const { perfis, totalPermissoesConcedidas, totalPermissoesPossiveis } = usePerfisDemo()
+// conjunto de perfis muda — inclusive quando um filtro do módulo o refina; na
+// fase 1, sem filtro, o conjunto é a base de demonstração)
+const { perfisFiltrados, totalPermissoesConcedidas, totalPermissoesPossiveis } = usePerfisDemo()
 
-const total = computed(() => perfis.value.length)
-const ativos = computed(() => perfis.value.filter((p) => p.situacao === 'Ativo').length)
-const inativos = computed(() => perfis.value.filter((p) => p.situacao === 'Inativo').length)
-const bloqueados = computed(() => perfis.value.filter((p) => p.situacao === 'Bloqueado').length)
+const total = computed(() => perfisFiltrados.value.length)
+const ativos = computed(() => perfisFiltrados.value.filter((p) => p.situacao === 'Ativo').length)
+const inativos = computed(() => perfisFiltrados.value.filter((p) => p.situacao === 'Inativo').length)
+const bloqueados = computed(() => perfisFiltrados.value.filter((p) => p.situacao === 'Bloqueado').length)
 const permissoes = computed(
   () => `${totalPermissoesConcedidas.value}/${totalPermissoesPossiveis.value}`
 )

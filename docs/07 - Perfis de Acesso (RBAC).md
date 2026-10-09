@@ -1,6 +1,6 @@
 # 07 - Perfis de Acesso (RBAC) — Área Administrativa
 
-**Versão:** 1.4.0 — **Data:** 2026-10-09 — **Idioma:** Português do Brasil (pt-BR)
+**Versão:** 1.5.0 — **Data:** 2026-10-09 — **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela principal de Perfis de Acesso (RBAC) - listagem (base em memória) com cabeçalho
 (Novo Perfil), KPIs e tabela com contagem de permissões e de usuários vinculados; **"Novo
 Perfil" e "Editar" abrem o modal de cadastro/edição** (`PerfisFormulario`), **"Excluir" abre
@@ -74,8 +74,10 @@ Administrativa:
 - **Modal de permissões (change `perfis-acesso-modal-permissoes`):** "Configurar
   permissões" (`KeyRound`) **abre o modal** `PerfisPermissoes` (`UiModal size="xl"`) com as
   4 ações fixas em interruptores, Funcionalidades em chips clicáveis, abas por sessão,
-  rascunho isolado e gravação em memória (§3.7) — sem toast de
-  transição. **Filtros e exportação** seguem pendentes (§13).
+   rascunho isolado e gravação em memória (§3.7) — sem toast de
+   transição. **Modal de filtros** (`PerfisFiltros`, §3.8) refina o conjunto vigente e o
+   **menu "Relatórios"** do cabeçalho (§3.1) exporta em PDF/CSV sobre esse conjunto
+   (change `perfis-acesso-filtros-exportacao`).
 - **Matriz semeada:** a coluna "Permissões" e o KPI "Permissões concedidas" derivam da matriz
   declarada em `usePerfisDemo.ts` (§3.4) — a mesma que o §7 normatiza.
 
@@ -87,11 +89,12 @@ prefixo `Perfis*`):
 
 ```
 admin/perfis-acesso.vue            (page - definePageMeta + composição + coordenação)
-├── <PerfisCabecalho @novo />      → tile #f5b302 + título + "Novo Perfil"
-├── <PerfisKpis class="mt-6" />    → 5 UiKpi do conjunto VIGENTE
+├── <PerfisCabecalho @novo />      → tile #f5b302 + título + menu "Relatórios" + "Novo Perfil"
+├── <PerfisKpis class="mt-6" />    → 5 UiKpi do conjunto VIGENTE (filtrado, se houver filtro)
 ├── <PerfisTabela ref="tabelaRef"
 │                  class="mt-5"
-│                  @permissoes @editar @excluir />  → UiDataTable (busca + badges + ações)
+│                  @permissoes @editar @excluir @open-filters />  → UiDataTable (busca + Filtros + badges + ações)
+├── <PerfisFiltros v-model="filtrosAbertos" />                    → modal de filtros (§3.8)
 ├── <PerfisFormulario v-model :modo :perfil />      → modal de cadastro/edição (§3.6)
 ├── <PerfisPermissoes v-model :perfil />            → modal da matriz — abas por sessão, fixas em switches + Funcionalidades em chips (§3.7)
 └── <PerfisExclusao v-model :perfil @confirmar />   → modal de confirmação (§3.5)
@@ -99,7 +102,7 @@ admin/perfis-acesso.vue            (page - definePageMeta + composição + coord
 
 - **Estado de coordenação:** `modalAberto`/`modo`/`perfilEditar` (cadastro/edição),
   `permissoesAbertas`/`perfilPermissoes` (permissões), `exclusaoAberta`,
-  `perfilExcluir` e `tabelaRef<{ focarBusca }>` (mesmo padrão de
+  `perfilExcluir`, `filtrosAbertos` (filtros) e `tabelaRef<{ focarBusca }>` (mesmo padrão de
   `gestao-usuarios`). `abrirNovo()` abre em modo criação; `abrirEdicao(linha)` resolve o
   registro **completo** por `id` na base vigente (timestamps e matriz) e abre em modo edição;
   `abrirPermissoes(linha)` resolve o registro por `id` e abre a matriz; `abrirExclusao(perfil)`
@@ -118,14 +121,24 @@ admin/perfis-acesso.vue            (page - definePageMeta + composição + coord
   perfis de acesso — permissões por módulo, usuários vinculados e status."
 - **Botão "Novo Perfil"** (`UiButton` primary + `Plus`): **emite `@novo`** para a página, que
   abre o `PerfisFormulario` em modo criação (§3.6).
-- Sem menu de relatórios nesta fase (a listagem de perfis não tem exportação).
+- **Menu "Relatórios"** (`UiButton` outline + `NotebookText` + `ChevronDown`, mini-menu
+  `role="menu"` à esquerda de "Novo Perfil" — molde do `UsuariosCabecalho`; click-outside e
+  `Escape` fecham, `aria-haspopup`/`aria-expanded` no gatilho):
+  - **"Relação de perfis"** (`FileDown`) → `gerarPdfPerfis()` baixa `perfis.pdf` (A4
+    paisagem + `jspdf-autotable`, logo de login quando houver, colunas Nome/Descrição/Status/
+    Usuários/Permissões, paginação `Página X de Y`) — sem `window.print()`;
+  - divisor (`role="separator"`);
+  - **"Exportar em CSV"** (`FileSpreadsheet`) → `perfis.csv` com `;`, BOM UTF-8 e cabeçalho
+    `Nome;Descrição;Status;Usuários;Permissões`.
+  Ambos exportam o **conjunto vigente** (`perfisFiltrados` — com filtro aplicado, só o
+  conjunto filtrado).
 
 ### 3.2 `Kpis.vue` → `<PerfisKpis>`
 
 5 `UiKpi` em `grid sm:grid-cols-2 xl:grid-cols-5` (5 colunas só a partir de 1280px — em
 1024–1279px o grid fica 2×N para o valor longo `171/396` não truncar, correção UX-M1), todos
-derivados do conjunto vigente
-(`perfis` do `useState`):
+derivados do conjunto vigente (`perfisFiltrados` do `useState` — a base completa sem filtro, o
+conjunto filtrado com filtro do módulo aplicado):
 
 | KPI | Valor (base demo) | Cor (`cor` do `UiKpi`) | Ícone |
 | :--- | :--- | :--- | :--- |
@@ -140,13 +153,17 @@ derivados do conjunto vigente
 - **Inativos e Bloqueados = 0 é comportamento esperado** (design D7): os 4 perfis demo são os
   canônicos em uso pelos 16 usuários da base de Gestão de Usuários, todos Ativo; a situação
   muda pelo modal de edição (§3.6).
-- Os KPIs recalculam sempre que o conjunto de perfis muda — criação, edição, exclusão ou
-  mudança de situação (spec `perfis-acesso`).
+- Os KPIs recalculam sempre que o conjunto de perfis muda — criação, edição, exclusão,
+  mudança de situação **ou aplicação/limpeza de um filtro do módulo** (spec `perfis-acesso`;
+  com filtro aplicado os cinco KPIs refletem só o conjunto filtrado — ex.: Status =
+  Bloqueado → Total 0 e Permissões `0/0`).
 
 ### 3.3 `Tabela.vue` → `<PerfisTabela>`
 
-- `UiDataTable` **sem** `show-filters` (não há modal de filtros — a busca textual já
-  vem do kit com `show-header-top`), `title="Perfis de Acesso"`,
+- `UiDataTable` **com** `show-filters` (botão "Filtros" com badge de critérios ativos —
+  `:filters-count="filtrosAtivosCount"`, emitindo `@open-filters` para a página abrir o
+  `PerfisFiltros`, §3.8) além da busca textual do kit com `show-header-top`,
+  `title="Perfis de Acesso"`,
   `subtitle="Base de demonstração — fase 1 em memória · Permissões: ações concedidas de 99 (11
 módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 - **Colunas (6 — cinco de dados + Ações, sem rolagem horizontal em ≥ ~1280px):**
@@ -190,10 +207,14 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   `salvarPermissoes(base, id, permissoes)` → troca a matriz do perfil (clone) — id
   inexistente devolve a base intacta.
 - **Estado:** `useState('perfis-base', () => PERFIS_DEMO.map(clonar))` — clona a semente na
-  carga; a recarga restaura.
-- **Derivados (design D2/D3):** `linhas` (a linha da tabela com `usuarios` e
-  `permissoesTexto`), `usuariosPorPerfil` (conta `useUsuariosDemo().usuarios` por perfil),
-  `totalPermissoesConcedidas` (171) e `totalPermissoesPossiveis` (396).
+  carga; a recarga restaura. **Filtros** em `useState('perfis-filtros')` com o tipo
+  `FiltrosPerfis` (`perfil`/`situacao`, `''` = todos) — também descartados na recarga.
+- **Derivados (design D2/D3):** `perfisFiltrados` (aplica os critérios de `filtros`),
+  `filtrosAtivosCount` (0..2), `opcoesPerfis` (nomes da **base** ordenados em pt-BR),
+  `limparFiltros()`, `linhas` (a linha da tabela com `usuarios` e `permissoesTexto`),
+  `usuariosPorPerfil` (conta `useUsuariosDemo().usuarios` por perfil), `totalPermissoesConcedidas`
+  (171) e `totalPermissoesPossiveis` (396) — todos sobre o conjunto filtrado (KPIs e tabela
+  refletem o filtro; a opção `SITUACOES` alimenta o select de Status do `PerfisFiltros`).
 - **Dependência cross-module:** `perfis/` importa `usuarios/` somente para leitura (sem ciclo)
   — criar/excluir um usuário em `/admin/gestao-usuarios` altera a coluna "Usuários" sem
   recarregar a página.
@@ -297,6 +318,26 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   fechamento do filho devolve o foco ao ícone que o abriu (pilha de modais, `docs/01`
   §5.12); nenhuma das duas cópias faz HTTP e ambas se perdem na recarga.
 
+### 3.8 `Filtros.vue` → `<PerfisFiltros>` (modal de filtros)
+
+- **Apresentação pura + estado no composable** (molde exato de `usuarios/Filtros.vue`):
+  props `modelValue: boolean`; emite `update:modelValue`; a página é dona do estado
+  (`filtrosAbertos`) e o rascunho vive no próprio modal.
+- `UiModal size="sm"` com `title="Filtros de Perfis"`, `subtitle="Perfil e status"` e ícone
+  `Funnel`; duas `UiModalSection`:
+  - **Perfil** (ícone `ShieldCheck`): `UiSelect` com as opções derivadas da **base**
+    (`opcoesPerfis`, ordenadas em pt-BR — um filtro de Status não esconde opções de Perfil);
+  - **Status** (ícone `Activity`): `UiSelect` com `Ativo`/`Inativo`/`Bloqueado` (`SITUACOES`).
+  Ambos com `''` = todos (placeholder "Todos os perfis"/"Todos os status") e `clearable` — o
+  `X` devolve o critério a "todos".
+- **Rascunho sincronizado na abertura** (`watch` de `modelValue`): **Aplicar** grava
+  `filtros.value` e fecha; **Cancelar**/`Escape`/`X` do cabeçalho fecham descartando;
+  **Limpar Filtros** (rodapé esquerdo) zera rascunho **e** estado aplicado mantendo o modal
+  aberto (Cancelar/Aplicar à direita — mesmo rodapé de `UsuariosFiltros`).
+- **Estado aplicado** vive em `useState('perfis-filtros')` (§3.4): `perfisFiltrados`,
+  `filtrosAtivosCount` (badge 0..2 do botão "Filtros") e `limparFiltros()`; tudo em memória,
+  descartado na recarga — sem nenhuma requisição HTTP.
+
 ## 4. Componentes de kit (criados/alterados)
 
 - **Criado: `UiTextarea`** (`app/components/ui/Textarea.vue`) — campo multilinha do kit para
@@ -330,6 +371,11 @@ controle de linha exibe mais toast de transição.
 
 - Salvar no modal de permissões: `salvarPermissoes()` → linha/KPIs recalculam em memória →
   `toast.success` → modal fecha; descartar (Cancelar/Escape/X) não toca na base.
+- **Filtros** (`Filtros`, §3.8): o botão "Filtros" da toolbar abre o `PerfisFiltros`;
+  "Aplicar" grava o rascunho e fecha (tabela, KPIs e exportações passam a refletir o
+  conjunto filtrado), "Cancelar"/`Escape`/`X` descartam o rascunho e "Limpar Filtros" zera
+  rascunho e estado aplicado com o modal aberto — o badge do botão conta só o estado
+  aplicado (0..2).
 - **Cópias no rodapé do modal de permissões:** importar (`ClipboardPaste`) só substitui o
   rascunho (efeito no Salvar); exportar (`ClipboardCopy`) grava a matriz **salva** do
   perfil corrente no alvo na hora, com toast próprio — o descarte do modal corrente não
@@ -343,8 +389,9 @@ controle de linha exibe mais toast de transição.
   que o backend imporá (docs/02 §3.5).
 - **Busca** é recurso do `UiDataTable`: filtra a visualização **sem** alterar o conjunto
   vigente nem os KPIs.
-- **Sem botão "Filtros" e sem exportação** — ambos entram junto dos seus modais/relatórios
-  (§13).
+- **Exportação** (menu "Relatórios" do cabeçalho, §3.1): "Relação de perfis" gera
+  `perfis.pdf` e "Exportar em CSV" baixa `perfis.csv` (`;` + BOM UTF-8) — ambos sobre o
+  conjunto vigente (filtrado, se houver filtro), sem `window.print()`.
 
 ## 6. Dados de demonstração
 
@@ -546,6 +593,15 @@ entre perfis:
 | :--- | :--- |
 | `perfis-acesso` | **ADDED** — "O modal de permissões copia a matriz entre perfis": ícones `ClipboardPaste`/`ClipboardCopy` no rodapé esquerdo (Cancelar/Salvar à direita), importar substitui o rascunho (vale no Salvar), exportar grava a matriz **salva** no alvo imediatamente com toast (descarte não desfaz) e o seletor (modal filho com `UiChoiceCard`, `n/99`) exclui o perfil atual e oferece estado vazio |
 
+Change `openspec/changes/perfis-acesso-filtros-exportacao` (spec-driven) — modal de filtros +
+exportação:
+
+| Capability | Operação |
+| :--- | :--- |
+| `perfis-acesso` | **ADDED** — "O modal de filtros refina o conjunto vigente de perfis": modal `sm` com sessões Perfil/Status, rascunho (Aplicar/Cancelar/Escape/X/Limpar), badge 0..2, tabela/KPIs/exportações sobre o conjunto filtrado, memória + descarte na recarga |
+| `perfis-acesso` | **ADDED** — "A exportação gera arquivos sobre o conjunto de perfis vigente": menu "Relatórios" no cabeçalho (PDF paisagem + CSV `;`/BOM, divisor, sem `window.print()`), sobre o conjunto filtrado quando houver filtro |
+| `perfis-acesso` | **MODIFIED** — "Os KPIs refletem o conjunto vigente de perfis": o conjunto vigente passa a incluir a refinação por filtro do módulo (cenário "Filtro do módulo recalcula os KPIs") |
+
 ## 12. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório) e
@@ -587,8 +643,6 @@ entre perfis:
 
 ## 13. Pendências e próximos passos
 
-- **Filtros e exportação** da listagem (change 2 do bloco — junto dos respectivos
-  modais/relatórios; padrão pronto em `/admin/gestao-usuarios`).
 - **Backend:** `server/` com tabelas `perfis`/`perfil_permissoes` (DDL alvo em `docs/02` §3.5)
   e o helper `requirePermission(event, modulo, acao)` (docs/02 §3.5/§7) — a página troca o
   composable por dados reais sem mudar o contrato visual; a §7 vira os **seeds** da migration.

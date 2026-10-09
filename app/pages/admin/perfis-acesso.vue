@@ -55,6 +55,10 @@ const exclusaoAberta = ref(false)
 const perfilExcluir = ref<LinhaPerfil | null>(null)
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 
+// Coordenação do modal de filtros: a página é dona do estado (mesmo padrão de
+// gestao-usuarios/auditoria) — a tabela só emite open-filters.
+const filtrosAbertos = ref(false)
+
 const abrirExclusao = (perfil: LinhaPerfil) => {
   perfilExcluir.value = perfil
   exclusaoAberta.value = true
@@ -100,7 +104,10 @@ const confirmarExclusao = () => {
         @permissoes="abrirPermissoes"
         @editar="abrirEdicao"
         @excluir="abrirExclusao"
+        @open-filters="filtrosAbertos = true"
       />
+
+      <PerfisFiltros v-model="filtrosAbertos" />
 
       <PerfisFormulario
         v-model="modalAberto"
