@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-// Estado em memória compartilhado com Configurações > Sidebar (ver docs/03)
+// Estado compartilhado com Configurações > Sidebar (ver docs/03)
 // — o toggle do header e o cartão da aba escrevem na mesma fonte.
 const { expandida: sidebarOpen, aplicarLarguraInicial, marcarPreferenciaManual } =
   useSidebarExpandida()
 
-// Primeira carga: abaixo de lg a sidebar inicia recolhida (escolha manual prevalece).
-onMounted(() => aplicarLarguraInicial())
+// Primeira carga: abaixo de lg a sidebar inicia recolhida (escolha manual
+// prevalece) e, em seguida, as preferências salvas (sidebar, sessões e
+// logomarcas) são aplicadas em qualquer rota da Área Administrativa — não
+// só na página de Configurações Globais.
+onMounted(async () => {
+  aplicarLarguraInicial()
+  await carregarConfiguracoesGlobais()
+})
 
 const alternar = (valor: boolean) => {
   sidebarOpen.value = valor

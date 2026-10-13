@@ -68,8 +68,12 @@ state-management, auth, or DB tooling exists yet — don't assume any of it.
 - Tailwind is wired via the `@nuxtjs/tailwindcss` module in `nuxt.config.ts`; the module injects
   content globs itself. The empty `content: []` in root `tailwind.config.js` is normal — don't
   "fix" it by hardcoding paths.
-- `nuxt.config.ts` is minimal (`compatibilityDate: '2025-07-15'`, devtools, tailwind module only).
-  New Nuxt features go here as `modules` entries.
+- `nuxt.config.ts` has grown past "minimal": `runtimeConfig` (DB_*), `nitro.publicAssets` and
+  `nitro.hooks.compiled` live there — see comments in the file before touching it.
+- Uploads go to `uploads/<pasta>/` at the project root (gitignored; `.gitkeep` keeps the
+  structure), served at runtime via `nitro.publicAssets` (`/uploads/**`) in both dev and
+  production. Do NOT put runtime uploads in `public/uploads/` — `public/` is copied only at
+  build time, so files created while the app runs would be invisible in production.
 - `.env` / `.env.*` are gitignored; `.env.example` exists and is committed (`!.env.example`). The
   app reads `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` (see `runtimeConfig` in
   `nuxt.config.ts`; defaults target `publications` on localhost:3306). Dev requires MariaDB 11.8+

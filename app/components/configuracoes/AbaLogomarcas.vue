@@ -1,31 +1,40 @@
 <script setup lang="ts">
-import { ref, watch, type Ref } from 'vue'
+import { nextTick, ref, watch, type Ref } from 'vue'
 import { Building, Image as ImageIcon } from '@lucide/vue'
 import { useLogomarcaHeader } from '../../composables/useLogomarcaHeader'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
+import { useApiFetch } from '../../composables/useApiFetch'
+import { useToast } from '../../composables/useToast'
 
-// Avisa a página quando qualquer logo muda (habilita o botão "Salvar")
+// Avisa a página quando qualquer logo muda por ação do usuário (habilita o "Salvar")
 const emit = defineEmits<{
   (e: 'change'): void
 }>()
+
+const { toast } = useToast()
 
 // Logo do header vive também no shell (AppHeader) via estado compartilhado
 const { caminho: caminhoHeaderGlobal, preview: previewHeaderGlobal } = useLogomarcaHeader()
 const { caminho: caminhoLoginGlobal, preview: previewLoginGlobal } = useLogomarcaLogin()
 
-// Estado em memória (fase 1 — sem persistência, sem chamada de rede)
-// `preview*` alimenta a prévia da caixa de upload (dataURL — sobrevive à troca de aba);
-// `logo*` é o CAMINHO gravado no banco.
+// Estado hidratado pela página/layout (GET /api/configuracoes) via os composables.
+// `preview*` alimenta a prévia da caixa de upload (URL servida ou dataURL local);
+// `logo*` é o CAMINHO gravado no banco. `veioUpload*` marca que o valor atual veio
+// do servidor (seleção de arquivo ou hidratação) — o campo de caminho fica
+// desabilitado nesse caso; editável apenas quando vazio ou digitado à mão.
 const logoHeader = ref(caminhoHeaderGlobal.value)
 const previewHeader = ref(previewHeaderGlobal.value)
+const veioUploadHeader = ref(!!caminhoHeaderGlobal.value)
 const uploadKeyHeader = ref(0)
 
 const logoLogin = ref(caminhoLoginGlobal.value)
 const previewLogin = ref(previewLoginGlobal.value)
+const veioUploadLogin = ref(!!caminhoLoginGlobal.value)
 const uploadKeyLogin = ref(0)
 
-const caminhoDe = (arquivo: File) =>
-  `/uploads/logomarcas/${arquivo.name.replace(/\s+/g, '-')}`
+// Evita que a sincronização servidor→aba dispare o `change` (hidratação não é
+// alteração do usuário — o botão Salvar deve permanecer desabilitado no load).
+const sincronizandoDoServidor = ref(false)
 
 const lerDataUrl = (arquivo: File, destino: Ref<string>) => {
   const leitor = new FileReader()
@@ -35,34 +44,59 @@ const lerDataUrl = (arquivo: File, destino: Ref<string>) => {
   leitor.readAsDataURL(arquivo)
 }
 
-// Upload → prévia local (dataURL) + caminho armazenado
+// Upload → POST /api/uploads (grava em uploads/logomarcas/) + prévia local
+const enviarParaServidor = async (
+  arquivo: File,
+  destino: Ref<string>,
+  preview: Ref<string>,
+  veioUpload: Ref<boolean>,
+  uploadKey: Ref<number>
+) => {
+  const form = new FormData()
+  form.append('pasta', 'logomarcas')
+  form.append('file', arquivo)
+  try {
+    const { url } = await useApiFetch<{ url: string }>('/api/uploads', { method: 'POST', body: form })
+    destino.value = url
+    veioUpload.value = true
+    lerDataUrl(arquivo, preview)
+  } catch (erro: any) {
+    destino.value = ''
+    preview.value = ''
+    veioUpload.value = false
+    uploadKey.value++
+    toast.danger('Logomarcas', erro?.data?.statusMessage ?? 'Falha no upload da imagem. Tente novamente.')
+  }
+}
+
 const aoChangeHeader = (arquivos: File[] | null) => {
   if (!arquivos?.length) {
     logoHeader.value = ''
     previewHeader.value = ''
+    veioUploadHeader.value = false
     uploadKeyHeader.value++
     return
   }
-  logoHeader.value = caminhoDe(arquivos[0])
-  lerDataUrl(arquivos[0], previewHeader)
+  void enviarParaServidor(arquivos[0], logoHeader, previewHeader, veioUploadHeader, uploadKeyHeader)
 }
 
 const aoChangeLogin = (arquivos: File[] | null) => {
   if (!arquivos?.length) {
     logoLogin.value = ''
     previewLogin.value = ''
+    veioUploadLogin.value = false
     uploadKeyLogin.value++
     return
   }
-  logoLogin.value = caminhoDe(arquivos[0])
-  lerDataUrl(arquivos[0], previewLogin)
+  void enviarParaServidor(arquivos[0], logoLogin, previewLogin, veioUploadLogin, uploadKeyLogin)
 }
 
-// Edição manual do caminho
+// Edição manual do caminho (permitida apenas quando o valor não veio do servidor)
 const aoEditHeader = (valor: string) => {
   const tinhaPrevia = !!previewHeader.value
   logoHeader.value = valor
   previewHeader.value = valor
+  veioUploadHeader.value = false
   if (!valor && tinhaPrevia) uploadKeyHeader.value++
 }
 
@@ -70,22 +104,47 @@ const aoEditLogin = (valor: string) => {
   const tinhaPrevia = !!previewLogin.value
   logoLogin.value = valor
   previewLogin.value = valor
+  veioUploadLogin.value = false
   if (!valor && tinhaPrevia) uploadKeyLogin.value++
 }
 
-// Sincroniza o shell (AppHeader) e avisa a página sobre alterações
+// Local → shell (AppHeader) + avisa a página sobre alterações do USUÁRIO
 watch([logoHeader, previewHeader], () => {
   caminhoHeaderGlobal.value = logoHeader.value
   previewHeaderGlobal.value = previewHeader.value
-  emit('change')
+  if (!sincronizandoDoServidor.value) emit('change')
 })
 
-// Sincroniza o estado global (relatório de Auditoria) e avisa a página sobre alterações
 watch([logoLogin, previewLogin], () => {
   caminhoLoginGlobal.value = logoLogin.value
   previewLoginGlobal.value = previewLogin.value
-  emit('change')
+  if (!sincronizandoDoServidor.value) emit('change')
 })
+
+// Shell → local (immediate): a aba monta antes do GET completar; sem este
+// watch as refs locais ficariam vazias e as logos hidratadas nunca apareceriam
+// no card. Valores vindos do servidor desabilitam o campo de caminho.
+watch([caminhoHeaderGlobal, previewHeaderGlobal], ([caminho, preview]) => {
+  if (caminho === logoHeader.value && preview === previewHeader.value) return
+  sincronizandoDoServidor.value = true
+  logoHeader.value = caminho
+  previewHeader.value = preview
+  veioUploadHeader.value = !!caminho
+  nextTick(() => {
+    sincronizandoDoServidor.value = false
+  })
+}, { immediate: true })
+
+watch([caminhoLoginGlobal, previewLoginGlobal], ([caminho, preview]) => {
+  if (caminho === logoLogin.value && preview === previewLogin.value) return
+  sincronizandoDoServidor.value = true
+  logoLogin.value = caminho
+  previewLogin.value = preview
+  veioUploadLogin.value = !!caminho
+  nextTick(() => {
+    sincronizandoDoServidor.value = false
+  })
+}, { immediate: true })
 </script>
 
 <template>
@@ -145,7 +204,7 @@ watch([logoLogin, previewLogin], () => {
         <UiInput
           class="mt-3"
           :model-value="logoHeader"
-          :disabled="previewHeader.startsWith('data:')"
+          :disabled="veioUploadHeader"
           mono
           label="Caminho da imagem"
           placeholder="/uploads/logomarcas/logo-header.png"
@@ -193,7 +252,7 @@ watch([logoLogin, previewLogin], () => {
         <UiInput
           class="mt-3"
           :model-value="logoLogin"
-          :disabled="previewLogin.startsWith('data:')"
+          :disabled="veioUploadLogin"
           mono
           label="Caminho da imagem"
           placeholder="/uploads/logomarcas/logo-login.png"

@@ -16,10 +16,18 @@ export default defineNuxtConfig({
     // Sobrescrita por NUXT_DB_* se necessária; DB_* é a interface principal.
     public: {}
   },
-  // Cópia das migrations SQL para o bundle de produção (docs/02 §4.4).
-  // Nitro 2.13: fonte = <rootDir>/server/migration; destino =
-  // nitro.options.output.serverDir (resolvido para .output/server).
+  // Serviço de uploads + cópia das migrations no build.
+  // Uploads: pasta uploads/ na raiz (gitignored; .gitkeep mantém a estrutura),
+  // servida em runtime via publicAssets — funciona em dev e produção, ao
+  // contrário de public/uploads/ (copiada só no build). Nitro 2.13: fonte das
+  // migrations = <rootDir>/server/migration; destino = nitro.options.output.serverDir.
   nitro: {
+    publicAssets: [
+      {
+        baseURL: '/uploads',
+        dir: join(process.cwd(), 'uploads')
+      }
+    ],
     hooks: {
       compiled: async (nitro) => {
         const src = join(nitro.options.rootDir, 'server', 'migration')
