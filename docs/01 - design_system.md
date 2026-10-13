@@ -336,6 +336,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `modelValue` | `string \| number` | `''` | `v-model` (emitido sempre como `string`) |
 | `label` | `string` | `''` | Rótulo associado (`useId()` no `[for]`); fica `text-rose-700` em erro |
 | `type` | `string` | `'text'` | Tipo nativo do input |
+| `autocomplete` | `string` | `''` | Atributo nativo repassado ao `<input>` (ex.: `username`, `current-password`; sem a prop o atributo de consumidor caía no wrapper por fallthrough) |
 | `placeholder` | `string` | `''` | Placeholder (`text-slate-400`) |
 | `disabled` | `boolean` | `false` | `bg-slate-200 opacity-60` |
 | `error` | `string` | `''` | Erro do campo: **sem texto visível abaixo** — só overlay vermelho + `AlertCircle` à direita com tooltip; a mensagem fica no DOM oculta (`sr-only`, `role="alert"` + `aria-describedby`) para leitores de tela |
@@ -563,6 +564,7 @@ type CheckboxPosition = 'start' | 'end'
 | `size` | `CheckboxSize` | `'md'` | Tamanho da caixa |
 | `variant` | `CheckboxVariant` | `'lime'` | Cor checada |
 | `checkboxPosition` | `CheckboxPosition` | `'start'` | `'end'` inverte a ordem (`flex-row-reverse`) |
+| `labelClass` | `string` | `''` | Classes extras no rótulo (adicionadas por último; use `!` para vencer `text-slate-800`, ex.: `!text-slate-500` — caso de uso: rótulo cinza no card de login, `docs/08` §2) |
 | `id` / `name` / `required` | `string \| undefined` / `string \| undefined` / `boolean` | `undefined` / `undefined` / `false` | Atributos do input nativo |
 
 - **Emits:** `update:modelValue(boolean | any[])` · **`change(boolean | any[])`** (valor resultante, não `Event`).

@@ -148,8 +148,9 @@ administrativo, sidebar ou rail.
 
 ### Requirement: Toda rota sob /admin/** é renderizada com o shell da Área Administrativa
 O sistema SHALL renderizar qualquer rota futura criada sob a Área Administrativa com o mesmo shell,
-sem exceção, de modo que a adição de telas administrativas não dependa de marcação ou estilos próprios
-por página.
+**com exceção das telas de autenticação** (`/admin/login` e `/admin/esqueci-senha`, que renderizam
+sem o shell com layout próprio — spec `login`), de modo que a adição de telas administrativas não
+dependa de marcação ou estilos próprios por página.
 
 #### Scenario: Tela inicial em /admin
 - **WHEN** a tela inicial da Área Administrativa é servida em `/admin`
@@ -162,6 +163,16 @@ por página.
 #### Scenario: Páginas públicas não herdam o shell
 - **WHEN** uma página fora de `/admin/**` é renderizada sem o layout administrativo declarado
 - **THEN** ela não exibe header nem sidebar da Área Administrativa
+
+#### Scenario: A tela de login fica fora do shell
+- **WHEN** o visitante abre `/admin/login`
+- **THEN** a página renderiza sem header nem sidebar da Área Administrativa, mantendo o layout
+  próprio da tela de login
+
+#### Scenario: A tela de esqueci a senha fica fora do shell
+- **WHEN** o visitante abre `/admin/esqueci-senha`
+- **THEN** a página renderiza sem header nem sidebar da Área Administrativa, mantendo o layout
+  próprio das telas de autenticação
 
 ### Requirement: Itens de navegação podem declarar rota e os sem rota avisam que estão em construção
 Os itens da sidebar e do menu do Account SHALL poder declarar uma rota opcional (`to`);

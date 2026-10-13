@@ -19,6 +19,18 @@
   clip-path: inset(calc(100% - 9px) 0 0 0);
 }
 
+/* Campo de senha: esconde o "mostrar senha" nativo do Edge (::-ms-reveal), que só
+   aparece quando o usuário digita e fica ao lado do olho do kit (UiInput right-icon),
+   resultando em dois olhos. O olho visível é sempre o do componente. Regras separadas
+   (sem lista de seletores) para nenhum navegador descartar a outra. */
+input[type='password']::-ms-reveal {
+  display: none;
+}
+
+input[type='password']::-ms-expand {
+  display: none;
+}
+
 /* Hover das opções da sidebar — modelo novo (sidebar navy): a opção assume a cor do
    item (--item-cor, vindo do config/navigation.ts) e, quando o item não tem cor, cai
    no texto claro (fallback #0f172a ficaria invisível sobre o navy). */

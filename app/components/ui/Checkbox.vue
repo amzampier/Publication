@@ -17,6 +17,8 @@ interface Props {
   size?: CheckboxSize
   variant?: CheckboxVariant
   checkboxPosition?: CheckboxPosition
+  /** Classes extras no rótulo (mesmo padrão do `UiInput.labelClass`). */
+  labelClass?: string
   id?: string
   name?: string
   required?: boolean
@@ -33,6 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   variant: 'lime',
   checkboxPosition: 'start',
+  labelClass: '',
   id: undefined,
   name: undefined,
   required: false
@@ -209,7 +212,8 @@ const variantClasses = computed(() => {
             'leading-snug transition-colors',
             sizeClasses.label,
             disabled ? 'text-slate-400' : 'text-slate-800 group-hover:text-slate-900',
-            error ? 'text-rose-700' : ''
+            error ? 'text-rose-700' : '',
+            labelClass
           ]"
         >
           <slot>{{ label }}</slot>

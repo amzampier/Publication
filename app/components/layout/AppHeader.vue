@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   Bell,
   Building2,
@@ -10,6 +10,7 @@ import {
   Trash2
 } from '@lucide/vue'
 import type { Notificacao } from '../../config/navigation'
+import { useAuth } from '../../composables/useAuth'
 import { useLogomarcaHeader } from '../../composables/useLogomarcaHeader'
 import {
   accountEncerrarSessao,
@@ -22,6 +23,13 @@ import {
 // Logo escolhida em Configurações > Logomarcas (estado em memória, fase 1)
 const { preview: logomarcaHeader } = useLogomarcaHeader()
 
+// Sessão fake (spec `login`): bloco Account reflete o usuário autenticado,
+// com fallback no valor fixo de navigation.ts.
+const { usuario, sair } = useAuth()
+
+const nomeConta = computed(() => usuario.value?.nome ?? conta.nome)
+const perfilConta = computed(() => usuario.value?.perfil ?? conta.perfil)
+
 const props = withDefaults(defineProps<{ sidebarOpen: boolean }>(), { sidebarOpen: true })
 const emit = defineEmits<{ 'update:sidebarOpen': [value: boolean] }>()
 
@@ -31,13 +39,14 @@ const contaAberto = ref(false)
 const notificacoesAberto = ref(false)
 const notificacoes = ref<Notificacao[]>([...notificacoesIniciais])
 
-const iniciais = conta.nome
+const iniciais = computed(() => nomeConta.value
   .split(' ')
   .filter(Boolean)
   .slice(0, 2)
   .map((parte) => parte[0])
   .join('')
   .toUpperCase()
+)
 
 const alternarSidebar = () => emit('update:sidebarOpen', !props.sidebarOpen)
 
@@ -60,6 +69,13 @@ const fecharMenus = () => {
 const clicarItemMenu = (item: { to?: string }) => {
   if (item.to) navigateTo(item.to)
   fecharMenus()
+}
+
+// Encerrar Sessão (spec `login`): limpa estado + cookie e volta ao login.
+const encerrarSessao = () => {
+  sair()
+  fecharMenus()
+  navigateTo('/admin/login')
 }
 
 // Visualizar = dispensar a notificação da lista (mock sem rotas)
@@ -218,8 +234,8 @@ onUnmounted(() => {
             <span class="text-[10px] font-bold text-slate-950">{{ iniciais }}</span>
           </span>
           <span class="text-left leading-tight hidden sm:block">
-            <span class="block text-xs font-normal">{{ conta.nome }}</span>
-            <span class="block text-[10px] font-normal">{{ conta.perfil }}</span>
+            <span class="block text-xs font-normal">{{ nomeConta }}</span>
+            <span class="block text-[10px] font-normal">{{ perfilConta }}</span>
           </span>
           <ChevronDownIcon
             class="h-3.5 w-3.5 transition-transform duration-200"
@@ -271,7 +287,7 @@ onUnmounted(() => {
             type="button"
             role="menuitem"
             class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light hover:bg-slate-100 transition-colors text-left"
-            @click="fecharMenus"
+            @click="encerrarSessao"
           >
             <component
               :is="accountEncerrarSessao.icon"

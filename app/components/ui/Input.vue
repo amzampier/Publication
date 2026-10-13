@@ -8,6 +8,9 @@ interface Props {
   label?: string
   labelClass?: string
   type?: string
+  /** Atributo nativo repassado ao `<input>` (sem a prop ele cairia no wrapper
+   *  por fallthrough de atributos — BUG-1 da execução 6.2). */
+  autocomplete?: string
   placeholder?: string
   disabled?: boolean
   error?: string
@@ -28,6 +31,7 @@ const props = withDefaults(defineProps<Props>(), {
   label: '',
   labelClass: '',
   type: 'text',
+  autocomplete: '',
   placeholder: '',
   disabled: false,
   error: '',
@@ -134,6 +138,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
         :id="inputId"
         :value="modelValue"
         :type="type"
+        :autocomplete="autocomplete || undefined"
         :placeholder="placeholder"
         :disabled="disabled"
         :maxlength="mask ? mask.length : undefined"
