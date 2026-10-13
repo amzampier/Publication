@@ -230,8 +230,8 @@ onUnmounted(() => {
           :aria-expanded="contaAberto"
           @click="alternarConta"
         >
-          <span class="h-7 w-7 rounded-full overflow-hidden bg-brand-structure flex items-center justify-center shrink-0">
-            <span class="text-[10px] font-bold text-slate-950">{{ iniciais }}</span>
+          <span class="h-7 w-7 rounded-full overflow-hidden bg-slate-600 flex items-center justify-center shrink-0">
+            <span class="text-[10px] font-bold text-white">{{ iniciais }}</span>
           </span>
           <span class="text-left leading-tight hidden sm:block">
             <span class="block text-xs font-normal">{{ nomeConta }}</span>
@@ -255,7 +255,7 @@ onUnmounted(() => {
             type="button"
             role="menuitem"
             class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 transition-colors text-left"
-            @click="fecharMenus"
+            @click="clicarItemMenu(accountMeuPerfil)"
           >
             <component :is="accountMeuPerfil.icon" class="h-3.5 w-3.5 shrink-0 ds-icon-light" aria-hidden="true" />
             {{ accountMeuPerfil.label }}

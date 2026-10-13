@@ -51,11 +51,13 @@ O sistema SHALL tratar como paleta oficial as oito cores de marca, com Navy em `
 ### Requirement: Botão primário e header de modal usam degradê
 O sistema SHALL renderizar com degradê: o botão na variante `primary`, o cabeçalho do modal (do
 `brand.primary` ao `brand.structure`), a região preenchida do slider `UiSlider` (de `#112051`
-por `#0364f7` até `#4ed813`, esticada da origem até o thumb) e a região preenchida da barra de
+por `#0364f7` até `#4ed813`, esticada da origem até o thumb), a região preenchida da barra de
 progresso do `UiLoading` (de `#112051` por `#0364f7` até `#4ed813`, da origem até a posição
-atual) com degradê horizontal, da esquerda para a direita; e a borda da caixa do `UiLoading` com
+atual) com degradê horizontal, da esquerda para a direita; a borda da caixa do `UiLoading` com
 degradê cônico giratório percorrendo as
-mesmas três cores na mesma ordem (`#112051` → `#0364f7` → `#4ed813`) ao redor da caixa.
+mesmas três cores na mesma ordem (`#112051` → `#0364f7` → `#4ed813`) ao redor da caixa; e o
+**card de resumo da tela Meu Perfil** com degradê vertical suave, do `brand.structure` bem diluído
+no topo esmaecendo até o branco na base.
 
 #### Scenario: Degradê no botão primário
 - **WHEN** um `Button` com `variant="primary"` é renderizado
@@ -76,6 +78,10 @@ mesmas três cores na mesma ordem (`#112051` → `#0364f7` → `#4ed813`) ao red
 #### Scenario: Degradê na borda do UiLoading
 - **WHEN** o overlay do `UiLoading` está aberto
 - **THEN** a borda da caixa exibe o degradê giratório `#112051` → `#0364f7` → `#4ed813` na mesma ordem das demais superfícies de degradê da marca
+
+#### Scenario: Degradê no card de resumo do Meu Perfil
+- **WHEN** o card lateral de `/admin/meu-perfil` (o container do Avatar) é renderizado
+- **THEN** o fundo é um degradê vertical do `brand.structure` diluído (opacidade baixa) no topo até o branco na base, partindo da classe de token e sem hex fixado no componente
 
 #### Scenario: Demais superfícies primárias continuam sólidas
 - **WHEN** superfícies como o cabeçalho da `DataTable`, tooltip, checkbox marcada, dia selecionado do calendário e menus dark são renderizadas

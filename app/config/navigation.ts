@@ -110,7 +110,8 @@ export const conta: Conta = {
 // Meu Perfil -> divisor -> accountMenuItens -> divisor -> Encerrar Sessão
 export const accountMeuPerfil: MenuItem = {
   label: 'Meu Perfil',
-  icon: User
+  icon: User,
+  to: '/admin/meu-perfil'
 }
 
 export const accountMenuItens: MenuItem[] = [

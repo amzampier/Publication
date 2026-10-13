@@ -2258,14 +2258,14 @@ variant="lime"
                     :aria-expanded="accountMenuAberto"
                     @click="alternarMenuAccount"
                   >
-                    <span class="h-7 w-7 rounded-full overflow-hidden bg-brand-structure flex items-center justify-center shrink-0">
+                    <span class="h-7 w-7 rounded-full overflow-hidden bg-slate-600 flex items-center justify-center shrink-0">
                       <img
                         v-if="avatarFoto"
                         :src="avatarFoto"
                         alt=""
                         class="h-full w-full object-cover"
                       />
-                      <span v-else class="text-[10px] font-bold text-slate-950">AR</span>
+                      <span v-else class="text-[10px] font-bold text-white">AR</span>
                     </span>
                     <span class="text-left">
                       <span class="block text-xs font-normal leading-tight">{{ conta.nome }}</span>

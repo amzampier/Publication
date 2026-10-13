@@ -179,12 +179,17 @@ Os itens da sidebar e do menu do Account SHALL poder declarar uma rota opcional 
 quando declarada, o clique do usuário navega para essa rota, e o item da sidebar correspondente
 à rota corrente é exibido como ativo. Itens da sidebar **sem** rota declarada SHALL exibir, ao
 serem acionados, um `toast.info` com o rótulo do item e a mensagem "Módulo em construção.",
-sem navegação — os itens do menu do Account ("Meu Perfil", "Encerrar Sessão") mantêm seu
-comportamento próprio e ficam fora deste aviso.
+sem navegação — no menu do Account, **Meu Perfil** declara rota (`/admin/meu-perfil`) e navega
+ao clique como os demais itens com rota, e "Encerrar Sessão" mantém seu comportamento próprio
+(fecho de sessão) e fica fora deste aviso.
 
 #### Scenario: Item com rota navega
 - **WHEN** o usuário clica em "Configurações Globais" na sidebar ou no menu do Account
 - **THEN** o navegador vai para `/admin/configuracoes-globais` e o menu do Account é fechado
+
+#### Scenario: Meu Perfil com rota navega
+- **WHEN** o usuário clica em "Meu Perfil" no menu do Account
+- **THEN** o navegador vai para `/admin/meu-perfil` e o menu do Account é fechado
 
 #### Scenario: Item ativo acompanha a rota
 - **WHEN** a rota corrente corresponde à rota declarada de um item da sidebar

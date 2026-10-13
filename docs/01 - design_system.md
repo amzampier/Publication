@@ -40,6 +40,7 @@
    - [5.17 UiLoading](#517-uiloading--seção-18-do-design) (seção 18)
    - [5.18 UiTextarea](#518-uitextarea--seção-19-do-design) (seção 19)
 - [5.19 UiSwitch](#519-uiswitch--seção-20-do-design) (seção 20)
+- [5.20 Avatar de Perfil (domínio)](#520-avatar-de-perfil-domínio--tela-meu-perfil)
 
 ## 1. Princípios & Tipografia
 
@@ -90,7 +91,7 @@ A classe utilitária `.tabular-nums` (aplicada em `app/assets/css/main.css` a `f
 | 4 | **Vermelho Rosa (Erro & Alerta)** | `#be123c` | `bg-rose-700` | Erros, validações falhas, alertas críticos |
 | 5 | **Índigo (Revisão & Auditoria)** | `#4338ca` | `bg-indigo-700` | Revisão aprovada, trilha de auditoria |
 | 6 | **Rate Limit (Bloqueio 30 Minutos)** | `#e11d48` | `bg-rose-600` | Cor semântica de bloqueio de segurança |
-| 7 | **Azul Estrutural (Estrutura Dark)** | `#0364f7` | `bg-brand-structure` | Estrutura dark: avatar do Account, degradê de cabeçalho de modal/botão (com navy) e header da grid (texto nesses fundos em `#020617`) — o item ativo da sidebar passou a `white/10` (§3.3) |
+| 7 | **Azul Estrutural (Estrutura Dark)** | `#0364f7` | `bg-brand-structure` | Estrutura dark: degradê de cabeçalho de modal/botão (com navy) e header da grid (texto nesses fundos em `#020617`); **card de resumo do Meu Perfil** em degradê vertical diluído `bg-gradient-to-b from-brand-structure/15 to-white` (§5.20, único degradê sobre superfície clara) — o item ativo da sidebar passou a `white/10` (§3.3) |
 | 8 | **Slate 50 (App Canvas)** | `#f8fafc` | `bg-slate-50` | Fundo principal das telas e do header de tabela |
 
 Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliado, laranja = Pendente, azul = Em Análise, rose = Bloqueado) estão especificadas em [5.2 Badge](#52-badge--seção-4-do-design).
@@ -128,7 +129,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 
 ### 3.2 Bloco Account
 
-- Gatilho: avatar `h-7 w-7` circular `bg-brand-structure` (foto ou iniciais), **nome completo** e perfil (ex.: `Administrador`) em **duas linhas alinhadas à esquerda** (`text-left`, perfil abaixo do nome) — nome `text-xs font-normal`, perfil `text-[10px] font-normal`, ambos sem negrito — e chevron rotacionável.
+- Gatilho: avatar `h-7 w-7` circular `bg-slate-600` com iniciais `text-white` (fundo neutro — cor anterior `bg-brand-structure` substituída na revisão), **nome completo** e perfil (ex.: `Administrador`) em **duas linhas alinhadas à esquerda** (`text-left`, perfil abaixo do nome) — nome `text-xs font-normal`, perfil `text-[10px] font-normal`, ambos sem negrito — e chevron rotacionável.
 - Menu (`role="menu"`, `w-56`, `bg-white border border-slate-200`, texto `text-slate-700`, hover `bg-slate-100` + pinta o rótulo com a cor do item via `.ds-item-hover-dark`/`--item-cor` (fallback `#0f172a` — superfície branca), ícones `h-3.5` com **traço 1.5** (`.ds-icon-light` — mesmo peso da sidebar), **itens em `text-xs font-light`**), nesta ordem: **Meu Perfil** — divisor `my-1 h-px bg-slate-200` — **Configurações Globais · Gestão de Usuários · Perfis de Acesso (RBAC) · Gestão de Auditoria** — divisor — **Encerrar Sessão** (rótulo em `#f45f71`).
 - Fecha com clique fora (`pointerdown` global) e tecla `Escape`.
 - Cores dos ícones (`MenuItem.cor`, via `:style`): `#50a1ff`, `#b070ef`, `#f5b302`, `#2dd4bf`; Encerrar Sessão `#f45f71`.
@@ -1034,4 +1035,34 @@ interface ColumnDef<T = any> {
 <UiSwitch v-model="notificacoes" label="Notificações" />
 <UiSwitch :model-value="true" label="Sempre ativo" />
 <UiSwitch :model-value="false" label="Bloqueado" disabled />
+```
+
+### 5.20 Avatar de Perfil (domínio) — tela Meu Perfil
+
+**Arquivo:** `app/components/perfil/Avatar.vue` (`PerfilAvatar` — componente de domínio, não do
+kit; espelhado em `docs/09`)
+
+- **Visual:** círculo `h-32 w-32 rounded-full` sem anel/borda de destaque; fundo
+  `bg-slate-600` (cinza neutro) com **iniciais** (primeiro + último nome,
+  `text-3xl font-bold text-white`) quando não há foto, ou a imagem (`object-cover`) quando há.
+- **Lápis flutuante:** único ponto de entrada da troca de foto (não há botão "Alterar foto"
+  separado): botão **`h-7 w-7 rounded-full`** ancorado no canto inferior direito
+  (`absolute bottom-1 right-1`), `bg-brand-primary` com `border-2 border-white`, ícone `Pencil`
+  `h-3.5 w-3.5`; hover `bg-brand-primary-raised`, foco `focus-visible:outline-brand-focus`. Emite
+  `alterar-foto` — a página abre o fluxo do kit (`UiUploadFiles` circular + `UiCameraWeb`, §5.4).
+  **Visibilidade:** sem foto (iniciais) o lápis fica sempre visível; **com foto**, o lápis fica
+  oculto (`opacity-0`) e aparece só quando o mouse passa sobre o Avatar
+  (`group-hover:opacity-100`, com `group-focus-within` para teclado) — o wrapper do Avatar carrega
+  a classe `group`.
+- **Foto:** dataURL no registro do usuário (mesmo trade-off do modal de Gestão de Usuários);
+  só persiste ao **Salvar alterações** da página (faz parte do rascunho).
+- **Resumo lateral (`perfil/Resumo.vue`):** card `rounded-xl border border-slate-200 shadow-xs`
+  com **fundo em degradê vertical `bg-gradient-to-b from-brand-structure/15 to-white`** (azul
+  bem clarinho no topo esmaecendo até o branco — ver §2.1, único degradê sobre superfície clara
+  do DS); exibe o Avatar no topo, seguido do nome, dos badges de status/perfil (`UiBadge`) e das
+  linhas E-mail · Último acesso · Conta criada em. O mini-card "Sua conta está segura" fica na
+  **aba Segurança** (`perfil/AbaSeguranca.vue`).
+
+```vue
+<PerfilAvatar :nome="rascunho.nome" :preview="rascunho.avatar" @alterar-foto="abrirFoto" />
 ```

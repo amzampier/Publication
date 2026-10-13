@@ -309,7 +309,9 @@ e `prefers-reduced-motion` congela tudo (quadro estático, sem ondas).
 - **Persistência da senha:** a base demo é em memória - F5 zera a provisória gravada e a
   `Public@2026` volta a valer para o registro; com backend, a senha vigente é persistida (hash).
 - **Troca da senha provisória ("Meu Perfil"):** página de perfil do usuário para substituir a
-  provisória - change futura, fora do escopo da change `esqueci-senha`.
+  provisória - **implementada** na change `construir-meu-perfil` (rota `/admin/meu-perfil`,
+  aba Segurança); ver `docs/09 - Meu Perfil.md`. A pendência remanescente é a persistência
+  real da senha (hash) quando houver backend.
 - **RBAC no cliente:** `usePermissions` com helper `.can(modulo, acao)` (docs/02 §5.3) derivando
   do perfil da sessão - entra quando a sessão for real e a matriz de permissões (docs/07)
   vier do banco.

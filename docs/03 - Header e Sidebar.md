@@ -101,8 +101,9 @@ Fundo `bg-white` · `border-b border-slate-200` · textos herdados do container 
 
 **Gatilho**
 
-- Avatar `h-7 w-7 rounded-full overflow-hidden bg-brand-structure` — foto ou iniciais
-  (2 primeiras letras do nome, `text-[10px] font-bold text-slate-950`, maiúsculas).
+- Avatar `h-7 w-7 rounded-full overflow-hidden bg-slate-600` — foto ou iniciais
+  (2 primeiras letras do nome, `text-[10px] font-bold text-white`, maiúsculas; fundo neutro
+  desde a revisão do Meu Perfil — era `bg-brand-structure` com texto `text-slate-950`).
 - Nome e perfil em **duas linhas alinhadas à esquerda**: nome `text-xs font-normal`,
   perfil `text-[10px] font-normal`, ambos sem negrito.
 - Chevron `h-3.5 w-3.5` rotaciona 180° ao abrir (`transition-transform duration-200`).
@@ -119,14 +120,16 @@ Itens: `w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate
 mais `:style="--item-cor"` — no hover o rótulo assume a **cor do item** (superfície branca: classe
 `.ds-item-hover-dark` com fallback `#0f172a`); ícone `h-3.5 w-3.5` com **traço 1.5**
 (`.ds-icon-light` — mesmo peso da sidebar), colorido por `MenuItem.cor` (cores cheias — o menu é
-branco), divisor `my-1 h-px bg-slate-200`. **Meu Perfil** (sem
-`cor`) e **Encerrar Sessão** (rótulo já colorido permanentemente) não usam a classe de hover.
+branco), divisor `my-1 h-px bg-slate-200`. **Meu Perfil** (sem `cor`, sem a classe de hover) navega
+para `/admin/meu-perfil` — o mesmo caminho dos itens com rota (`clicarItemMenu`); **Encerrar
+Sessão** (rótulo já colorido permanentemente) mantém seu comportamento próprio de fecho de
+sessão e não usa a classe de hover.
 
 Ordem fixa (definida em `config/navigation.ts`):
 
 | # | Item | Ícone | Cor |
 |---|---|---|---|
-| 1 | Meu Perfil | `User` | — |
+| 1 | Meu Perfil (→ `/admin/meu-perfil`) | `User` | — |
 | — | *divisor* | | |
 | 2 | Configurações Globais | `Settings` | `#50a1ff` |
 | 3 | Gestão de Usuários | `Users` | `#b070ef` |
@@ -229,8 +232,9 @@ Observações:
   Chamadas — itens ainda sem rota), **cadastros de apoio** e **administração/governança**.
 - **Itens sem rota:** o clique não navega — exibe `toast.info` com o rótulo do item e a
   mensagem "Módulo em construção." (spec `design-system/layout-navigation`; **MEL-03 do
-  `RL01` resolvido**). O menu da conta fica fora: "Meu Perfil" e "Encerrar Sessão" mantêm
-  seu comportamento próprio.
+  `RL01` resolvido**). O menu da conta fica fora do aviso: "Meu Perfil" navega para
+  `/admin/meu-perfil` (como os itens com rota) e "Encerrar Sessão" mantém seu comportamento
+  próprio (fecho de sessão).
 - **Cores dos ícones (`SidebarItem.cor`)** — o ícone fica colorido sempre e o hover da opção pinta
   rótulo/ícone com a mesma cor (`.ds-item-hover` + `--item-cor` em
   [`app/assets/css/main.css`](../app/assets/css/main.css)). As cores no config são **cheias** (mesma
