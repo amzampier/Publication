@@ -47,7 +47,7 @@ A Configurações Globais é a tela de parâmetros transversais da Área Adminis
   `/admin/**` (ver [`03 - Header e Sidebar.md`](03%20-%20Header%20e%20Sidebar.md) §1).
 - **Aba padrão:** "Logomarcas & Identidade" (`id: 'logomarcas'`) ao carregar (pedido do usuário);
   as outras 3 abas têm painel de conteúdo (mockups enviados pelo usuário).
-- **Fase 1:** tudo em memória — sem backend, sem `sistema_config`, sem chamadas de rede.
+- **Fase 1:** tudo em memória — sem backend, sem `configuracoes_globais`, sem chamadas de rede.
 
 ## 2. Estrutura da página (componentização)
 
@@ -321,7 +321,9 @@ Sem lint/test no projeto — o gate é:
 
 ## 12. Pendências e próximos passos
 
-1. Persistência real (`sistema_config`), fetch/PUT da API e confirmação de erro — fase 2.
+1. Persistência real (`configuracoes_globais` — colunas `dias_retencao_auditoria`,
+   `logo_header_url`, `logo_login_url` e `sidebar_grupos` JSON, DDL em `docs/bd/01`),
+   fetch/PUT da API e confirmação de erro — fase 2.
 2. Auth/RBAC e permissões da tela — fora do escopo (sem middleware).
 3. Conferência visual final com o usuário (fidelidade aos 4 mockups, cores dos ícones das abas,
    navegação na demo §14 do `/design`).

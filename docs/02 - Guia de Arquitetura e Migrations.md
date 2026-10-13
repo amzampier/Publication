@@ -241,26 +241,24 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 
 ### 3.5. Controle de Acesso Baseado em Papéis (RBAC Dinâmico)
 
-O sistema implementa controle de acesso granular na tabela `perfil_permissoes`:
+O sistema implementa controle de acesso granular na tabela `permissoes_perfil`:
 - Cada perfil possui permissões booleanas para as ações fixas: `visualizar`, `criar`, `alterar`, `excluir`.
-- Ações especiais são tratadas no campo `permissoes_extras` (JSON), tais como: `publicar`, `arquivar`, `download`, `exportar`, `importar`.
+- Ações especiais são tratadas no campo `extras` (JSON), tais como: `publicar`, `arquivar`, `download`, `exportar`, `importar`.
 - O helper `requirePermission(event, modulo, acao)` valida diretamente no banco ou cache de sessão, negando a requisição com **HTTP 403 Forbidden** se o perfil não tiver a permissão concedida.
 
-A tabela de perfis (`perfis`) terá o schema alvo (migration futura — a página
-`/admin/perfis-acesso` hoje é demo em memória, `docs/07`):
+A tabela de perfis (`perfis_acesso`) terá o schema alvo (migration futura — a página
+`/admin/perfis-acesso` hoje é demo em memória, `docs/07`; DDL completo em `docs/bd/01`):
 
 ```sql
-CREATE TABLE IF NOT EXISTS perfis (
+CREATE TABLE IF NOT EXISTS perfis_acesso (
   id UUID NOT NULL DEFAULT UUID() COMMENT 'Identificador único do perfil',
   nome_perfil VARCHAR(100) NOT NULL COMMENT 'Nome amigável exibido nas telas de governança',
   descricao TEXT NULL COMMENT 'Detalhamento das responsabilidades do perfil',
-  padrao_sistema TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Indica se é perfil nativo bloqueado para exclusão',
   situacao ENUM('Ativo', 'Inativo', 'Bloqueado') NOT NULL DEFAULT 'Ativo' COMMENT 'Situação cadastral do perfil de acesso',
-  cor_identificacao VARCHAR(30) NOT NULL DEFAULT 'slate' COMMENT 'Cor do badge no painel visual',
   criado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   atualizado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
 ```
 
 - O **UUID `id` é o identificador único** do perfil (não há `codigo_perfil` — decisão
@@ -411,7 +409,7 @@ export default defineNuxtConfig({
 Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigorosamente as seguintes regras:
 
 1. **Nomenclatura Sequencial de Dois ou Três Dígitos**:
-   - Exemplo: `01_create_tables.sql`, `02_add_status_to_publicacoes.sql`, `03_perfil_permissoes.sql`.
+   - Exemplo: `01_create_tables.sql`, `02_add_status_to_publicacoes.sql`, `03_permissoes_perfil.sql`.
    - A ordenação alfabética do runner garante a ordem exata de execução.
 2. **Comando `USE seu_banco;` no Início**:
    - Toda migration inicia definindo o banco alvo: `USE publications;`.
@@ -607,13 +605,15 @@ E registre o plugin Nitro em:
 ### Passo 5: Criar a Migration Inicial (`server/migration/01_create_tables.sql`)
 
 Crie o arquivo `server/migration/01_create_tables.sql` com a estrutura base mínima:
-- `perfis` e `perfil_permissoes` (com suporte a `permissoes_extras JSON`).
+- `perfis_acesso` e `permissoes_perfil` (com suporte a `extras JSON`).
 - `usuarios` (com senha em hash bcrypt).
-- `sessoes` e `token_blacklist` (para JWT e segurança).
+- `sessoes`, `token_blacklist` e `tokens_acesso` (para JWT, logout e convite/recuperação).
 - `auditoria` (para rastreabilidade).
-- `sistema_config` (para configurações gerais do sistema).
-- `publicacoes` — tabela de negócio de exemplo, com coluna `tipo` cobrindo os três domínios (`release_semanal`, `manual`, `escopo_projeto`) e `status` (`rascunho`, `agendado`, `em_revisao`, `publicado`, `bloqueado`).
-- Insira os **seeds** dos perfis (ex: Administrador) e do usuário Admin inicial.
+- `configuracoes_globais` (para configurações gerais do sistema).
+- Tabelas de negócio do portal: `release_week`, `projetos_escopo`, `manuais_mensal` e
+  `entregas_itens` (tabela unificada de itens).
+- Insira os **seeds** dos perfis (ex: Administrador) e do usuário Admin inicial
+  (`docs/bd/02_seed.sql` é a referência).
 
 ---
 
@@ -651,7 +651,7 @@ Na inicialização:
 | **Migrations** | Nunca altere uma migration já executada em produção. Sempre crie uma nova migration com o próximo número sequencial (ex: `02_nova_coluna.sql`). |
 | **Erros** | Centralize erros no `handleApiError` para não expor a topologia do banco a usuários maliciosos. |
 | **Auditoria** | Registre sempre a ação, o recurso e o identificador do item alterado nas operações de escrita. |
-| **Permissões** | Mantenha as 4 ações CRUD padronizadas (`visualizar`, `criar`, `alterar`, `excluir`) e utilize a coluna `permissoes_extras` JSON para comportamentos específicos do módulo. |
+| **Permissões** | Mantenha as 4 ações CRUD padronizadas (`visualizar`, `criar`, `alterar`, `excluir`) e utilize a coluna `extras` JSON para comportamentos específicos do módulo. |
 | **Tokens** | Mantenha o token de acesso em cookie `HttpOnly` com tempo de vida curto (ex: 15 a 60 minutos) e utilize refresh tokens rotativos no banco de dados. |
 
 ---

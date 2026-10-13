@@ -53,10 +53,10 @@ Administrativa:
 - **Rota:** `/admin/perfis-acesso` → `app/pages/admin/perfis-acesso.vue` com
   `definePageMeta({ layout: 'admin' })` — herda o shell (header + sidebar) por `/admin/**`
   (ver [`03 - Header e Sidebar.md`](03%20-%20Header%20e%20Sidebar.md) §1).
-- **Modelo de dados:** conforme o `docs/02` §3.5 (tabelas `perfis`/`perfil_permissoes`) —
+- **Modelo de dados:** conforme o `docs/02` §3.5 (tabelas `perfis_acesso`/`permissoes_perfil`) —
   `id` (UUID — identificador único, sem `codigo_perfil`), nome, descrição, `situacao`
   (Ativo/Inativo/Bloqueado), timestamps e a
-  matriz de permissões por módulo (4 ações booleanas fixas + `permissoes_extras`).
+  matriz de permissões por módulo (4 ações booleanas fixas + `extras` JSON).
   `padrao_sistema` e `cor_identificacao` são colunas futuras do banco, fora do UI atual
   (`docs/02` §3.5).
 - **Fase 1:** listagem **inteiramente em memória** — `useState('perfis-base')`, sem `server/`,
@@ -422,7 +422,7 @@ exibe apenas a **contagem** derivada desta matriz (§3.4).
 
 **Legenda de ações** (9 por módulo — `docs/02` §3.5):
 
-| Fixas | Extras (`permissoes_extras`) |
+| Fixas | Extras (`extras`) |
 | :--- | :--- |
 | `visualizar` · `criar` · `alterar` · `excluir` | `publicar` · `arquivar` · `download` · `exportar` · `importar` |
 
@@ -643,7 +643,8 @@ exportação:
 
 ## 13. Pendências e próximos passos
 
-- **Backend:** `server/` com tabelas `perfis`/`perfil_permissoes` (DDL alvo em `docs/02` §3.5)
+- **Backend:** `server/` com tabelas `perfis_acesso`/`permissoes_perfil` (DDL alvo em `docs/02` §3.5
+  e `docs/bd/01`)
   e o helper `requirePermission(event, modulo, acao)` (docs/02 §3.5/§7) — a página troca o
   composable por dados reais sem mudar o contrato visual; a §7 vira os **seeds** da migration.
   Nesse momento entram: **`padrao_sistema`** (flag de perfil nativo bloqueado para exclusão +

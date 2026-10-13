@@ -35,7 +35,7 @@ const { toast } = useToast()
 const { perfis } = usePerfisDemo()
 
 // Colunas editáveis: só as 4 ações fixas (docs/02 §3.5). As 5 extras aparecem como
-// JSON de permissoes_extras — sem interruptor nesta etapa (edição ficará para a
+// JSON `extras` — sem interruptor nesta etapa (edição ficará para a
 // arquitetura futura da tela — decisão do usuário).
 const acoesFixas: Acao[] = [...ACOES]
 

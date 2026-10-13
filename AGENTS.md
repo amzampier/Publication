@@ -70,5 +70,9 @@ state-management, auth, or DB tooling exists yet — don't assume any of it.
   "fix" it by hardcoding paths.
 - `nuxt.config.ts` is minimal (`compatibilityDate: '2025-07-15'`, devtools, tailwind module only).
   New Nuxt features go here as `modules` entries.
-- `.env` / `.env.*` are gitignored (`!.env.example` allowed, but no `.env.example` exists yet);
-  no environment variables are read anywhere yet.
+- `.env` / `.env.*` are gitignored; `.env.example` exists and is committed (`!.env.example`). The
+  app reads `DB_HOST`/`DB_PORT`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` (see `runtimeConfig` in
+  `nuxt.config.ts`; defaults target `publications` on localhost:3306). Dev requires MariaDB 11.8+
+  running locally: the Nitro plugin `server/plugins/migration.ts` provisions the schema from
+  `server/migration/*.sql` on boot and bootstraps the admin user — if MariaDB is down or
+  unreachable, `npm run dev`/production boot fails fast by design.

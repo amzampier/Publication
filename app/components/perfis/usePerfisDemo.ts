@@ -1,6 +1,6 @@
 // Estado da página de Perfis de Acesso (RBAC) - fase 1 em memória (sem persistência,
-// sem chamadas de rede). Núcleo conforme docs/02 §3.5 (tabelas `perfis`/`perfil_permissoes`):
-// 4 ações booleanas fixas por módulo + 5 `permissoes_extras`. A matriz semeada é a única
+// sem chamadas de rede). Núcleo conforme docs/02 §3.5 (tabelas `perfis_acesso`/`permissoes_perfil`):
+// 4 ações booleanas fixas por módulo + 5 `extras` (JSON). A matriz semeada é a única
 // fonte das contagens exibidas na tela e do `docs/07` (design D2 da change em vigência).
 import { computed } from 'vue'
 import { useState } from '#app'
@@ -26,9 +26,9 @@ export type ModuloId =
   | 'auditoria'
   | 'configuracoes-globais'
 
-/** Ações fixas do `perfil_permissoes` (docs/02 §3.5). */
+/** Ações fixas do `permissoes_perfil` (docs/02 §3.5). */
 export type Acao = 'visualizar' | 'criar' | 'alterar' | 'excluir'
-/** Ações especiais do `permissoes_extras` JSON (docs/02 §3.5). */
+/** Ações especiais do `extras` JSON (docs/02 §3.5). */
 export type Extra = 'publicar' | 'arquivar' | 'download' | 'exportar' | 'importar'
 export type Permissao = Acao | Extra
 

@@ -26,7 +26,7 @@ A fonte dos fatos de arquitetura é **`docs/02 - Guia de Arquitetura e Migration
 * **Backend**: Nitro (`server/`), rotas REST em `server/api/` com `defineEventHandler`, SQL direto via **mysql2/promise** (MariaDB) sem ORM — `query()` e `getTransaction()` em `server/utils/db.ts`, validação **Zod** em `server/utils/validation.ts`, middlewares (`auth` com rotas públicas declaradas, `rate-limit`, `security-headers`), auditoria via `registrarAuditoria`.
 * **Banco**: MariaDB, migrations SQL versionadas em `server/migration/` executadas automaticamente na inicialização (runner idempotente), queries parametrizadas, `utf8mb4`, chaves `UUID()` nativas.
 * **Autenticação**: JWT em cookie `HttpOnly` (`__Host-auth-token`) + refresh token rotativo em tabela de sessões + blacklist em logout, bcrypt cost 12, lockout por tentativas e rate limit persistido.
-* **Autorização**: RBAC por perfil — ações fixas `visualizar/criar/alterar/excluir` + `permissoes_extras` (JSON) por módulo, validado por `requirePermission`. Perfis e módulos são definidos em specs de identidade/quando especificados — não os suponha.
+* **Autorização**: RBAC por perfil — ações fixas `visualizar/criar/alterar/excluir` + `extras` (JSON) por módulo, validado por `requirePermission`. Perfis e módulos são definidos em specs de identidade/quando especificados — não os suponha.
 * **Escopo único**: não há empresas nem filiais nem isolamento por tenant — a proteção é a **fronteira Área Pública × Área Administrativa** (rotas públicas declaradas × `/admin/**`) somada ao **RBAC** por perfil.
 
 ---

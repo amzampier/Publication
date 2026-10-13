@@ -25,7 +25,7 @@ Estes são os mecanismos previstos em `docs/02`; o agente **confirma no código 
 
 ## Autorização (RBAC)
 
-* `requirePermission(event, modulo, acao)` valida ações fixas `visualizar/criar/alterar/excluir` em `perfil_permissoes` + ações granulares no JSON `permissoes_extras`.
+* `requirePermission(event, modulo, acao)` valida ações fixas `visualizar/criar/alterar/excluir` em `permissoes_perfil` + ações granulares no JSON `extras`.
 * Perfis, módulos e ações extras são definidos nas specs de identidade/quando especificados — **não há lista hardcoded**: descubra-os da spec e do schema implementado.
 * Sem bypass de Administrador: nenhum perfil é imune ao JSON de permissões.
 * Mudanças de permissão refletem conforme a implementação (token/sessão) — verificar o comportamento real.

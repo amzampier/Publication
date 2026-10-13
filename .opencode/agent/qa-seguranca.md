@@ -13,7 +13,7 @@ Leia previamente:
 - `docs/qa/02-qa-seguranca.md` (fatos de segurança e seu escopo completo)
 - `docs/02 - Guia de Arquitetura e Migrations.md` (mecanismos previstos)
 
-Execute as etapas 6 (permissões/RBAC) e 9 (segurança). Perfis, módulos e ações extras vêm da fonte da verdade (specs de identidade/schema implementado) — **não há lista hardcoded**; se auth/RBAC ainda não existirem, declare escopo não aplicável. Valide cada perfil contra `perfil_permissoes` (ações fixas) e `permissoes_extras` (JSON), considerando que **não há bypass de Administrador**.
+Execute as etapas 6 (permissões/RBAC) e 9 (segurança). Perfis, módulos e ações extras vêm da fonte da verdade (specs de identidade/schema implementado) — **não há lista hardcoded**; se auth/RBAC ainda não existirem, declare escopo não aplicável. Valide cada perfil contra `permissoes_perfil` (ações fixas) e `extras` (JSON), considerando que **não há bypass de Administrador**.
 
 Verifique no código (quando implementado): `server/middleware/auth.ts` (rotas públicas), `server/utils/permission.ts` e `jwt.ts`, middlewares de security-headers e rate-limit, `server/utils/validation.ts` (Zod) e upload/magic bytes. Teste cenários de JWT expirado/inválido, manipulação de IDs, acesso direto por URL, **exposição de conteúdo não publicado na Área Pública ou bypass da fronteira de áreas (sempre Crítica)**, SQLi, XSS, CSRF, upload malicioso, sessão/logout e lockout/rate limit.
 

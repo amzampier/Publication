@@ -25,7 +25,7 @@ Detalhes em `docs/02`; aqui o que o QA confirma no código/schema implementado:
 
 Não há tabela fixa prevista aqui — **o esquema real é o que está em `server/migration/`** (quando existir). Extraia do schema:
 
-* tabelas de negócio × tabelas de infraestrutura (`usuarios`, `perfis`, `sessoes`, `token_blacklist`, `auditoria`, `rate_limits`, `_migrations`, `perfil_permissoes`, `sistema_config`)
+* tabelas de negócio × tabelas de infraestrutura (`usuarios`, `perfis_acesso`, `permissoes_perfil`, `sessoes`, `token_blacklist`, `tokens_acesso`, `auditoria`, `configuracoes_limite_requisicao`, `configuracoes_globais`, `_migrations`)
 * colunas de status/visibilidade (`status`, `ativo`) presentes nas tabelas de negócio
 * colunas de tempo (`criado_em`/`atualizado_em`/soft delete) e status/`ativo`
 
