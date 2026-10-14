@@ -16,7 +16,6 @@ import {
 import { useToast } from '../../composables/useToast'
 import { useApiFetch } from '../../composables/useApiFetch'
 import {
-  useUsuariosDemo,
   VARIANTE_POR_PERFIL,
   VARIANTE_POR_STATUS,
   type UsuarioDemo
@@ -43,16 +42,13 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { usuarios } = useUsuariosDemo()
 
 type Canal = 'email' | 'whatsapp'
 
-// Registro vigente na base (o objeto do gatilho fica defasado após gravar a senha)
-const registro = computed<UsuarioDemo | null>(() => {
-  const id = props.usuario?.id
-  if (!id) return props.usuario
-  return usuarios.value.find((u) => u.id === id) ?? props.usuario
-})
+// Registro vigente: a linha REAL vinda da lista (a API nunca expõe senha —
+// design D9: o modal sempre oferece "Gerar senha"; a provisória vive só no
+// rascunho até o envio gravar o hash no banco).
+const registro = computed<UsuarioDemo | null>(() => props.usuario ?? null)
 
 // Rascunho local — descartado no Cancelar/Escape/X, gravado só no envio (D6/D7)
 const canal = ref<Canal>('email')
@@ -81,7 +77,7 @@ watch(
     if (aberto) {
       canal.value = 'email'
       mostrarSenha.value = false
-      senha.value = registro.value?.senha ?? ''
+      senha.value = ''
     }
     // Fechar NÃO cancela o fallback: o timer do WhatsApp precisa sobreviver ao
     // fechamento pós-envio (~2 s) — só o unmount o limpa.
@@ -90,7 +86,9 @@ watch(
 )
 
 const temTelefone = computed(() => Boolean(registro.value?.telefone?.trim()))
-const senhaExistente = computed(() => Boolean(registro.value?.senha))
+// A lista real não tem campo de senha (hash no banco, nunca exposto): o modal
+// sempre começa sem senha — o admin gera/define antes de enviar (D9).
+const senhaExistente = computed(() => false)
 const podeEnviar = computed(() => senha.value.trim().length >= 8)
 
 const iniciais = computed(() =>
@@ -169,11 +167,8 @@ const enviar = async () => {
   }
   enviando.value = false
 
-  // Espelho de tela: a senha real (hash) vive no banco; a linha demo acompanha
-  // para a UI (campo/canônico) ficar consistente até a gestão ir ao backend.
-  usuarios.value = usuarios.value.map((u) =>
-    u.id === alvo.id ? { ...u, senha: senha.value } : u
-  )
+  // A conta real já foi gravada pela API (find-or-create + hash) — nada de
+  // espelho em base demo: a linha da lista é o registro do banco.
 
   if (canal.value === 'email') {
     toast.success('Gestão de Usuários', `Convite enviado para ${alvo.email}.`)

@@ -2,11 +2,11 @@
 import { ref, watch, computed } from 'vue'
 import { Funnel, User, ShieldCheck } from '@lucide/vue'
 import {
-  useUsuariosDemo,
   PERFIS,
   STATUSES,
   type FiltrosUsuarios
 } from './useUsuariosDemo'
+import { useUsuarios } from './useUsuarios'
 
 // Modal de filtros estruturais — aberto pelo botão "Filtros" da toolbar da
 // tabela (spec gestao-usuarios: sessões Usuário e Perfil e Status — todos em
@@ -15,7 +15,7 @@ import {
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoesUsuarios, limparFiltros } = useUsuariosDemo()
+const { filtros, opcoesUsuarios, limparFiltros } = useUsuarios()
 
 const rascunho = ref<FiltrosUsuarios>({ ...filtros.value })
 

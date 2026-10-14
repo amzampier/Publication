@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { Image } from '@lucide/vue'
-import { useAuth } from '../../composables/useAuth'
 import { useToast } from '../../composables/useToast'
+import { useApiFetch } from '../../composables/useApiFetch'
+import { enviarAvatar } from '../../components/usuarios/useUsuarios'
 import {
-  useUsuariosDemo,
   formatarDataHora,
   formatarUltimoAcesso,
+  enderecoVazio,
+  smtpVazio,
   type ConfigSmtpUsuario,
   type EnderecoUsuario,
   type UsuarioDemo
@@ -15,19 +17,37 @@ import {
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { usuario } = useAuth()
-const { usuarios } = useUsuariosDemo()
 
-// Registro da tela: a sessão real traz id/nome/email/perfil do banco; o
-// espelho de tela (telefone/SMTP/endereço/datas) continua na base demo e é
-// resolvido por E-MAIL — os ids da sessão (UUID) não são os ids demo u-00x.
-const registro = computed<UsuarioDemo | null>(() => {
-  const u = usuario.value
-  if (!u) return null
-  return usuarios.value.find((reg) => reg.email.toLowerCase() === u.email.toLowerCase()) ?? null
+// Registro REAL do logado (change gestao-usuarios-backend, design D7): lido de
+// GET /api/usuarios/eu — sem espelho por e-mail na base demo; a aba Segurança
+// continua autônoma (POST /api/auth/trocar-senha, change de auth).
+const registro = ref<UsuarioDemo | null>(null)
+const carregando = ref(true)
+
+const carregarEu = async (): Promise<boolean> => {
+  try {
+    const eu = await useApiFetch<UsuarioDemo>('/api/usuarios/eu')
+    registro.value = eu
+    return true
+  } catch {
+    registro.value = null
+    return false
+  }
+}
+
+onMounted(async () => {
+  carregando.value = true
+  const ok = await carregarEu()
+  if (ok && registro.value) rascunho.value = clonar(registro.value)
+  carregando.value = false
+  if (!ok) {
+    toast.danger(
+      'Meu Perfil',
+      'Não foi possível carregar seu registro. Verifique a conexão e recarregue a página.'
+    )
+  }
 })
 
-// Rascunho em memória clonado do registro (fase 1 - sem backend)
 // O e-mail não é editável aqui: fica só na leitura do resumo lateral
 interface Rascunho {
   nome: string
@@ -45,12 +65,12 @@ const clonar = (u: UsuarioDemo): Rascunho => ({
   smtp: { ...u.smtp }
 })
 
-const rascunho = ref<Rascunho>(registro.value ? clonar(registro.value) : {
+const rascunho = ref<Rascunho>({
   nome: '',
   telefone: '',
   avatar: '',
-  endereco: {} as EnderecoUsuario,
-  smtp: {} as ConfigSmtpUsuario
+  endereco: enderecoVazio(),
+  smtp: smtpVazio()
 })
 
 // Aba padrão: Dados Pessoais
@@ -73,16 +93,35 @@ const salvar = async () => {
   }
   if (!abaDadosRef.value?.validar()) return
 
-  const r = registro.value
-  r.nome = rascunho.value.nome.trim()
-  r.telefone = rascunho.value.telefone
-  r.avatar = rascunho.value.avatar
-  r.endereco = { ...rascunho.value.endereco }
-  r.smtp = { ...rascunho.value.smtp }
-  r.atualizadoEm = new Date().toISOString()
+  try {
+    // Avatar: dataURL nova vira ARQUIVO (upload em 'avatares') antes do PATCH;
+    // '' remove a foto; caminho existente é enviado igual (sem re-upload — D6).
+    let avatar: string = rascunho.value.avatar
+    if (avatar.startsWith('data:')) {
+      avatar = await enviarAvatar(avatar)
+    }
 
-  toast.success('Meu Perfil', 'As alterações foram salvas com sucesso.')
-  alterado.value = false
+    const atualizado = await useApiFetch<UsuarioDemo>('/api/usuarios/eu', {
+      method: 'PATCH',
+      body: {
+        nome: rascunho.value.nome.trim(),
+        telefone: rascunho.value.telefone,
+        endereco: rascunho.value.endereco,
+        smtp: rascunho.value.smtp,
+        avatar
+      }
+    })
+    registro.value = atualizado
+    rascunho.value = clonar(atualizado)
+    toast.success('Meu Perfil', 'As alterações foram salvas com sucesso.')
+    alterado.value = false
+  } catch (erro) {
+    const mensagem = (erro as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.danger(
+      'Meu Perfil',
+      mensagem ?? 'Não foi possível salvar as alterações. Tente novamente.'
+    )
+  }
 }
 
 const cancelar = () => {
@@ -126,6 +165,9 @@ const aoFotoCapturada = (dataUrl: string) => {
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
+    <!-- Carregamento do registro: overlay do kit enquanto GET /api/usuarios/eu está em voo -->
+    <UiLoading v-if="carregando" message="Carregando seu perfil…" />
+
     <div v-if="registro" class="mx-auto max-w-6xl">
       <PerfilCabecalho class="mb-6" />
 

@@ -1,15 +1,13 @@
-// Estado da página de Gestão de Usuários — fase em memória (sem persistência,
-// sem chamadas de rede). Campos do núcleo conforme docs/02 §3.5 (tabela usuarios);
-// telefone/função/departamento/endereço/SMTP/avatar/datas são o modelo estendido
-// do modal de cadastro, documentado no docs/06 (docs/02 permanece intocado).
-import { computed } from 'vue'
-import { useState } from '#app'
-
+// Tipos, constantes e helpers da tela de Gestão de Usuários — o ESTADO e as
+// escritas vivem em `useUsuarios.ts` (API, change gestao-usuarios-backend).
+// Campos do núcleo conforme docs/02 §3.5 (tabela usuarios); telefone/função/
+// departamento/endereço/SMTP/avatar/datas são o modelo estendido do modal.
 export type PerfilUsuario = 'Administrador' | 'Editor' | 'Revisor' | 'Leitor'
-export type StatusUsuario = 'Ativo' | 'Inativo'
+/** Situação exibida: a API devolve Ativo/Inativo (escrita) e pode exibir Bloqueado. */
+export type StatusUsuario = 'Ativo' | 'Inativo' | 'Bloqueado'
 /** Modo do modal de usuário — um componente, dois usos. */
 export type ModoUsuario = 'novo' | 'editar'
-/** Status da Configuração de E-mail (badge do bloco SMTP). */
+/** Status da Configuração de E-mail (badge do bloco SMTP — efêmero, não persiste). */
 export type StatusSmtp = 'nao-testado' | 'testando' | 'conectado' | 'falha'
 
 export interface EnderecoUsuario {
@@ -40,7 +38,7 @@ export interface UsuarioDemo {
   email: string
   perfil: PerfilUsuario
   status: StatusUsuario
-  /** senha provisória de acesso em memória; '' = ainda não definida (definida no convite) */
+  /** '' = sem senha visível (a senha real vive no banco como hash — nunca sai da API) */
   senha: string
   /** ISO; null = nunca acessou o sistema (exibe "-" na tabela) */
   ultimoAcesso: string | null
@@ -49,9 +47,9 @@ export interface UsuarioDemo {
   departamento: string
   endereco: EnderecoUsuario
   smtp: ConfigSmtpUsuario
-  /** dataURL do avatar; '' = sem avatar */
+  /** caminho/URL do avatar (arquivo) ou dataURL no rascunho ainda não salvo; '' = sem avatar */
   avatar: string
-  /** ISO; null = ainda não gravado (criação pendente) */
+  /** ISO; null = sem data */
   dataCadastro: string | null
   atualizadoEm: string | null
 }
@@ -65,7 +63,7 @@ export interface FiltrosUsuarios {
   status: string
 }
 
-/** Linha válida selecionada na importação de planilha — nasce sem senha (convite manual numa próxima etapa). */
+/** Linha válida selecionada na importação de planilha — nasce sem senha (convite manual). */
 export interface RegistroImportacao {
   nome: string
   email: string
@@ -74,6 +72,7 @@ export interface RegistroImportacao {
 }
 
 export const PERFIS: PerfilUsuario[] = ['Administrador', 'Editor', 'Revisor', 'Leitor']
+/** Situações oferecidas pela UI (escrita); a leitura também tolera 'Bloqueado'. */
 export const STATUSES: StatusUsuario[] = ['Ativo', 'Inativo']
 
 export const VARIANTE_POR_PERFIL: Record<PerfilUsuario, 'reconciled' | 'inReview' | 'pending' | 'neutral'> = {
@@ -83,9 +82,10 @@ export const VARIANTE_POR_PERFIL: Record<PerfilUsuario, 'reconciled' | 'inReview
   Leitor: 'neutral'
 }
 
-export const VARIANTE_POR_STATUS: Record<StatusUsuario, 'done' | 'neutral'> = {
+export const VARIANTE_POR_STATUS: Record<StatusUsuario, 'done' | 'neutral' | 'blocked'> = {
   Ativo: 'done',
-  Inativo: 'neutral'
+  Inativo: 'neutral',
+  Bloqueado: 'blocked'
 }
 
 export const enderecoVazio = (): EnderecoUsuario => ({
@@ -107,197 +107,6 @@ export const smtpVazio = (): ConfigSmtpUsuario => ({
   porta: '',
   seguranca: '',
   status: 'nao-testado'
-})
-
-const agora = Date.now()
-// Data relativa a "hoje" — mantém o "Último acesso" sempre coerente na demo
-const dataAtras = (dias: number, horas: number, minutos = 0) => {
-  const d = new Date(agora - dias * 86_400_000)
-  d.setHours(horas, minutos, 0, 0)
-  return d.toISOString()
-}
-
-// Base de demonstração — 16 usuários cobrindo os 4 perfis e os 2 status
-interface SementeUsuario {
-  id: string
-  nome: string
-  email: string
-  perfil: PerfilUsuario
-  status: StatusUsuario
-  ultimoAcesso: string | null
-  /** ausente = sem telefone (exercita o cartão de WhatsApp desabilitado no convite) */
-  telefone?: string
-}
-
-const SEMENTE: SementeUsuario[] = [
-  { id: 'u-001', nome: 'Ana Carolina Ribeiro', email: 'ana.carolina@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(0, 9, 12), telefone: '(11) 98888-1001' },
-  { id: 'u-002', nome: 'Rafael Souza', email: 'rafael.souza@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(0, 8, 47), telefone: '(11) 98888-1002' },
-  { id: 'u-003', nome: 'Mariana Lopes', email: 'mariana.lopes@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(1, 17, 5), telefone: '(21) 98888-1003' },
-  { id: 'u-004', nome: 'Carlos Mendes', email: 'carlos.mendes@empresa.com.br', perfil: 'Administrador', status: 'Ativo', ultimoAcesso: dataAtras(1, 14, 30), telefone: '(11) 98888-1004' },
-  { id: 'u-005', nome: 'Juliana Prado', email: 'juliana.prado@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(2, 16, 22), telefone: '(31) 98888-1005' },
-  { id: 'u-006', nome: 'Paulo Roberto Tavares', email: 'paulo.tavares@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(2, 10, 5), telefone: '(11) 98888-1006' },
-  { id: 'u-007', nome: 'Camila Rocha', email: 'camila.rocha@empresa.com.br', perfil: 'Editor', status: 'Inativo', ultimoAcesso: dataAtras(18, 14, 58), telefone: '(41) 98888-1007' },
-  { id: 'u-008', nome: 'João Lima', email: 'joao.lima@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(3, 15, 40), telefone: '(21) 98888-1008' },
-  { id: 'u-009', nome: 'Beatriz Almeida', email: 'beatriz.almeida@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(4, 11, 48), telefone: '(11) 98888-1009' },
-  { id: 'u-010', nome: 'Lucas Ferreira', email: 'lucas.ferreira@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(5, 16, 10), telefone: '(51) 98888-1010' },
-  { id: 'u-011', nome: 'Paula Torres', email: 'paula.torres@empresa.com.br', perfil: 'Revisor', status: 'Ativo', ultimoAcesso: dataAtras(6, 14, 25), telefone: '(11) 98888-1011' },
-  { id: 'u-012', nome: 'Eduardo Nunes', email: 'eduardo.nunes@empresa.com.br', perfil: 'Editor', status: 'Ativo', ultimoAcesso: dataAtras(7, 10, 33), telefone: '(19) 98888-1012' },
-  { id: 'u-013', nome: 'Fernanda Dias', email: 'fernanda.dias@empresa.com.br', perfil: 'Leitor', status: 'Inativo', ultimoAcesso: dataAtras(25, 9, 5), telefone: '(85) 98888-1013' },
-  { id: 'u-014', nome: 'Marcos Vinícius Barros', email: 'marcos.barros@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: dataAtras(9, 9, 44), telefone: '(11) 98888-1014' },
-  { id: 'u-015', nome: 'Sofia Mendonça', email: 'sofia.mendonca@empresa.com.br', perfil: 'Leitor', status: 'Ativo', ultimoAcesso: null },
-  { id: 'u-016', nome: 'Thiago Ramos', email: 'thiago.ramos@empresa.com.br', perfil: 'Editor', status: 'Inativo', ultimoAcesso: dataAtras(30, 11, 22) }
-]
-
-/** Senha provisória fixa da base de demonstração (fase 1, em memória). */
-export const SENHA_DEMO = 'Public@2026'
-
-/** Semente com o modelo estendido — base de demonstração completa. */
-export const USUARIOS: UsuarioDemo[] = SEMENTE.map((u) => ({
-  ...u,
-  senha: SENHA_DEMO,
-  telefone: u.telefone ?? '',
-  funcao: '',
-  departamento: '',
-  endereco: enderecoVazio(),
-  smtp: smtpVazio(),
-  avatar: '',
-  dataCadastro: null,
-  atualizadoEm: null
-}))
-
-const clonar = (u: UsuarioDemo): UsuarioDemo => ({
-  ...u,
-  endereco: { ...u.endereco },
-  smtp: { ...u.smtp }
-})
-
-export const useUsuariosDemo = () => {
-  // Base reativa (fase 2): criado/editado em memória, perdido na recarga.
-  // Clone profundo da semente — a constante USUARIOS nunca é mutada.
-  const usuarios = useState<UsuarioDemo[]>('usuarios-base', () => USUARIOS.map(clonar))
-
-  const filtros = useState<FiltrosUsuarios>('usuarios-filtros', () => ({
-    usuario: '',
-    perfil: '',
-    status: ''
-  }))
-
-  const usuariosFiltrados = computed<UsuarioDemo[]>(() => {
-    const f = filtros.value
-    return usuarios.value.filter((u) => {
-      if (f.usuario && u.nome !== f.usuario) return false
-      if (f.perfil && u.perfil !== f.perfil) return false
-      if (f.status && u.status !== f.status) return false
-      return true
-    })
-  })
-
-  const filtrosAtivosCount = computed(() => {
-    const f = filtros.value
-    return [!!f.usuario, !!f.perfil, !!f.status].filter(Boolean).length
-  })
-
-  // Opções do select de Usuário derivam da BASE (não do conjunto filtrado):
-  // um filtro de Status não pode esconder opções do select de Usuário (design D5)
-  const opcoesUsuarios = computed(() =>
-    [...new Set(usuarios.value.map((u) => u.nome))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-  )
-
-  const limparFiltros = () => {
-    filtros.value = { usuario: '', perfil: '', status: '' }
-  }
-
-  return { usuarios, filtros, usuariosFiltrados, filtrosAtivosCount, opcoesUsuarios, limparFiltros }
-}
-
-/**
- * Grava o rascunho do modal em memória (puro): cria com id novo e datas iguais
- * ao instante; edita preservando a Data Cadastro e atualizando a Última.
- * Devolve a base nova (imutável) e o registro gravado — quem tem o `useState`
- * é quem atribui `usuarios.value = base`.
- */
-export const salvarUsuario = (
-  base: UsuarioDemo[],
-  rascunho: UsuarioDemo,
-  modo: ModoUsuario
-): { base: UsuarioDemo[]; usuario: UsuarioDemo } => {
-  const instante = new Date().toISOString()
-
-  if (modo === 'novo') {
-    const maiorId = base.reduce((max, u) => {
-      const n = Number(u.id.replace(/\D/g, ''))
-      return Number.isFinite(n) && n > max ? n : max
-    }, 0)
-    const usuario: UsuarioDemo = {
-      ...clonar(rascunho),
-      id: `u-${String(maiorId + 1).padStart(3, '0')}`,
-      ultimoAcesso: null,
-      dataCadastro: instante,
-      atualizadoEm: instante
-    }
-    return { base: [...base, usuario], usuario }
-  }
-
-  const original = base.find((u) => u.id === rascunho.id)
-  const usuario: UsuarioDemo = {
-    ...clonar(rascunho),
-    dataCadastro: original?.dataCadastro ?? rascunho.dataCadastro,
-    atualizadoEm: instante,
-    ultimoAcesso: original?.ultimoAcesso ?? rascunho.ultimoAcesso
-  }
-  return { base: base.map((u) => (u.id === usuario.id ? usuario : u)), usuario }
-}
-
-/**
- * Grava os registros selecionados na importação de planilha (puro): ids na
- * sequência da base, datas iguais ao instante, campos cadastrais vazios e
- * **sem senha** (a senha provisória é atribuída no envio do convite).
- * Devolve a base nova (imutável) — quem tem o `useState` é quem atribui
- * `usuarios.value = base`.
- */
-export const importarUsuarios = (
-  base: UsuarioDemo[],
-  registros: RegistroImportacao[]
-): { base: UsuarioDemo[] } => {
-  if (!registros.length) return { base }
-  const instante = new Date().toISOString()
-  let maiorId = base.reduce((max, u) => {
-    const n = Number(u.id.replace(/\D/g, ''))
-    return Number.isFinite(n) && n > max ? n : max
-  }, 0)
-  const novos = registros.map<UsuarioDemo>((r) => {
-    maiorId += 1
-    return {
-      id: `u-${String(maiorId).padStart(3, '0')}`,
-      nome: r.nome,
-      email: r.email,
-      perfil: r.perfil,
-      status: r.status,
-      senha: '',
-      ultimoAcesso: null,
-      telefone: '',
-      funcao: '',
-      departamento: '',
-      endereco: enderecoVazio(),
-      smtp: smtpVazio(),
-      avatar: '',
-      dataCadastro: instante,
-      atualizadoEm: instante
-    }
-  })
-  return { base: [...base, ...novos] }
-}
-
-/**
- * Remove o registro do id indicado (puro): devolve a base nova sem ele; id
- * inexistente devolve a base intacta. Quem tem o `useState` é quem atribui
- * `usuarios.value = base`.
- */
-export const excluirUsuario = (
-  base: UsuarioDemo[],
-  id: string
-): { base: UsuarioDemo[] } => ({
-  base: base.filter((u) => u.id !== id)
 })
 
 /** 'dd/mm/yyyy HH:mm'; null/vazio -> '-' (nunca gravado) */

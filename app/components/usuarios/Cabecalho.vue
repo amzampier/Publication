@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Users, Plus, NotebookText, FileText, FileDown, FileSpreadsheet, ChevronDown } from '@lucide/vue'
-import { useUsuariosDemo, formatarUltimoAcesso } from './useUsuariosDemo'
+import { formatarUltimoAcesso } from './useUsuariosDemo'
+import { useUsuarios } from './useUsuarios'
 import { gerarPdfUsuarios } from './gerarPdfUsuarios'
 import { gerarPdfFichaCadastral } from './gerarPdfFichaCadastral'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
@@ -30,8 +31,9 @@ onUnmounted(() => {
   window.removeEventListener('keydown', aoKeydown)
 })
 
-// Exportação sobre o conjunto vigente (fase 1 — tudo em memória)
-const { usuariosFiltrados } = useUsuariosDemo()
+// Exportação sobre o conjunto vigente carregado da API (filtros/relatórios
+// permanecem locais — spec gestao-usuarios)
+const { usuariosFiltrados } = useUsuarios()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
 const exportarCsv = () => {

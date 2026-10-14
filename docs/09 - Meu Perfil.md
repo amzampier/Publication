@@ -1,6 +1,6 @@
 # 09 — Meu Perfil · Área Administrativa
 
-**Versão:** 1.1.0 — **Data:** 2026-10-14 — **Idioma:** Português do Brasil (pt-BR)
+**Versão:** 1.2.0 — **Data:** 2026-10-14 — **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela de Meu Perfil do usuário logado — estrutura componentizada, as 4 abas
 (dados pessoais, segurança, endereço, e-mail/SMTP), avatar em destaque, troca de senha,
 fluxo de foto, salvar/cancelar e navegação pelo menu da conta
@@ -41,8 +41,9 @@ administrador) com o mesmo modelo de dados:
 - **Rota:** `/admin/meu-perfil` → `app/pages/admin/meu-perfil.vue` com
   `definePageMeta({ layout: 'admin' })` — herda o shell (header + sidebar) por `/admin/**` e é
   protegida pela guarda global (sem sessão redireciona ao login com `?redirect=`).
-- **Dados:** registro do usuário logado na base demo (`useAuth` → id →
-  `useUsuariosDemo().usuarios`), clonado para um rascunho em memória — fase 1, sem backend.
+- **Dados:** registro REAL do usuário logado, servido por `GET /api/usuarios/eu`
+  (change `gestao-usuarios-backend`) — sem espelho por e-mail; o rascunho em memória é
+  clonado desse registro e gravado de volta via `PATCH /api/usuarios/eu`.
 - **Aba padrão:** "Dados Pessoais" ao carregar.
 
 ## 2. Estrutura da página (componentização)
@@ -162,8 +163,8 @@ senha não exige salvar abas não tocadas).
   real — o **servidor** confere a senha atual com bcrypt contra o `hash_senha` vigente e
   grava o novo hash (`senha_provisoria = 0`). Erro `400` do servidor volta no campo
   correspondente (ex.: "Senha atual incorreta." em Senha atual); a nova senha passa a
-  autenticar no login imediatamente. Sem props de senha e sem gravação local no registro
-  demo — a aba é autônoma.
+   autenticar no login imediatamente. Sem props de senha e sem gravação local —
+   a aba é autônoma.
 
 ### 3.7 `AbaEndereco.vue` → `<PerfilAbaEndereco>`
 
@@ -227,17 +228,23 @@ cabeçalho de seção (título + subtítulo) é separado dos campos por um **fil
 2. Arquivo → `FileReader` → dataURL no `rascunho.avatar` (habilita o Salvar); ícone de
    câmera → `UiCameraWeb` (emulada) → captura → dataURL e fecha os dois modais.
 3. Remover o arquivo limpa `rascunho.avatar` (volta às iniciais).
-4. A foto só é gravada no registro ao **Salvar alterações** (Cancelar restaura a anterior).
+4. A foto só é gravada ao **Salvar alterações** (Cancelar restaura a anterior): no salvar,
+   uma dataURL nova é enviada como ARQUIVO ao destino `avatares` (`POST /api/uploads`) e o
+   registro passa a referenciar o caminho do arquivo (`avatar_url` — o banco não guarda
+   dataURL); remover a foto grava `avatar_url` nulo.
 
 ## 7. Salvar e cancelar
 
 - **`alterado`** nasce `false` e liga com qualquer `change` de painel (inclusive troca de
   foto); "Salvar alterações" fica `disabled` enquanto `false`.
 - **`salvar()`:** valida a aba Dados Pessoais (troca para ela se preciso — regra apenas do
-  nome), grava nome/telefone/avatar/endereço/SMTP no registro (o e-mail **não** faz parte do
-  rascunho: é somente leitura), atualiza `atualizadoEm`, toast de sucesso e `alterado = false`.
+  nome), envia `PATCH /api/usuarios/eu` com nome/telefone/endereço/SMTP (e `avatar`:
+  dataURL nova → upload em `avatares` → caminho; caminho existente → enviado igual; `''` →
+  remove a foto; o e-mail **não** faz parte do rascunho: é somente leitura), substitui o
+  registro pela resposta da API, restaura o rascunho a partir dela, toast de sucesso e
+  `alterado = false`.
 - **`cancelar()`:** `rascunho = clonar(registro)` (restaura tudo), erros somem quando os
-  campos voltam a passar nas regras e `alterado = false`.
+  campos voltam a passar nas regras e `alterado = false` — sem nenhuma requisição.
 
 ## 8. Navegação até a tela
 
@@ -274,9 +281,9 @@ o acesso é exclusivamente pelo menu da conta (`docs/03` §3).
 
 ## 10. Pendências e próximos passos
 
-- **Backend do perfil:** persistir os demais dados do registro logado (PATCH de telefone,
-  endereço, SMTP e foto com upload real — a **troca de senha já é real** via
-  `POST /api/auth/trocar-senha`, change `auth-backend-resend`).
+- ~~Backend do perfil~~ — **entregue** (change `gestao-usuarios-backend`): registro lido de
+  `GET /api/usuarios/eu` e gravado via `PATCH /api/usuarios/eu` (dados, endereço, SMTP e
+  foto como arquivo em `avatares`); a troca de senha já era real (`POST /api/auth/trocar-senha`).
 - **ViaCEP real:** o stub da aba Endereço vira busca com preenchimento automático.
 - **RBAC no cliente:** `usePermissions` (docs/02 §5.3) — hoje qualquer sessão acessa a tela.
 - **Nome de usuário:** não existe no modelo (`UsuarioDemo`); se virar campo de login, esta

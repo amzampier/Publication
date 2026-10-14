@@ -287,11 +287,10 @@ o campo de pontos conforme avança (`ONDA_LARGURA = 48 px`, `ONDA_FORCA = 10`);
 
 ## 11. Pendências e próximos passos
 
-- **Proteção das demais APIs:** `/api/perfis` e `/api/configuracoes` ainda respondem sem
-  sessão (foram entregues abertas pela decisão das changes anteriores; a proteção real é o
-  `requirePermission(event, modulo, acao)` — docs/02 §3.5 — junto com a matriz de permissões
-  no servidor). Prioridade antes de produção; melhor caminho: middleware global de auth em
-  `server/` com rotas públicas declaradas.
+- **Proteção das demais APIs:** as rotas `/api/**` (usuários, perfis, configurações, uploads)
+  já exigem sessão via `server/middleware/auth-api.ts` (change `gestao-usuarios-backend`);
+  falta apenas o `requirePermission(event, modulo, acao)` — docs/02 §3.5 — junto com a
+  matriz de permissões no servidor e o `usePermissions`/`.can()` no cliente.
 - **Auditoria de login:** gravar eventos (sucesso/falha/bloqueio/recuperação) na tabela
   `auditoria` quando existir `server/utils/audit.ts`.
 - **RBAC no cliente:** `usePermissions` com `.can(modulo, acao)` derivando da matriz do

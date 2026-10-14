@@ -8,25 +8,24 @@ import {
   type SituacaoImportacao
 } from './lerPlanilhaUsuarios'
 import {
-  useUsuariosDemo,
-  importarUsuarios,
   VARIANTE_POR_PERFIL,
   VARIANTE_POR_STATUS,
   type PerfilUsuario,
   type StatusUsuario,
   type RegistroImportacao
 } from './useUsuariosDemo'
+import { importarUsuarios, useUsuarios } from './useUsuarios'
 import { useToast } from '../../composables/useToast'
 
 // Modal de importação de usuários — aberto pelo botão "Importar" da toolbar da
 // tabela (spec gestao-usuarios: upload do modelo docs/modelos, pré-visualização
-// em tabela temporária com Situação, seleção de linhas prontas e gravação em
-// memória sem tocar nos filtros; design D1-D9 da change modal-importacao-usuarios).
+// em tabela temporária com Situação, seleção de linhas prontas; o COMMIT vai à
+// API — parse local + revalidação server-side + gravação persistente, design D4).
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
 const { toast } = useToast()
-const { usuarios } = useUsuariosDemo()
+const { usuarios, carregarUsuarios } = useUsuarios()
 
 type LinhaSel = LinhaImportacao & { selecionada: boolean }
 
@@ -89,22 +88,34 @@ const alternarTodos = (marcado: boolean) => {
   for (const l of linhas.value) if (l.situacao === 'pronto') l.selecionada = marcado
 }
 
-const importar = () => {
+const importar = async () => {
   const registros: RegistroImportacao[] = selecionadas.value.map((l) => ({
     nome: l.nome,
     email: l.email,
     perfil: l.perfil as PerfilUsuario,
     status: l.status as StatusUsuario
   }))
-  if (!registros.length) return
-  const { base } = importarUsuarios(usuarios.value, registros)
-  usuarios.value = base
-  const n = registros.length
-  toast.success(
-    'Gestão de Usuários',
-    `${n} usuário${n === 1 ? '' : 's'} importado${n === 1 ? '' : 's'} com sucesso.`
-  )
-  emit('update:modelValue', false)
+  if (!registros.length || processando.value) return
+  processando.value = true
+  erro.value = null
+  try {
+    // Commit via API (D4): o servidor revalida contra o banco e grava em
+    // transação (sentinel — importados não autenticam até o convite).
+    const { importados } = await importarUsuarios(usuarios.value, registros)
+    await carregarUsuarios(true)
+    toast.success(
+      'Gestão de Usuários',
+      `${importados} usuário${importados === 1 ? '' : 's'} importado${importados === 1 ? '' : 's'} com sucesso.`
+    )
+    emit('update:modelValue', false)
+  } catch (erroApi) {
+    const e = erroApi as { statusMessage?: string; data?: { statusMessage?: string; motivos?: string[] } }
+    const motivos = e?.data?.motivos
+    const mensagem = e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível importar.'
+    erro.value = motivos?.length ? [mensagem, ...motivos].join(' ') : mensagem
+  } finally {
+    processando.value = false
+  }
 }
 
 const fechar = () => emit('update:modelValue', false)
@@ -235,6 +246,7 @@ const colunas: ColumnDef[] = [
           <UiButton
             variant="primary"
             :disabled="selecionadas.length === 0"
+            :loading="processando"
             @click="importar"
           >
             Importar ({{ selecionadas.length }})

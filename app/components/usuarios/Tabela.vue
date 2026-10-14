@@ -2,35 +2,29 @@
 import { ref } from 'vue'
 import { Import, MailCheck, Lock, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
+import { useUsuarios } from './useUsuarios'
 import {
-  useUsuariosDemo,
   formatarUltimoAcesso,
   VARIANTE_POR_PERFIL,
   VARIANTE_POR_STATUS,
   type UsuarioDemo
 } from './useUsuariosDemo'
-import { useToast } from '../../composables/useToast'
 
-const { toast } = useToast()
-const { usuariosFiltrados, filtrosAtivosCount } = useUsuariosDemo()
+const { usuariosFiltrados, filtrosAtivosCount } = useUsuarios()
 
-// Abre modais na página (coordenação dela): filtros, edição, exclusão, importação e convite
+// Abre modais na página (coordenação dela): filtros, edição, exclusão, importação, convite e bloqueio
 const emit = defineEmits<{
   (e: 'filtros'): void
   (e: 'editar', usuario: UsuarioDemo): void
   (e: 'excluir', usuario: UsuarioDemo): void
   (e: 'importar'): void
   (e: 'convite', usuario: UsuarioDemo): void
+  (e: 'bloquear', usuario: UsuarioDemo): void
 }>()
 
 // Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
-
-// Só a ação de bloqueio segue o contrato de transição da fase 1: toast, sem modal
-const avisoProximaEtapa = (acao: string) => {
-  toast.info('Gestão de Usuários', `${acao}: funcionalidade disponível na próxima etapa.`)
-}
 
 const colunas: ColumnDef[] = [
   { id: 'nome', header: 'Nome', accessorKey: 'nome', minWidth: 170 },
@@ -52,7 +46,7 @@ const colunas: ColumnDef[] = [
     <UiDataTable
       ref="tabelaRef"
       title="Usuários"
-      subtitle="Base de demonstração — fase 1 em memória"
+      subtitle="Dados persistidos via API (MariaDB)"
       :data="usuariosFiltrados"
       :columns="colunas"
       :default-page-size="5"
@@ -98,12 +92,15 @@ const colunas: ColumnDef[] = [
               <MailCheck class="h-3.5 w-3.5" />
             </button>
           </UiTooltip>
-          <UiTooltip content="Bloquear usuário" position="top">
+          <UiTooltip
+            :content="row.status === 'Ativo' ? 'Bloquear usuário' : 'Desbloquear usuário'"
+            position="top"
+          >
             <button
               type="button"
-              aria-label="Bloquear usuário"
+              :aria-label="row.status === 'Ativo' ? 'Bloquear usuário' : 'Desbloquear usuário'"
               class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-              @click="avisoProximaEtapa('Bloquear usuário')"
+              @click="emit('bloquear', row)"
             >
               <Lock class="h-3.5 w-3.5" />
             </button>

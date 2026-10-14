@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Users, UserCheck, UserX, ShieldCheck } from '@lucide/vue'
-import { useUsuariosDemo } from './useUsuariosDemo'
+import { useUsuarios } from './useUsuarios'
 
 // KPIs derivam do conjunto VIGENTE (spec gestao-usuarios: recalculam quando o
-// conjunto de usuários muda; na fase 1 o filtro fica vazio = base completa)
-const { usuariosFiltrados } = useUsuariosDemo()
+// conjunto de usuários muda — o conjunto vem da API e o filtro o refina)
+const { usuariosFiltrados } = useUsuarios()
 
 const total = computed(() => usuariosFiltrados.value.length)
 const ativos = computed(() => usuariosFiltrados.value.filter((u) => u.status === 'Ativo').length)

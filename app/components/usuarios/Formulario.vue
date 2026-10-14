@@ -12,8 +12,6 @@ import {
 import { useToast } from '../../composables/useToast'
 import { UFS, REGIOES } from '../../config/brasil'
 import {
-  useUsuariosDemo,
-  salvarUsuario,
   formatarDataHora,
   enderecoVazio,
   smtpVazio,
@@ -23,6 +21,7 @@ import {
   type PerfilUsuario,
   type StatusUsuario
 } from './useUsuariosDemo'
+import { salvarUsuario, useUsuarios } from './useUsuarios'
 
 interface Props {
   modelValue: boolean
@@ -39,7 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { usuarios } = useUsuariosDemo()
+const { usuarios } = useUsuarios()
 
 /** Rascunho do modal: base do usuário + senha/confirmação e perfis ainda sem seleção. */
 type Rascunho = Omit<UsuarioDemo, 'perfil' | 'status'> & {
@@ -183,7 +182,9 @@ const aoEnter = (e: KeyboardEvent) => {
   }
 }
 
-const salvar = () => {
+const salvando = ref(false)
+
+const salvar = async () => {
   erros.value = validar(rascunho.value, props.modo, usuarios.value)
   const primeiro = ORDEM_FOCO.find((campo) => erros.value[campo])
   if (primeiro) {
@@ -194,22 +195,54 @@ const salvar = () => {
   const { senha, confirmarSenha, perfil, status, ...base } = rascunho.value
   const registro: UsuarioDemo = {
     ...base,
-    // Senha provisória gravada em memória: a digitada, ou a vigente na edição
-    // quando os campos ficam vazios (a validação já garante o par na troca)
-    senha: senha || props.usuario?.senha || '',
+    // Senha provisória: a digitada; na edição com campos vazios a API mantém a
+    // vigente (regra do servidor). Avatar dataURL vira arquivo no salvar (D6).
+    senha,
     perfil: perfil as PerfilUsuario,
     status: status as StatusUsuario
   }
-  const { base: novaBase } = salvarUsuario(usuarios.value, registro, props.modo)
-  usuarios.value = novaBase
 
-  toast.success(
-    'Gestão de Usuários',
-    props.modo === 'novo'
-      ? 'Usuário criado com sucesso.'
-      : 'Usuário atualizado com sucesso.'
-  )
-  emit('update:modelValue', false)
+  salvando.value = true
+  try {
+    const { base: novaBase } = await salvarUsuario(usuarios.value, registro, props.modo)
+    usuarios.value = novaBase
+
+    toast.success(
+      'Gestão de Usuários',
+      props.modo === 'novo'
+        ? 'Usuário criado com sucesso.'
+        : 'Usuário atualizado com sucesso.'
+    )
+    emit('update:modelValue', false)
+  } catch (erro) {
+    const status = (erro as { statusCode?: number }).statusCode
+    const mensagem = (erro as { data?: { statusMessage?: string } }).data?.statusMessage
+    if (status === 409) {
+      erros.value = { email: mensagem ?? 'Este e-mail já está cadastrado.' }
+      focarCampo('email')
+      return
+    }
+    if (status === 400 && mensagem) {
+      const alvo = mensagem.toLowerCase().includes('senha')
+        ? 'senha'
+        : mensagem.toLowerCase().includes('e-mail')
+          ? 'email'
+          : mensagem.toLowerCase().includes('nome')
+            ? 'nome'
+            : null
+      if (alvo) {
+        erros.value = { [alvo]: mensagem }
+        focarCampo(alvo)
+        return
+      }
+    }
+    toast.danger(
+      'Gestão de Usuários',
+      mensagem ?? 'Não foi possível salvar o usuário. Tente novamente.'
+    )
+  } finally {
+    salvando.value = false
+  }
 }
 
 const cancelar = () => emit('update:modelValue', false)
@@ -502,7 +535,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
 
     <template #footer>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 

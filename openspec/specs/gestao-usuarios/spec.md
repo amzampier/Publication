@@ -2,7 +2,11 @@
 
 ## Purpose
 
-Definir o comportamento da página principal de Gestão de Usuários — listagem em memória (fase 1) com KPIs, tabela paginada com badges, exportação CSV/PDF e ações de cadastro/edição/filtros sinalizadas como pendentes para a fase dos modais — para que a Área Administrativa administre usuários conforme o modelo `usuarios`/`perfis` descrito no `docs/02`.
+Definir o comportamento da página principal de Gestão de Usuários — listagem persistida via
+API com KPIs, tabela paginada com badges, exportação CSV/PDF, CRUD com avatar como arquivo,
+importação de planilha com commit via API, bloqueio/desbloqueio com confirmação e convites
+reais —, exigindo sessão ativa nas rotas administrativas, para que a Área Administrativa
+administre usuários conforme o modelo `usuarios`/`perfis` descrito no `docs/02`.
 
 ## Requirements
 
@@ -28,12 +32,33 @@ O sistema SHALL declarar a rota `/admin/gestao-usuarios` no item "Gestão de Usu
 - **WHEN** o usuário clica em "Gestão de Usuários" no menu da conta
 - **THEN** o navegador navega para `/admin/gestao-usuarios`
 
+### Requirement: As rotas da API administrativa exigem sessão ativa
+O sistema SHALL exigir sessão ativa (cookies HttpOnly válidos, validados pelo servidor) em
+todas as rotas `/api/**` de administrativa — incluindo usuários, perfis, configurações e
+uploads —, respondendo `401` quando não houver sessão. As rotas de `/api/auth/*` (login,
+refresh, logout, seguro, recuperação e troca de senha) SHALL permanecer acessíveis sem
+sessão (são a própria porta de autenticação). Com sessão estabelecida, as rotas
+administrativas SHALL operar normalmente.
+
+#### Scenario: APIs administrativas sem sessão respondem 401
+- **WHEN** um visitante anônimo chama qualquer rota administrativa (ex. `GET/POST
+  /api/usuarios`, `POST /api/perfis`, `PUT /api/configuracoes`) sem os cookies de sessão
+- **THEN** a resposta é `401` e nada é lido nem gravado
+
+#### Scenario: Rotas de autenticação seguem acessíveis
+- **WHEN** um visitante anônimo chama `POST /api/auth/login` (ou refresh, recuperação)
+- **THEN** a rota responde normalmente (é a porta de entrada sem sessão)
+
+#### Scenario: Com sessão as APIs operam
+- **WHEN** um usuário autenticado chama as rotas administrativas
+- **THEN** as requisições são atendidas conforme seus contratos (sem `401` espúrio)
+
 ### Requirement: Os KPIs derivam do conjunto de usuários vigente
-O sistema SHALL exibir no topo da página os KPIs "Total de usuários" (contagem do conjunto vigente), "Ativos", "Inativos" e "Perfis distintos" (quantidade de perfis diferentes presentes no conjunto), recalculados sempre que o conjunto de usuários muda.
+O sistema SHALL exibir no topo da página os KPIs "Total de usuários" (contagem do conjunto vigente), "Ativos", "Inativos" e "Perfis distintos" (quantidade de perfis diferentes presentes no conjunto), recalculados sempre que o conjunto de usuários muda — o conjunto vem da API e, com filtro aplicado, passa a ser o conjunto filtrado.
 
 #### Scenario: Base completa
 - **WHEN** a página é aberta sem nenhum filtro aplicado
-- **THEN** os quatro KPIs refletem a base de demonstração (ex.: contagem total, quantidades de ativos e inativos e os perfis distintos presentes)
+- **THEN** os quatro KPIs refletem os usuários servidos pela API (ex.: contagem total, quantidades de ativos e inativos e os perfis distintos presentes no banco)
 
 #### Scenario: Conjunto alterado recalcula os KPIs
 - **WHEN** o conjunto de usuários exibido muda (por filtro do módulo)
@@ -44,7 +69,7 @@ O sistema SHALL exibir no topo da página os KPIs "Total de usuários" (contagem
 - **THEN** os quatro KPIs refletem imediatamente o conjunto resultante (ex.: "Total de usuários" cresce em 1 na criação, "Ativos"/"Inativos" acompanham a Situação escolhida)
 
 ### Requirement: A tabela lista os usuários com paginação, ordenação, busca e badges
-O sistema SHALL exibir os usuários em `UiDataTable` com colunas Nome, E-mail, Perfil (badge), Status (badge) e Último acesso, com paginação, ordenação e busca textual do componente, badge de Status distinguível entre "Ativo" e "Inativo" e badge de Perfil distinguível por perfil — cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
+O sistema SHALL exibir os usuários em `UiDataTable` com colunas Nome, E-mail, Perfil (badge), Status (badge) e Último acesso (do `ultimo_login` real quando houver), com paginação, ordenação e busca textual do componente, badge de Status distinguível entre "Ativo" e "Inativo" e badge de Perfil distinguível por perfil — cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
 
 #### Scenario: Colunas e ordenação
 - **WHEN** a página é aberta
@@ -59,15 +84,26 @@ O sistema SHALL exibir os usuários em `UiDataTable` com colunas Nome, E-mail, P
 - **THEN** apenas os usuários que contêm o texto permanecem listados
 
 #### Scenario: Usuário sem acesso registrado
-- **WHEN** um usuário de demonstração nunca acessou o sistema
+- **WHEN** um usuário nunca acessou o sistema (`ultimo_login` nulo no banco)
 - **THEN** a coluna "Último acesso" exibe "-" (hífen) naquela linha
 
 #### Scenario: Trocar a quantidade de linhas não abre rolagem horizontal
 - **WHEN** o usuário altera "Linhas por página" (ex.: de 5 para 20 ou 50) numa janela ≥ ~1280px com sidebar expandida
 - **THEN** a área da tabela ganha linhas sem exibir barra de rolagem horizontal, com as seis colunas visíveis
 
-### Requirement: As ações da fase 1 que dependem de modal avisam que vêm na próxima etapa
-O sistema SHALL exibir toast informativo ("funcionalidade disponível na próxima etapa") quando o usuário aciona os controles ainda sem modal — a ação de linha de bloquear —, permanecendo nenhum `UiModal` aberto por esse controle; o botão "Novo Usuário" e a ação de editar da linha deixam de exibir toast e abrem o modal de usuário, a ação de excluir da linha deixa de exibir toast e abre o modal de confirmação de exclusão, o botão "Filtros" deixa de exibir toast e abre o modal de filtros, o ícone "Importar" da toolbar deixa de exibir toast e abre o modal de importação, e a ação de linha de enviar o convite deixa de exibir toast e abre o modal de convite.
+### Requirement: Todas as ações da tela abrem os fluxos reais
+O sistema SHALL orientar todas as ações da página pelos fluxos reais, sem toasts de
+"próxima etapa": "Novo Usuário" abre o modal de usuário em modo criação; o lápis da linha
+abre o modal em edição; "Filtros" abre o modal de filtros; o ícone "Importar" da toolbar
+(com tooltip "Importar Novos Usuários") abre o modal de importação; o ícone de convite
+(`MailCheck`) abre o modal de convite; o ícone de exclusão (`Trash2`) abre o modal de
+confirmação de exclusão; e o ícone de bloquear (cadeado, com tooltip e `aria-label`
+próprios) SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) identificando o
+alvo (nome e e-mail) — **"Bloquear Usuário"** para contas Ativas e **"Desbloquear Usuário"**
+para contas não Ativas (Inativas ou Bloqueadas) — e, ao confirmar, alternar a situação via
+API (Ativo ↔ Inativo; desbloqueio devolve a Ativo), com toast de sucesso e atualização
+imediata da linha, dos badges e dos KPIs; **"Cancelar"**, `Escape` ou o `X` do cabeçalho
+SHALL fechar o modal de confirmação sem alterar nada.
 
 #### Scenario: Novo Usuário
 - **WHEN** o usuário clica em "Novo Usuário"
@@ -75,19 +111,38 @@ O sistema SHALL exibir toast informativo ("funcionalidade disponível na próxim
 
 #### Scenario: Importar na toolbar
 - **WHEN** o usuário passa o mouse sobre o ícone de importar à esquerda do botão "Filtros"
-- **THEN** um tooltip exibe "Importar Novos Usuários" e, ao clicar, nenhum toast de "próxima etapa" é exibido e o modal de importação abre
+- **THEN** um tooltip exibe "Importar Novos Usuários" e, ao clicar, nenhum toast de "próxima
+  etapa" é exibido e o modal de importação abre
 
 #### Scenario: Filtros na toolbar
 - **WHEN** o usuário clica no botão "Filtros" da tabela
 - **THEN** nenhum toast de "próxima etapa" é exibido e o modal de filtros abre
 
-#### Scenario: Ações de linha
-- **WHEN** o usuário aciona na linha de um usuário os controles de enviar o convite (ícone de e-mail confirmado) ou bloquear (cadeado) (ícones reduzidos com cores semânticas, cada um com tooltip e `aria-label` próprios)
-- **THEN** o envio do convite não exibe toast e abre o modal de convite com aquela linha como destinatário, enquanto o bloquear mantém o toast informando que a funcionalidade estará disponível na próxima etapa, sem abrir nenhum modal
+#### Scenario: Convite abre o modal
+- **WHEN** o usuário aciona o controle de enviar convite (`MailCheck`) de uma linha
+- **THEN** o modal de convite abre com aquela linha como destinatário, sem toast de
+  "próxima etapa"
 
-#### Scenario: Excluir deixou de avisar por toast
+#### Scenario: Excluir abre o modal de confirmação
 - **WHEN** o usuário clica no ícone de excluir (`Trash2`) de uma linha
-- **THEN** nenhum toast de "próxima etapa" é exibido e o modal de confirmação de exclusão abre
+- **THEN** o modal de confirmação de exclusão abre, sem toast de "próxima etapa"
+
+#### Scenario: Bloquear confirma e alterna a situação
+- **WHEN** o usuário aciona o cadeado de uma linha Ativa e confirma no modal "Bloquear
+  Usuário"
+- **THEN** a API alterna a situação para Inativo, a linha exibe o badge Inativo, os KPIs
+  recalculam e um toast de sucesso é exibido
+
+#### Scenario: Desbloquear devolve a Ativo
+- **WHEN** o usuário aciona o cadeado de uma linha Inativa (ou Bloqueada) e confirma no
+  modal "Desbloquear Usuário"
+- **THEN** a API devolve a situação a Ativo, a linha e os KPIs atualizam e um toast de
+  sucesso é exibido
+
+#### Scenario: Confirmação de bloqueio descarta com Cancelar
+- **WHEN** com o modal de confirmação de bloqueio aberto o usuário aciona "Cancelar",
+  pressiona `Escape` ou clica no `X`
+- **THEN** o modal fecha sem nenhuma requisição e a situação do usuário permanece a mesma
 
 ### Requirement: A exportação gera arquivos sobre o conjunto de usuários vigente
 O sistema SHALL oferecer no cabeçalho o menu "Relatórios" (posicionado à esquerda do botão "Novo Usuário") com as opções "Ficha Cadastral" (gera um PDF em folha retrato com uma ficha por página para cada usuário do conjunto vigente), "Relação Completa" (gera e baixa o relatório `usuarios.pdf` em folha paisagem sobre os mesmos usuários) e "Exportar em CSV" (download do conjunto vigente com cabeçalhos), com um divisor separando as opções em PDF do CSV, sem abrir o diálogo de impressão do navegador.
@@ -143,8 +198,30 @@ O sistema SHALL abrir um modal de filtros ao acionar o botão "Filtros" da toolb
 - **WHEN** a página é recarregada com filtros aplicados
 - **THEN** os filtros voltam ao estado vazio e a base completa é exibida
 
-### Requirement: O modal de importação carrega usuários de uma planilha modelo
-O sistema SHALL abrir um modal de importação de usuários ao acionar o ícone "Importar" da toolbar da tabela, aceitando somente arquivos `.xlsx` cujo cabeçalho corresponda ao modelo oficial de quatro colunas obrigatórias — **Nome**, **E-mail**, **Perfil**, **Status** —, modelo esse versionado no repositório (`docs/modelos/`) para consulta da equipe. Um arquivo com cabeçalho divergente ou ilegível SHALL exibir erro no modal sem montar a pré-visualização. Com arquivo válido, o modal SHALL exibir uma tabela temporária de pré-visualização com coluna de seleção e a coluna **Situação** de cada linha, em quatro estados: **"Pronto para importar"** (linha válida e e-mail ausente da base vigente), **"E-mail já cadastrado"** (e-mail presente na base vigente, comparado sem distinção de maiúsculas), **"Repetido no arquivo"** (segunda ocorrência do mesmo e-mail entre as linhas válidas do arquivo) e **"Linha inválida"** (nome ou e-mail ausentes, e-mail malformado ou Perfil/Status fora dos valores permitidos, com o motivo exibido) — as três últimas com seleção desabilitada. As linhas "Pronto para importar" SHALL chegar pré-selecionadas, e o rodapé SHALL exibir a contagem de selecionados no botão "Importar (n)", desabilitado quando n for zero. Confirmar SHALL adicionar à base em memória somente os registros selecionados — nascendo **sem senha** (a ser atribuída pelo envio manual de convite numa próxima etapa), com Data Cadastro e Última Atualização iguais ao instante da gravação, Status conforme o valor da planilha e os demais campos vazios — recalcular os KPIs, exibir toast de sucesso com a contagem e fechar o modal. **"Cancelar"**, `Escape` ou o `X` do cabeçalho SHALL fechar o modal descartando o arquivo carregado sem alterar a base. Filtros aplicados SHALL permanecer intactos pela importação: registros fora do filtro vigente só passam a aparecer na tabela e nos KPIs quando o filtro for limpo. Toda a operação SHALL ocorrer sem nenhuma requisição HTTP e ser descartada na recarga da página.
+### Requirement: A importação grava os registros selecionados via API
+O sistema SHALL abrir um modal de importação de usuários ao acionar o ícone "Importar" da
+toolbar da tabela, aceitando somente arquivos `.xlsx` cujo cabeçalho corresponda ao modelo
+oficial de quatro colunas obrigatórias — **Nome**, **E-mail**, **Perfil**, **Status** —,
+modelo versionado no repositório (`docs/modelos/`) para consulta da equipe. Um arquivo com
+cabeçalho divergente ou ilegível SHALL exibir erro no modal sem montar a pré-visualização.
+Com arquivo válido, o modal SHALL exibir uma tabela temporária de pré-visualização com
+coluna de seleção e a coluna **Situação** de cada linha, em quatro estados: **"Pronto para
+importar"** (linha válida e e-mail ausente da base vigente), **"E-mail já cadastrado"**
+(e-mail presente na base vigente, comparado sem distinção de maiúsculas), **"Repetido no
+arquivo"** (segunda ocorrência do mesmo e-mail entre as linhas válidas do arquivo) e
+**"Linha inválida"** (nome ou e-mail ausentes, e-mail malformado ou Perfil/Status fora dos
+valores permitidos, com o motivo exibido) — as três últimas com seleção desabilitada. As
+linhas "Pronto para importar" SHALL chegar pré-selecionadas, e o rodapé SHALL exibir a
+contagem de selecionados no botão "Importar (n)", desabilitado quando n for zero.
+Confirmar SHALL enviar as linhas selecionadas à API de importação, que as revalida contra o
+banco (unicidade de e-mail, perfil existente) e grava em transação os registros selecionados
+— nascendo **sem senha autenticável** (a ser atribuída pelo envio manual de convite), com a
+situação da planilha e os demais campos vazios —, devolvendo a contagem gravada; o cliente
+recalcula os KPIs, exibe toast de sucesso com a contagem e fecha o modal. **"Cancelar"**,
+`Escape` ou o `X` do cabeçalho SHALL fechar o modal descartando o arquivo carregado sem
+nenhuma requisição. Filtros aplicados SHALL permanecer intactos pela importação: registros
+fora do filtro vigente só passam a aparecer na tabela e nos KPIs quando o filtro for limpo.
+Os registros importados SHALL persistir na recarga.
 
 #### Scenario: Abertura pelo ícone Importar
 - **WHEN** o usuário clica no ícone "Importar" da toolbar (com tooltip "Importar Novos Usuários")
@@ -172,7 +249,9 @@ O sistema SHALL abrir um modal de importação de usuários ao acionar o ícone 
 
 #### Scenario: Importar grava os selecionados e fecha
 - **WHEN** com "n" registros selecionados o usuário aciona "Importar (n)"
-- **THEN** somente os registros selecionados entram na base em memória sem senha e com as datas do instante da gravação, os KPIs recalculam, um toast de sucesso confirma a contagem importada e o modal fecha
+- **THEN** somente os registros selecionados são enviados à API, revalidados e gravados no
+  banco sem senha autenticável, os KPIs recalculam, um toast de sucesso confirma a contagem
+  importada e o modal fecha
 
 #### Scenario: Seleção zerada desabilita o botão
 - **WHEN** nenhum registro está selecionado
@@ -184,27 +263,44 @@ O sistema SHALL abrir um modal de importação de usuários ao acionar o ícone 
 
 #### Scenario: Descarte por Cancelar
 - **WHEN** com arquivo carregado o usuário aciona "Cancelar", pressiona `Escape` ou clica no `X` do cabeçalho
-- **THEN** o modal fecha, a base permanece idêntica ao estado anterior e nenhum toast de sucesso é exibido
+- **THEN** o modal fecha sem nenhuma requisição, a base permanece idêntica ao estado anterior e nenhum toast de sucesso é exibido
 
 #### Scenario: Filtros preservados na importação
 - **WHEN** com filtros aplicados o usuário importa registros que não atendem ao filtro vigente
 - **THEN** os filtros e o badge permanecem como estavam e os registros importados só passam a aparecer na tabela e nos KPIs quando o filtro for limpo
 
-#### Scenario: Recarga restaura a base
+#### Scenario: Recarga mantém os registros importados
 - **WHEN** a página é recarregada após uma importação
-- **THEN** a base de demonstração original volta a ser exibida, sem os registros importados
+- **THEN** a listagem da API exibe também os registros importados (nada é descartado)
 
-### Requirement: As operações da tela permanecem em memória; só o convite usa a rede
-O sistema SHALL manter a listagem, os KPIs, o CRUD, a importação e as exportações de usuários
-inteiramente em memória, restaurando os dados de demonstração a cada recarga da página, sem
-requisições HTTP para esses dados. A única operação da tela que usa a rede SHALL ser o envio
-de convite (que persiste a conta no banco, fora do estado em memória da tela).
+### Requirement: A tela opera sobre a API de usuários; filtros e exportações permanecem locais
+O sistema SHALL carregar a listagem de usuários (e, com ela, os dados que alimentam KPIs,
+tabela, filtros e exportações) a partir de `GET /api/usuarios` na montagem da página,
+exibindo estado de carregamento e toast de erro na falha (sem simular dados). CRUD,
+importação, exclusão, bloqueio e convite SHALL operar via API, com as mutações refletidas
+imediatamente no conjunto vigente. Filtros, busca, paginação, KPIs derivados e exportações
+CSV/PDF SHALL permanecer processados no cliente sobre o conjunto carregado, sem requisição
+por filtro ou exportação; os filtros SHALL continuar sendo descartados na recarga.
 
-#### Scenario: Recarga restaura o estado inicial
-- **WHEN** a página é recarregada
-- **THEN** a base de usuários de demonstração aparece novamente, sem alterações de
-  listagem/CRUD preservadas (a conta materializada por convite permanece no banco, invisível
-  nesta tela até a gestão de usuários ir ao backend)
+#### Scenario: Carga inicial mostra os usuários do banco
+- **WHEN** o navegador abre `/admin/gestao-usuarios` com sessão ativa
+- **THEN** um estado de carregamento é exibido enquanto `GET /api/usuarios` responde, e em
+  seguida a tabela exibe os usuários persistidos no banco (ex.: o administrador provisionado
+  e as contas criadas por convite)
+
+#### Scenario: Falha na carga exibe erro sem simular dados
+- **WHEN** a requisição de listagem falha (rede, banco ou sessão expirada sem refresh)
+- **THEN** um toast de erro informa a falha e a tabela permanece em estado vazio/erro, sem
+  exibir a base de demonstração antiga
+
+#### Scenario: Recarga rebusca o banco
+- **WHEN** a página é recarregada após criar, editar, importar, excluir, bloquear ou convidar
+- **THEN** a listagem vem da API com os dados persistentes (nada volta a uma base demo)
+
+#### Scenario: Filtro e exportação não fazem requisição
+- **WHEN** o usuário aplica filtros, busca na tabela ou gera CSV/PDF
+- **THEN** nenhuma requisição de rede é emitida por essas operações (elas processam o
+  conjunto já carregado)
 
 ### Requirement: O modal de usuário reúne os blocos de cadastro
 O sistema SHALL exibir um único modal de usuário, aberto em modo de criação pelo botão "Novo Usuário" do cabeçalho e em modo de edição pelo lápis da linha, com os blocos **Dados do Usuário** (avatar, Nome, E-mail, Telefone, Função, Departamento e, numa linha própria de largura total começando abaixo do avatar, Status — em controle segmentado Ativo/Inativo, sem dropdown —, Perfil, Senha e Confirmar Senha — sem seção/cabeçalho próprio de "Acesso ao Sistema"), **Endereço** (CEP, Endereço, Número, Complemento, Bairro, Cidade, Estado, Região) e **Configurações de E-mail** (E-mail SMTP, Senha SMTP, Provedor, Servidor SMTP, Porta, Segurança, ações de teste e Status da Configuração) nos dois modos, acrescidos do bloco **Informações de Cadastro** (Data Cadastro e Última Atualização, ambos desabilitados) **somente em modo de edição** — o modo de criação SHALL abrir o modal apenas com os três blocos anteriores, sem a seção "Informações de Cadastro" e sem os campos de data.
@@ -230,10 +326,10 @@ O sistema SHALL exibir um único modal de usuário, aberto em modo de criação 
 - **THEN** a pré-visualização circular do avatar é atualizada, o modal de usuário permanece aberto com os demais campos intactos e o modal de câmera é encerrado
 
 ### Requirement: O formulário de usuário valida antes de gravar
-O sistema SHALL recusar o salvamento e manter o modal aberto quando: Nome, E-mail, Perfil ou Situação estiverem vazios; o E-mail estiver em formato inválido ou já pertencer a outro usuário da base vigente; na criação, Senha ou Confirmar Senha estiverem vazias, com menos de 8 caracteres ou divergentes entre si; na edição, exatamente um dos dois campos de senha estiver preenchido ou os dois divergirem. Cada campo inválido SHALL exibir o erro de forma persistente — ícone `AlertCircle` `rose-700` à direita dentro do campo com a mensagem em tooltip no hover, e a mensagem no DOM como região viva (`role="alert"`) associada ao controle —, com label e recorte em `rose-700`, e o foco SHALL ir ao primeiro campo inválido.
+O sistema SHALL recusar o salvamento e manter o modal aberto quando: Nome, E-mail, Perfil ou Situação estiverem vazios; o E-mail estiver em formato inválido ou já pertencer a outro usuário no banco (validação do cliente e da API, que responde conflito para e-mail duplicado); na criação, Senha ou Confirmar Senha estiverem vazias, com menos de 8 caracteres ou divergentes entre si; na edição, exatamente um dos dois campos de senha estiver preenchido ou os dois divergirem. Cada campo inválido SHALL exibir o erro de forma persistente — ícone `AlertCircle` `rose-700` à direita dentro do campo com a mensagem em tooltip no hover, e a mensagem no DOM como região viva (`role="alert"`) associada ao controle —, com label e recorte em `rose-700`, e o foco SHALL ir ao primeiro campo inválido.
 
 #### Scenario: E-mail duplicado
-- **WHEN** em modo de criação o usuário informa um e-mail já existente na base e tenta salvar
+- **WHEN** em modo de criação o usuário informa um e-mail já existente no banco e tenta salvar
 - **THEN** o modal permanece aberto, o campo E-mail exibe erro persistente apontando a duplicidade e o foco vai ao E-mail
 
 #### Scenario: Senha inválida na criação
@@ -248,28 +344,42 @@ O sistema SHALL recusar o salvamento e manter o modal aberto quando: Nome, E-mai
 - **WHEN** todas as regras estão satisfeitas e o usuário aciona "Salvar"
 - **THEN** as validações não bloqueiam o fechamento e a gravação ocorre
 
-### Requirement: O salvar grava em memória e o cancelar descarta
-O sistema SHALL manter o CRUD de usuários inteiramente em memória: em modo de criação, "Salvar" adiciona o usuário ao conjunto vigente com Data Cadastro e Última Atualização iguais ao instante da gravação; em modo de edição, "Salvar" atualiza o registro preservando a Data Cadastro e atualizando a Última Atualização. A senha digitada no formulário (a senha provisória de acesso) SHALL ser gravada no registro em memória junto com os demais dados — na criação com o valor informado e, na edição, mantendo a senha vigente quando os campos de senha ficam vazios e substituindo-a quando um par válido é informado. Em ambos os casos o modal fecha e um toast de sucesso é exibido. "Cancelar", `Escape` ou o `X` do cabeçalho SHALL fechar o modal descartando o rascunho, sem alterar a base. As alterações SHALL sobreviver à navegação interna e serem descartadas na recarga da página, sem nenhuma requisição HTTP.
+### Requirement: O salvar grava via API e o cancelar descarta
+O sistema SHALL gravar o formulário de usuário via API: em modo de criação, "Salvar" cria o
+registro no banco (bcrypt da senha provisória informada, situação e perfil escolhidos,
+endereço/SMTP opcionais, avatar como arquivo quando houver) com datas de criação e
+atualização iguais ao instante da gravação; em modo de edição, "Salvar" atualiza o registro
+preservando a data de criação e refletindo a alteração na última atualização. A senha SHALL
+ser obrigatória na criação (mínimo de 8 caracteres) e opcional na edição (par completo
+substitui o hash; campos vazios mantêm a senha vigente). Em ambos os casos o modal fecha e um
+toast de sucesso é exibido, com a linha e os KPIs atualizados imediatamente. "Cancelar",
+`Escape` ou o `X` do cabeçalho SHALL fechar o modal descartando o rascunho, sem nenhuma
+requisição. As alterações SHALL persistir na recarga.
 
 #### Scenario: Criação reflete na listagem
 - **WHEN** o usuário salva um cadastro válido
-- **THEN** a linha aparece na tabela com o badge de Perfil e de Status escolhidos, "Último acesso" exibindo "-" e os KPIs recalculados; um toast de sucesso confirma a criação
+- **THEN** a linha aparece na tabela com o badge de Perfil e de Status escolhidos, "Último
+  acesso" exibindo "-" e os KPIs recalculados; um toast de sucesso confirma a criação
 
 #### Scenario: Edição atualiza a linha
 - **WHEN** o usuário altera nome, perfil ou situação de um usuário e salva
-- **THEN** a linha passa a exibir os valores novos, a Última Atualização é a do instante da gravação e um toast de sucesso confirma a atualização
+- **THEN** a linha passa a exibir os valores novos gravados na API e um toast de sucesso
+  confirma a atualização
 
 #### Scenario: Senha provisória fica gravada no registro
-- **WHEN** o usuário cria um usuário informando a senha, ou edita um usuário sem tocar nos campos de senha e salva
-- **THEN** o registro em memória guarda a senha provisória (mantida na edição), sem que ela apareça na tabela nem em nenhum outro lugar da listagem
+- **WHEN** o usuário cria um usuário informando a senha, ou edita um usuário sem tocar nos
+  campos de senha e salva
+- **THEN** o registro no banco guarda o hash da senha provisória (mantida na edição), sem
+  que ela apareça na tabela nem em nenhum outro lugar da listagem
 
 #### Scenario: Cancelar não altera nada
 - **WHEN** o usuário edita campos e aciona "Cancelar" (ou pressiona `Escape`)
-- **THEN** o modal fecha, a base permanece idêntica ao estado anterior e nenhum toast de sucesso é exibido
+- **THEN** o modal fecha sem nenhuma requisição, a base permanece idêntica ao estado
+  anterior e nenhum toast de sucesso é exibido
 
-#### Scenario: Recarga descarta as alterações
+#### Scenario: Recarga mantém as alterações
 - **WHEN** a página é recarregada após criar ou editar usuários
-- **THEN** a base de demonstração original volta a ser exibida
+- **THEN** a listagem da API reflete os registros criados/alterados (nada é descartado)
 
 ### Requirement: O bloco de Configurações de E-mail testa conexão de forma simulada
 O sistema SHALL tratar o bloco de Configurações de E-mail como opcional e totalmente simulado: o Status da Configuração inicia em "Não testado", "Testar conexão" fica habilitado somente com Servidor SMTP, Porta e E-mail do SMTP preenchidos, e "Enviar teste" somente com o Status em "Conectado". Acionar o teste SHALL percorrer o estado "Testando" por cerca de 1,2 segundo com os botões desabilitados e terminar em "Conectado" quando a Porta for 25, 465 ou 587, ou em "Falha" nos demais casos. Acionar "Enviar teste" com Status "Conectado" SHALL exibir toast informativo de envio simulado. Editar qualquer campo do bloco SHALL devolver o Status a "Não testado". Nenhuma requisição de rede SHALL ser emitida, e "Salvar" SHALL não exigir o teste.
@@ -294,8 +404,17 @@ O sistema SHALL tratar o bloco de Configurações de E-mail como opcional e tota
 - **WHEN** com Status "Conectado" o usuário aciona "Enviar teste"
 - **THEN** um toast informa que o e-mail de teste foi enviado em simulação e nenhum request é feito
 
-### Requirement: O modal de exclusão confirma a remoção de um usuário
-O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao acionar o "Excluir usuário" da linha, exibindo o título "Excluir Usuário", a identificação do alvo (nome e e-mail) e o aviso de que a exclusão não pode ser desfeita, com as ações "Cancelar" (secundária, `UiButton outline`) e "Excluir" (destrutiva, `UiButton danger`) no rodapé. Ao confirmar, o sistema SHALL remover o registro do conjunto vigente **em memória** — a linha sai da tabela, os KPIs recalculam e um toast de sucesso é exibido — e devolver o foco ao campo de busca da tabela, pois o botão que abriu o modal deixa de existir com a linha. "Cancelar", `Escape` ou o `X` do cabeçalho SHALL fechar o modal sem alterar a base. A exclusão SHALL ser irrestrita (qualquer perfil, sem bloqueio por papel), SHALL ocorrer sem nenhuma requisição HTTP e SHALL ser descartada na recarga da página junto com as demais alterações da fase em memória.
+### Requirement: A exclusão confirma a remoção de um usuário via API
+O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao acionar o
+"Excluir usuário" da linha, exibindo o título "Excluir Usuário", a identificação do alvo
+(nome e e-mail) e o aviso de que a exclusão não pode ser desfeita, com as ações "Cancelar"
+(secundária, `UiButton outline`) e "Excluir" (destrutiva, `UiButton danger`) no rodapé. Ao
+confirmar, o sistema SHALL remover o registro via API — a linha sai da tabela, os KPIs
+recalculam e um toast de sucesso é exibido — e devolver o foco ao campo de busca da tabela,
+pois o botão que abriu o modal deixa de existir com a linha. "Cancelar", `Escape` ou o `X`
+do cabeçalho SHALL fechar o modal sem nenhuma requisição. A exclusão SHALL ser irrestrita
+(qualquer perfil, sem bloqueio por papel) e SHALL persistir: a recarga não restaura o
+usuário excluído. Sessões abertas do usuário excluído deixam de autenticar.
 
 #### Scenario: Abertura pelo ícone da linha
 - **WHEN** o usuário clica no `Trash2` de uma linha
@@ -303,7 +422,7 @@ O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao a
 
 #### Scenario: Confirmação remove e recalcula
 - **WHEN** com o modal aberto o usuário aciona "Excluir"
-- **THEN** o modal fecha, o registro sai da tabela, os quatro KPIs refletem o conjunto sem ele e um toast de sucesso confirma a exclusão
+- **THEN** o modal fecha, o registro é removido pela API, os quatro KPIs refletem o conjunto sem ele e um toast de sucesso confirma a exclusão
 
 #### Scenario: Excluir a última linha da última página mantém a tabela válida
 - **WHEN** o usuário confirma a exclusão do único registro exibido na última página da tabela
@@ -311,7 +430,7 @@ O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao a
 
 #### Scenario: Descarte preserva a base
 - **WHEN** com o modal aberto o usuário aciona "Cancelar", pressiona `Escape` ou clica no `X` do cabeçalho
-- **THEN** o modal fecha, o registro permanece na tabela e nenhum toast é exibido
+- **THEN** o modal fecha sem nenhuma requisição, o registro permanece na tabela e nenhum toast é exibido
 
 #### Scenario: Foco vai à busca da tabela
 - **WHEN** a exclusão é confirmada e o modal fecha
@@ -319,12 +438,11 @@ O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao a
 
 #### Scenario: Exclusão é irrestrita
 - **WHEN** o usuário confirma a exclusão de um registro de qualquer perfil (inclusive Administrador)
-- **THEN** o registro é removido normalmente, sem bloqueio nem aviso de restrição
+- **THEN** o registro é removido normalmente pela API, sem bloqueio nem aviso de restrição
 
-#### Scenario: Recarga restaura a base
+#### Scenario: Recarga mantém a exclusão
 - **WHEN** a página é recarregada após uma exclusão
-- **THEN** a base de demonstração original volta a ser exibida, com o usuário excluído presente
-
+- **THEN** a listagem da API não exibe mais o usuário excluído (nada é restaurado)
 
 ### Requirement: O modal de convite escolhe o canal e envia as credenciais reais
 O sistema SHALL abrir um modal de convite (`UiModal` de largura `xl` — 1120px —, ícone
@@ -354,9 +472,8 @@ senha provisória; se existir, a senha provisória SHALL substituir o hash vigen
 **E-mail**, o servidor SHALL enviar a mensagem real via **Resend** (toast de sucesso de envio
 real; falha do provedor → toast de erro, modal permanece aberto). Para **WhatsApp**, a senha
 SHALL ser gravada no banco (mesmo find-or-create) e o aplicativo SHALL ser aberto pelo
-protocolo client-side como hoje. A conta criada/alterada SHALL persistir na recarga; a
-listagem da tela permanece a base de demonstração (a gestão de usuários ainda não vai ao
-banco).
+protocolo client-side como hoje. A conta criada/alterada SHALL persistir na recarga, e a
+listagem da tela — que vem do banco — reflete a conta real na sua linha.
 
 #### Scenario: Abertura pela linha
 - **WHEN** o usuário clica no `MailCheck` de uma linha
@@ -416,6 +533,6 @@ banco).
 
 #### Scenario: Recarga mantém a conta criada pelo convite
 - **WHEN** a página é recarregada após um envio de convite
-- **THEN** a listagem da tela mostra a base de demonstração como antes, mas a conta criada (e
-  sua senha) permanecem no banco — ela continua autenticando no login
+- **THEN** a listagem da API exibe o usuário normalmente e a conta (e a sua senha) seguem no
+  banco — ela continua autenticando no login
 
