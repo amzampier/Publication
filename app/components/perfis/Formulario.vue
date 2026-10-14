@@ -36,6 +36,7 @@ const rascunhoVazio = (): PerfilDemo => ({
   situacao: 'Ativo',
   criado_em: '',
   atualizado_em: '',
+  usuarios: 0,
   permissoes: matrizVazia()
 })
 
@@ -97,7 +98,7 @@ const aoEnter = (e: KeyboardEvent) => {
   }
 }
 
-const salvar = () => {
+const salvar = async () => {
   erros.value = validar(rascunho.value)
   const primeiro = ORDEM_FOCO.find((campo) => erros.value[campo])
   if (primeiro) {
@@ -105,22 +106,34 @@ const salvar = () => {
     return
   }
 
-  const instante = new Date().toISOString()
-  const registro: PerfilDemo = {
-    ...rascunho.value,
-    // Criação: ambos os timestamps nascem agora. Edição: criado_em preservado do
-    // registro (copiado no rascunho) e atualizado_em reflete o salvamento.
-    criado_em: props.modo === 'novo' ? instante : rascunho.value.criado_em,
-    atualizado_em: instante
-  }
-  const { base: novaBase } = salvarPerfil(perfis.value, registro, props.modo)
-  perfis.value = novaBase
+  // Gravação via API (spec perfis-acesso): o servidor gera o UUID na criação e
+  // resolve criado_em/atualizado_em — o cliente envia só os campos editáveis.
+  try {
+    const { base: novaBase } = await salvarPerfil(perfis.value, rascunho.value, props.modo)
+    perfis.value = novaBase
 
-  toast.success(
-    'Perfis de Acesso (RBAC)',
-    props.modo === 'novo' ? 'Perfil criado com sucesso.' : 'Perfil atualizado com sucesso.'
-  )
-  emit('update:modelValue', false)
+    toast.success(
+      'Perfis de Acesso (RBAC)',
+      props.modo === 'novo' ? 'Perfil criado com sucesso.' : 'Perfil atualizado com sucesso.'
+    )
+    emit('update:modelValue', false)
+  } catch (erro) {
+    const status = (erro as { statusCode?: number }).statusCode
+    if (status === 400) {
+      // Validacao do servidor (espelho da do cliente): erro persistente no campo
+      // e foco de volta ao primeiro campo com problema — modal aberto.
+      const mensagem =
+        (erro as { data?: { statusMessage?: string } }).data?.statusMessage ??
+        'Informe o nome do perfil.'
+      erros.value = { nome: mensagem }
+      focarCampo('nome')
+      return
+    }
+    toast.danger(
+      'Perfis de Acesso (RBAC)',
+      'Não foi possível salvar o perfil. Verifique a conexão com o banco e tente novamente.'
+    )
+  }
 }
 
 const cancelar = () => emit('update:modelValue', false)

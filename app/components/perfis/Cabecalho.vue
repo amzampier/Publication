@@ -40,8 +40,9 @@ onUnmounted(() => {
   window.removeEventListener('keydown', aoKeydown)
 })
 
-// Exportação sobre o conjunto vigente (fase 1 — tudo em memória; com filtro
-// aplicado, sai apenas o conjunto filtrado — spec perfis-acesso)
+// Exportação sobre o conjunto vigente vindo da API (com filtro aplicado, sai
+// apenas o conjunto filtrado — spec perfis-acesso; filtros/exportações seguem
+// client-side, sem requisição por geração de arquivo)
 const { perfisFiltrados, usuariosPorPerfil } = usePerfisDemo()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 

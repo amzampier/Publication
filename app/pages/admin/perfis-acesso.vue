@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import {
   excluirPerfil,
   usePerfisDemo,
@@ -12,7 +12,20 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { perfis } = usePerfisDemo()
+const { perfis, carregando, carregarPerfis } = usePerfisDemo()
+
+// Carga inicial pela API (spec perfis-acesso): overlay de carregamento no voo e
+// toast de erro + lista vazia na falha — a base de demonstração NUNCA aparece
+// fingindo ser persistida.
+onMounted(async () => {
+  const ok = await carregarPerfis()
+  if (!ok) {
+    toast.danger(
+      'Perfis de Acesso (RBAC)',
+      'Não foi possível carregar os perfis. Verifique a conexão com o banco e recarregue a página.'
+    )
+  }
+})
 
 // Coordenação do modal de permissões: a página é dona do estado (mesmo padrão dos
 // demais modais desta tela). A ação Permissões (KeyRound) abre o modal com a matriz
@@ -64,36 +77,47 @@ const abrirExclusao = (perfil: LinhaPerfil) => {
   exclusaoAberta.value = true
 }
 
-// Guarda de vínculo na confirmação (spec perfis-acesso): perfil em uso não pode ser
-// excluído — espelho da validação futura do banco (docs/02 §3.5). O modal fecha e o
-// toast de bloqueio é o feedback; sem vínculos a remoção acontece.
-const confirmarExclusao = () => {
+// Guarda de vínculo imposta no SERVIDOR (spec perfis-acesso): DELETE responde 409
+// quando há usuários — o modal fecha e o toast de bloqueio é o feedback, com a
+// base intacta; sem vínculos a remoção acontece e persiste na recarga.
+const confirmarExclusao = async () => {
   const alvo = perfilExcluir.value
   if (!alvo) return
 
   exclusaoAberta.value = false
   perfilExcluir.value = null
 
-  if (alvo.usuarios > 0) {
-    toast.warning(
+  try {
+    const { base } = await excluirPerfil(perfis.value, alvo.id)
+    perfis.value = base
+    toast.success('Perfis de Acesso (RBAC)', 'Perfil excluído com sucesso.')
+
+    // O gatilho (Trash2) saiu do DOM com a linha: o UiModal devolve foco a um nó
+    // detachado (no-op) e o próximo tick move o foco à busca da tabela.
+    nextTick(() => tabelaRef.value?.focarBusca())
+  } catch (erro) {
+    const status = (erro as { statusCode?: number }).statusCode
+    if (status === 409) {
+      toast.warning(
+        'Perfis de Acesso (RBAC)',
+        `O perfil "${alvo.nome}" não pode ser excluído: existem usuários vinculados a ele.`
+      )
+      return
+    }
+    toast.danger(
       'Perfis de Acesso (RBAC)',
-      `O perfil "${alvo.nome}" não pode ser excluído: existem usuários vinculados a ele.`
+      'Não foi possível excluir o perfil. Verifique a conexão com o banco e tente novamente.'
     )
-    return
   }
-
-  perfis.value = excluirPerfil(perfis.value, alvo.id).base
-  toast.success('Perfis de Acesso (RBAC)', 'Perfil excluído com sucesso.')
-
-  // O gatilho (Trash2) saiu do DOM com a linha: o UiModal devolve foco a um nó
-  // detachado (no-op) e o próximo tick move o foco à busca da tabela.
-  nextTick(() => tabelaRef.value?.focarBusca())
 }
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
     <div class="mx-auto max-w-7xl">
+      <!-- Carregamento da base: overlay do kit enquanto GET /api/perfis está em voo -->
+      <UiLoading v-if="carregando" message="Carregando perfis…" />
+
       <PerfisCabecalho @novo="abrirNovo" />
 
       <PerfisKpis class="mt-6" />

@@ -1,7 +1,8 @@
 # 07 - Perfis de Acesso (RBAC) — Área Administrativa
 
-**Versão:** 1.5.0 — **Data:** 2026-10-09 — **Idioma:** Português do Brasil (pt-BR)
-**Escopo:** tela principal de Perfis de Acesso (RBAC) - listagem (base em memória) com cabeçalho
+**Versão:** 1.6.0 — **Data:** 2026-10-14 — **Idioma:** Português do Brasil (pt-BR)
+**Escopo:** tela principal de Perfis de Acesso (RBAC) - listagem (**base persistida via API**
+`/api/perfis`, change `perfis-acesso-backend`) com cabeçalho
 (Novo Perfil), KPIs e tabela com contagem de permissões e de usuários vinculados; **"Novo
 Perfil" e "Editar" abrem o modal de cadastro/edição** (`PerfisFormulario`), **"Excluir" abre
 o modal de confirmação com guarda de vínculo** e **"Configurar permissões" abre o modal da
@@ -34,7 +35,7 @@ usados (`UiButton`, `UiBadge`, `UiKpi`, `UiDataTable`, `UiTooltip`, `UiInput`, `
 3. [Componentes de domínio](#3-componentes-de-domínio)
 4. [Componentes de kit (criados/alterados)](#4-componentes-de-kit-criadosalterados)
 5. [Comportamento das ações (transição + modal de exclusão)](#5-comportamento-das-ações-transição--modal-de-exclusão)
-6. [Dados de demonstração](#6-dados-de-demonstração)
+6. [Base semeada (banco) e KPIs](#6-base-semeada-banco-e-kpis)
 7. [Matriz de permissões (normativa)](#7-matriz-de-permissões-normativa)
 8. [Navegação até a tela](#8-navegação-até-a-tela)
 9. [Estilo e CSS dedicado](#9-estilo-e-css-dedicado)
@@ -59,8 +60,11 @@ Administrativa:
   matriz de permissões por módulo (4 ações booleanas fixas + `extras` JSON).
   `padrao_sistema` e `cor_identificacao` são colunas futuras do banco, fora do UI atual
   (`docs/02` §3.5).
-- **Fase 1:** listagem **inteiramente em memória** — `useState('perfis-base')`, sem `server/`,
-  sem requisições de dados (API); a base se restaura a cada recarga.
+- **Persistência (change `perfis-acesso-backend`):** a listagem é carregada de
+  `GET /api/perfis` no `onMounted` (overlay `UiLoading` no voo; falha → toast de erro +
+  lista vazia, **sem** exibir a demo como se fosse persistida) e toda gravação (criação,
+  edição, exclusão, matriz, cópia) passa pelas rotas `server/api/perfis/**` — os dados
+  sobrevivem à recarga (as seeds vêm de `server/migration/02_seed.sql`).
 - **Modal de cadastro/edição (change `perfis-acesso-modal-cadastro-edicao`):** "Novo Perfil"
   e "Editar" (`Pencil`) **abrem o modal** `PerfisFormulario` — nome, descrição
   (`UiTextarea`) e situação (sem campo de código: o identificador é o UUID gerado na
@@ -68,18 +72,20 @@ Administrativa:
   seção "Informações de Cadastro" exibe `criado_em`/`atualizado_em` desabilitados. Perfil
   novo nasce com matriz vazia (0/99) e 0 usuários.
 - **Modal de exclusão (change `perfis-acesso-modal-exclusao`):** "Excluir" (`Trash2`) **abre o
-  modal** `PerfisExclusao` (`UiModal size="sm"`); ao confirmar com usuários vinculados o modal
-  fecha e um `toast.warning` informa o bloqueio (sem tocar na base) — espelho da validação
-  futura do banco (docs/02 §3.5); sem vínculos a remoção acontece.
+  modal** `PerfisExclusao` (`UiModal size="sm"`); ao confirmar, a exclusão vai para a API e,
+  **com usuários vinculados, o servidor responde `409`** — o modal fecha e um `toast.warning`
+  informa o bloqueio (sem tocar na base; a FK `RESTRICT` é o backstop, `docs/02` §3.5); sem
+  vínculos a remoção acontece e persiste.
 - **Modal de permissões (change `perfis-acesso-modal-permissoes`):** "Configurar
   permissões" (`KeyRound`) **abre o modal** `PerfisPermissoes` (`UiModal size="xl"`) com as
   4 ações fixas em interruptores, Funcionalidades em chips clicáveis, abas por sessão,
-   rascunho isolado e gravação em memória (§3.7) — sem toast de
+   rascunho isolado e gravação via API (§3.7) — sem toast de
    transição. **Modal de filtros** (`PerfisFiltros`, §3.8) refina o conjunto vigente e o
    **menu "Relatórios"** do cabeçalho (§3.1) exporta em PDF/CSV sobre esse conjunto
    (change `perfis-acesso-filtros-exportacao`).
-- **Matriz semeada:** a coluna "Permissões" e o KPI "Permissões concedidas" derivam da matriz
-  declarada em `usePerfisDemo.ts` (§3.4) — a mesma que o §7 normatiza.
+- **Matriz persistida:** a coluna "Permissões" e o KPI "Permissões concedidas" derivam da
+  matriz gravada em `permissoes_perfil` e servida pela API (§3.4) — a mesma que o §7
+  normatiza e que `02_seed.sql` semeia.
 
 ## 2. Estrutura da página (componentização)
 
@@ -106,9 +112,9 @@ admin/perfis-acesso.vue            (page - definePageMeta + composição + coord
   `gestao-usuarios`). `abrirNovo()` abre em modo criação; `abrirEdicao(linha)` resolve o
   registro **completo** por `id` na base vigente (timestamps e matriz) e abre em modo edição;
   `abrirPermissoes(linha)` resolve o registro por `id` e abre a matriz; `abrirExclusao(perfil)`
-  sempre abre o modal; `confirmarExclusao()` fecha e, **se
-  `perfil.usuarios > 0`**, `toast.warning` de bloqueio **sem tocar na base**; sem vínculos
-  chama `excluirPerfil()` → `toast.success` → `nextTick(focarBusca)`.
+  sempre abre o modal; `confirmarExclusao()` fecha e chama `excluirPerfil()` (DELETE na API) —
+  **`409` do servidor → `toast.warning` de bloqueio com a base intacta**; sem vínculos →
+  `toast.success` → `nextTick(focarBusca)`.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8` (mesmo
   padrão de Usuários e Auditoria).
 
@@ -140,7 +146,7 @@ admin/perfis-acesso.vue            (page - definePageMeta + composição + coord
 derivados do conjunto vigente (`perfisFiltrados` do `useState` — a base completa sem filtro, o
 conjunto filtrado com filtro do módulo aplicado):
 
-| KPI | Valor (base demo) | Cor (`cor` do `UiKpi`) | Ícone |
+| KPI | Valor (base semeada) | Cor (`cor` do `UiKpi`) | Ícone |
 | :--- | :--- | :--- | :--- |
 | Total de perfis | `4` | `#f5b302` (dourado RBAC) | `ShieldCheck` |
 | Ativos | `4` | `#047857` (esmeralda) | `UserCheck` |
@@ -150,9 +156,8 @@ conjunto filtrado com filtro do módulo aplicado):
 
 - "Permissões concedidas" = **soma das permissões verdadeiras de todos os perfis /**
   **`perfis × 99`** (`99 = 11 módulos × 9 ações`).
-- **Inativos e Bloqueados = 0 é comportamento esperado** (design D7): os 4 perfis demo são os
-  canônicos em uso pelos 16 usuários da base de Gestão de Usuários, todos Ativo; a situação
-  muda pelo modal de edição (§3.6).
+- **Inativos e Bloqueados = 0 é comportamento esperado** (design D7): os 4 perfis semeados são
+  os canônicos, todos Ativo; a situação muda pelo modal de edição (§3.6).
 - Os KPIs recalculam sempre que o conjunto de perfis muda — criação, edição, exclusão,
   mudança de situação **ou aplicação/limpeza de um filtro do módulo** (spec `perfis-acesso`;
   com filtro aplicado os cinco KPIs refletem só o conjunto filtrado — ex.: Status =
@@ -164,7 +169,7 @@ conjunto filtrado com filtro do módulo aplicado):
   `:filters-count="filtrosAtivosCount"`, emitindo `@open-filters` para a página abrir o
   `PerfisFiltros`, §3.8) além da busca textual do kit com `show-header-top`,
   `title="Perfis de Acesso"`,
-  `subtitle="Base de demonstração — fase 1 em memória · Permissões: ações concedidas de 99 (11
+  `subtitle="Dados persistidos via API (MariaDB) · Permissões: ações concedidas de 99 (11
 módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 - **Colunas (6 — cinco de dados + Ações, sem rolagem horizontal em ≥ ~1280px):**
 
@@ -172,7 +177,7 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 | :--- | :--- | :--- |
 | Nome | `perfil.nome` | texto |
 | Descrição | `perfil.descricao` | texto (elástica) |
-| Usuários | `usuariosPorPerfil[nome]` — **derivada** da base de usuários | `align: 'right'`, `font-mono tabular-nums` |
+| Usuários | `usuariosPorPerfil[nome]` — **derivada** do campo `usuarios` da API (COUNT sobre a tabela `usuarios`) | `align: 'right'`, `font-mono tabular-nums` |
 | Permissões | `contarPermissoes(perfil)/99` — **derivada** da matriz | `align: 'right'`, `font-mono tabular-nums` |
 | Status | `perfil.situacao` | `UiBadge` via `VARIANTE_POR_STATUS` (Ativo `done`, Inativo `neutral`, Bloqueado `blocked`) |
 | Ações | gatilhos | `KeyRound` · `Pencil` · `Trash2` (tooltip + `aria-label` próprios) |
@@ -187,50 +192,51 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   `usuarios/Tabela.vue`): usado pela página após a exclusão confirmar, pois o `Trash2` sai do
   DOM com a linha.
 
-### 3.4 `usePerfisDemo.ts` — composable de estado (matriz e contagens)
+### 3.4 `usePerfisDemo.ts` — composable de estado sobre a API (matriz e contagens)
 
 - **Tipos:** `PerfilDemo` (`id` UUID, `nome`, `descricao`, `situacao`, `criado_em`,
-  `atualizado_em`, `permissoes`), `SituacaoPerfil` (`'Ativo' | 'Inativo' | 'Bloqueado'`),
-  `ModoPerfis` (`'novo' | 'editar'`), `ModuloId` (11), `Acao` (4), `Extra` (5),
-  `Permissao = Acao | Extra`.
+  `atualizado_em`, `usuarios`, `permissoes`), `SituacaoPerfil`
+  (`'Ativo' | 'Inativo' | 'Bloqueado'`), `ModoPerfis` (`'novo' | 'editar'`), `ModuloId` (11),
+  `Acao` (4), `Extra` (5), `Permissao = Acao | Extra`.
 - **Constantes:** `MODULOS` (11 rótulos idênticos aos da sidebar + `descricao` curta p/ a
   lista do modal), `ACOES`, `EXTRAS`,
   `PERMISSOES_POR_PERFIL = 99`, `VARIANTE_POR_STATUS` (3 estados: `done`/`neutral`/`blocked`).
-- **`MATRIZ_SEED`:** `Record<PerfilId, Record<ModuloId, Permissao[]>>` montado por regras
-  (`ACOES_TUDO`, `CONTEIDO_EDITOR`, `CONTEIDO_REVISOR`, `CONTEIDO_LEITOR`) — declaração
-  única das regras do §7; `matriz()` sempre copia as listas (sem referência compartilhada);
-  `matrizVazia()` devolve os 11 módulos sem ações (0/99) para perfis novos.
-- **Helpers puros:** `contarPermissoes(perfil)` → soma dos módulos (99/45/21/6);
-  `excluirPerfil(base, id)` → devolve a base nova sem o perfil (matriz vai junto, pois vive no
-  objeto); `salvarPerfil(base, registro, modo)` → criação acrescenta clone ao fim da base,
-  edição substitui o registro do mesmo id — mesmo contrato imutável de `excluirUsuario`;
-  `salvarPermissoes(base, id, permissoes)` → troca a matriz do perfil (clone) — id
-  inexistente devolve a base intacta.
-- **Estado:** `useState('perfis-base', () => PERFIS_DEMO.map(clonar))` — clona a semente na
-  carga; a recarga restaura. **Filtros** em `useState('perfis-filtros')` com o tipo
-  `FiltrosPerfis` (`perfil`/`situacao`, `''` = todos) — também descartados na recarga.
+  Os mesmos ids de módulo/ações estão duplicados em `server/utils/perfis.ts` (barreira
+  `app/` × `server/`) — mantenha os dois lados em sincronia.
+- **Estado:** `useState('perfis-base', () => [])` — **inicia vazio**; `carregarPerfis()`
+  (exposto pelo composable) hidrata via `GET /api/perfis` de forma idempotente, com
+  `useState('perfis-carregando')` para o overlay e retorno `false` em falha (a página mostra
+  o toast e a lista fica vazia — nunca a demo). **Filtros** em `useState('perfis-filtros')`
+  com o tipo `FiltrosPerfis` (`perfil`/`situacao`, `''` = todos) — continuam em memória sobre
+  o conjunto carregado e descartados na recarga.
+- **Escritas assíncronas (módulo exportado):** `salvarPerfil(base, registro, modo)` →
+  `POST /api/perfis` (criação, UUID vindo do banco) ou `PUT /api/perfis/:id` (edição),
+  substituindo/acrecentando a resposta na base; `salvarPermissoes(base, id, permissoes)` →
+  `PUT /api/perfis/:id/permissoes` (replace-all); `excluirPerfil(base, id)` →
+  `DELETE /api/perfis/:id` (lança com `statusCode` 409 em vínculo); `copiarMatrizPara(base,
+  origemId, destinoId)` → `POST /api/perfis/:id/permissoes/copiar` (grava a matriz **salva**
+  da origem no destino). Todas devolvem `{ base }` para o chamador atribuir — mesmo contrato
+  imutável da fase 1. Helpers puros permanecem: `contarPermissoes`, `clonarMatriz`,
+  `matrizVazia()`.
 - **Derivados (design D2/D3):** `perfisFiltrados` (aplica os critérios de `filtros`),
   `filtrosAtivosCount` (0..2), `opcoesPerfis` (nomes da **base** ordenados em pt-BR),
   `limparFiltros()`, `linhas` (a linha da tabela com `usuarios` e `permissoesTexto`),
-  `usuariosPorPerfil` (conta `useUsuariosDemo().usuarios` por perfil), `totalPermissoesConcedidas`
+  `usuariosPorPerfil` (espelha o campo `usuarios` vindo da API), `totalPermissoesConcedidas`
   (171) e `totalPermissoesPossiveis` (396) — todos sobre o conjunto filtrado (KPIs e tabela
   refletem o filtro; a opção `SITUACOES` alimenta o select de Status do `PerfisFiltros`).
-- **Dependência cross-module:** `perfis/` importa `usuarios/` somente para leitura (sem ciclo)
-  — criar/excluir um usuário em `/admin/gestao-usuarios` altera a coluna "Usuários" sem
-  recarregar a página.
 
 ### 3.5 `Exclusao.vue` → `<PerfisExclusao>` (modal de confirmação)
 
 - **Apresentação pura** (a página é dona do estado e da gravação — molde de
   `usuarios/Exclusao.vue`): props `modelValue: boolean` + `perfil: LinhaPerfil | null`;
   emite `update:modelValue` e `confirmar`; sem toasts nem escrita na base.
-- `UiModal` `size="sm"` com `title="Excluir Perfil"`, `subtitle="Confirme a exclusão do
-  perfil da base em memória"` e ícone `Trash2` (herda todo o comportamento do kit: backdrop
+- `UiModal` `size="sm"` com `title="Excluir Perfil"`, `subtitle="Confirme a exclusão definitiva
+  do perfil"` e ícone `Trash2` (herda todo o comportamento do kit: backdrop
   não fecha, `Escape`/`X`, focus-trap, devolução de foco — `docs/01` §5.12).
 - Corpo (`UiModalSection` "Este perfil será excluído", ícone `ShieldX`): **nome** do perfil,
   **`Usuários Vinculados: N`** (`font-mono tabular-nums`) e o aviso rose `text-rose-700` com
-  `AlertTriangle` ("Esta ação não pode ser desfeita…"). Sem descrição (identificação mínima,
-  decisão da change).
+  `AlertTriangle` ("Esta ação não pode ser desfeita: o perfil será removido definitivamente da
+  base de dados…"). Sem descrição (identificação mínima, decisão da change).
 - Rodapé: `UiButton outline` "Cancelar" + `UiButton danger` "Excluir" (habilitado desde a
   abertura — sem type-to-confirm; a trava é a guarda de vínculo na página, §2).
 
@@ -256,14 +262,14 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 - **Mecânica (cópia do molde):** rascunho inicial vazio (criação) ou cópia do registro
   (edição); `validar()` puro reaparecendo só nos campos que já falharam; `ORDEM_FOCO`
   (`nome`) com foco no 1º erro; `Enter` navega em cadeia entre inputs (o
-  `UiTextarea` é ignorado — Enter quebra linha). Ao salvar: criação grava `criado_em` =
-  `atualizado_em` = instante atual; edição preserva `criado_em` e grava `atualizado_em` do
-  salvamento. Perfil novo nasce com `id` gerado por `crypto.randomUUID()` (na gravação via
-  `salvarPerfil`), `matrizVazia()` (**0/99**) e 0 usuários.
-- **Aceite documentado (demo):** renomear um perfil zera a contagem de **Usuários** dele e
-  diverge do dropdown fixo de `/admin/gestao-usuarios` (o casamento é por **nome literal**
-  com `useUsuariosDemo`); universos desacoplados, restaurados na recarga — a consistência por
-  construção vem quando o dropdown passar a derivar da base de perfis (§13, backend).
+  `UiTextarea` é ignorado — Enter quebra linha). Ao salvar, `salvarPerfil()` envia
+  `nome`/`descricao`/`situacao` para a API: o **servidor** gera o `id` UUID (criação),
+  preserva `criado_em` e grava `atualizado_em`; erro `400` devolve a mensagem ao campo com
+  foco (modal aberto), demais erros → `toast.danger`. Perfil novo nasce com matriz vazia
+  (**0/99**) e 0 usuários.
+- **Aceite documentado:** a coluna "Usuários" conta do banco (`usuarios.perfil_id`), enquanto
+  o dropdown de perfis de `/admin/gestao-usuarios` continua fixo na demo — o casamento por
+  construção vem quando o dropdown passar a derivar da base de perfis (§13).
 
 ### 3.7 `Permissoes.vue` → `<PerfisPermissoes>` (modal da matriz de permissões)
 
@@ -296,9 +302,9 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   parcial, `neutral` em 0; região viva `aria-live="polite"` — leitores de tela ouvem a nova
   contagem) — trocar de aba não muda o contador.
 - **Rascunho isolado:** a matriz é copiada para um `ref` na abertura; nada altera a base
-  antes de **Salvar** → `salvarPermissoes(perfis, id, rascunho)` → coluna Permissões + KPIs
-  recalculam (computeds da §3.4) e o modal fecha; **Cancelar/Escape/X** descartam. Recarga
-  restaura a semente.
+  antes de **Salvar** → `salvarPermissoes()` grava via `PUT /api/perfis/:id/permissoes` →
+  coluna Permissões + KPIs recalculam (computeds da §3.4) e o modal fecha; **Cancelar/Escape/X**
+  descartam sem requisição. Recarga restaura a matriz **gravada** na API.
 - **Administrador editável como os demais** (decisão do usuário — sem trava por papel) e
   perfil novo (0/99) pode ter a matriz preenchida no mesmo modal.
 - **Cópia entre perfis (rodapé):** dois ícones **alinhados à esquerda** do rodapé (grupo
@@ -310,13 +316,15 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   rascunho** por inteiro (clone via `clonarMatriz`, sem mescla) com `toast.info` reforçando
   "vale após Salvar"; `ClipboardCopy` **"Copiar permissões para outro perfil"** (tooltip
   "Copiar para outro perfil — grava imediatamente") abre o mesmo seletor (subtítulo
-  "Destino — grava já a matriz salva; Cancelar não desfaz") e grava **imediatamente** no
-  alvo a **matriz salva** do perfil corrente (nunca o rascunho, mesmo com células editadas)
-  via `salvarPermissoes` + `toast.success` com o valor substituído (ex.: "substituiu 6/99") —
-  a linha do alvo e os KPIs recalculam na hora e o Cancelar/Escape/X do modal pai **não
-  desfaz** a cópia. O
-  fechamento do filho devolve o foco ao ícone que o abriu (pilha de modais, `docs/01`
-  §5.12); nenhuma das duas cópias faz HTTP e ambas se perdem na recarga.
+   "Destino — grava já a matriz salva; Cancelar não desfaz") e grava **imediatamente, via
+   API** (`POST /api/perfis/:id/permissoes/copiar`), no alvo a **matriz salva** do perfil
+   corrente (nunca o rascunho, mesmo com células editadas) com `toast.success` com o valor
+   substituído (ex.: "substituiu 6/99") —
+   a linha do alvo e os KPIs recalculam na hora, **a cópia persiste na recarga** e o
+   Cancelar/Escape/X do modal pai **não
+   desfaz** a cópia. O
+   fechamento do filho devolve o foco ao ícone que o abriu (pilha de modais, `docs/01`
+   §5.12); "copiar de" não faz HTTP (vale até Salvar), "copiar para" grava via API.
 
 ### 3.8 `Filtros.vue` → `<PerfisFiltros>` (modal de filtros)
 
@@ -369,7 +377,7 @@ controle de linha exibe mais toast de transição.
 | **Editar perfil** (`Pencil`) | linha | abre `PerfisFormulario` modo edição com o registro completo (§3.6) | — (entregue) |
 | **Excluir perfil** (`Trash2`) | linha | abre `PerfisExclusao` (§3.5); confirmar com vínculos → modal fecha + `toast.warning` de bloqueio (base intacta); sem vínculos → remove + `toast.success` + foco na busca | — (entregue) |
 
-- Salvar no modal de permissões: `salvarPermissoes()` → linha/KPIs recalculam em memória →
+- Salvar no modal de permissões: `salvarPermissoes()` grava via API → linha/KPIs recalculam →
   `toast.success` → modal fecha; descartar (Cancelar/Escape/X) não toca na base.
 - **Filtros** (`Filtros`, §3.8): o botão "Filtros" da toolbar abre o `PerfisFiltros`;
   "Aplicar" grava o rascunho e fecha (tabela, KPIs e exportações passam a refletir o
@@ -381,38 +389,39 @@ controle de linha exibe mais toast de transição.
   perfil corrente no alvo na hora, com toast próprio — o descarte do modal corrente não
   desfaz a exportação.
 
-- Salvar no modal: validação OK → `salvarPerfil()` → linha/tabela/KPIs atualizados em memória
-  → `toast.success` → modal fecha. Erro de validação → modal aberto, mensagem no campo, foco
-  no 1º erro.
-- **Guarda de vínculo:** `perfil.usuarios > 0` barra a exclusão **no clique de "Excluir"** do
-  modal (a contagem no corpo do modal antecipa o motivo) — espelho da validação de integridade
-  que o backend imporá (docs/02 §3.5).
+- Salvar no modal: validação OK → `salvarPerfil()` grava via API → linha/tabela/KPIs
+  atualizados → `toast.success` → modal fecha. Erro de validação (cliente ou `400` do
+  servidor) → modal aberto, mensagem no campo, foco no 1º erro.
+- **Guarda de vínculo:** imposta **no servidor** (`DELETE` responde `409` com usuários
+  vinculados — FK `RESTRICT` como backstop); o corpo do modal já exibe a contagem que
+  antecipa o motivo (docs/02 §3.5).
 - **Busca** é recurso do `UiDataTable`: filtra a visualização **sem** alterar o conjunto
   vigente nem os KPIs.
 - **Exportação** (menu "Relatórios" do cabeçalho, §3.1): "Relação de perfis" gera
   `perfis.pdf` e "Exportar em CSV" baixa `perfis.csv` (`;` + BOM UTF-8) — ambos sobre o
   conjunto vigente (filtrado, se houver filtro), sem `window.print()`.
 
-## 6. Dados de demonstração
+## 6. Base semeada (banco) e KPIs
 
-- Base de **4 perfis** (mesmos `PERFIS` de `useUsuariosDemo`), **todos Ativo**, com ids fixos
-  (`p-001`…`p-004`) e timestamps fixos (`2026-01-05T08:00:00.000Z` — nada de `Date.now()`
-  na semente, para não divergir a hidratação cliente/servidor):
+- A carga inicial (`GET /api/perfis`) devolve os **4 perfis canônicos** semeados em
+  `server/migration/02_seed.sql`, **todos Ativo**, com **matriz 99/45/21/99** idêntica ao §7:
 
-| Perfil | Descrição | Usuários | Permissões |
+| Perfil | Descrição | Usuários (banco) | Permissões |
 | :--- | :--- | ---: | ---: |
 | Administrador | Acesso total ao sistema, incluindo perfis de acesso e configurações globais. | 2 | 99/99 |
-| Editor | Produz, publica e mantém conteúdos e cadastros do portal. | 5 | 45/99 |
-| Revisor | Revisa e homologa conteúdos na esteira, sem criar nem excluir registros. | 4 | 21/99 |
-| Leitor | Consulta e baixa os conteúdos publicados. | 5 | 6/99 |
+| Editor | Produz, publica e mantém conteúdos e cadastros do portal. | 0 | 45/99 |
+| Revisor | Revisa e homologa conteúdos na esteira, sem criar nem excluir registros. | 0 | 21/99 |
+| Leitor | Consulta e baixa os conteúdos publicados. | 0 | 6/99 |
 
 - KPIs da base completa: **Total 4 · Ativos 4 · Inativos 0 · Bloqueados 0 · Permissões
-  concedidas 171/396** (`99 + 45 + 21 + 6 = 171`; `4 × 99 = 396`). Criar um perfil na demo
-  leva o KPI a `171/495` (matriz vazia não soma permissões).
-- **Nenhuma persistência:** a recarga restaura a semente; o estado vive em `useState`
-  (perde-se ao fechar a aba/sessão).
-- **Contagens nunca digitadas:** usuários (2/5/4/5) vêm da base vigente de usuários e
-  permissões (99/45/21/6) da matriz — ambas calculadas em `computed`.
+  concedidas 171/396** (`99 + 45 + 21 + 6 = 171`; `4 × 99 = 396`). Criar um perfil leva o
+  KPI a `171/495` (matriz vazia não soma permissões).
+- **Persistência total:** a recarga rebusca `GET /api/perfis` — criações, edições, exclusões,
+  matrizes e cópias persistem no MariaDB (o estado de coordenação vive em `useState` e vai
+  junto na navegação interna; filtros descartam na recarga).
+- **Contagens nunca digitadas:** usuários (2/0/0/0 — `COUNT` sobre a tabela `usuarios`, cresce
+  quando a gestão de usuários for ao backend) e permissões (99/45/21/6, da matriz servida
+  pela API) — ambas calculadas em `computed`.
 
 ## 7. Matriz de permissões (normativa)
 
@@ -508,9 +517,10 @@ administração e configurações.
 | Leitor | 6 | `6/99` | \- |
 | **Total** | **171** | KPI **`171/396`** | `99+45+21+6` |
 
-Qualquer mudança nesta matriz SHALL atualizar `MATRIZ_SEED` em `usePerfisDemo.ts` no mesmo
-change, mantendo contagens, KPI e este documento idênticos (verificado na §12 e no cenário
-`docs/07`/consistência da spec `perfis-acesso`).
+Qualquer mudança nesta matriz SHALL atualizar as seeds de `server/migration/02_seed.sql`
+(espelhadas em `docs/bd/02_seed.sql`) no mesmo change, mantendo contagens, KPI e este
+documento idênticos (verificado na §12 e no cenário `docs/07`/consistência da spec
+`perfis-acesso`).
 
 ## 8. Navegação até a tela
 
@@ -611,7 +621,7 @@ exportação:
 - Checagem visual no dev server (`http://localhost:3000`):
   - **`/admin/perfis-acesso`:** KPIs **4 / 4 / 0 / 0 / 171·396** (5 cards); tabela com **6
     colunas**, busca filtrando a visualização, valores **99/99 · 45/99 · 21/99 · 6/99** e
-    usuários **2 · 5 · 4 · 5**; badges de Status (Ativo/Inativo/Bloqueado);
+    usuários **2 · 0 · 0 · 0** (do banco); badges de Status (Ativo/Inativo/Bloqueado);
     **Novo/Editar abrem o `PerfisFormulario`** (sem toast) — sem campo de código (id UUID
     gerado na criação), criação validando nome, perfil novo 0/99 com KPI `171/495`, edição com
     datas `dd/mm/yyyy` desabilitadas, `Escape`/Cancelar descartam;
@@ -625,11 +635,17 @@ exportação:
     (Cancelar/Salvar à direita), seletor filho sem o perfil atual (Esc/Tab só no filho,
     foco volta ao ícone), importar no Editor a matriz do Leitor → contador `6/99` com base
     intacta até Salvar (linha `6/99` e KPI `132/396` após salvar), exportar do Editor para
-    o Leitor → linha `45/99` e KPI `210/396` na hora com toast, descarte não desfaz a
+    o Leitor → linha `45/99` e KPI `210/396` na hora com toast (persistindo na recarga),
+    descarte não desfaz a
     exportação;
     **Excluir abre o `PerfisExclusao`** — confirmar
-    com vínculos fecha o modal com `toast.warning` de bloqueio e base intacta; recarga
-    restaura a base; **sem rolagem horizontal** a 1280px (e layout íntegro a 375px).
+    com vínculos fecha o modal com `toast.warning` de bloqueio e base intacta; sem vínculos
+    remove e **a recarga mantém a exclusão**; **sem rolagem horizontal** a 1280px (e layout
+    íntegro a 375px).
+  - **Change `perfis-acesso-backend` (E2E 8/8):** carga com overlay + toast de falha sem dados
+    falsos; criação/edição/matriz/cópia/exclusão pelos modais com persistência verificada em
+    recarga; bloqueio `409` do servidor no Administrador (2 vínculos); filtros/exportações
+    sem requisição (client-side); descartes (Cancelar/Escape/X) sem requisição.
   - **`/design` seções 19 e 20:** `UiTextarea` (campo `v-model` + erro/desabilitado) e
     `UiSwitch` (ligado, desligado, desabilitado, só `ariaLabel`).
   - **Navegação:** clique na sidebar e no menu da conta navega (o menu fecha); item da sidebar
@@ -643,13 +659,21 @@ exportação:
 
 ## 13. Pendências e próximos passos
 
-- **Backend:** `server/` com tabelas `perfis_acesso`/`permissoes_perfil` (DDL alvo em `docs/02` §3.5
-  e `docs/bd/01`)
-  e o helper `requirePermission(event, modulo, acao)` (docs/02 §3.5/§7) — a página troca o
-  composable por dados reais sem mudar o contrato visual; a §7 vira os **seeds** da migration.
-  Nesse momento entram: **`padrao_sistema`** (flag de perfil nativo bloqueado para exclusão +
-  guarda correspondente no modal de exclusão), **`cor_identificacao`** (badge colorido —
-  componente de cor novo no kit) e o **dropdown de perfis de `/admin/gestao-usuarios`**
-  derivando da base (elimina a divergência nome × contagem aceita na demo, §3.6).
-- **Situação do perfil** hoje só na demo: modelar no backend a regra de bloqueio (perfil
-  Inativo/Bloqueado não atribuível a novos usuários).
+- **ENTREGUE (change `perfis-acesso-backend`):** o backend do módulo — `server/utils/perfis.ts`
+  (normalização `permissoes_perfil` ↔ shape da tela, contagem de vínculos, transações de
+  matriz/cópia) e as rotas `GET/POST /api/perfis`, `PUT/DELETE /api/perfis/:id`,
+  `PUT /api/perfis/:id/permissoes`, `POST /api/perfis/:id/permissoes/copiar` — com a página
+  integrada (carga + gravações via `useApiFetch`) e as seeds da §7 já aplicadas em
+  `02_seed.sql`. A §7 permanece como fonte normativa.
+- **Autenticação/autorização server-side:** as rotas `/api/perfis/**` seguem **abertas**
+  (mesmo padrão atual de `/api/configuracoes`; `useAuth` ainda é fase 1). O helper
+  `requirePermission(event, modulo, acao)` (docs/02 §3.5/§7) e o 401/403 vêm junto com a
+  change de auth (JWT/sessões) — prioridade de segurança.
+- **Colunas futuras do banco:** **`padrao_sistema`** (flag de perfil nativo bloqueado para
+  exclusão + guarda correspondente no modal de exclusão) e **`cor_identificacao`** (badge
+  colorido — componente de cor novo no kit) continuam fora do UI atual.
+- **Dropdown de perfis de `/admin/gestao-usuarios`:** ainda fixo na demo (2/5/4/5);
+  derivar da base de perfis elimina a divergência nome × contagem (§3.6) e faz a coluna
+  "Usuários" crescer com o cadastro de usuários.
+- **Situação do perfil:** modelar no backend a regra de bloqueio (perfil Inativo/Bloqueado
+  não atribuível a novos usuários).

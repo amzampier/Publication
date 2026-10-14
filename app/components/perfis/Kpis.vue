@@ -4,8 +4,8 @@ import { ShieldCheck, UserCheck, UserX, ShieldOff, KeyRound } from '@lucide/vue'
 import { usePerfisDemo } from './usePerfisDemo'
 
 // KPIs derivam do conjunto VIGENTE (spec perfis-acesso: recalculam quando o
-// conjunto de perfis muda — inclusive quando um filtro do módulo o refina; na
-// fase 1, sem filtro, o conjunto é a base de demonstração)
+// conjunto de perfis muda — inclusive quando um filtro do módulo o refina); o
+// conjunto vem da API (/api/perfis) e, sem filtro, é a base persistida no banco
 const { perfisFiltrados, totalPermissoesConcedidas, totalPermissoesPossiveis } = usePerfisDemo()
 
 const total = computed(() => perfisFiltrados.value.length)

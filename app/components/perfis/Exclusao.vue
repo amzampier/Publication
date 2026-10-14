@@ -24,7 +24,7 @@ const cancelar = () => emit('update:modelValue', false)
   <UiModal
     :model-value="modelValue"
     title="Excluir Perfil"
-    subtitle="Confirme a exclusão do perfil da base em memória"
+    subtitle="Confirme a exclusão definitiva do perfil"
     :icon="Trash2"
     size="sm"
     @update:model-value="emit('update:modelValue', $event)"
@@ -42,8 +42,8 @@ const cancelar = () => emit('update:modelValue', false)
       <p class="flex items-start gap-2 text-xs text-rose-700">
         <AlertTriangle class="h-3.5 w-3.5 shrink-0 mt-px" aria-hidden="true" />
         <span>
-          Esta ação não pode ser desfeita: o perfil sai da base em memória e
-          só volta na recarga da página.
+          Esta ação não pode ser desfeita: o perfil será removido definitivamente
+          da base de dados, junto com a sua matriz de permissões.
         </span>
       </p>
     </UiModalSection>

@@ -12,6 +12,7 @@ import {
   clonarMatriz,
   contarPermissoes,
   salvarPermissoes,
+  copiarMatrizPara,
   type PerfilDemo,
   type ModuloId,
   type Permissao,
@@ -108,11 +109,21 @@ const modulosDaAba = computed(() =>
   MODULOS.filter((m) => identidade(m.label)?.sessao === aba.value)
 )
 
-const salvar = () => {
+const salvar = async () => {
   if (!props.perfil) return
-  perfis.value = salvarPermissoes(perfis.value, props.perfil.id, rascunho.value).base
-  toast.success('Perfis de Acesso (RBAC)', 'Permissões do perfil atualizadas com sucesso.')
-  emit('update:modelValue', false)
+  // Gravação via API (spec perfis-acesso): substituição integral da matriz no
+  // servidor; a linha e os KPIs recalculam a partir da resposta.
+  try {
+    const { base } = await salvarPermissoes(perfis.value, props.perfil.id, rascunho.value)
+    perfis.value = base
+    toast.success('Perfis de Acesso (RBAC)', 'Permissões do perfil atualizadas com sucesso.')
+    emit('update:modelValue', false)
+  } catch {
+    toast.danger(
+      'Perfis de Acesso (RBAC)',
+      'Não foi possível salvar as permissões. Verifique a conexão com o banco e tente novamente.'
+    )
+  }
 }
 
 const cancelar = () => emit('update:modelValue', false)
@@ -137,20 +148,33 @@ const cancelarCopia = () => {
   perfilCopia.value = ''
 }
 
-const confirmarCopia = () => {
+const confirmarCopia = async () => {
   const alvo = perfis.value.find((p) => p.id === perfilCopia.value)
   if (!alvo || !copia.value || !props.perfil) return
   if (copia.value === 'de') {
+    // "Copiar de": só o rascunho do cliente — nenhuma requisição até Salvar.
     rascunho.value = clonarMatriz(alvo.permissoes)
     toast.info('Perfis de Acesso (RBAC)', `Matriz de ${alvo.nome} copiada — vale após "Salvar".`)
-  } else {
-    const origem = perfis.value.find((p) => p.id === props.perfil!.id)
-    if (!origem) return
-    const antes = contarPermissoes(alvo)
-    perfis.value = salvarPermissoes(perfis.value, alvo.id, origem.permissoes).base
+    cancelarCopia()
+    return
+  }
+
+  // "Copiar para": gravação imediata VIA API com a matriz SALVA da origem (o
+  // servidor lê o banco — o rascunho não salvo nunca vai junto); persiste na
+  // recarga e o descarte do modal corrente não desfaz a cópia.
+  const origem = props.perfil
+  const antes = contarPermissoes(alvo)
+  try {
+    const { base } = await copiarMatrizPara(perfis.value, origem.id, alvo.id)
+    perfis.value = base
     toast.success(
       'Perfis de Acesso (RBAC)',
       `Matriz de ${origem.nome} copiada para ${alvo.nome} (substituiu ${antes}/${PERMISSOES_POR_PERFIL}).`
+    )
+  } catch {
+    toast.danger(
+      'Perfis de Acesso (RBAC)',
+      'Não foi possível copiar a matriz. Verifique a conexão com o banco e tente novamente.'
     )
   }
   cancelarCopia()

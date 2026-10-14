@@ -1,0 +1,26 @@
+# Tasks
+
+## 1. Backend — utilitário de acesso ao banco
+
+- [x] 1.1 Criar `server/utils/perfis.ts` com as constantes dos 11 módulos e 9 ações (comentário apontando `app/components/perfis/usePerfisDemo.ts`/`docs/07` como fonte) e a função `listarPerfis()` — `SELECT` de `perfis_acesso` + normalização das linhas `permissoes_perfil` para `Record<ModuloId, Permissao[]>` (`extras` JSON parseado, módulo ausente = `[]`) + `GROUP BY perfil_id` sobre `usuarios` para a contagem de vínculos — verificando com `npm run dev` + `curl http://localhost:3000/api/perfis` que a resposta traz os 4 perfis com matrizes 99/45/21/99 e contagens 2/0/0/0
+- [x] 1.2 Implementar em `server/utils/perfis.ts` as escritas `criarPerfil()` (INSERT, UUID do banco), `atualizarPerfil()` (só nome/descricao/situacao, `criado_em` preservado), `excluirPerfil()` e `salvarMatriz()` (transação `getTransaction`: DELETE das 11 linhas + INSERT das novas), validando entradas (nome obrigatório ≤100, `situacao` no enum, módulos/ações conhecidos) — verificando por chamadas de `curl` que entrada inválida gera erro de validação e que `salvarMatriz` deixa exatamente 11 linhas para o perfil
+- [x] 1.3 Implementar `contarVinculos(perfilId)` (guarda de exclusão) e `copiarMatriz(origemId, destinoId)` (lê a matriz **salva** da origem e grava no destino na mesma transação) — verificando que copiar um perfil alterado em rascunho não salvo no cliente leva ao destino a matriz persistida anteriormente
+
+## 2. Backend — rotas da API `/api/perfis`
+
+- [x] 2.1 Criar `server/api/perfis/index.get.ts` (lista) e `server/api/perfis/index.post.ts` (criação → `201`) com validação via `createError` (`400` nome vazio/longo ou situação inválida) — verificando com `curl -X POST` corpo inválido → `400` e corpo válido → `201` com id UUID, aparecendo em seguida no `GET`
+- [x] 2.2 Criar `server/api/perfis/[id]/index.put.ts` (edição → `200`; `404` id inexistente; `400` validação) e `server/api/perfis/[id]/index.delete.ts` (`409` com contagem quando vínculos > 0; `200` na remoção; `404`) — verificando com `curl`: PUT de id inexistente → `404`, DELETE do Administrador (1 vínculo) → `409` e o registro permanece, DELETE de perfil sem vínculos → `200` e some do `GET`
+- [x] 2.3 Criar `server/api/perfis/[id]/permissoes/index.put.ts` (replace-all em transação; `400` para módulo/ação desconhecido; `404` para perfil inexistente) e `server/api/perfis/[id]/permissoes/copiar/index.post.ts` (`{ destino_id }`, `404`, `400` sem destino) — verificando com `curl` que gravar matriz muda a contagem no `GET`, que módulo inválido → `400` sem alterar o banco, e que copiar grava no destino a matriz salva da origem
+
+## 3. Frontend — composable sobre a API
+
+- [x] 3.1 Reescrever `app/components/perfis/usePerfisDemo.ts` mantendo o contrato público (nomes/tipos de `perfis`, `linhas`, `filtros`, `perfisFiltrados`, `opcoesPerfis`, KPIs, `salvarPerfil`, `salvarPermissoes`, `excluirPerfil`, `clonarMatriz`, `matrizVazia`, `contarPermissoes`): base hidratada por `GET /api/perfis` (estado `carregando`/`erro` + flag de idempotência), funções de escrita `async` via `useApiFetch` — verificando que os 8 componentes importados continuam compilando sem alteração de contrato (`npm run build`)
+- [x] 3.2 Atualizar `app/components/perfis/Formulario.vue` (Salvar → `await salvarPerfil`, mantendo validação local de nome e o foco no primeiro erro), `Exclusao.vue`/página (confirmar → `await excluirPerfil` com `409` → `toast.warning` de bloqueio) e `Permissoes.vue` (Salvar → `await salvarPermissoes`; "copiar para" → `await` do endpoint de cópia com toast; "copiar de" permanece só rascunho) — verificando pela UI em `http://localhost:3000/admin/perfis-acesso` que cada fluxo mostra o toast de sucesso/erro adequado e que Cancelar/Escape/X não emitem requisição (Network do browser)
+- [x] 3.3 Ajustar `app/pages/admin/perfis-acesso.vue` para orquestrar a carga no `onMounted` (exibir `UiLoading` durante o `GET`, `toast.danger` + tabela vazia na falha, nunca a semente demo) e propagar os erros de mutação — verificando: carga normal mostra os 4 perfis; parar o MariaDB e recarregar mostra toast de erro sem dados falsos; religar e recarregar volta ao normal
+
+## 4. Verificação de integração e sincronização
+
+- [x] 4.1 Rodar `npm run build` (gate único do projeto, sem lint/teste) e corrigir qualquer erro de tipo/compilação — build concluída sem erros
+- [x] 4.2 Percorrer o fluxo completo na UI: criar perfil (KPI 171/495), editar, salvar matriz (coluna n/99 muda), copiar matriz para outro perfil, excluir perfil sem vínculos, tentar excluir Administrador (bloqueio), recarregar a página e confirmar que **tudo persiste** (cenários "Gravação persiste", "Recarga mantém a exclusão", "Recarga restaura a matriz gravada" da spec delta)
+- [x] 4.3 Confirmar regressões: filtros/KPIs/exportações CSV+PDF continuam client-side sobre o conjunto carregado (sem requisição por filtro/export), e `docs/07 - Perfis de Acesso (RBAC).md` §13 é atualizado para marcar o backend como entregue (pontos `padrao_sistema`/`cor_identificacao`/dropdown de gestao-usuarios permanecem como pendência)
+- [x] 4.4 Executar `openspec validate "perfis-acesso-backend" --strict` e, após aprovação do usuário, deixar a change pronta para `/opsx-sync` (spec delta coerente com a implementação)

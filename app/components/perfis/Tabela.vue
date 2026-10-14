@@ -33,7 +33,7 @@ const colunas: ColumnDef[] = [
     <UiDataTable
       ref="tabelaRef"
       title="Perfis de Acesso"
-      subtitle="Base de demonstração — fase 1 em memória · Permissões: ações concedidas de 99 (11 módulos × 9 ações)"
+      subtitle="Dados persistidos via API (MariaDB) · Permissões: ações concedidas de 99 (11 módulos × 9 ações)"
       :data="linhas"
       :columns="colunas"
       :default-page-size="5"

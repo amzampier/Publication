@@ -1,10 +1,15 @@
-// Estado da página de Perfis de Acesso (RBAC) - fase 1 em memória (sem persistência,
-// sem chamadas de rede). Núcleo conforme docs/02 §3.5 (tabelas `perfis_acesso`/`permissoes_perfil`):
-// 4 ações booleanas fixas por módulo + 5 `extras` (JSON). A matriz semeada é a única
-// fonte das contagens exibidas na tela e do `docs/07` (design D2 da change em vigência).
+// Estado da página de Perfis de Acesso (RBAC) sobre a API /api/perfis
+// (change perfis-acesso-backend — spec perfis-acesso). O contrato público é o da
+// fase 1 (mesmos nomes/tipos), mas a base vem do banco (`GET /api/perfis`), as
+// gravações são assíncronas e nada é semeado em memória: sem resposta, a lista
+// fica vazia com erro — nunca a demo fingindo ser real.
+// Núcleo do modelo conforme docs/02 §3.5 (perfis_acesso/permissoes_perfil):
+// 4 ações booleanas fixas por módulo + 5 `extras` (JSON) = 99 permissões.
+// Os ids de módulo/ações estão duplicados em server/utils/perfis.ts (barreira
+// app/ × server/) — mantenha os dois lados em sincronia.
 import { computed } from 'vue'
 import { useState } from '#app'
-import { useUsuariosDemo } from '../usuarios/useUsuariosDemo'
+import { useApiFetch } from '../../composables/useApiFetch'
 
 export type SituacaoPerfil = 'Ativo' | 'Inativo' | 'Bloqueado'
 
@@ -52,16 +57,18 @@ export const MODULOS: { id: ModuloId; label: string; descricao: string }[] = [
 /** 99 = 11 módulos × 9 ações (4 fixas + 5 extras). */
 export const PERMISSOES_POR_PERFIL = MODULOS.length * (ACOES.length + EXTRAS.length)
 
-/** Espelho demo do registro `perfis` (docs/02 §3.5): identificador UUID, situação de 3
- *  estados e timestamps — sem `padrao_sistema`/`cor_identificacao` (colunas futuras). */
+/** Registro do perfil no shape da API (espelho do PerfilDemo da fase 1). */
 export interface PerfilDemo {
   id: string
   nome: PerfilId | string
   descricao: string
   situacao: SituacaoPerfil
-  /** ISO 8601 - fixos na semente (evita divergência de hidratação cliente/servidor). */
+  /** ISO 8601 */
   criado_em: string
+  /** ISO 8601 */
   atualizado_em: string
+  /** Usuários vinculados — derivado da tabela `usuarios` pelo servidor. */
+  usuarios: number
   /** Matriz do perfil: módulo -> ações concedidas (fonte única das contagens). */
   permissoes: Record<ModuloId, Permissao[]>
 }
@@ -82,21 +89,6 @@ export interface FiltrosPerfis {
   situacao: string
 }
 
-// Regras por perfil (docs/07 §"Matriz de permissões"; design D2) - conjuntos declarados
-// uma única vez e reutilizados pelos módulos do mesmo grupo.
-const ACOES_TUDO: Permissao[] = [...ACOES, ...EXTRAS]
-const CONTEIDO_EDITOR: Permissao[] = [
-  'visualizar',
-  'criar',
-  'alterar',
-  'publicar',
-  'arquivar',
-  'download',
-  'exportar'
-]
-const CONTEIDO_REVISOR: Permissao[] = ['visualizar', 'alterar', 'download', 'exportar']
-const CONTEIDO_LEITOR: Permissao[] = ['visualizar', 'download']
-
 /** Garante os 11 módulos em toda matriz, copiando cada lista (sem referência compartilhada). */
 const matriz = (parcial: Partial<Record<ModuloId, Permissao[]>>): Record<ModuloId, Permissao[]> => {
   const completa = {} as Record<ModuloId, Permissao[]>
@@ -109,137 +101,84 @@ export const clonarMatriz = (
   origem: Record<ModuloId, Permissao[]>
 ): Record<ModuloId, Permissao[]> => matriz(origem)
 
-const conteudo = (acoes: Permissao[]): Partial<Record<ModuloId, Permissao[]>> => ({
-  manuais: acoes,
-  'release-week': acoes,
-  'escopo-projetos': acoes
-})
-
-/** Matriz de um perfil recém-criado: 11 módulos sem nenhuma ação concedida (0/99). */
+/** Matriz de um perfil sem nenhuma ação concedida (0/99) — criação nova e rascunho vazio. */
 export const matrizVazia = (): Record<ModuloId, Permissao[]> => matriz({})
-
-export const MATRIZ_SEED: Record<PerfilId, Record<ModuloId, Permissao[]>> = {
-  Administrador: matriz(
-    Object.fromEntries(MODULOS.map((m) => [m.id, ACOES_TUDO])) as Partial<
-      Record<ModuloId, Permissao[]>
-    >
-  ),
-  Editor: matriz({
-    ...conteudo(CONTEIDO_EDITOR),
-    'esteira-revisao': ['visualizar', 'criar', 'alterar', 'publicar', 'arquivar'],
-    'lancar-chamadas': ['visualizar', 'criar', 'alterar', 'publicar', 'arquivar', 'download'],
-    parceiros: ['visualizar', 'criar', 'alterar', 'exportar'],
-    softwares: ['visualizar', 'criar', 'alterar', 'exportar'],
-    'gestao-usuarios': ['visualizar', 'importar', 'exportar'],
-    auditoria: ['visualizar', 'exportar']
-  }),
-  Revisor: matriz({
-    ...conteudo(CONTEIDO_REVISOR),
-    'esteira-revisao': ['visualizar', 'alterar'],
-    'lancar-chamadas': ['visualizar', 'alterar'],
-    parceiros: ['visualizar'],
-    softwares: ['visualizar'],
-    'gestao-usuarios': ['visualizar'],
-    auditoria: ['visualizar', 'exportar']
-  }),
-  Leitor: matriz(conteudo(CONTEIDO_LEITOR))
-}
 
 export const contarPermissoes = (perfil: PerfilDemo): number =>
   MODULOS.reduce((total, modulo) => total + (perfil.permissoes[modulo.id]?.length ?? 0), 0)
 
-const clonar = (p: PerfilDemo): PerfilDemo => ({
-  ...p,
-  permissoes: clonarMatriz(p.permissoes)
-})
+// ---------------------------------------------------------------------------
+// Escritas — 100% pela API (spec perfis-acesso: gravam no banco e sobrevivem
+// à recarga). Assíncronas; em erro lançam (FetchError com `statusCode` — o
+// chamador trata 409 de vínculo e demais códigos).
+// ---------------------------------------------------------------------------
 
-/**
- * Remove o perfil do id indicado (puro): devolve a base nova sem ele (a matriz de
- * permissões vai junto, pois vive no próprio objeto) e id inexistente devolve a base
- * intacta. Quem tem o `useState` é quem atribui `perfis.value = base` (mesmo contrato
- * de `excluirUsuario`).
- */
-export const excluirPerfil = (
-  base: PerfilDemo[],
-  id: string
-): { base: PerfilDemo[] } => ({
-  base: base.filter((p) => p.id !== id)
-})
-
-/**
- * Grava o perfil no modo indicado (puro): criação gera `id` novo
- * (`crypto.randomUUID()`) e acrescenta clone ao fim da base; edição substitui o registro do
- * mesmo id (clone - `criado_em`/`atualizado_em` já resolvidos pelo chamador). Id
- * inexistente na edição devolve a base intacta.
- * Quem tem o `useState` é quem atribui `perfis.value = base` (mesmo contrato de
- * `excluirPerfil`).
- */
-export const salvarPerfil = (
+/** Cria (POST) ou edita (PUT) o perfil; devolve a base com a resposta do servidor. */
+export const salvarPerfil = async (
   base: PerfilDemo[],
   registro: PerfilDemo,
   modo: ModoPerfis
-): { base: PerfilDemo[] } => {
-  if (modo === 'novo') {
-    return { base: [...base, clonar({ ...registro, id: crypto.randomUUID() })] }
+): Promise<{ base: PerfilDemo[] }> => {
+  const corpo = {
+    nome: registro.nome,
+    descricao: registro.descricao,
+    situacao: registro.situacao
   }
-  return { base: base.map((p) => (p.id === registro.id ? clonar(registro) : p)) }
+  if (modo === 'novo') {
+    const criado = await useApiFetch<PerfilDemo>('/api/perfis', {
+      method: 'POST',
+      body: corpo
+    })
+    return { base: [...base, criado] }
+  }
+  const atualizado = await useApiFetch<PerfilDemo>(`/api/perfis/${registro.id}`, {
+    method: 'PUT',
+    body: corpo
+  })
+  return { base: base.map((p) => (p.id === registro.id ? atualizado : p)) }
 }
 
-/**
- * Grava a matriz de permissões do perfil id (puro): devolve a base nova com o
- * registro clonado (matriz copiada célula a célula); id inexistente devolve a base
- * intacta. Mesmo contrato de `salvarPerfil` — quem tem o `useState` é quem atribui
- * `perfis.value = base`.
- */
-export const salvarPermissoes = (
+/** Grava a matriz inteira do perfil (PUT .../permissoes) e devolve a base atualizada. */
+export const salvarPermissoes = async (
   base: PerfilDemo[],
   id: string,
   permissoes: Record<ModuloId, Permissao[]>
-): { base: PerfilDemo[] } => ({
-  base: base.map((p) => (p.id === id ? clonar({ ...p, permissoes }) : p))
-})
+): Promise<{ base: PerfilDemo[] }> => {
+  const atualizado = await useApiFetch<PerfilDemo>(`/api/perfis/${id}/permissoes`, {
+    method: 'PUT',
+    body: { permissoes }
+  })
+  return { base: base.map((p) => (p.id === id ? atualizado : p)) }
+}
 
-// Base de demonstração - os 4 perfis canônicos (mesmos do PERFIS de useUsuariosDemo),
-// todos Ativo: são os perfis em uso pelos 16 usuários da base (design D7).
-// Timestamps fixos: nada de Date.now() no evaluate (hidratação cliente/servidor).
-export const PERFIS_DEMO: PerfilDemo[] = [
-  {
-    id: 'p-001',
-    nome: 'Administrador',
-    descricao: 'Acesso total ao sistema, incluindo perfis de acesso e configurações globais.',
-    situacao: 'Ativo',
-    criado_em: '2026-01-05T08:00:00.000Z',
-    atualizado_em: '2026-01-05T08:00:00.000Z',
-    permissoes: MATRIZ_SEED.Administrador
-  },
-  {
-    id: 'p-002',
-    nome: 'Editor',
-    descricao: 'Produz, publica e mantém conteúdos e cadastros do portal.',
-    situacao: 'Ativo',
-    criado_em: '2026-01-05T08:00:00.000Z',
-    atualizado_em: '2026-01-05T08:00:00.000Z',
-    permissoes: MATRIZ_SEED.Editor
-  },
-  {
-    id: 'p-003',
-    nome: 'Revisor',
-    descricao: 'Revisa e homologa conteúdos na esteira, sem criar nem excluir registros.',
-    situacao: 'Ativo',
-    criado_em: '2026-01-05T08:00:00.000Z',
-    atualizado_em: '2026-01-05T08:00:00.000Z',
-    permissoes: MATRIZ_SEED.Revisor
-  },
-  {
-    id: 'p-004',
-    nome: 'Leitor',
-    descricao: 'Consulta e baixa os conteúdos publicados.',
-    situacao: 'Ativo',
-    criado_em: '2026-01-05T08:00:00.000Z',
-    atualizado_em: '2026-01-05T08:00:00.000Z',
-    permissoes: MATRIZ_SEED.Leitor
-  }
-]
+/**
+ * Exclui o perfil (DELETE). Lança com `statusCode` 409 quando o servidor encontra
+ * usuários vinculados (o chamador exibe o toast de bloqueio e mantém a base).
+ */
+export const excluirPerfil = async (
+  base: PerfilDemo[],
+  id: string
+): Promise<{ base: PerfilDemo[] }> => {
+  await useApiFetch(`/api/perfis/${id}`, { method: 'DELETE' })
+  return { base: base.filter((p) => p.id !== id) }
+}
+
+/**
+ * Copia a matriz SALVA do perfil origem para o destino (POST .../copiar) — gravação
+ * imediata no servidor, nunca o rascunho do cliente. Devolve a base com o destino
+ * atualizado.
+ */
+export const copiarMatrizPara = async (
+  base: PerfilDemo[],
+  origemId: string,
+  destinoId: string
+): Promise<{ base: PerfilDemo[] }> => {
+  const destino = await useApiFetch<PerfilDemo>(
+    `/api/perfis/${origemId}/permissoes/copiar`,
+    { method: 'POST', body: { destino_id: destinoId } }
+  )
+  return { base: base.map((p) => (p.id === destinoId ? destino : p)) }
+}
 
 /** Linha derivada da tabela: contagens nunca digitadas, sempre calculadas (design D2/D3). */
 export interface LinhaPerfil {
@@ -252,8 +191,33 @@ export interface LinhaPerfil {
 }
 
 export const usePerfisDemo = () => {
-  // Base reativa (fase 1): criada na carga, perdida na recarga. Clone da semente.
-  const perfis = useState<PerfilDemo[]>('perfis-base', () => PERFIS_DEMO.map(clonar))
+  // Base reativa compartilhada: inicia VAZIA (a carga preenche com o banco —
+  // spec: nunca exibir a demo como se fosse persistida).
+  const perfis = useState<PerfilDemo[]>('perfis-base', () => [])
+  const carregando = useState<boolean>('perfis-carregando', () => false)
+  const carregado = useState<boolean>('perfis-carregado', () => false)
+
+  /**
+   * Hidrata a base a partir de GET /api/perfis (idempotente: só busca na primeira
+   * montagem ou após falha). Devolve `false` quando a carga falha — o chamador
+   * mostra o toast de erro e a lista permanece vazia.
+   */
+  const carregarPerfis = async (): Promise<boolean> => {
+    if (carregado.value) return true
+    if (carregando.value) return false
+    carregando.value = true
+    try {
+      const lista = await useApiFetch<PerfilDemo[]>('/api/perfis')
+      perfis.value = Array.isArray(lista) ? lista : []
+      carregado.value = true
+      return true
+    } catch {
+      perfis.value = []
+      return false
+    } finally {
+      carregando.value = false
+    }
+  }
 
   // Filtros estruturais (spec perfis-acesso: modal de filtros refina o conjunto
   // vigente) — em memória, descartados na recarga (mesmo contrato de usuarios).
@@ -287,17 +251,13 @@ export const usePerfisDemo = () => {
     filtros.value = { perfil: '', situacao: '' }
   }
 
-  // Contagem de usuários por perfil deriva da base vigente de usuários (design D3):
-  // criar/excluir um usuário em /admin/gestao-usuarios acompanha aqui, sem reload.
+  // Contagem de usuários por perfil deriva do campo `usuarios` vindo da API
+  // (COUNT sobre a tabela usuarios — D4 do design): editar usuários no sistema
+  // reflete na próxima carga da página (spec: "Acompanha a base de usuários").
   // Incide sobre o CONJUNTO FILTRADO (KPIs/linhas seguem o filtro — spec).
-  const { usuarios } = useUsuariosDemo()
-
   const usuariosPorPerfil = computed<Record<string, number>>(() => {
     const contagem: Record<string, number> = {}
-    for (const perfil of perfisFiltrados.value) contagem[perfil.nome] = 0
-    for (const usuario of usuarios.value) {
-      if (usuario.perfil in contagem) contagem[usuario.perfil] += 1
-    }
+    for (const perfil of perfisFiltrados.value) contagem[perfil.nome] = perfil.usuarios
     return contagem
   })
 
@@ -307,7 +267,7 @@ export const usePerfisDemo = () => {
       nome: perfil.nome,
       descricao: perfil.descricao,
       situacao: perfil.situacao,
-      usuarios: usuariosPorPerfil.value[perfil.nome] ?? 0,
+      usuarios: perfil.usuarios,
       permissoesTexto: `${contarPermissoes(perfil)}/${PERMISSOES_POR_PERFIL}`
     }))
   )
@@ -322,6 +282,9 @@ export const usePerfisDemo = () => {
 
   return {
     perfis,
+    carregando,
+    carregado,
+    carregarPerfis,
     filtros,
     perfisFiltrados,
     filtrosAtivosCount,

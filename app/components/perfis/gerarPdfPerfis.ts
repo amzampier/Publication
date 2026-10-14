@@ -1,5 +1,5 @@
 // Relatório de Perfis de Acesso em PDF — jsPDF (A4 paisagem) + jspdf-autotable.
-// Fase 1: opera sobre o conjunto vigente em memória; a logo de login vem do
+// Opera sobre o conjunto vigente vindo da API; a logo de login vem do
 // composable compartilhado (useLogomarcaLogin) e só entra quando houver arquivo.
 // Molde de usuarios/gerarPdfUsuarios.ts (ficheiro isolado até um 3º relatório
 // pedir a extração de um util comum — design D5 da change de filtros/exportação).
