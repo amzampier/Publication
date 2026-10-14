@@ -1,7 +1,29 @@
-// Camada de comunicação com a API (docs/02 §5.2) — versão mínima desta fase:
-// credentials + headers de contexto de auditoria. O auto-refresh de 401
-// (/api/auth/refresh) entra junto com a change de auth (JWT/sessões).
+// Camada de comunicação com a API (docs/02 §5.2) — change auth-backend-resend:
+// credentials + headers de contexto de auditoria + AUTO-REFRESH com
+// single-flight (design D8): num 401, TODAS as chamadas em voo compartilham a
+// MESMA promessa de /api/auth/refresh (cada rotação invalida o token anterior
+// — N refreshes simultâneos derrubariam a sessão) e refazem a requisição uma
+// vez; refresh definitivamente falho → estado local cai (sessão inválida) e o
+// middleware leva ao login.
 import type { UsuarioLogado } from './useAuth'
+import { useAuth } from './useAuth'
+
+let refreshEmVoo: Promise<boolean> | null = null
+
+function renovarUmaVez(): Promise<boolean> {
+  if (!refreshEmVoo) {
+    refreshEmVoo = $fetch('/api/auth/refresh', {
+      method: 'POST',
+      credentials: 'include'
+    })
+      .then(() => true)
+      .catch(() => false)
+      .finally(() => {
+        refreshEmVoo = null
+      })
+  }
+  return refreshEmVoo
+}
 
 export function useApiFetch<T = any>(
   request: Parameters<typeof $fetch>[0],
@@ -13,9 +35,21 @@ export function useApiFetch<T = any>(
   if (usuario.value?.id) headers['x-usuario-id'] = usuario.value.id
   if (usuario.value?.nome) headers['x-usuario-nome'] = encodeURIComponent(usuario.value.nome)
 
-  return $fetch<T>(request, {
-    ...opts,
-    headers,
-    credentials: 'include'
-  })
+  const doFetch = () =>
+    $fetch<T>(request, {
+      ...opts,
+      headers,
+      credentials: 'include'
+    })
+
+  return doFetch().catch(async (erro: any) => {
+    if (erro?.statusCode !== 401 && erro?.status !== 401) throw erro
+
+    const renovado = await renovarUmaVez()
+    if (!renovado) {
+      useAuth().sessaoInvalidada()
+      throw erro
+    }
+    return doFetch()
+  }) as Promise<T>
 }

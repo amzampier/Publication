@@ -14,6 +14,7 @@ import {
   Smartphone
 } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
+import { useApiFetch } from '../../composables/useApiFetch'
 import {
   useUsuariosDemo,
   VARIANTE_POR_PERFIL,
@@ -26,7 +27,7 @@ import {
   gerarSenhaProvisoria,
   normalizarTelefoneWhats,
   type DadosConvite
-} from '../../utils/conviteTemplate'
+} from '#shared/utils/emails'
 
 interface Props {
   modelValue: boolean
@@ -110,8 +111,12 @@ const dados = computed<DadosConvite>(() => ({
   telefone: registro.value?.telefone ?? ''
 }))
 
-const htmlConvite = computed(() => renderHtmlConvite(dados.value))
-const textoConvite = computed(() => renderTextoConvite(dados.value))
+/** Link absoluto de acesso — a mensagem sai do navegador (origem atual). */
+const linkAcesso = () =>
+  (typeof window === 'undefined' ? '' : window.location.origin) + '/admin/login'
+
+const htmlConvite = computed(() => renderHtmlConvite(dados.value, linkAcesso()))
+const textoConvite = computed(() => renderTextoConvite(dados.value, linkAcesso()))
 
 const gerarSenha = () => {
   senha.value = gerarSenhaProvisoria()
@@ -128,25 +133,56 @@ const copiar = async (texto: string, mensagem: string) => {
 
 const fechar = () => emit('update:modelValue', false)
 
-// Grava a senha provisória no registro em memória e dispara o canal (D4)
-const enviar = () => {
-  const alvo = registro.value
-  if (!alvo || !podeEnviar.value) return
+const enviando = ref(false)
 
+// Grava a senha provisória no BANCO via API (find-or-create por e-mail —
+// design D9) e dispara o canal escolhido; a falha do envio mantém o modal
+// aberto com toast de erro (spec gestao-usuarios, envio real).
+const enviar = async () => {
+  const alvo = registro.value
+  if (!alvo || !podeEnviar.value || enviando.value) return
+
+  enviando.value = true
+  try {
+    await useApiFetch('/api/convite', {
+      method: 'POST',
+      body: {
+        email: alvo.email,
+        senha: senha.value,
+        nome: alvo.nome,
+        perfil: alvo.perfil,
+        situacao: alvo.status,
+        telefone: alvo.telefone ?? '',
+        departamento: alvo.departamento ?? '',
+        funcao: alvo.funcao ?? '',
+        canal: canal.value
+      }
+    })
+  } catch (erro) {
+    const mensagem = (erro as { data?: { statusMessage?: string } }).data?.statusMessage
+    toast.danger(
+      'Gestão de Usuários',
+      mensagem ?? 'Não foi possível enviar o convite. Tente novamente.'
+    )
+    enviando.value = false
+    return
+  }
+  enviando.value = false
+
+  // Espelho de tela: a senha real (hash) vive no banco; a linha demo acompanha
+  // para a UI (campo/canônico) ficar consistente até a gestão ir ao backend.
   usuarios.value = usuarios.value.map((u) =>
     u.id === alvo.id ? { ...u, senha: senha.value } : u
   )
 
   if (canal.value === 'email') {
-    // Frontend-only: envio simulado, sem abrir cliente de e-mail (Resend = backend futuro)
-    toast.success(
-      'Gestão de Usuários',
-      'Convite por e-mail em simulação — o envio real via Resend entra na fase de backend.'
-    )
+    toast.success('Gestão de Usuários', `Convite enviado para ${alvo.email}.`)
     fechar()
     return
   }
 
+  // WhatsApp: conta já gravada acima — fluxo client inalterado (protocolo +
+  // fallback ~2 s, design D4 do modal original).
   const texto = textoConvite.value
   const numero = normalizarTelefoneWhats(alvo.telefone)
   const urlWeb = `https://wa.me/${numero}?text=${encodeURIComponent(texto)}`
@@ -235,7 +271,7 @@ const enviar = () => {
             v-model="canal"
             value="email"
             title="E-mail"
-            description="Envio pelo sistema em simulação — nenhum cliente de e-mail é aberto."
+            description="Envio real pelo sistema de e-mail — nenhum cliente de e-mail é aberto."
             :icon="Mail"
             tone="sky"
           />
@@ -349,6 +385,7 @@ const enviar = () => {
         variant="primary"
         size="md"
         :disabled="!podeEnviar"
+        :loading="enviando"
         :title="podeEnviar ? '' : 'Informe ou gere a senha provisória (mínimo de 8 caracteres).'"
         @click="enviar"
       >

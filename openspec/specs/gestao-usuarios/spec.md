@@ -194,12 +194,17 @@ O sistema SHALL abrir um modal de importação de usuários ao acionar o ícone 
 - **WHEN** a página é recarregada após uma importação
 - **THEN** a base de demonstração original volta a ser exibida, sem os registros importados
 
-### Requirement: A fase 1 opera sem persistência e sem chamadas de rede
-O sistema SHALL manter os usuários, perfis e exportações inteiramente em memória, restaurando os dados de demonstração a cada recarga da página, sem requisições HTTP.
+### Requirement: As operações da tela permanecem em memória; só o convite usa a rede
+O sistema SHALL manter a listagem, os KPIs, o CRUD, a importação e as exportações de usuários
+inteiramente em memória, restaurando os dados de demonstração a cada recarga da página, sem
+requisições HTTP para esses dados. A única operação da tela que usa a rede SHALL ser o envio
+de convite (que persiste a conta no banco, fora do estado em memória da tela).
 
 #### Scenario: Recarga restaura o estado inicial
 - **WHEN** a página é recarregada
-- **THEN** a base de usuários de demonstração aparece novamente, sem alterações preservadas
+- **THEN** a base de usuários de demonstração aparece novamente, sem alterações de
+  listagem/CRUD preservadas (a conta materializada por convite permanece no banco, invisível
+  nesta tela até a gestão de usuários ir ao backend)
 
 ### Requirement: O modal de usuário reúne os blocos de cadastro
 O sistema SHALL exibir um único modal de usuário, aberto em modo de criação pelo botão "Novo Usuário" do cabeçalho e em modo de edição pelo lápis da linha, com os blocos **Dados do Usuário** (avatar, Nome, E-mail, Telefone, Função, Departamento e, numa linha própria de largura total começando abaixo do avatar, Status — em controle segmentado Ativo/Inativo, sem dropdown —, Perfil, Senha e Confirmar Senha — sem seção/cabeçalho próprio de "Acesso ao Sistema"), **Endereço** (CEP, Endereço, Número, Complemento, Bairro, Cidade, Estado, Região) e **Configurações de E-mail** (E-mail SMTP, Senha SMTP, Provedor, Servidor SMTP, Porta, Segurança, ações de teste e Status da Configuração) nos dois modos, acrescidos do bloco **Informações de Cadastro** (Data Cadastro e Última Atualização, ambos desabilitados) **somente em modo de edição** — o modo de criação SHALL abrir o modal apenas com os três blocos anteriores, sem a seção "Informações de Cadastro" e sem os campos de data.
@@ -320,45 +325,97 @@ O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao a
 - **WHEN** a página é recarregada após uma exclusão
 - **THEN** a base de demonstração original volta a ser exibida, com o usuário excluído presente
 
-### Requirement: O modal de convite escolhe o canal e envia as credenciais pelo aplicativo do usuário
-O sistema SHALL abrir um modal de convite (`UiModal` de largura `xl` — 1120px —, ícone `Send`, título "Enviar Convite" e subtítulo que descreve o propósito do modal) ao acionar o ícone `MailCheck` da linha, sem nenhum toast de "próxima etapa". O corpo do modal SHALL organizar-se em duas colunas em `xl` ou acima — Destinatário, Canal de Envio (com os dois cartões lado a lado) e Credenciais de Acesso à esquerda (coluna de ~420px) e Pré-visualização à direita, esticando até a altura da coluna esquerda — e em uma coluna abaixo desse breakpoint, sempre em quatro `UiModalSection`: **"Destinatário"** (avatar ou iniciais, nome, e-mail, telefone, badges de Perfil e Status), **"Canal de Envio"** (escolha única entre "E-mail" e "WhatsApp" por dois cartões `UiChoiceCard`, iniciando em E-mail; o cartão de WhatsApp SHALL chegar desabilitado, com dica explicando a ausência, quando o usuário não tiver telefone cadastrado), **"Credenciais de Acesso"** (login = e-mail do usuário e senha provisória exibidos **na mesma linha**; a senha, quando existir, aparece em modo somente-leitura com controle de visibilidade e cópia, e o botão de **redefinir**, que gera nova provisória no rascunho, fica abaixo dos campos; quando vazia, o campo de definição acompanha abaixo o botão de **gerar**, com no mínimo 8 caracteres) e **"Pré-visualização"** (apenas o template de convite renderizado conforme o canal escolhido — HTML no E-mail e texto puro no WhatsApp —, sem tarja de cabeçalho). A mensagem SHALL vir de um template pré-definido em arquivo do sistema contendo o nome, o e-mail, o link de acesso (`<origem>/admin/login`) e a senha provisória, sem edição de texto na tela. O botão "Enviar Convite" SHALL permanecer desabilitado enquanto a senha provisória estiver vazia. Acionar "Enviar Convite" SHALL gravar a senha provisória no registro em memória e disparar o canal escolhido — E-mail em simulação nesta fase: nenhum cliente de e-mail é aberto, um toast de sucesso informa tratar-se de simulação (o envio real via API do Resend é previsto para a fase de backend); WhatsApp pelo protocolo do aplicativo desktop (`whatsapp://send`), com abertura do WhatsApp Web (`wa.me`) como fallback quando o aplicativo não responder em cerca de 2 segundos —, seguido de toast de sucesso e com nada enviado até o usuário confirmar no aplicativo. Toda a operação SHALL ocorrer sem nenhuma requisição HTTP. O rodapé do modal SHALL conter a ação "Copiar mensagem" (à esquerda) e os botões "Cancelar" e "Enviar Convite". "Cancelar", `Escape` ou o `X` do cabeçalho SHALL fechar o modal descartando o rascunho (inclusive a senha gerada e ainda não enviada), e tudo SHALL ser descartado na recarga da página.
+
+### Requirement: O modal de convite escolhe o canal e envia as credenciais reais
+O sistema SHALL abrir um modal de convite (`UiModal` de largura `xl` — 1120px —, ícone
+`Send`, título "Enviar Convite" e subtítulo que descreve o propósito do modal) ao acionar o
+ícone `MailCheck` da linha, sem nenhum toast de "próxima etapa". O corpo do modal SHALL
+organizar-se em duas colunas em `xl` ou acima — Destinatário, Canal de Envio (com os dois
+cartões lado a lado) e Credenciais de Acesso à esquerda (coluna de ~420px) e Pré-visualização à
+direita, esticando até a altura da coluna esquerda — e em uma coluna abaixo desse breakpoint,
+sempre em quatro `UiModalSection`: **"Destinatário"** (avatar ou iniciais, nome, e-mail,
+telefone, badges de Perfil e Status), **"Canal de Envio"** (escolha única entre "E-mail" e
+"WhatsApp" por dois cartões `UiChoiceCard`, iniciando em E-mail; o cartão de WhatsApp SHALL
+chegar desabilitado, com dica explicando a ausência, quando o usuário não tiver telefone
+cadastrado), **"Credenciais de Acesso"** (login = e-mail do usuário e senha provisória
+exibidos **na mesma linha**; a senha, quando existir, aparece em modo somente-leitura com
+controle de visibilidade e cópia, e o botão de **redefinir**, que gera nova provisória no
+rascunho, fica abaixo dos campos; quando vazia, o campo de definição acompanha abaixo do botão
+de **gerar**, com no mínimo 8 caracteres) e **"Pré-visualização"** (apenas o template de
+convite renderizado conforme o canal escolhido — HTML no E-mail e texto puro no WhatsApp —,
+sem tarja de cabeçalho). A mensagem SHALL vir de um template pré-definido do sistema
+compartilhado entre cliente e servidor, contendo o nome, o e-mail, o link de acesso
+(`<origem>/admin/login`) e a senha provisória, sem edição de texto na tela. O botão "Enviar
+Convite" SHALL permanecer desabilitado enquanto a senha provisória estiver vazia.
+
+Acionar "Enviar Convite" SHALL chamar a API de convite com **find-or-create por e-mail**: se
+a conta não existir no banco, ela SHALL ser criada com os dados do destinatário e o hash da
+senha provisória; se existir, a senha provisória SHALL substituir o hash vigente. Para o canal
+**E-mail**, o servidor SHALL enviar a mensagem real via **Resend** (toast de sucesso de envio
+real; falha do provedor → toast de erro, modal permanece aberto). Para **WhatsApp**, a senha
+SHALL ser gravada no banco (mesmo find-or-create) e o aplicativo SHALL ser aberto pelo
+protocolo client-side como hoje. A conta criada/alterada SHALL persistir na recarga; a
+listagem da tela permanece a base de demonstração (a gestão de usuários ainda não vai ao
+banco).
 
 #### Scenario: Abertura pela linha
 - **WHEN** o usuário clica no `MailCheck` de uma linha
-- **THEN** o modal de convite abre exibindo as quatro seções (com Destinatário, Canal de Envio e Credenciais à esquerda e Pré-visualização à direita em telas `xl` ou maiores), subtítulo descritivo e canal "E-mail" já selecionado, sem nenhum toast de "próxima etapa"
+- **THEN** o modal de convite abre exibindo as quatro seções (com Destinatário, Canal de Envio
+  e Credenciais à esquerda e Pré-visualização à direita em telas `xl` ou maiores), subtítulo
+  descritivo e canal "E-mail" já selecionado, sem nenhum toast de "próxima etapa"
 
 #### Scenario: WhatsApp desabilitado sem telefone
 - **WHEN** o modal de convite é aberto para um usuário sem telefone cadastrado
-- **THEN** o cartão de WhatsApp aparece desabilitado com dica de que o telefone não está cadastrado, e a seleção permanece em "E-mail"
+- **THEN** o cartão de WhatsApp aparece desabilitado com dica de que o telefone não está
+  cadastrado, e a seleção permanece em "E-mail"
 
 #### Scenario: Pré-visualização acompanha o canal
 - **WHEN** com o modal aberto o usuário troca o canal de "E-mail" para "WhatsApp"
-- **THEN** a pré-visualização passa a exibir a versão em texto da mensagem e volta a exibir a versão HTML quando o canal volta a "E-mail"
+- **THEN** a pré-visualização passa a exibir a versão em texto da mensagem e volta a exibir a
+  versão HTML quando o canal volta a "E-mail"
 
 #### Scenario: Senha vazia bloqueia o envio e pode ser gerada
 - **WHEN** o modal é aberto para um usuário sem senha provisória (ex.: importado)
-- **THEN** o botão "Enviar Convite" está desabilitado com aviso, e a ação de gerar preenche uma senha provisória válida (no mínimo 8 caracteres) habilitando o envio
+- **THEN** o botão "Enviar Convite" está desabilitado com aviso, e a ação de gerar preenche uma
+  senha provisória válida (no mínimo 8 caracteres) habilitando o envio
 
 #### Scenario: Redefinir senha antes do envio
 - **WHEN** com senha já existente no registro o usuário aciona "Redefinir senha"
-- **THEN** uma nova senha provisória válida (no mínimo 8 caracteres) substitui a atual no rascunho e no campo somente-leitura, a ação pode ser repetida antes do envio e a nova senha só é gravada no registro ao enviar — descartada se o modal for fechado
+- **THEN** uma nova senha provisória válida (no mínimo 8 caracteres) substitui a atual no
+  rascunho e no campo somente-leitura, a ação pode ser repetida antes do envio e a nova senha
+  só é gravada no banco ao enviar — descartada se o modal for fechado
+
+#### Scenario: Convite cria a conta quando ela não existe no banco
+- **WHEN** o usuário aciona "Enviar Convite" numa linha que ainda não tem conta no banco
+- **THEN** a API cria a conta (find-or-create por e-mail) com o hash da senha provisória e os
+  dados do destinatário, e aquela senha passa a autenticar no `/admin/login`
 
 #### Scenario: Envio por E-mail
 - **WHEN** com senha preenchida o usuário mantém o canal "E-mail" e aciona "Enviar Convite"
-- **THEN** nenhum cliente de e-mail é aberto, um toast de sucesso informa que o envio está em simulação (envio real via API na fase de backend), a senha provisória fica gravada no registro em memória e o modal fecha
+- **THEN** nenhum cliente de e-mail é aberto, a API grava a senha (hash) e envia o convite
+  real via Resend, um toast de sucesso confirma o envio e o modal fecha; falha no envio
+  exibe toast de erro e o modal permanece aberto
 
 #### Scenario: Envio por WhatsApp pelo aplicativo desktop
-- **WHEN** com telefone cadastrado e senha preenchida o usuário escolhe "WhatsApp" e aciona "Enviar Convite"
-- **THEN** o aplicativo WhatsApp Desktop abre via protocolo com o número normalizado (55 + dígitos) e a mensagem já preenchida, um toast de sucesso é exibido e a senha provisória fica gravada no registro em memória
+- **WHEN** com telefone cadastrado e senha preenchida o usuário escolhe "WhatsApp" e aciona
+  "Enviar Convite"
+- **THEN** a senha provisória é gravada no banco (find-or-create), o aplicativo WhatsApp
+  Desktop abre via protocolo com o número normalizado (55 + dígitos) e a mensagem já
+  preenchida, e um toast de sucesso é exibido
 
 #### Scenario: Fallback do WhatsApp
 - **WHEN** o protocolo do aplicativo não é respondido em cerca de 2 segundos
-- **THEN** o WhatsApp Web (`wa.me`) é aberto com a mesma mensagem, sem erro e sem duplicar o envio
+- **THEN** o WhatsApp Web (`wa.me`) é aberto com a mesma mensagem, sem erro e sem duplicar o
+  envio
 
 #### Scenario: Descarte do rascunho
-- **WHEN** com senha recém-gerada no modal o usuário aciona "Cancelar", pressiona `Escape` ou clica no `X` do cabeçalho
-- **THEN** o modal fecha, a senha gerada não é gravada em nenhum registro e a base permanece idêntica ao estado anterior
+- **WHEN** com senha recém-gerada no modal o usuário aciona "Cancelar", pressiona `Escape` ou
+  clica no `X` do cabeçalho
+- **THEN** o modal fecha, a senha gerada não é gravada em nenhum registro e a base permanece
+  idêntica ao estado anterior
 
-#### Scenario: Recarga descarta tudo
+#### Scenario: Recarga mantém a conta criada pelo convite
 - **WHEN** a página é recarregada após um envio de convite
-- **THEN** a base de demonstração original volta a ser exibida, sem senha provisória gravada pelo modal
+- **THEN** a listagem da tela mostra a base de demonstração como antes, mas a conta criada (e
+  sua senha) permanecem no banco — ela continua autenticando no login
+

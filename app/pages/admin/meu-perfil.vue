@@ -7,7 +7,6 @@ import {
   useUsuariosDemo,
   formatarDataHora,
   formatarUltimoAcesso,
-  SENHA_DEMO,
   type ConfigSmtpUsuario,
   type EnderecoUsuario,
   type UsuarioDemo
@@ -19,10 +18,14 @@ const { toast } = useToast()
 const { usuario } = useAuth()
 const { usuarios } = useUsuariosDemo()
 
-// Registro do usuário logado na base demo (mesma reidenciação do ensureSessao)
-const registro = computed<UsuarioDemo | null>(
-  () => usuarios.value.find((u) => u.id === usuario.value?.id) ?? null
-)
+// Registro da tela: a sessão real traz id/nome/email/perfil do banco; o
+// espelho de tela (telefone/SMTP/endereço/datas) continua na base demo e é
+// resolvido por E-MAIL — os ids da sessão (UUID) não são os ids demo u-00x.
+const registro = computed<UsuarioDemo | null>(() => {
+  const u = usuario.value
+  if (!u) return null
+  return usuarios.value.find((reg) => reg.email.toLowerCase() === u.email.toLowerCase()) ?? null
+})
 
 // Rascunho em memória clonado do registro (fase 1 - sem backend)
 // O e-mail não é editável aqui: fica só na leitura do resumo lateral
@@ -88,14 +91,6 @@ const cancelar = () => {
   alterado.value = false
 }
 
-// --- Troca de senha (aba Segurança) — operação atômica fora do Salvar global ---
-const senhaVigente = computed(() => registro.value?.senha || SENHA_DEMO)
-
-const aoTrocarSenha = (novaSenha: string) => {
-  if (!registro.value) return
-  registro.value.senha = novaSenha
-  toast.success('Meu Perfil', 'Senha alterada com sucesso. Use-a no próximo login.')
-}
 
 // --- Fluxo de foto (lápis / "Alterar foto") ---
 const fotoAberta = ref(false)
@@ -168,8 +163,6 @@ const aoFotoCapturada = (dataUrl: string) => {
           />
           <PerfilAbaSeguranca
             v-else-if="aba === 'seguranca'"
-            :senha-vigente="senhaVigente"
-            @trocar="aoTrocarSenha"
           />
           <PerfilAbaEndereco
             v-else-if="aba === 'endereco'"

@@ -19,7 +19,7 @@ const aoSubmeter = async (credenciais: { email: string; senha: string; lembrar: 
   if (carregando.value) return
   carregando.value = true
 
-  const ok = entrar(credenciais)
+  const ok = await entrar(credenciais)
 
   if (ok) {
     // ?redirect= sanitizado (só /admin..., sem //) ou /admin.

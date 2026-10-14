@@ -1,20 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { Eye, EyeOff, ShieldCheck } from '@lucide/vue'
+import { useToast } from '../../composables/useToast'
+import { useApiFetch } from '../../composables/useApiFetch'
 
-// Troca de senha atômica (botão próprio, fora do Salvar global da página):
-// valida contra a senha vigente do registro e emite para a página gravar.
+// Troca de senha atômica via API (change auth-backend-resend, design D10):
+// o cliente valida só a forma (presença, ≥8, confirmação) e o SERVIDOR confere
+// a senha atual contra o hash bcrypt vigente — erro do servidor volta no campo.
 
-interface Props {
-  /** Senha vigente do registro (`senha || SENHA_DEMO`), resolvida pela página */
-  senhaVigente: string
-}
-
-const props = defineProps<Props>()
-
-const emit = defineEmits<{
-  (e: 'trocar', novaSenha: string): void
-}>()
+const { toast } = useToast()
 
 const senhaAtual = ref('')
 const novaSenha = ref('')
@@ -23,14 +17,13 @@ const erros = ref<Record<string, string>>({})
 const mostrarAtual = ref(false)
 const mostrarNova = ref(false)
 const mostrarConfirmacao = ref(false)
+const enviando = ref(false)
 
-const validar = (): boolean => {
+const validarForma = (): boolean => {
   const e: Record<string, string> = {}
 
   if (!senhaAtual.value) {
     e.senhaAtual = 'Informe a senha atual.'
-  } else if (senhaAtual.value !== props.senhaVigente) {
-    e.senhaAtual = 'Senha atual incorreta.'
   }
 
   if (!novaSenha.value) {
@@ -49,16 +42,39 @@ const validar = (): boolean => {
   return Object.keys(e).length === 0
 }
 
-const salvarSenha = () => {
-  if (!validar()) return
-  emit('trocar', novaSenha.value)
-  senhaAtual.value = ''
-  novaSenha.value = ''
-  confirmacao.value = ''
-  erros.value = {}
-  mostrarAtual.value = false
-  mostrarNova.value = false
-  mostrarConfirmacao.value = false
+const salvarSenha = async () => {
+  if (enviando.value) return
+  if (!validarForma()) return
+
+  enviando.value = true
+  try {
+    await useApiFetch('/api/auth/trocar-senha', {
+      method: 'POST',
+      body: { atual: senhaAtual.value, nova: novaSenha.value }
+    })
+    toast.success('Meu Perfil', 'Senha alterada com sucesso. Use-a no próximo login.')
+    senhaAtual.value = ''
+    novaSenha.value = ''
+    confirmacao.value = ''
+    erros.value = {}
+    mostrarAtual.value = false
+    mostrarNova.value = false
+    mostrarConfirmacao.value = false
+  } catch (erro) {
+    const status = (erro as { statusCode?: number }).statusCode
+    const mensagem = (erro as { data?: { statusMessage?: string } }).data?.statusMessage
+    if (status === 400) {
+      // Erros do servidor mapeados ao campo correspondente (spec meu-perfil).
+      if (mensagem?.includes('nova senha')) erros.value = { novaSenha: mensagem }
+      else erros.value = { senhaAtual: mensagem ?? 'Senha atual incorreta.' }
+    } else if (status === 401) {
+      toast.danger('Sessão expirada. Faça login novamente para trocar a senha.')
+    } else {
+      toast.danger('Não foi possível alterar a senha. Verifique a conexão e tente novamente.')
+    }
+  } finally {
+    enviando.value = false
+  }
 }
 
 const limparErro = (campo: string) => {
@@ -117,7 +133,7 @@ const limparErro = (campo: string) => {
     </div>
 
     <div class="mt-5 flex justify-end">
-      <UiButton variant="primary" size="md" @click="salvarSenha">
+      <UiButton variant="primary" size="md" :loading="enviando" @click="salvarSenha">
         <template #leftIcon><ShieldCheck class="h-4 w-4" /></template>
         Alterar senha
       </UiButton>

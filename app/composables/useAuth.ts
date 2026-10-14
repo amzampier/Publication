@@ -1,22 +1,18 @@
-// Sessão fake da fase 1 (frontend puro, sem backend): estado reativo + cookie
-// fino (apenas o id do usuário na base demo) para sobreviver a F5. Na fase com
-// servidor, `entrar` passa a chamar POST /api/auth/login e o cookie vira o
-// __Host-auth-token HttpOnly (docs/02 §3.4, docs/08).
+// Sessão real via API (change auth-backend-resend): login/logout/recuperação
+// rodam em /api/auth/** com cookies HttpOnly gerados no servidor (access JWT +
+// refresh rotativo — design D1). O cliente nunca lê o cookie: a sessão é
+// hidratada por GET /api/auth/seguro e cacheada em useState (D7). O cookie fino
+// da fase 1 (auth-sessao) saiu de cena; só o "Lembrar-me" continua no cliente.
 import { computed } from 'vue'
 import { useCookie, useState } from '#app'
-import {
-  SENHA_DEMO,
-  useUsuariosDemo,
-  type PerfilUsuario
-} from '../components/usuarios/useUsuariosDemo'
-import { COOKIE_EMAIL_LEMBRADO, COOKIE_SESSAO } from '../utils/cookies'
+import { COOKIE_EMAIL_LEMBRADO } from '../utils/cookies'
 import { useToast } from './useToast'
 
 export interface UsuarioLogado {
   id: string
   nome: string
   email: string
-  perfil: PerfilUsuario
+  perfil: string
 }
 
 export interface CredenciaisLogin {
@@ -43,13 +39,22 @@ export const sanitizarRedirectAdmin = (valor: unknown): string => {
   return valor
 }
 
+type ErroFetch = { statusCode?: number; status?: number; statusMessage?: string; data?: { statusMessage?: string } }
+
+const statusDe = (erro: unknown): number | undefined => {
+  const e = erro as ErroFetch
+  return e?.statusCode ?? e?.status
+}
+const mensagemDe = (erro: unknown): string | undefined => {
+  const e = erro as ErroFetch
+  return e?.data?.statusMessage ?? e?.statusMessage
+}
+
 export const useAuth = () => {
   const usuario = useState<UsuarioLogado | null>('auth-usuario', () => null)
-
-  const sessao = useCookie<string | null>(COOKIE_SESSAO, {
-    default: () => null,
-    ...opcoesCookie
-  })
+  // Evita refazer GET /api/auth/seguro a cada navegação (D7); `true` também
+  // cobre "verificado e sem sessão" (pós-logout ou falha de rede na checagem).
+  const sessaoVerificada = useState<boolean>('auth-verificada', () => false)
 
   const emailLembrado = useCookie<string | null>(COOKIE_EMAIL_LEMBRADO, {
     default: () => null,
@@ -57,73 +62,95 @@ export const useAuth = () => {
   })
 
   const { toast } = useToast()
-  const { usuarios } = useUsuariosDemo()
 
   const loggedIn = computed(() => usuario.value !== null)
 
-  /**
-   * Restaura a sessão a partir do cookie (F5/SSR): o cookie guarda só o id;
-   * o usuário é reidenciado na base demo. Cookie sem registro correspondente
-   * (ou com usuário inativo) é descartado e conta como sem sessão.
-   */
-  const ensureSessao = (): boolean => {
-    if (usuario.value) return true
-    if (!sessao.value) return false
-
-    const registro = usuarios.value.find((u) => u.id === sessao.value)
-    if (!registro || registro.status !== 'Ativo') {
-      sessao.value = null
-      return false
-    }
-
-    usuario.value = {
-      id: registro.id,
-      nome: registro.nome,
-      email: registro.email,
-      perfil: registro.perfil
-    }
-    return true
-  }
+  // POSTs de auth usam $fetch direto (credentials include) — FORA do
+  // interceptor de refresh do useApiFetch (evita loop refresh→401→refresh).
+  const postAuth = (rota: string, body?: unknown) =>
+    $fetch<{ ok?: boolean; usuario?: UsuarioLogado }>(rota, {
+      method: 'POST',
+      body,
+      credentials: 'include'
+    })
 
   /**
-   * Valida as credenciais contra a base demo (e-mail exato + senha vigente do
-   * registro — `SENHA_DEMO` por padrão ou a senha provisória gravada pelo fluxo
-   * de recuperação — + status Ativo). Erro genérico para e-mail/senha (não
-   * revela qual campo falhou); aviso próprio para inativo. Em sucesso: atualiza
-   * `ultimoAcesso`, grava sessão e aplica o "Lembrar-me".
+   * Autentica via POST /api/auth/login. Em erro: 401 → toast genérico;
+   * 403 → o aviso do servidor (inativo / conta bloqueada); 429 → aviso de
+   * muitas tentativas; demais → falha de conexão. Devolve `false` em erro.
    */
-  const entrar = (credenciais: CredenciaisLogin): boolean => {
+  const entrar = async (credenciais: CredenciaisLogin): Promise<boolean> => {
     const email = credenciais.email.trim().toLowerCase()
-    const registro = usuarios.value.find((u) => u.email.toLowerCase() === email)
-
-    if (!registro || credenciais.senha !== (registro.senha || SENHA_DEMO)) {
-      toast.danger('E-mail ou senha inválidos.')
+    try {
+      const resp = await postAuth('/api/auth/login', { email, senha: credenciais.senha })
+      if (!resp.usuario) throw new Error('Resposta sem usuário')
+      usuario.value = resp.usuario
+      sessaoVerificada.value = true
+      emailLembrado.value = credenciais.lembrar ? email : null
+      return true
+    } catch (erro) {
+      const status = statusDe(erro)
+      const mensagem = mensagemDe(erro)
+      if (status === 401) {
+        toast.danger('E-mail ou senha inválidos.')
+      } else if (status === 403 && mensagem) {
+        toast.warning(mensagem)
+      } else if (status === 429) {
+        toast.warning(mensagem ?? 'Muitas tentativas. Aguarde um minuto e tente novamente.')
+      } else {
+        toast.danger('Não foi possível conectar ao servidor. Tente novamente.')
+      }
       return false
     }
-
-    if (registro.status !== 'Ativo') {
-      toast.warning('Usuário inativo. Contate o administrador.')
-      return false
-    }
-
-    registro.ultimoAcesso = new Date().toISOString()
-
-    usuario.value = {
-      id: registro.id,
-      nome: registro.nome,
-      email: registro.email,
-      perfil: registro.perfil
-    }
-    sessao.value = registro.id
-    emailLembrado.value = credenciais.lembrar ? registro.email : null
-
-    return true
   }
 
-  const sair = () => {
+  /** Revoga a sessão no servidor (best-effort) e limpa o estado local. */
+  const sair = async (): Promise<void> => {
+    try {
+      await postAuth('/api/auth/logout')
+    } catch {
+      // Sem sessão válida ou servidor fora: o estado local cai de qualquer forma.
+    }
     usuario.value = null
-    sessao.value = null
+    sessaoVerificada.value = true
   }
 
-  return { usuario, loggedIn, entrar, sair, ensureSessao }
+  /**
+   * Restaura/valida a sessão (guarda global): com estado em cache não chama a
+   * API; sem ele, GET /api/auth/seguro — no servidor via `useRequestFetch`
+   * (encaminha os cookies da requisição SSR), no cliente via $fetch com
+   * credentials. O access expirado é renovado pelo próprio servidor (rotação
+   * do refresh — D7). Falha/401 → tratado como sem sessão.
+   */
+  const ensureSessao = async (): Promise<boolean> => {
+    if (usuario.value) return true
+    if (sessaoVerificada.value) return false
+
+    try {
+      const fetchSessao = import.meta.server
+        ? useRequestFetch()
+        : $fetch as unknown as typeof useRequestFetch
+      const resp = await fetchSessao<{ usuario: UsuarioLogado }>('/api/auth/seguro', {
+        credentials: 'include'
+      })
+      usuario.value = resp.usuario
+      sessaoVerificada.value = true
+      return true
+    } catch {
+      usuario.value = null
+      sessaoVerificada.value = true
+      return false
+    }
+  }
+
+  /**
+   * Invalida o estado local sem chamar o servidor — usado pelo auto-refresh do
+   * useApiFetch quando o refresh definitivamente falha (o cookie já não vale).
+   */
+  const sessaoInvalidada = (): void => {
+    usuario.value = null
+    sessaoVerificada.value = true
+  }
+
+  return { usuario, loggedIn, entrar, sair, ensureSessao, sessaoInvalidada }
 }

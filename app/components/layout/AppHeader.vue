@@ -72,9 +72,11 @@ const clicarItemMenu = (item: { to?: string }) => {
 }
 
 // Encerrar Sessão (spec `login`): limpa estado + cookie e volta ao login.
-const encerrarSessao = () => {
-  sair()
+const encerrarSessao = async () => {
   fecharMenus()
+  // Aguarda o logout da API (Set-Cookie de revogação) antes de navegar —
+  // navegar primeiro cancelaria o fetch e a sessão viveria no servidor.
+  await sair()
   navigateTo('/admin/login')
 }
 

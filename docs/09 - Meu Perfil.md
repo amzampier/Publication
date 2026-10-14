@@ -1,6 +1,6 @@
 # 09 — Meu Perfil · Área Administrativa
 
-**Versão:** 1.0.0 — **Data:** 2026-10-13 — **Idioma:** Português do Brasil (pt-BR)
+**Versão:** 1.1.0 — **Data:** 2026-10-14 — **Idioma:** Português do Brasil (pt-BR)
 **Escopo:** tela de Meu Perfil do usuário logado — estrutura componentizada, as 4 abas
 (dados pessoais, segurança, endereço, e-mail/SMTP), avatar em destaque, troca de senha,
 fluxo de foto, salvar/cancelar e navegação pelo menu da conta
@@ -147,19 +147,23 @@ administrador no cadastro). Alerta informativo azul (`border-blue-200 bg-blue-50
 - **Expõe `validar(): boolean`** — a página chama no Salvar (apenas a regra do nome); erros no
   padrão do kit (`rose-700`, tooltip + `role="alert"`) e limpos ao digitar.
 
-### 3.6 `AbaSeguranca.vue` → `<PerfilAbaSeguranca>` — troca de senha atômica
+### 3.6 `AbaSeguranca.vue` → `<PerfilAbaSeguranca>` — troca de senha atômica (API)
 
-Senha atual (validada contra `senha || SENHA_DEMO`), nova senha (mín. 8) e confirmação, com
-olho `Eye`/`EyeOff` por campo e botão próprio **"Alterar senha"** — fora do Salvar global
-(troca de senha não exige salvar abas não tocadas).
+Senha atual, nova senha (mín. 8) e confirmação, com olho `Eye`/`EyeOff` por campo e botão
+próprio **"Alterar senha"** (`:loading` durante a chamada) — fora do Salvar global (troca de
+senha não exige salvar abas não tocadas).
 
 - **Layout em duas colunas** (quando a largura permite): Senha atual sozinha na primeira linha
   (largura de metade) e **Nova senha ao lado da Confirmação** na segunda; em telas estreitas os
   campos empilham.
 - **Mini-card "Sua conta está segura"** (movido do resumo lateral) ao final da aba.
-- **Prop:** `senhaVigente` — resolvida pela página (`registro.senha || SENHA_DEMO`).
-- **Emite:** `trocar(novaSenha)` — a página grava no registro, emite toast e o próximo login
-  usa a nova senha (cumprindo a pendência do `docs/08` §11).
+- **Processamento via API (change `auth-backend-resend`):** o cliente valida apenas a forma
+  (presença, ≥8, confirmação idêntica) e chama `POST /api/auth/trocar-senha` com a sessão
+  real — o **servidor** confere a senha atual com bcrypt contra o `hash_senha` vigente e
+  grava o novo hash (`senha_provisoria = 0`). Erro `400` do servidor volta no campo
+  correspondente (ex.: "Senha atual incorreta." em Senha atual); a nova senha passa a
+  autenticar no login imediatamente. Sem props de senha e sem gravação local no registro
+  demo — a aba é autônoma.
 
 ### 3.7 `AbaEndereco.vue` → `<PerfilAbaEndereco>`
 
@@ -270,10 +274,10 @@ o acesso é exclusivamente pelo menu da conta (`docs/03` §3).
 
 ## 10. Pendências e próximos passos
 
-- **Backend (fase com `server/`):** persistir o perfil (PATCH do registro logado), hash da
-  senha, foto com upload real (não dataURL) e `__Host-auth-token` (docs/02 §3.4).
+- **Backend do perfil:** persistir os demais dados do registro logado (PATCH de telefone,
+  endereço, SMTP e foto com upload real — a **troca de senha já é real** via
+  `POST /api/auth/trocar-senha`, change `auth-backend-resend`).
 - **ViaCEP real:** o stub da aba Endereço vira busca com preenchimento automático.
 - **RBAC no cliente:** `usePermissions` (docs/02 §5.3) — hoje qualquer sessão acessa a tela.
-- **E-mail real:** envio de teste e "esqueci a senha" saem da simulação.
 - **Nome de usuário:** não existe no modelo (`UsuarioDemo`); se virar campo de login, esta
   tela ganha o rótulo e a validação de unicidade correspondentes.

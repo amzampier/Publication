@@ -1,26 +1,21 @@
 <script setup lang="ts">
-import { ArrowLeft, KeyRound, Mail, Send } from '@lucide/vue'
-import { useUsuariosDemo } from '../usuarios/useUsuariosDemo'
+import { ArrowLeft, Mail, MailCheck, Send } from '@lucide/vue'
+import { useToast } from '../../composables/useToast'
 
 /*
- * Formulário "Esqueci a senha" (fase 1, envio simulado — spec `login`:
- * requirement "A página /admin/esqueci-senha coleta o e-mail e envia a senha
- * provisória"). Tudo acontece no card: valida o e-mail, gera uma senha
- * provisória aleatória, grava-a como senha vigente do registro (quando o
- * e-mail existe na base demo) e troca o conteúdo do card pelo estado de
- * sucesso exibindo a senha — única forma de "entregar" o e-mail sem backend.
- *
- * Resposta genérica: o mesmo código roda para e-mail cadastrado ou não
- * (mesmo atraso, mesma forma, mesma senha exibida) — para não cadastrado a
- * senha simplesmente não autentica e o login responde com o erro genérico.
+ * Formulário "Esqueci a senha" (change auth-backend-resend): chama
+ * POST /api/auth/esqueci-senha. A API responde SEMPRE o mesmo estado
+ * (anti-enumeração) — quando o e-mail existe, o servidor gera a provisória,
+ * grava o hash e ENVIA POR E-MAIL (Resend); a senha nunca aparece na tela
+ * (spec `login`: página /admin/esqueci-senha envia a senha provisória por
+ * e-mail). O card de sucesso é genérico: mesma forma existe/não existe.
  */
 
-const { usuarios } = useUsuariosDemo()
+const { toast } = useToast()
 
 const email = ref('')
 const carregando = ref(false)
 const sucesso = ref(false)
-const senhaProvisoria = ref('')
 
 const labelClass = (temErro?: string) => (temErro ? 'font-medium' : 'font-medium !text-slate-500')
 
@@ -42,18 +37,6 @@ const validar = () => {
   return !erros.email
 }
 
-/*
- * Senha provisória aleatória de 12 caracteres (crypto.getRandomValues) sem
- * ambíguos visuais (0/O/1/l/I) — fase 1 gerada no cliente, sem backend.
- */
-const gerarSenhaProvisoria = () => {
-  const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
-  const bytes = crypto.getRandomValues(new Uint32Array(12))
-  return Array.from(bytes, (b) => alfabeto[b % alfabeto.length]).join('')
-}
-
-const aguardar = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
-
 const aoEnviar = async () => {
   if (carregando.value) return
   if (!validar()) {
@@ -63,16 +46,25 @@ const aoEnviar = async () => {
   }
 
   carregando.value = true
-  // Simula a latência do envio para o botão exibir o estado de carregamento.
-  await aguardar(600)
-
-  const senha = gerarSenhaProvisoria()
-  const alvo = usuarios.value.find((u) => u.email.toLowerCase() === email.value.trim().toLowerCase())
-  if (alvo) alvo.senha = senha
-
-  senhaProvisoria.value = senha
-  sucesso.value = true
-  carregando.value = false
+  try {
+    await $fetch('/api/auth/esqueci-senha', {
+      method: 'POST',
+      body: { email: email.value.trim().toLowerCase() },
+      credentials: 'include'
+    })
+    sucesso.value = true
+  } catch (erro) {
+    const status = (erro as { statusCode?: number })?.statusCode
+    if (status === 400) {
+      erros.email = (erro as { data?: { statusMessage?: string } }).data?.statusMessage ?? 'Informe um e-mail válido.'
+      await nextTick()
+      emailRef.value?.$el?.querySelector('input')?.focus()
+    } else {
+      toast.danger('Não foi possível enviar agora. Tente novamente em instantes.')
+    }
+  } finally {
+    carregando.value = false
+  }
 }
 
 const voltarLogin = async () => {
@@ -81,7 +73,6 @@ const voltarLogin = async () => {
 
 const reenviar = () => {
   sucesso.value = false
-  senhaProvisoria.value = ''
 }
 
 watch(email, () => {
@@ -142,24 +133,22 @@ watch(email, () => {
     class="space-y-4 text-center"
   >
     <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-brand-focus/10">
-      <KeyRound class="h-5 w-5 text-brand-focus" />
+      <MailCheck class="h-5 w-5 text-brand-focus" />
     </div>
 
     <div class="space-y-1">
       <p class="text-sm font-medium text-slate-800">
-        Senha provisória gerada
+        Verifique seu e-mail
       </p>
       <p class="text-xs text-slate-500">
-        Se o e-mail informado estiver cadastrado, use a senha abaixo para entrar.
+        Se o e-mail informado estiver cadastrado no sistema, enviamos as
+        instruções de recuperação com a senha provisória — mesma resposta
+        para qualquer e-mail.
       </p>
-    </div>
-
-    <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-      <code class="select-all break-all font-mono text-sm font-medium text-slate-800">{{ senhaProvisoria }}</code>
     </div>
 
     <p class="text-[11px] text-slate-500">
-      Ela substitui a senha atual deste cadastro enquanto estiver vigente.
+      Use a senha recebida para entrar e troque-a em Meu Perfil após o acesso.
     </p>
 
     <UiButton

@@ -13,6 +13,12 @@ export default defineNuxtConfig({
     dbUser: process.env.DB_USER || 'root',
     dbPassword: process.env.DB_PASSWORD || '',
     dbName: process.env.DB_NAME || 'publications',
+    // Autenticação (change auth-backend-resend): segredo HS256 do access JWT
+    // (obrigatório — server/plugins/auth-config.ts falha no boot sem ele) e
+    // Resend (server/utils/mailer.ts). Nunca expostos ao cliente (fora de `public`).
+    authJwtSecret: process.env.AUTH_JWT_SECRET || '',
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    mailFrom: process.env.MAIL_FROM || '',
     // Sobrescrita por NUXT_DB_* se necessária; DB_* é a interface principal.
     public: {}
   },

@@ -86,11 +86,23 @@ A aba **Dados Pessoais** SHALL conter os campos **Nome completo** (obrigatório)
 - **THEN** os campos Cargo e Setor aparecem desabilitados, exibindo os valores do registro, e não participam da validação nem do salvamento
 
 ### Requirement: A aba Segurança permite trocar a senha com validação contra a senha vigente
-A aba **Segurança** SHALL conter **Senha atual** na primeira linha (largura de metade, sem ocupar a tela inteira) e **Nova senha** (mínimo de 8 caracteres) **ao lado da Confirmação da nova senha** na segunda linha, quando a largura permitir — com alternância de visibilidade, o botão próprio "Alterar senha" e, ao final, o mini-card informativo "Sua conta está segura". A troca SHALL validar: senha atual igual à senha vigente do registro (senha demo ou provisória gravada pelo fluxo de recuperação), nova senha não vazia com no mínimo 8 caracteres e confirmação idêntica — erros no campo correspondente, no padrão do design system, sem gravar nada. Em sucesso, a nova senha SHALL substituir a vigente do registro (toast de sucesso e campos limpos) e passar a autenticar no login; os demais campos da página não participam dessa operação.
+A aba **Segurança** SHALL conter **Senha atual** na primeira linha (largura de metade, sem
+ocupar a tela inteira) e **Nova senha** (mínimo de 8 caracteres) **ao lado da Confirmação da
+nova senha** na segunda linha, quando a largura permitir — com alternância de visibilidade, o
+botão próprio "Alterar senha" e, ao final, o mini-card informativo "Sua conta está segura". A
+troca SHALL ser processada pela API de troca de senha: a senha atual SHALL ser conferida no
+servidor contra o hash vigente do banco (bcrypt) — a senha vigente pode ser a original, a
+provisória do convite ou a provisória da recuperação, todas já persistidas como hash —, a nova
+senha SHALL ter no mínimo 8 caracteres e a confirmação SHALL ser idêntica — validações de
+formato no cliente, erro da conferência vindo do servidor, erros exibidos no campo
+correspondente no padrão do design system, sem gravar nada. Em sucesso, a nova senha SHALL ser
+gravada via API (substituindo o hash vigente; toast de sucesso e campos limpos) e passar a
+autenticar no login; os demais campos da página não participam dessa operação.
 
 #### Scenario: Senha atual incorreta
 - **WHEN** o usuário informa uma senha atual diferente da vigente e aciona "Alterar senha"
-- **THEN** o campo Senha atual exibe erro no padrão do design system e a senha do registro não muda
+- **THEN** o campo Senha atual exibe erro no padrão do design system (resposta do servidor) e
+  a senha do registro não muda
 
 #### Scenario: Confirmação divergente
 - **WHEN** a nova senha e a confirmação diferem
@@ -102,7 +114,8 @@ A aba **Segurança** SHALL conter **Senha atual** na primeira linha (largura de 
 
 #### Scenario: Troca bem-sucedida reflete no login
 - **WHEN** o usuário troca a senha com todos os campos válidos
-- **THEN** o registro passa a ter a nova senha vigente, um toast confirma a troca e as próximas autenticações usam a nova senha
+- **THEN** o servidor grava o novo hash no lugar do vigente, um toast confirma a troca e as
+  próximas autenticações usam a nova senha
 
 ### Requirement: A aba Endereço edita o endereço completo com o mesmo contrato do cadastro de usuários
 A aba **Endereço** SHALL conter os campos CEP (com máscara e botão de busca ViaCEP), Endereço, Número, Complemento, Bairro, Cidade, Estado (seleção de UFs) e Região (seleção de regiões) — o mesmo contrato do modal de Gestão de Usuários. A busca de CEP na fase 1 SHALL exibir o aviso de disponibilidade futura (stub) sem preencher os campos. O endereço editado SHALL compor o mesmo rascunho do salvamento da página.
