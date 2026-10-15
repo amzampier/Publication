@@ -35,12 +35,18 @@ export function useApiFetch<T = any>(
   if (usuario.value?.id) headers['x-usuario-id'] = usuario.value.id
   if (usuario.value?.nome) headers['x-usuario-nome'] = encodeURIComponent(usuario.value.nome)
 
-  const doFetch = () =>
-    $fetch<T>(request, {
+  const doFetch = () => {
+    // No SSR, useRequestFetch encaminha os cookies da requisição entrante
+    // (mesmo padrão de useAuth.ensureSessao) — essencial para rotas protegidas
+    // chamadas no setup do layout (ex.: GET /api/configuracoes no admin, que o
+    // auth-api.ts exige sessão). No cliente é $fetch com credentials, como antes.
+    const fetchInterno = import.meta.server ? useRequestFetch() : $fetch
+    return fetchInterno<T>(request, {
       ...opts,
       headers,
       credentials: 'include'
     })
+  }
 
   return doFetch().catch(async (erro: any) => {
     if (erro?.statusCode !== 401 && erro?.status !== 401) throw erro

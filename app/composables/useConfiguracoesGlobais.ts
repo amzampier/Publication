@@ -24,13 +24,16 @@ export interface ConfiguracoesGlobaisApi {
  * Retorna os dados em sucesso e `null` em falha (defaults do seed valem).
  */
 export async function carregarConfiguracoesGlobais(): Promise<ConfiguracoesGlobaisApi | null> {
+  // useState-backed composables ANTES do await — após await o contexto Nuxt se
+  // perde no SSR (NUXT_E1001) e o estado não hidrata no payload. Só o GET e as
+  // atribuições ficam depois.
+  const { caminho: caminhoHeader, preview: previewHeader } = useLogomarcaHeader()
+  const { caminho: caminhoLogin, preview: previewLogin } = useLogomarcaLogin()
+  const { expandida, marcarPreferenciaManual } = useSidebarExpandida()
+  const { abertas } = useSessoesAbertas()
+
   try {
     const cfg = await useApiFetch<ConfiguracoesGlobaisApi>('/api/configuracoes')
-
-    const { caminho: caminhoHeader, preview: previewHeader } = useLogomarcaHeader()
-    const { caminho: caminhoLogin, preview: previewLogin } = useLogomarcaLogin()
-    const { expandida, marcarPreferenciaManual } = useSidebarExpandida()
-    const { abertas } = useSessoesAbertas()
 
     caminhoHeader.value = cfg.logo_header_url ?? ''
     previewHeader.value = cfg.logo_header_url ?? ''

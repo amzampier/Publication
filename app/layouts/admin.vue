@@ -3,16 +3,22 @@ import { onMounted } from 'vue'
 
 // Estado compartilhado com Configurações > Sidebar (ver docs/03)
 // — o toggle do header e o cartão da aba escrevem na mesma fonte.
+// useState ANTES do await (NUXT_E1001).
 const { expandida: sidebarOpen, aplicarLarguraInicial, marcarPreferenciaManual } =
   useSidebarExpandida()
 
-// Primeira carga: abaixo de lg a sidebar inicia recolhida (escolha manual
-// prevalece) e, em seguida, as preferências salvas (sidebar, sessões e
-// logomarcas) são aplicadas em qualquer rota da Área Administrativa — não
-// só na página de Configurações Globais.
-onMounted(async () => {
+// Hidratação SSR das preferências salvas (logo, sidebar, sessões): o await no
+// setup roda o GET /api/configuracoes durante o SSR (cookies encaminhados) e o
+// estado vai no payload — o primeiro paint já sai com a logo e a sidebar
+// recolhida, sem flash de defaults no F5 (bug da hidratação só em onMounted).
+// Em falha do GET o loader devolve null e valem os defaults do seed.
+await carregarConfiguracoesGlobais()
+
+// Ajuste pela largura da viewport continua no cliente (o servidor não a
+// conhece); com preferência salva o marcarPreferenciaManual já veio true no
+// payload e o aplicarLarguraInicial respeita o banco sem sobrescrever.
+onMounted(() => {
   aplicarLarguraInicial()
-  await carregarConfiguracoesGlobais()
 })
 
 const alternar = (valor: boolean) => {
