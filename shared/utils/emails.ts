@@ -13,8 +13,8 @@ export interface DadosConvite {
   telefone: string
 }
 
-export const ASSUNTO_CONVITE = 'Convite de acesso ao Publications'
-export const ASSUNTO_RECUPERACAO = 'Recuperação de acesso ao Publications'
+export const ASSUNTO_CONVITE = 'Convite de acesso ao Dicas Teorema'
+export const ASSUNTO_RECUPERACAO = 'Recuperação de acesso ao Dicas Teorema'
 
 function escaparHtml(valor: string): string {
   return valor
@@ -34,7 +34,7 @@ export function renderTextoConvite(dados: DadosConvite, link: string): string {
   return [
     `Olá, ${dados.nome}!`,
     '',
-    'Você foi convidado(a) a acessar o Publications.',
+    'Você foi convidado(a) a acessar o Dicas Teorema.',
     '',
     `E-mail (login): ${dados.email}`,
     `Senha provisória: ${dados.senha}`,
@@ -67,12 +67,12 @@ export function renderHtmlConvite(dados: DadosConvite, link: string): string {
 <body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
     <div style="background:linear-gradient(90deg,#112051 0%,#0364f7 55%,#4ed813 100%);padding:20px 28px;">
-      <p style="margin:0;color:#ffffff;font-size:18px;font-weight:bold;">Publications</p>
+      <p style="margin:0;color:#ffffff;font-size:18px;font-weight:bold;">Dicas Teorema</p>
       <p style="margin:4px 0 0;color:#dbeafe;font-size:13px;">${escaparHtml(ASSUNTO_CONVITE)}</p>
     </div>
     <div style="padding:28px;color:#0f172a;font-size:14px;line-height:1.6;">
       <p style="margin:0 0 16px;">Olá, <strong>${nome}</strong>!</p>
-      <p style="margin:0 0 20px;">Você foi convidado(a) a acessar o Publications. Use as credenciais abaixo no primeiro acesso:</p>
+      <p style="margin:0 0 20px;">Você foi convidado(a) a acessar o Dicas Teorema. Use as credenciais abaixo no primeiro acesso:</p>
       <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 20px;">
         <tr>
           <td style="padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em;">E-mail (login)</td>
@@ -94,7 +94,7 @@ export function renderHtmlConvite(dados: DadosConvite, link: string): string {
       <p style="margin:0;color:#94a3b8;font-size:12px;">Se você não reconhecer este convite, ignore esta mensagem.</p>
     </div>
     <div style="background:#112051;padding:14px 28px;">
-      <p style="margin:0;color:#94a3b8;font-size:11px;">Publications — Gestão de Publicações</p>
+      <p style="margin:0;color:#94a3b8;font-size:11px;">Dicas Teorema — Gestão de Publicações</p>
     </div>
   </div>
 </body>
@@ -116,7 +116,7 @@ export function renderTextoRecuperacao(dados: DadosRecuperacao): string {
   return [
     ola,
     '',
-    'Recebemos uma solicitação de recuperação de acesso ao Publications.',
+    'Recebemos uma solicitação de recuperação de acesso ao Dicas Teorema.',
     '',
     `Senha provisória: ${dados.senha}`,
     '',
@@ -141,12 +141,12 @@ export function renderHtmlRecuperacao(dados: DadosRecuperacao): string {
 <body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">
     <div style="background:linear-gradient(90deg,#112051 0%,#0364f7 55%,#4ed813 100%);padding:20px 28px;">
-      <p style="margin:0;color:#ffffff;font-size:18px;font-weight:bold;">Publications</p>
+      <p style="margin:0;color:#ffffff;font-size:18px;font-weight:bold;">Dicas Teorema</p>
       <p style="margin:4px 0 0;color:#dbeafe;font-size:13px;">${escaparHtml(ASSUNTO_RECUPERACAO)}</p>
     </div>
     <div style="padding:28px;color:#0f172a;font-size:14px;line-height:1.6;">
       <p style="margin:0 0 16px;">${ola}</p>
-      <p style="margin:0 0 20px;">Recebemos uma solicitação de recuperação de acesso ao Publications. Use a senha provisória abaixo no login:</p>
+      <p style="margin:0 0 20px;">Recebemos uma solicitação de recuperação de acesso ao Dicas Teorema. Use a senha provisória abaixo no login:</p>
       <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 20px;">
         <tr>
           <td style="padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;color:#64748b;font-size:12px;text-transform:uppercase;letter-spacing:.04em;">Senha provisória</td>
@@ -160,7 +160,7 @@ export function renderHtmlRecuperacao(dados: DadosRecuperacao): string {
       <p style="margin:0;color:#94a3b8;font-size:12px;">Se você não solicitou esta recuperação, ignore esta mensagem.</p>
     </div>
     <div style="background:#112051;padding:14px 28px;">
-      <p style="margin:0;color:#94a3b8;font-size:11px;">Publications — Gestão de Publicações</p>
+      <p style="margin:0;color:#94a3b8;font-size:11px;">Dicas Teorema — Gestão de Publicações</p>
     </div>
   </div>
 </body>
@@ -185,7 +185,7 @@ export function gerarSenhaProvisoria(tamanho = 12): string {
 
   for (let i = chars.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+      ;[chars[i], chars[j]] = [chars[j], chars[i]]
   }
   return chars.join('')
 }
