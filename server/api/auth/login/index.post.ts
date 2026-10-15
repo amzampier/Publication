@@ -9,10 +9,12 @@ import {
   registrarFalhaLogin,
   limparFalhasLogin,
   emitirSessao,
+  TENTATIVAS_MAX,
   type UsuarioSessao
 } from '../../../utils/auth'
 import { query } from '../../../utils/db'
-import { exigirRateLimit } from '../../../utils/rateLimit'
+import { exigirRateLimit, ipDoCliente } from '../../../utils/rateLimit'
+import { registrarEventoLogin, consultarBloqueioEmailInexistente } from '../../../utils/seguranca'
 
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
@@ -23,11 +25,35 @@ export default defineEventHandler(async (event) => {
   if (!email || !senha) {
     throw createError({ statusCode: 400, statusMessage: 'Informe e-mail e senha.' })
   }
+  const ip = ipDoCliente(event)
 
   const usuario = await buscarUsuarioPorEmail(email)
 
-  // Conta inexistente → mesmo 401 genérico da senha errada (anti-enumeração).
+  // Conta inexistente: mesmo 401 genérico da senha errada. Depois de 5
+  // tentativas na janela de 15 min o próprio e-mail bloqueia com o MESMO 403
+  // das contas — resposta uniforme não revela se a conta existe (spec `login`).
   if (!usuario) {
+    const bloqueioEmail = await consultarBloqueioEmailInexistente(email)
+    if (bloqueioEmail.bloqueado) {
+      await registrarEventoLogin({
+        emailAlvo: email,
+        usuarioId: null,
+        ip,
+        tipo: 'tentativa-bloqueado',
+        tentativas: bloqueioEmail.tentativas
+      })
+      throw createError({
+        statusCode: 403,
+        statusMessage: `Conta bloqueada temporariamente por tentativas inválidas. Tente novamente em ${bloqueioEmail.minutosRestantes} minuto(s).`
+      })
+    }
+    await registrarEventoLogin({
+      emailAlvo: email,
+      usuarioId: null,
+      ip,
+      tipo: 'email-inexistente',
+      tentativas: bloqueioEmail.tentativas + 1
+    })
     throw createError({ statusCode: 401, statusMessage: 'E-mail ou senha inválidos.' })
   }
 
@@ -42,6 +68,13 @@ export default defineEventHandler(async (event) => {
   // Lockout: consulta antes do bcrypt (design D5 — sem custo p/ bloqueadas).
   const minutos = bloqueioVigente(usuario.bloqueado_ate)
   if (minutos) {
+    await registrarEventoLogin({
+      emailAlvo: email,
+      usuarioId: usuario.id,
+      ip,
+      tipo: 'tentativa-bloqueado',
+      tentativas: TENTATIVAS_MAX
+    })
     throw createError({
       statusCode: 403,
       statusMessage: `Conta bloqueada temporariamente por tentativas inválidas. Tente novamente em ${minutos} minuto(s).`
@@ -56,7 +89,14 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!senhaOk) {
-    await registrarFalhaLogin(usuario.id)
+    const { bloqueou, tentativas } = await registrarFalhaLogin(usuario.id)
+    await registrarEventoLogin({
+      emailAlvo: email,
+      usuarioId: usuario.id,
+      ip,
+      tipo: bloqueou ? 'bloqueio-aplicado' : 'senha-invalida',
+      tentativas
+    })
     throw createError({ statusCode: 401, statusMessage: 'E-mail ou senha inválidos.' })
   }
 

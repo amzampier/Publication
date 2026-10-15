@@ -17,7 +17,7 @@ const abas: TabItem[] = [
   { id: 'logomarcas', label: 'Logomarcas & Identidade', icon: Image, cor: '#f59e0b' },
   { id: 'sidebar', label: 'Sidebar & Sessões do Menu', icon: PanelLeft, cor: '#0364f7' },
   { id: 'retencao', label: 'Retenção de Auditoria', icon: Clock, cor: '#0f7a06' },
-  { id: 'seguranca', label: 'Segurança & Rate Limits', icon: ShieldAlert, cor: '#be123c' }
+  { id: 'seguranca', label: 'Segurança & Rate Limits (15 Min)', icon: ShieldAlert, cor: '#be123c' }
 ]
 
 const selecionar = (id: string) => {

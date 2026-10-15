@@ -1,5 +1,6 @@
 // PUT /api/configuracoes — atualização parcial das colunas editadas pela tela
 import { atualizarConfiguracoes, getConfiguracoes } from '../../utils/configuracoes'
+import { invalidarCacheLimite } from '../../utils/rateLimit'
 
 const CHAVES_SIDEBAR = ['publicacoes', 'movimentos', 'cadastros', 'administracao']
 
@@ -15,6 +16,7 @@ export default defineEventHandler(async (event) => {
     logo_login_url?: string | null
     sidebar_grupos?: Record<string, boolean>
     sidebar_expandida?: boolean
+    rate_limit?: { ativo: boolean; limite_requisicoes_minuto: number }
   } = {}
 
   if ('dias_retencao_auditoria' in body) {
@@ -58,10 +60,32 @@ export default defineEventHandler(async (event) => {
     patch.sidebar_expandida = body.sidebar_expandida
   }
 
+  if ('rate_limit' in body) {
+    const valor = body.rate_limit as { ativo?: unknown; limite_requisicoes_minuto?: unknown } | null
+    const valido =
+      valor &&
+      typeof valor === 'object' &&
+      typeof valor.ativo === 'boolean' &&
+      Number.isInteger(valor.limite_requisicoes_minuto) &&
+      (valor.limite_requisicoes_minuto as number) >= 1
+    if (!valido) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'rate_limit deve ser { ativo: boolean, limite_requisicoes_minuto: inteiro >= 1 }.'
+      })
+    }
+    patch.rate_limit = {
+      ativo: valor.ativo as boolean,
+      limite_requisicoes_minuto: valor.limite_requisicoes_minuto as number
+    }
+  }
+
   if (Object.keys(patch).length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Nenhum campo editável presente no corpo.' })
   }
 
   await atualizarConfiguracoes(patch)
+  // Limite novo vale imediatamente — sem esperar o cache de 60s expirar
+  if (patch.rate_limit) invalidarCacheLimite()
   return await getConfiguracoes()
 })

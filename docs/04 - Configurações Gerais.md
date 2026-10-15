@@ -47,7 +47,12 @@ A Configurações Globais é a tela de parâmetros transversais da Área Adminis
   `/admin/**` (ver [`03 - Header e Sidebar.md`](03%20-%20Header%20e%20Sidebar.md) §1).
 - **Aba padrão:** "Logomarcas & Identidade" (`id: 'logomarcas'`) ao carregar (pedido do usuário);
   as outras 3 abas têm painel de conteúdo (mockups enviados pelo usuário).
-- **Fase 1:** tudo em memória — sem backend, sem `configuracoes_globais`, sem chamadas de rede.
+- **Backend real (desde a change `integrar-configuracoes-globais-api`):** a página carrega e
+  grava via `GET/PUT /api/configuracoes`; a aba Segurança consulta
+  `GET /api/seguranca/estado` (estado real + log de eventos) e libera contas via
+  `POST /api/seguranca/liberar` (change `seguranca-rate-limits-reais`).
+- **Loading no F5:** enquanto o `GET` está em voo a página exibe `UiLoading`
+  ("Carregando configurações…") no lugar do card de abas — sem flash dos defaults.
 
 ## 2. Estrutura da página (componentização)
 
@@ -107,7 +112,7 @@ Container das abas: barra + área do painel ativo.
 - **Slot:** `default` — conteúdo do painel ativo (a página decide qual componente renderizar com `v-if`).
 - **Define as 4 abas do módulo** (ícone + cor): `Logomarcas & Identidade` (`Image`, âmbar
   `#f59e0b`) · `Sidebar & Sessões do Menu` (`PanelLeft`, `#0364f7`) · `Retenção de Auditoria`
-  (`Clock`, `#0f7a06`) · `Segurança & Rate Limits (30 Min)` (`ShieldAlert`, `#be123c`).
+  (`Clock`, `#0f7a06`) · `Segurança & Rate Limits (15 Min)` (`ShieldAlert`, `#be123c`).
 - **ARIA:** o wrapper do slot é o `role="tabpanel"` com `id="config-panel-<aba>"` e
   `aria-labelledby="config-tab-<aba>"` — o `UiTabs` recebe `id-prefix="config"`, ligando tab ↔ painel.
 
@@ -197,23 +202,41 @@ compartilhado com o shell — `useSidebarExpandida` e `useSessoesAbertas`):
 
 ### 3.6 `AbaSeguranca.vue` → `<ConfiguracoesAbaSeguranca>`
 
-Conteúdo da aba "Segurança & Rate Limits (30 Min)" (sem props — lista em memória):
+Conteúdo da aba "Segurança & Rate Limits (15 Min)" (change
+`seguranca-rate-limits-reais` — estado REAL, sem mock):
 
-- Cabeçalho com `ShieldAlert` rose + título + subtítulo com `` `seguranca_rate_limits` `` (sem
-  botões à direita — "Simular Bloqueio Teste" e "Limpar Todos" removidos na revisão).
-- 3 cards de indicadores (markup de domínio — `UiKpi` tem ondas/borda que não constam no mockup):
-  **5** tentativas consecutivas, **30** minutos (`text-rose-700`), chave de rastreio
-  "E-mail em Minúsculo + IP de Origem".
-- Seção "REGISTROS ATIVOS NA TABELA `SEGURANCA_RATE_LIMITS` (N)" com contagem dinâmica +
-  "Atualizar" (link com `RefreshCw` → `toast.info`; hover **verde** `text-emerald-700` — pedido
-  do usuário).
-- Lista de registros no **`UiDataTable`** do kit (padrão cxGrid: cabeçalho navy, Group By Box,
-  ordenação, busca `show-header-top`, paginação; `minWidth: 170` no e-mail para não gerar
-  rolagem horizontal) com slots de célula: IP em mono, `UiBadge blocked` "N falha(s)" em
-  tentativas e motivo truncado; coluna **Ações** via slot `actions` com `UiTooltip` envolvendo
-  **apenas o ícone** `LockOpen` (botão transparente sem moldura, `aria-label="Liberar"` — sem
-  `UiButton`, a pedido do usuário). Ação da linha: **liberar** remove o registro (lista vazia
-  mostra o estado vazio do próprio `UiDataTable`).
+- **Props/donos:** `v-model:limite-requisicoes-minuto` e `v-model:rate-limit-ativo` (rascunho
+  do rate limit donado pela página e salvo pelo "Salvar Alterações Globais") + emit `change`;
+  estado e eventos a aba busca sozinha em `GET /api/seguranca/estado` (mostra `UiLoading`
+  "Carregando segurança…" enquanto voa; "Atualizar" rebusca, sem toast de demonstração).
+- Cabeçalho com `ShieldAlert` rose + título "Segurança de Rate Limits & Bloqueio Temporário de
+  15 Minutos" + subtítulo citando o estado real.
+- **4 cards de indicadores com as constantes do servidor** (fonte única — nada hardcoded):
+  **5** tentativas consecutivas (`TENTATIVAS_MAX`), **15** minutos (`JANELA_BLOQUEIO_MIN`,
+  `text-rose-700`), **limite de requisições por minuto** com o status Ativo/Inativo
+  (`rate_limit_*`) e chave de rastreio "Bloqueio: conta (e-mail) · Rate limit: IP".
+- **Seção "CONTAS EM ESTADO DE SEGURANÇA (N)"** — `UiDataTable` com as contas reais
+  (`tentativas_falhas > 0` ou bloqueio vigente) **e os bloqueios vigentes de e-mails
+  inexistentes** (5 tentativas na janela pós-liberação, vindos do log; linha sem conta →
+  `id` vazio): E-mail, `UiBadge blocked` "N falha(s)" (no bloqueio, exibe sempre **5** — a
+  causa do bloqueio) e Status ("Bloqueado até HH:mm (restam X min)" / "Monitorando"). Coluna
+  **Ações** via slot `actions` com `UiTooltip` envolvendo **apenas o ícone** `LockOpen` (sem
+  `UiButton`, a pedido do usuário): **liberar é ação imediata** — conta envia
+  `{ usuarioId }` (zera falhas e bloqueio de verdade) e e-mail inexistente envia `{ email }`
+  (registra o evento `bloqueio-liberado` no log); toast de sucesso e rebusca (não participa
+  do Salvar global). Estado vazio: "Nenhuma conta em estado de segurança."
+- **Seção "EVENTOS DE LOGIN — ÚLTIMOS 50"** — log **append-only** da tabela nova
+  `seguranca_eventos_login` (migrations 05 + 06 do ENUM), **somente leitura** (sem coluna
+  Ações): Quando, E-mail, IP (mono), `UiBadge` de Tipo (Senha inválida / E-mail inexistente /
+  Bloqueio aplicado / Tentativa com conta bloqueada / Bloqueio liberado) e Tentativas (o
+  contador da janela em cada tipo).
+  Alimentado pelos 4 pontos de falha do `POST /api/auth/login` — inclusive e-mail inexistente,
+  cujas 5 tentativas em 15 min bloqueiam aquele e-mail com o mesmo 403 das contas (resposta
+  uniforme, sem revelar existência de conta).
+  Estado vazio: "Nenhum evento registrado."
+- **Seção "RATE LIMIT DA API"** — `UiInput` "Requisições por minuto" + `UiSwitch` "Rate limit
+  ativo" (rascunho → `PUT /api/configuracoes` com o bloco `rate_limit`, que grava em
+  `configuracoes_limite_requisicao` e invalida o cache de 60s do limitador).
 
 ## 4. Componentes de kit (criados/alterados)
 
@@ -259,13 +282,15 @@ Contrato completo em `01 - design_system.md`; aqui o resumo do módulo.
 ## 6. Salvar e estado
 
 - **Botão Salvar com dirty flag:** nasce desabilitado (`Cabecalho` com `:desabilitado="!alterado"`);
-  cada painel emite `change` via `watch` sobre seus refs (retenção: watch no `v-model`), a página
-  marca `alterado = true` e `salvar()` exibe `toast.success('Configurações Globais', …)` e volta a
-  desabilitar — sem `fetch`, sem persistência.
-- Estado global na página: `aba = ref('logomarcas')` (aba padrão), `diasRetencao = ref(180)` e
-  `alterado = ref(false)`. Estado de cada painel vive dentro do componente (seleções da aba
-  Sidebar, registros da aba Segurança) — recarregar volta tudo aos defaults (comportamento exigido
-  pela spec: "Estado não persiste").
+  cada painel emite `change` via `watch` sobre seus refs (retenção: watch no `v-model`; aba
+  Segurança: edição do limite/ativo do rate limit), a página marca `alterado = true` e
+  `salvar()` envia o `PUT /api/configuracoes` (bloco `rate_limit` incluso), exibe
+  `toast.success('Configurações Globais', …)` e volta a desabilitar.
+- Estado global na página: `aba = ref('logomarcas')` (aba padrão), `diasRetencao = ref(180)`,
+  `rateLimite = ref(120)`, `rateAtivo = ref(true)` e `alterado = ref(false)` — todos hidratados
+  pelo `GET` no `onMounted` (com `UiLoading` no lugar do card enquanto voa) e persistidos pelo
+  PUT. Contas e eventos da aba Segurança **não** vivem na página: são rebuscados em
+  `GET /api/seguranca/estado` a cada abertura/`Atualizar` (estado real do servidor).
 - **Logo do header, sidebar e sessões do menu são exceções:** `useLogomarcaHeader`,
   `useSidebarExpandida` e `useSessoesAbertas` (`useState`) mantêm caminho+preview da logo, o
   expandir/recolher e o mapa de sessões abertas compartilhados com o `AppHeader`/`AppSidebar`/

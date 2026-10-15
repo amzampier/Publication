@@ -16,6 +16,11 @@ export interface ConfiguracoesGlobaisApi {
   logo_login_url: string | null
   sidebar_grupos: Record<string, boolean>
   sidebar_expandida: boolean
+  /** Linha configuracoes_limite_requisicao (aba Segurança — change seguranca-rate-limits-reais). */
+  rate_limit: {
+    ativo: boolean
+    limite_requisicoes_minuto: number
+  }
 }
 
 /**

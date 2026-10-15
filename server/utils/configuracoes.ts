@@ -16,6 +16,11 @@ export interface ConfiguracoesGlobais {
   logo_header_url: string | null
   logo_login_url: string | null
   dias_retencao_auditoria: number
+  /** Linha configuracoes_limite_requisicao ('rate_limit_default') — aba Segurança. */
+  rate_limit: {
+    ativo: boolean
+    limite_requisicoes_minuto: number
+  }
 }
 
 export interface PatchConfiguracoes {
@@ -24,7 +29,14 @@ export interface PatchConfiguracoes {
   logo_login_url?: string | null
   sidebar_grupos?: Record<string, boolean>
   sidebar_expandida?: boolean
+  rate_limit?: {
+    ativo: boolean
+    limite_requisicoes_minuto: number
+  }
 }
+
+/** Fallback do rate limit quando a linha do seed está ausente. */
+const RATE_PADRAO = { ativo: true, limite_requisicoes_minuto: 120 }
 
 // Fallback quando a linha do banco está ausente — espelha o seed de 02_seed.sql.
 const CONFIG_PADRAO: Omit<ConfiguracoesGlobais, 'criado_em' | 'atualizado_em'> = {
@@ -44,7 +56,7 @@ const CONFIG_PADRAO: Omit<ConfiguracoesGlobais, 'criado_em' | 'atualizado_em'> =
 
 type RowConfig = Record<string, unknown>
 
-const normalizarRow = (row: RowConfig): ConfiguracoesGlobais => {
+const normalizarRow = (row: RowConfig): Omit<ConfiguracoesGlobais, 'rate_limit'> => {
   let grupos = row.sidebar_grupos
   if (typeof grupos === 'string') {
     try {
@@ -72,9 +84,22 @@ const normalizarRow = (row: RowConfig): ConfiguracoesGlobais => {
 
 /** Lê a linha config_default completa (fallback = defaults do seed). */
 export async function getConfiguracoes(): Promise<ConfiguracoesGlobais> {
-  const rows = await query<RowConfig[]>("SELECT * FROM configuracoes_globais WHERE id = 'config_default'")
-  if (rows.length === 0) return { ...CONFIG_PADRAO, sidebar_grupos: { ...CONFIG_PADRAO.sidebar_grupos } }
-  return normalizarRow(rows[0])
+  const [rows, rateRows] = await Promise.all([
+    query<RowConfig[]>("SELECT * FROM configuracoes_globais WHERE id = 'config_default'"),
+    query<Array<{ ativo: number; limite_requisicoes_minuto: number }>>(
+      "SELECT ativo, limite_requisicoes_minuto FROM configuracoes_limite_requisicao WHERE id = 'rate_limit_default' LIMIT 1"
+    )
+  ])
+  const base = rows.length === 0
+    ? { ...CONFIG_PADRAO, sidebar_grupos: { ...CONFIG_PADRAO.sidebar_grupos } }
+    : normalizarRow(rows[0])
+  const rate = rateRows.length > 0
+    ? {
+        ativo: Number(rateRows[0].ativo) === 1,
+        limite_requisicoes_minuto: Number(rateRows[0].limite_requisicoes_minuto) || RATE_PADRAO.limite_requisicoes_minuto
+      }
+    : { ...RATE_PADRAO }
+  return { ...base, rate_limit: rate }
 }
 
 /**
@@ -104,6 +129,17 @@ export async function atualizarConfiguracoes(patch: PatchConfiguracoes): Promise
     colunas.push('sidebar_expandida = ?')
     valores.push(patch.sidebar_expandida ? 1 : 0)
   }
-  if (colunas.length === 0) return
-  await query(`UPDATE configuracoes_globais SET ${colunas.join(', ')} WHERE id = 'config_default'`, valores)
+  if (colunas.length > 0) {
+    await query(`UPDATE configuracoes_globais SET ${colunas.join(', ')} WHERE id = 'config_default'`, valores)
+  }
+  // Rate limit vive em outra tabela ('rate_limit_default', seedada em 02_seed.sql)
+  if (patch.rate_limit !== undefined) {
+    const rate = patch.rate_limit
+    await query(
+      `INSERT INTO configuracoes_limite_requisicao (id, ativo, limite_requisicoes_minuto)
+       VALUES ('rate_limit_default', ?, ?)
+       ON DUPLICATE KEY UPDATE ativo = VALUES(ativo), limite_requisicoes_minuto = VALUES(limite_requisicoes_minuto)`,
+      [rate.ativo ? 1 : 0, rate.limite_requisicoes_minuto]
+    )
+  }
 }

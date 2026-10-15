@@ -16,6 +16,11 @@ const JANELA_MS = 60_000
 let cacheLimite: { valor: number; lidoEm: number } | null = null
 const CACHE_MS = 60_000
 
+/** Zera o cache do limite — chamar após gravar um novo valor (PUT de configurações). */
+export function invalidarCacheLimite(): void {
+  cacheLimite = null
+}
+
 async function limitePorMinuto(): Promise<number> {
   const agora = Date.now()
   if (cacheLimite && agora - cacheLimite.lidoEm < CACHE_MS) return cacheLimite.valor
@@ -36,7 +41,8 @@ async function limitePorMinuto(): Promise<number> {
   return valor
 }
 
-function ipDe(event: any): string {
+/** IP do cliente (xForwardedFor quando houver proxy) — usado pelo rate limit e pelo log de login. */
+export function ipDoCliente(event: any): string {
   try {
     return getRequestIP(event, { xForwardedFor: true }) ?? '0.0.0.0'
   } catch {
@@ -50,7 +56,7 @@ function ipDe(event: any): string {
  * (login, refresh, esqueci-senha, trocar-senha, convite).
  */
 export async function exigirRateLimit(event: any): Promise<void> {
-  const ip = ipDe(event)
+  const ip = ipDoCliente(event)
   const agora = Date.now()
   const limite = await limitePorMinuto()
 

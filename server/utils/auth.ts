@@ -296,15 +296,21 @@ export function bloqueioVigente(bloqueadoAte: Date | string | null | undefined):
   return Math.max(1, Math.ceil((ate.getTime() - agora.getTime()) / 60000))
 }
 
-/** Registra falha de senha; ao alcançar TENTATIVAS_MAX, bloqueia 15min. */
-export async function registrarFalhaLogin(usuarioId: string): Promise<void> {
+/**
+ * Registra falha de senha; ao alcançar TENTATIVAS_MAX, bloqueia 15min.
+ * Devolve se o bloqueio foi disparado e as falhas consecutivas vigentes
+ * (TENTATIVAS_MAX quando bloqueou) — usado para tipar o evento de log.
+ */
+export async function registrarFalhaLogin(
+  usuarioId: string
+): Promise<{ bloqueou: boolean; tentativas: number }> {
   const linhas = await query<Array<{ tentativas_falhas: number; bloqueado_ate: Date | null }>>(
     'SELECT tentativas_falhas, bloqueado_ate FROM usuarios WHERE id = ?',
     [usuarioId]
   )
-  if (linhas.length === 0) return
+  if (linhas.length === 0) return { bloqueou: false, tentativas: 0 }
   const vigente = bloqueioVigente(linhas[0].bloqueado_ate)
-  if (vigente) return // já bloqueado: não incrementa além da janela
+  if (vigente) return { bloqueou: false, tentativas: Number(linhas[0].tentativas_falhas) } // já bloqueado: não incrementa além da janela
 
   const novas = Number(linhas[0].tentativas_falhas) + 1
   if (novas >= TENTATIVAS_MAX) {
@@ -313,14 +319,20 @@ export async function registrarFalhaLogin(usuarioId: string): Promise<void> {
       ate,
       usuarioId
     ])
-  } else {
-    await query('UPDATE usuarios SET tentativas_falhas = ? WHERE id = ?', [novas, usuarioId])
+    return { bloqueou: true, tentativas: TENTATIVAS_MAX }
   }
+  await query('UPDATE usuarios SET tentativas_falhas = ? WHERE id = ?', [novas, usuarioId])
+  return { bloqueou: false, tentativas: novas }
 }
 
-/** Zera falhas/bloqueio no login bem-sucedido. */
-export async function limparFalhasLogin(usuarioId: string): Promise<void> {
-  await query('UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = NULL WHERE id = ?', [
-    usuarioId
-  ])
+/**
+ * Zera falhas/bloqueio no login bem-sucedido (ou pela liberação manual da
+ * aba de Segurança). Devolve false quando a conta não existe.
+ */
+export async function limparFalhasLogin(usuarioId: string): Promise<boolean> {
+  const resultado = await query(
+    'UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = NULL WHERE id = ?',
+    [usuarioId]
+  )
+  return (resultado as { affectedRows?: number }).affectedRows !== 0
 }
