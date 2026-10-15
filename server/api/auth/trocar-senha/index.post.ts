@@ -9,6 +9,7 @@ import {
 } from '../../../utils/auth'
 import { query } from '../../../utils/db'
 import { exigirRateLimit } from '../../../utils/rateLimit'
+import { registrarAuditoria } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
@@ -52,6 +53,13 @@ export default defineEventHandler(async (event) => {
     'UPDATE usuarios SET hash_senha = ?, senha_provisoria = 0 WHERE id = ?',
     [hashNova, usuario.id]
   )
+  await registrarAuditoria(event, {
+    acao: 'Acesso',
+    recurso: 'Autenticação',
+    entidadeId: sessao.id,
+    detalhes: 'Alterou a senha da própria conta',
+    sessao: { id: sessao.id, nome: sessao.nome, perfil: sessao.perfil }
+  })
 
   return { ok: true }
 })

@@ -1,20 +1,23 @@
 # 05 — Gestão de Auditoria · Área Administrativa
 
-**Versão:** 1.0.0 · **Data:** 2026-10-02 · **Idioma:** Português do Brasil (pt-BR)
-**Escopo:** tela de Gestão de Auditoria — consulta dos registros de operações (fase 1 em memória)
-com KPIs, filtros em modal, tabela, detalhe do registro e exportação CSV/PDF
+**Versão:** 1.1.0 · **Data:** 2026-10-15 · **Idioma:** Português do Brasil (pt-BR)
+**Escopo:** tela de Gestão de Auditoria — consulta dos registros de operações **persistidos no
+banco (fase 2, via API)** com KPIs, filtros em modal, tabela, detalhe do registro e exportação
+CSV/PDF, mais o backend da trilha (`registrarAuditoria` + `GET /api/auditoria`)
 **Arquivos-fonte:** [`app/pages/admin/auditoria.vue`](../app/pages/admin/auditoria.vue) ·
 [`app/components/auditoria/`](../app/components/auditoria) ·
 [`app/components/ui/DataTable.vue`](../app/components/ui/DataTable.vue) ·
-[`app/config/navigation.ts`](../app/config/navigation.ts)
+[`app/config/navigation.ts`](../app/config/navigation.ts) ·
+[`server/utils/audit.ts`](../server/utils/audit.ts) ·
+[`server/api/auditoria/index.get.ts`](../server/api/auditoria/index.get.ts)
 **Vitrine:** [`/design`](../app/pages/design.vue) — seção **13. DataTable** (busca + botão Filtros)
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md) §5.11 ·
-**Autoridade de comportamento:** specs da change `openspec/changes/gestao-auditoria`
-(`auditoria`, `design-system/data-table`, delta `configuracoes-globais`)
+**Autoridade de comportamento:** spec `openspec/specs/auditoria/spec.md`
+(atualizada pela change `openspec/changes/auditoria-backend-integracao`)
 
 > Este documento é a referência da tela `/admin/auditoria` e de tudo o que foi criado para ela:
-> componentes de domínio, a evolução da toolbar do `UiDataTable`, navegação e specs. Toda
-> alteração aqui deve atualizar também `01 - design_system.md` (§5.11) e a seção 13 do `/design`.
+> componentes de domínio, backend da trilha, navegação e specs. Toda alteração aqui deve
+> atualizar também `01 - design_system.md` (§5.11) e a seção 13 do `/design`.
 
 ---
 
@@ -25,13 +28,14 @@ com KPIs, filtros em modal, tabela, detalhe do registro e exportação CSV/PDF
 3. [Componentes de domínio](#3-componentes-de-domínio)
 4. [Componentes de kit (criados/alterados)](#4-componentes-de-kit-criadosalterados)
 5. [Comportamento: filtros, busca e exportação](#5-comportamento-filtros-busca-e-exportação)
-6. [Dados de demonstração (fase 1)](#6-dados-de-demonstração-fase-1)
-7. [Navegação até a tela](#7-navegação-até-a-tela)
-8. [Estilo e CSS dedicado](#8-estilo-e-css-dedicado)
-9. [Vitrine `/design` §13](#9-vitrine-design-§13)
-10. [Especificações OpenSpec](#10-especificações-openspec)
-11. [Verificação](#11-verificação)
-12. [Pendências e próximos passos](#12-pendências-e-próximos-passos)
+6. [Backend da trilha (fase 2)](#6-backend-da-trilha-fase-2)
+7. [Dados iniciais (seed)](#7-dados-iniciais-seed)
+8. [Navegação até a tela](#8-navegação-até-a-tela)
+9. [Estilo e CSS dedicado](#9-estilo-e-css-dedicado)
+10. [Vitrine `/design` §13](#10-vitrine-design-§13)
+11. [Especificações OpenSpec](#11-especificações-openspec)
+12. [Verificação](#12-verificação)
+13. [Pendências e próximos passos](#13-pendências-e-próximos-passos)
 
 ---
 
@@ -45,32 +49,44 @@ A Gestão de Auditoria é a tela de consulta da trilha de operações da Área A
 - **Modelo de registro:** conforme o `registrarAuditoria` do
   [`02 - Guia de Arquitetura e Migrations.md`](02%20-%20Guia%20de%20Arquitetura%20e%20Migrations.md) §3.6 —
   data/hora, usuário (id + nome), ação, recurso, detalhes e IP.
-- **Fase 1:** tudo em memória — sem `server/`, sem chamadas de rede; a recarga restaura a base
-  de demonstração (sem persistência de filtros entre sessões, mas `useState` preserva o estado
-  durante a navegação do ciclo).
+- **Fase 2 (atual):** os registros vêm do banco via `GET /api/auditoria`
+  ([`server/api/auditoria/index.get.ts`](../server/api/auditoria/index.get.ts)); as operações de
+  escrita do sistema gravam na tabela `auditoria` pelo helper
+  [`server/utils/audit.ts`](../server/utils/audit.ts) (seção 6). A página abre com **overlay de
+  loading no F5** (padrão Meu Perfil/Configurações Globais) e, na falha do GET, exibe toast de
+  erro com a tabela vazia — **nunca** a antiga base de demonstração fingindo ser persistida.
+- **Filtros:** estruturais (datas/usuário/ação/recurso) são aplicados **no servidor** (query
+  params do GET) e preservados em `useState` durante a navegação do ciclo (zerados no F5).
 
 ## 2. Estrutura da página (componentização)
 
-A página é fina: só estado de coordenação (modal de filtros, registro em detalhe) e composição.
-Cada parte é um componente em `app/components/auditoria/` (auto-import com prefixo `Auditoria*`):
+A página é fina: estado de coordenação (modal de filtros, registro em detalhe), carga inicial
+com loading e composição. Cada parte é um componente em `app/components/auditoria/`
+(auto-import com prefixo `Auditoria*`):
 
 ```
-admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroDetalhe)
-├── <AuditoriaCabecalho />             ← título + menu "Exportar" (CSV / Download em PDF)
-├── <AuditoriaKpis class="mt-6" />     ← 4 UiKpi do conjunto FILTRADO
-├── <AuditoriaTabela class="mt-5"
-│      @open-filters="filtrosAbertos = true"
-│      @open-details="abrirDetalhe" /> ← UiDataTable (busca + Filtros + badges + ações)
-├── <AuditoriaFiltros v-model="filtrosAbertos" />   ← UiModal com datas + selects
-├── <AuditoriaDetalhe v-model="detalheAberto"
-│      :registro="registroDetalhe" />  ← UiModal de detalhe do registro
-└── <footer>                           ← nota de retenção + link p/ Configurações Globais
+admin/auditoria.vue                    (carregando, filtrosAbertos, detalheAberto, registroDetalhe)
+├── <UiLoading v-if="carregando"       ← overlay "Carregando auditoria…" durante o GET inicial
+│          message="Carregando auditoria…" />
+├── <div v-else class="mx-auto max-w-7xl">
+│   ├── <AuditoriaCabecalho />             ← título + menu "Exportar" (CSV / Download em PDF)
+│   ├── <AuditoriaKpis class="mt-6" />     ← 4 UiKpi do conjunto FILTRADO
+│   ├── <AuditoriaTabela class="mt-5"
+│   │      @open-filters="filtrosAbertos = true"
+│   │      @open-details="abrirDetalhe" /> ← UiDataTable (busca + Filtros + badges + ações)
+│   ├── <AuditoriaFiltros v-model="filtrosAbertos" />   ← UiModal com datas + selects
+│   ├── <AuditoriaDetalhe v-model="detalheAberto"
+│   │      :registro="registroDetalhe" />  ← UiModal de detalhe do registro
+│   └── <footer>                           ← nota de retenção + link p/ Configurações Globais
 ```
 
+- **Loading no F5:** `carregando = ref(true)` → `onMounted` → `carregarAuditoria()` →
+  `finally` libera; falha → `toast.danger` ("Não foi possível carregar os registros de
+  auditoria…") com a lista vazia. Mesmo padrão de `configuracoes-globais.vue`/`meu-perfil.vue`.
 - **Sem botão "Salvar":** a página é de consulta (não altera estado persistido); o `Cabecalho`
   só oferece o menu Exportar — o botão **Filtros** vive na toolbar da tabela (decisão 13 do
-  `design.md` da change), evitando duplicidade e seguindo o padrão herdados pelas próximas
-  páginas de listagem.
+  `design.md` da change `gestao-auditoria`), evitando duplicidade e seguindo o padrão herdados
+  pelas próximas páginas de listagem.
 - **Largura:** o conteúdo vive num container `mx-auto max-w-7xl` dentro do padding
   `p-4 sm:p-6 lg:p-8` (ampliado de `max-w-6xl` para dar folga à grid e evitar rolagem
   horizontal — ver §3.4).
@@ -104,14 +120,15 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
 
 ### 3.2 `Kpis.vue` → `<AuditoriaKpis>`
 
-4 `UiKpi` em `grid sm:grid-cols-2 lg:grid-cols-4`, todos derivados do conjunto **filtrado**:
+4 `UiKpi` em `grid sm:grid-cols-2 lg:grid-cols-4`, todos derivados do conjunto **filtrado**
+(vindo da API com os filtros aplicados):
 
 | KPI | Valor |
 | :--- | :--- |
 | Registros | contagem de `registrosFiltrados` |
 | Período | intervalo de datas vigente em `dd/mm` (ex.: "01/10 – 02/10"); sem datas, "Tudo" |
 | Usuários distintos | `Set` de nomes do conjunto filtrado |
-| Última atividade | `data/hora` do registro mais recente (`DD/MM/AAAA HH:mm`), `—` se vazio |
+| Última atividade | `data/hora` do registro mais recente (`DD/MM HH:mm`), `—` se vazio |
 
 ### 3.3 `Filtros.vue` → `<AuditoriaFiltros>`
 
@@ -131,9 +148,12 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
   `X` do select (`clearable`) devolve o filtro a "todos"; o dropdown do `UiSelect` mede o corpo
   rolável do modal e **abre para cima** quando não há espaço abaixo (auto-inversão do kit), sem
   criar scrollbar no corpo.
-- **Rascunho local:** o modal edita uma cópia dos filtros; **Aplicar** grava no composable e
-  fecha; **Cancelar** fecha **sem** aplicar (próxima abertura ressincroniza com o vigente);
-  **Limpar Filtros** zera composable + rascunho (modal permanece aberto).
+- **Opções dos selects:** derivam do conjunto **não filtrado** (servidas pela API em
+  `opcoes.usuarios`/`opcoes.recursos`) — aplicar um filtro nunca esconde opções do modal.
+- **Rascunho local:** o modal edita uma cópia dos filtros; **Aplicar** grava no composable,
+  **refaz o `GET /api/auditoria`** com os novos parâmetros e fecha; **Cancelar** fecha **sem**
+  aplicar nem buscar (próxima abertura ressincroniza com o vigente); **Limpar Filtros** zera
+  composable + rascunho e recarrega (modal permanece aberto).
 - **`Escape` com precedência para o popup:** com o dropdown de um `UiSelect` (ou o calendário
   de um `UiDatePicker`) aberto, o `Escape` fecha apenas o popup e preserva o rascunho — o
   modal fecha no `Escape` seguinte, quando não há popup aberto (consumo no componente via
@@ -142,11 +162,12 @@ admin/auditoria.vue                    (filtrosAbertos, detalheAberto, registroD
 
 ### 3.4 `Tabela.vue` → `<AuditoriaTabela>`
 
-- `UiDataTable` com `title="Registros de Auditoria"`, `show-header-top` (busca) e
+- `UiDataTable` com `title="Registros de Auditoria"`, `subtitle="Ordenados do mais recente
+  para o mais antigo — registros persistidos no banco"`, `show-header-top` (busca) e
   `show-filters` + `:filters-count="filtrosAtivosCount"` + `@open-filters` (repassa o evento do
   kit para a página).
 - Colunas: Data / Hora (formato pt-BR), Usuário, Ação, Recurso, Detalhes e IP — dados já em
-  ordem decrescente (decisão 9).
+  ordem decrescente (ordenados pelo servidor).
 - **Sem rolagem horizontal nas larguras usuais:** `minWidth` das colunas 130/160/120/140/220/120
   (soma 890px; com a coluna Ações `w-20` o chão da tabela é 970px) combinado ao container
   `max-w-7xl` da página (§2) — as sete colunas cabem sem barra horizontal mesmo quando a
@@ -168,21 +189,26 @@ sessão, evitando card vazio) contendo um `dl` de duas colunas:
 Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; rodapé com
 "Fechar" como **botão primário** (X/Escape também fecham, pelo `UiModal`).
 
-### 3.6 `useAuditoriaDemo.ts` — composable de estado
+### 3.6 `useAuditoriaDemo.ts` — composable de estado (API-backed)
 
-- `useState('auditoria-filtros')` com `{ periodo, usuario, acao, recurso }` — sobrevive à
-  navegação no mesmo ciclo.
-- `REGISTROS`: ~25 registros gerados relativos a "hoje" (`dataAtras(dias, horas)`), ordenados
-  decrescentes; `registrosFiltrados` (computed), `filtrosAtivosCount`, `periodoRotulo`,
-  `opcoesUsuarios`/`opcoesRecursos`, `limparFiltros` e helpers `formatarDataHora`,
-  `VARIANTE_POR_ACAO`, `PERIODO_OPCOES`, `ACOES`.
+- **Contrato público estável desde a fase 1** (mesmo precedente de `usePerfisDemo`): `filtros`,
+  `registrosFiltrados`, `filtrosAtivosCount`, `periodoRotulo`, `opcoesUsuarios`,
+  `opcoesRecursos`, `limparFiltros` + helpers (`formatarDataHora`, `diaLocal`,
+  `dataIsoParaDate`/`dateParaIso`, `VARIANTE_POR_ACAO`, `ACOES`).
+- **Origem dos dados:** `useState('auditoria-registros')` inicia **vazia**;
+  `carregarAuditoria()` chama `useApiFetch('/api/auditoria')` com os filtros vigentes como
+  `query` e preenche `registros` + `opcoes` (usa `carregando`/`carregado` em `useState`);
+  falha → `false` com a lista zerada (nunca demo). `registrosFiltrados` é o conjunto vindo do
+  servidor (filtros estruturais no backend).
+- `useState('auditoria-filtros')` preserva os filtros na navegação do mesmo ciclo; zeram no F5.
 - Arquivo em `components/auditoria/` (não é auto-importado): consumidores importam
   explicitamente de `./useAuditoriaDemo` (ou `../../components/auditoria/useAuditoriaDemo`
   na página).
 
 ## 4. Componentes de kit (criados/alterados)
 
-**Nenhum componente novo de kit.** Apenas o `UiDataTable` foi evoluído (task 2 da change):
+**Nenhum componente novo de kit.** Apenas o `UiDataTable` foi evoluído (task 2 da change
+`gestao-auditoria`):
 
 - **Busca → `UiInput`:** o `<input>` hand-rolled da toolbar virou o controle do kit (`leftIcon`
   lupa, limpar via `rightIcon` + `rightIconClick`, `v-model="searchQuery"`), com foco
@@ -197,10 +223,10 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 ## 5. Comportamento: filtros, busca e exportação
 
 - **Duas superfícies complementares:** a **busca** da `UiDataTable` é texto livre instantâneo
-  (foco na digitação, limpar restaura); os **filtros** são estruturais (intervalo de datas +
-  selects de usuário/ação/recurso), aplicados pelo modal com **Limpar Filtros / Cancelar /
-  Aplicar** e refletidos no badge do botão (`filtersCount` — até 5: data inicial, data final,
-  usuário, ação e recurso).
+  (foco na digitação, limpar restaura — recurso do componente, sem rede); os **filtros** são
+  estruturais (intervalo de datas + selects de usuário/ação/recurso), aplicados pelo modal e
+  **enviados ao servidor** na query do `GET /api/auditoria`, refletidos no badge do botão
+  (`filtersCount` — até 5: data inicial, data final, usuário, ação e recurso).
 - **KPIs recalculam** a cada mudança de filtro (spec `auditoria`: "Registros" é a contagem do
   filtrado — não da base inteira).
 - **Exportação** opera sempre sobre os registros filtrados; o PDF é um **arquivo de relatório
@@ -208,17 +234,90 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 - **Rodapé:** "Registros sujeitos à política de retenção de logs de auditoria — ajustar em
   Configurações Globais" (link para `/admin/configuracoes-globais`).
 
-## 6. Dados de demonstração (fase 1)
+## 6. Backend da trilha (fase 2)
 
-- Base de 25 registros: 4 usuários (Ana Carolina Ribeiro, Rafael Souza, Mariana Lopes,
-  Carlos Mendes), 6 recursos (Publicações, Usuários, Perfis de Acesso, Configurações Globais,
-  Logomarcas, Rate Limits), as 4 ações e 5 IPs distintos, espalhados nos últimos 30 dias.
-- **Nenhuma persistência:** recarregar restaura a base; os filtros vivem em `useState` (perdem-se
-  ao fechar a aba/sessão).
-- **Nomenclatura canônica:** o nome da tabela é **`auditoria`** (a query da aba de Retenção em
-  Configurações e a citação do `docs/04` foram corrigidas de `logs_auditoria` nesta change).
+### 6.1 `server/utils/audit.ts` — `registrarAuditoria`
 
-## 7. Navegação até a tela
+- Assinatura: `registrarAuditoria(event, { acao, recurso, entidadeId?, detalhes, sessao? })`,
+  com `acao` restrita aos 5 tipos (`Inclusão`, `Alteração`, `Exclusão`, `Homologação` e
+  `Acesso`).
+- Preenche `usuario_id`/`usuario_nome`/`usuario_perfil` da sessão (`getSessionUser`) e
+  `endereco_ip` (`ipDoCliente` — xForwardedFor quando houver proxy); `id` via `UUID()` e
+  `data_hora` pelo DEFAULT da coluna.
+- **`sessao` (sobrescrita opcional):** quando o request não carrega a sessão — login (os
+  cookies pertencem à **resposta**) e `esqueci-senha` (rota pública) — o chamador informa
+  `{ id, nome, perfil }`; sem isso o registro sairia como "Desconhecido".
+- **Resiliência:** tudo em `try/catch` com `console.error` — a falha na auditoria **nunca**
+  interrompe a operação principal (verificado com a tabela renomeada: a escrita respondeu 201
+  e só o console registrou `[auditoria] Falha ao registrar evento de auditoria:`).
+- **Mapeamento com a tabela** (migration 01 §18): `recurso` da tela → coluna `entidade`;
+  `entidade_id` = id da entidade afetada (`''` quando não aplicável); `acao` guarda o **tipo**
+  (é o que mantém o badge da tabela íntegro); o texto humano vai em `detalhes`.
+
+### 6.2 Rotas auditadas (19 pontos)
+
+| Rota | acao | recurso |
+| :--- | :--- | :--- |
+| `POST /api/usuarios` | Inclusão | Usuários |
+| `PUT /api/usuarios/:id` | Alteração | Usuários |
+| `PUT /api/usuarios/:id/situacao` | Alteração | Usuários |
+| `DELETE /api/usuarios/:id` | Exclusão | Usuários |
+| `POST /api/usuarios/importar` | Inclusão (1 evento com a contagem) | Usuários |
+| `PATCH /api/usuarios/eu` | Alteração | Meu Perfil |
+| `POST /api/perfis` | Inclusão | Perfis de Acesso |
+| `PUT /api/perfis/:id` | Alteração | Perfis de Acesso |
+| `DELETE /api/perfis/:id` | Exclusão | Perfis de Acesso |
+| `PUT /api/perfis/:id/permissoes` | Alteração | Perfis de Acesso |
+| `POST /api/perfis/:id/permissoes/copiar` | Alteração | Perfis de Acesso |
+| `PUT /api/configuracoes` | Alteração | Configurações Globais |
+| `POST /api/uploads` | Inclusão | Logomarcas |
+| `POST /api/convite` | Inclusão | Usuários |
+| `POST /api/seguranca/liberar` | Alteração | Rate Limits |
+| `POST /api/auth/login` (sucesso) | **Acesso** | Autenticação |
+| `POST /api/auth/logout` (com sessão) | **Acesso** | Autenticação |
+| `POST /api/auth/trocar-senha` | **Acesso** | Autenticação |
+| `POST /api/auth/esqueci-senha` (ambos os caminhos) | **Acesso** | Autenticação |
+
+- A chamada só acontece **após o sucesso da operação** — validação/conflito/erro de banco
+  (400/404/409) não inserem nada (verificado).
+- **Autenticação (tipo `Acesso`, badge variante neutra):** login registra a conta
+  autenticada (sessão informada — ver §6.1); logout só gera evento quando há sessão
+  identificada (sem cookie, o idempotente não insere nada); recuperação registra nos dois
+  caminhos (conta ativa ou não) mantendo a resposta genérica anti-enumeração.
+- **Tentativas de credencial inválida ficam fora da trilha:** vão exclusivamente ao log
+  `seguranca_eventos_login` (aba Segurança de Configurações Globais) — os dois logs têm
+  papéis distintos (segurança operacional × governança).
+- `Homologação` permanece no enum/seed — não há rota de esteira ainda; o RBAC por módulo
+  (`requirePermission`) ainda **não** exige permissão nas rotas
+  (`docs/02` §3.2, roadmap).
+
+### 6.3 `GET /api/auditoria` — `server/api/auditoria/index.get.ts`
+
+- Protegido pelo middleware global `auth-api.ts`: **sem sessão → 401**.
+- Query params opcionais: `dataInicial`, `dataFinal` (`yyyy-mm-dd`, janela inclusiva do dia),
+  `usuario` (nome exato), `acao`, `recurso` — vazio/ausente = todos; `acao` fora dos 4 tipos
+  resulta em conjunto vazio (sem erro).
+- Resposta `{ registros, opcoes }`: `registros` com `{ id, registradoEm, usuario: { id, nome },
+  acao, recurso, detalhes, ip }` ordenados por `data_hora DESC, id DESC`; `opcoes` com
+  usuários e recursos distintos do conjunto **não** filtrado.
+- Validação de formato: data fora de `yyyy-mm-dd` é ignorada (tratada como sem filtro).
+
+## 7. Dados iniciais (seed)
+
+- **Migration [`server/migration/07_seed_auditoria.sql`](../server/migration/07_seed_auditoria.sql)**
+  insere 25 registros com ids fixos (`log-seed-001`…`log-seed-025`), `usuario_id NULL`
+  (operadores fictícios: Ana Carolina Ribeiro, Rafael Souza, Mariana Lopes, Carlos Mendes),
+  6 recursos (Publicações, Usuários, Perfis de Acesso, Configurações Globais, Logomarcas,
+  Rate Limits), as 4 ações e 5 IPs — com `data_hora` relativa a `NOW()` (últimos 28 dias), o
+  que mantém o KPI "Última atividade" e o filtro de período coerentes com "hoje".
+- O runner de migrations é idempotente (`_migrations`; errno 1062 tolerado) — re-execução não
+  duplica. Os registros reais das operações entram acima do seed (ordem por data/hora).
+- **Nomenclatura canônica:** o nome da tabela é **`auditoria`** (a query do banner de
+  `AbaRetencaoAuditoria` exibe `DELETE FROM auditoria WHERE data_hora < NOW() - INTERVAL N DAY`
+  — coluna `data_hora` da migration 01 §18; a versão anterior da tela citava um nome de coluna
+  inexistente e foi corrigida).
+
+## 8. Navegação até a tela
 
 - **Sidebar:** sessão "Administração" → item "Gestão de Auditoria" com `to: '/admin/auditoria'` (rótulo unificado com a página e o menu da conta)
   (`app/config/navigation.ts`) — fica ativo na rota (spec `layout-navigation`).
@@ -227,7 +326,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   Auditoria e Perfis de Acesso (RBAC)); seguem sem rota os itens das demais sessões e o Painel
   Executivo (MEL-03 do RL01).
 
-## 8. Estilo e CSS dedicado
+## 9. Estilo e CSS dedicado
 
 - **Nenhum CSS dedicado novo** — só tokens e utilitários do DS (`bg-brand-primary`,
   `text-[#2dd4bf]`, `brand-focus`, `mono`/`tabular-nums` em IPs e datas).
@@ -235,52 +334,62 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   tela **não** usa mais o `@media print` de `main.css` (que continua no projeto para outros
   consumidores).
 
-## 9. Vitrine `/design` §13
+## 10. Vitrine `/design` §13
 
 - A demo `show-header-top` da seção 13 passou a incluir `show-filters`,
   `:filters-count="filtrosDemo"` e `@open-filters="abrirFiltrosDemo"`: o clique alterna o
   contador 0 ↔ 2 e dispara `toast.info` (demonstra emit + badge sem modal real).
 - A busca da §13 é a mesma `UiInput` (prova visual do padrão DS em tabela com agrupamento).
 
-## 10. Especificações OpenSpec
+## 11. Especificações OpenSpec
 
-Change `openspec/changes/gestao-auditoria` (spec-driven):
+- **Spec principal:** `openspec/specs/auditoria/spec.md` (capability `auditoria`) — fonte da
+  verdade de comportamento.
+- **Change `gestao-auditoria`** (arquivada, 2026-10-02): criou a tela (fase 1 em memória) +
+  `design-system/data-table` (busca no kit + botão Filtros).
+- **Change `relatorio-pdf-auditoria`** (arquivada): exportação em download de PDF.
+- **Change `auditoria-backend-integracao`** (ativa → sincronizada): capability `auditoria`
+  — **REMOVED** "fase 1 sem persistência"; **MODIFIED** cenários que citavam demonstração;
+  **ADDED** carga via API com loading/toast, contrato do `GET /api/auditoria` e registro de
+  trilha pelas operações de escrita.
 
-| Capability | Operação |
-| :--- | :--- |
-| `auditoria` | **ADDED** — rota/shell, navegação, KPIs, filtros em modal, tabela, detalhe, exportação, fase 1, rodapé |
-| `design-system/data-table` | **ADDED** — busca no controle do DS + botão Filtros opcional (`showFilters`/`filtersCount`/`open-filters`) |
-| `configuracoes-globais` | **MODIFIED** — query de expurgo usa a tabela canônica `auditoria` |
-
-As deltas são sincronizadas para `openspec/specs/` via `/opsx-sync` **antes do archive** (fluxo adotado: com o sync prévio, o `openspec archive` puro recusaria um ADDED já aplicado na main — o fluxo de archive reconhece o estado "já sincronizado" e apenas move a change para `archive/`).
-
-Change seguinte, `relatorio-pdf-auditoria` (spec-driven): capability `auditoria` **ADDED**
-(recriação da spec principal — o archive anterior foi feito sem sync — com o requirement de
-exportação já no formato **download de PDF**).
-
-## 11. Verificação
+## 12. Verificação
 
 - `npm run build` (gate estrutural — não há lint/test no repositório).
-- Checagem CDP (Edge headless) desta change: rota 200 com shell + navegação (sidebar/conta/ativo),
-  kit da toolbar (9/9 — foco `ds-bottom-clip`, filtro, limpar, estado vazio, botão/badge/toast,
-  regressão sem `showFilters`, 375px), componentes de domínio (14/14 — KPIs, menu Exportar,
-  modal de filtros aplicar/limpar, colunas/badges/paginação, detalhe, rodapé), modal de filtros v2 (9/9 — ícone no header, datas com máscara, chips, Cancelar/Limpar, sem scrollbar), exportação (4/4 —
-  CSV com BOM + cabeçalho + linhas filtradas, `window.print`, mídia `print`).
-- Change `relatorio-pdf-auditoria` (CDP 8/8): logo de login compartilhada (upload → badge +
-  campo desabilitado → persiste na troca de aba → segue para a página), blob `%PDF-` salvo como
-  `auditoria.pdf`, MediaBox em paisagem (841.89 × 595.28 pt), `window.print` nunca chamado e
-  conteúdo extraído do PDF (título, "Gerado em …", filtros, 6 colunas, registros e 2 páginas com
-  "de 2", 1 imagem embutida = logo).
-- Greps: `logs_auditoria` = 0 em `app/` + `docs/`; `show-filters` presente na vitrine §13.
+- **Fase 1 (arquivada):** checagem CDP (Edge headless): rota 200 com shell + navegação, kit da
+  toolbar (9/9), componentes de domínio (14/14), modal de filtros v2 (9/9), exportação CSV (4/4);
+  `relatorio-pdf-auditoria` (CDP 8/8).
+- **Fase 2 (change `auditoria-backend-integracao`):**
+  - Seed: `SELECT COUNT(*) = 25` com `log-seed-%` após o boot (migration 07 aplicada).
+  - `GET /api/auditoria`: 401 sem sessão; 200 com `{ registros, opcoes }`; ordenação
+    decrescente; filtro `acao` → só o tipo pedido com `opcoes` intactas; ação desconhecida →
+    200 vazio.
+  - Escritas: 15 pontos de `registrarAuditoria` exercícados (perfis CRUD/matriz/cópia,
+    usuários, configurações, upload, convite, liberar) — cada sucesso insere 1 registro com
+    tipo/recurso corretos; 404 não insere.
+  - Resiliência: com a tabela renomeada, `POST /api/usuarios` seguiu respondendo 201 e o
+    console registrou `[auditoria] Falha ao registrar evento de auditoria: Table … doesn't exist`.
+  - Autenticação (tipo `Acesso`): login registra a conta autenticada no topo (`usuario_id`
+    preenchido — nunca "Desconhecido"); credencial inválida (401) não gera evento; logout
+    com sessão registra e sem cookie não insere nada; troca de senha (usuário QA) e
+    recuperação de senha (e-mail inexistente — resposta genérica intacta) registram com o
+    e-mail/conta alvo; path de e-mail do `esqueci-senha` com conta existente coberto por
+    code review (sem disparo de e-mail real no teste).
+  - Greps: `REGISTROS`/`dataAtras` = 0 em `app/`; "fase 1 em memória" = 0 em `app/`;
+    nenhuma referência à coluna antiga da retenção em `app/` e `docs/`.
 
-## 12. Pendências e próximos passos
+## 13. Pendências e próximos passos
 
-- **Backend:** `server/utils/audit.ts` + endpoint de consulta (fase 2) — a página troca o
-  composable por dados reais sem mudar o contrato visual.
+- **RBAC nas rotas:** `requirePermission(event, modulo, acao)` continua fora (escopo
+  deliberado da change `perfis-acesso-backend` — ver `docs/02` §3.2, roadmap).
 - **Filtros avançados:** o modal foi desenhado para crescer (IP, recurso com busca, faixa de
   datas) — novas opções entram nele sem tocar na toolbar.
+- **Paginação server-side:** o `UiDataTable` pagina no cliente sobre o conjunto filtrado; se o
+  volume crescer além da janela de retenção, migrar a paginação para o servidor.
 - **`UiMenu` no kit:** o mini-menu do Exportar duplica a mecânica Esc/clique-fora do menu da
   conta; extrair para o kit é candidato a próxima evolução.
 - **Gotcha do badge `Exclusão`:** a variante `blocked` força o dot pulsante; se poluir em uso
   real, trocar por variante neutra é ajuste de uma linha.
+- **Expurgo automático:** a rotina diária citada na aba Retenção de Configurações ainda não
+  existe como job (a query exibida é o modelo).
 - Itens de navegação sem rota restantes (MEL-03 do `RL01`).

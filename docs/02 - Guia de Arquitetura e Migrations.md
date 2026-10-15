@@ -70,8 +70,11 @@ O Publications possui **duas áreas** com natureza e proteção distintas (escop
 | **Área Pública** | rotas raiz de `app/pages/` (ex.: `/`, `/releases`, `/manuais`, `/escopos`) | anônimo, sem autenticação | leitura das publicações: Releases Week Semanal, Manuais e Escopo de Projetos |
 | **Área Administrativa** | `app/pages/admin/**` (ex.: `/admin/login`, `/admin/releases`) | autenticação (JWT + cookie) e permissões RBAC | cadastros, edição e publicação dos conteúdos acima, usuários, perfis, auditoria e configurações |
 
-- Rotas públicas são declaradas explicitamente em `PUBLIC_ROUTES`/`PUBLIC_PREFIXES` no middleware `server/middleware/auth.ts` e liberadas no route guard do cliente `app/middleware/auth.global.ts`.
-- Toda rota `/admin/**` exige sessão válida; sem sessão, o cliente redireciona para `/admin/login` e o servidor responde `401/403`.
+- No servidor, toda requisição sob `/api/` exige sessão válida (middleware `server/middleware/auth-api.ts`,
+  com isenções para `/api/auth/*` e `/api/configuracoes/identidade`) e responde `401` sem sessão;
+  no cliente, o route guard `app/middleware/auth.global.ts` redireciona rotas `/admin/**`
+  sem sessão para `/admin/login`. As rotas da Área Pública não têm API própria declarada
+  hoje (a leitura das publicações ainda não é servida por endpoints).
 - Não há escopo por empresa — os dados são globais ao sistema, com controle de acesso feito apenas por perfil/permissão.
 
 ### 2.2. Componentização obrigatória (sem exceção)
@@ -164,59 +167,70 @@ export async function getTransaction(): Promise<Transaction> {
 
 ### 3.2. Estrutura Padrão de um Endpoint de API
 
-Cada rota de API segue um fluxo estrito e padronizado:
-1. **Autorização (RBAC)**: validação de permissão granular com `requirePermission`.
-2. **Validação de Payload**: parsing seguro com **Zod** (`validateBody`).
-3. **Execução no Banco**: SQL parametrizado com UUIDs gerados no MariaDB (`UUID()`).
-4. **Auditoria**: registro automático da ação em banco de dados (`registrarAuditoria`).
-5. **Tratamento de Erros**: mapeamento seguro com `handleApiError`.
+Cada rota de API administrativa segue hoje o fluxo real do código
+(change `auditoria-backend-integracao` — docs espelham o código; os itens
+marcados como *roadmap* ainda não existem como helper):
 
-**Exemplo real de endpoint POST (`server/api/publicacoes/index.post.ts`):**
+1. **Sessão**: o middleware global `server/middleware/auth-api.ts` exige sessão válida em
+   toda rota `/api/` (exceto `/api/auth/*` e `/api/configuracoes/identidade`) — sem sessão → `401`.
+2. **Validação de Payload**: feita na própria rota/utilitário com `createError({ statusCode: 400 })`
+   (validação ad hoc; `server/utils/validation.ts` com **Zod** é *roadmap*).
+3. **Execução no Banco**: SQL parametrizado com UUIDs gerados no MariaDB (`UUID()`), via
+   `query()`/`getTransaction()` de `server/utils/db.ts`.
+4. **Auditoria**: após o sucesso da gravação, `registrarAuditoria(event, …)`
+   (`server/utils/audit.ts` — ver §3.6) registra a ação na tabela `auditoria`.
+5. **Erros**: lançados com `createError({ statusCode, statusMessage })` direto na rota ou no
+   utilitário (400 validação, 404 inexistente, 409 conflito, 403 permissão — *roadmap*);
+   o próprio Nitro serializa a resposta (`server/utils/safeError.ts`/`handleApiError` é *roadmap*).
+
+**Exemplo real de endpoint POST (`server/api/usuarios/index.post.ts`):**
 
 ```typescript
-import { query } from '../../utils/db'
+import { criarUsuario } from '../../utils/usuarios'
 import { registrarAuditoria } from '../../utils/audit'
-import { validateBody, publicacaoSchema } from '../../utils/validation'
-import { requirePermission } from '../../utils/permission'
-import { handleApiError } from '../../utils/safeError'
 
 export default defineEventHandler(async (event) => {
-  // 1. RBAC
-  await requirePermission(event, 'publicacoes', 'criar')
-  
-  // 2. Validação Zod
-  const body = await validateBody(event, publicacaoSchema)
-
-  try {
-    // 3. Execução SQL
-    await query(`
-      INSERT INTO publicacoes (id, titulo, slug, tipo, status, ativo)
-      VALUES (UUID(), ?, ?, ?, ?, ?)
-    `, [body.titulo, body.slug, body.tipo, body.status, body.ativo ? 1 : 0])
-    
-    // 4. Registro de Auditoria
-    await registrarAuditoria(event, {
-      acao: 'Inclusão',
-      recurso: 'Publicações',
-      detalhes: `Criou a publicação ${body.titulo}`
-    })
-
-    return { success: true, message: 'Publicação criada com sucesso' }
-  
-  } catch (error: any) {
-    // 5. Tratamento de Erro Amigável e Seguro
-    return handleApiError(error, 'Erro ao criar publicação')
+  const body = await readBody<Record<string, unknown>>(event)
+  if (!body || typeof body !== 'object') {
+    throw createError({ statusCode: 400, statusMessage: 'Corpo JSON ausente ou inválido.' })
   }
+
+  // 2/3. Validação + execução no banco (erros 400/409 saem dos utilitários)
+  const usuario = await criarUsuario({ /* … */ })
+
+  // 4. Registro de Auditoria (nunca derruba a resposta — §3.6)
+  await registrarAuditoria(event, {
+    acao: 'Inclusão',
+    recurso: 'Usuários',
+    entidadeId: usuario.id,
+    detalhes: `Criou o usuário '${usuario.nome}' (${usuario.email}) com perfil ${usuario.perfil}`
+  })
+
+  setResponseStatus(event, 201)
+  return usuario
 })
 ```
 
+> **Roadmap (não implementado):** `requirePermission(event, modulo, acao)`
+> (`server/utils/permission.ts`), `validateBody`/Zod (`server/utils/validation.ts`) e
+> `handleApiError` (`server/utils/safeError.ts`) são o alvo arquitetural descrito nas changes
+> de RBAC/backend; o código atual faz a validação ad hoc e ainda não aplica permissão por
+> módulo nas rotas.
+
 ---
 
-### 3.3. Tratamento Seguro de Erros (`server/utils/safeError.ts`)
-Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) em ambientes de produção:
-- O código MariaDB `1062` (`ER_DUP_ENTRY`) é capturado e transformado em **HTTP 409 Conflict** com mensagem amigável: *"Registro duplicado. Este dado já existe no sistema."*
-- Detalhes de validação Zod são formatados em JSON amigável no console.
-- Erros genéricos de runtime lançam **HTTP 500** com mensagem neutra ao cliente, preservando a segurança da infraestrutura.
+### 3.3. Tratamento Seguro de Erros (no código real: `createError` nos utilitários)
+
+Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) em ambientes de produção — comportamento atual do código:
+- Os conflitos são checados **antes** da gravação nos próprios utilitários e traduzidos em
+  `createError({ statusCode: 409 })` com mensagem amigável (ex.: `emailJaCadastrado()` em
+  `server/utils/usuarios.ts` → *"Este e-mail já está cadastrado no sistema."*; exclusão de
+  perfil com vínculos → 409).
+- As validações lançam `400` com a mensagem do campo (`erro400`/`createError`), sem atingir o banco.
+- Erros de runtime não tratados chegam ao Nitro, que responde **HTTP 500** com mensagem
+  neutra ao cliente, preservando a segurança da infraestrutura.
+- `server/utils/safeError.ts` (`handleApiError`) com mapeamento centralizado de códigos é
+  *roadmap* (ver §3.2) — ainda não existe como arquivo.
 
 ---
 
@@ -226,8 +240,14 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 
 1. **Tokens JWT com HttpOnly Cookies**:
    - O token de acesso fica em cookie com flag `__Host-auth-token`, `HttpOnly`, `SameSite=Lax`, e `Secure` em produção.
-   - O middleware `server/middleware/auth.ts` extrai o token do cookie (ou do header `Authorization: Bearer <token>`).
-   - Rotas públicas da **Área Pública** (leitura anônima das publicações) são explicitamente declaradas (`PUBLIC_ROUTES` e `PUBLIC_PREFIXES`); tudo sob `/admin/**` passa pela validação do middleware.
+   - O middleware global `server/middleware/auth-api.ts` valida a sessão de toda requisição
+     sob `/api/` via `getSessionUser()` (`server/utils/auth.ts`), exceto as portas sem sessão:
+     `/api/auth/*` (autenticação) e `/api/configuracoes/identidade` (só logo do login) —
+     sem sessão válida → `401`. (O nome `server/middleware/auth.ts` de versões anteriores da
+     documentação não existe; o arquivo real é `auth-api.ts`.)
+   - As rotas de página sob `/admin/**` são protegidas pela guarda global do cliente
+     (redirect ao login com `?redirect=`); a Área Pública (leitura anônima) não tem rotas de
+     API próprias implementadas hoje.
 2. **Refresh Tokens com Rotação de Sessão (`sessoes`)**:
    - Cada login gera um token de atualização registrado na tabela `sessoes`. Ao renovar, o token antigo é invalidado e substituído por um novo.
 3. **Blacklist de Tokens (`token_blacklist`)**:
@@ -244,10 +264,12 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 O sistema implementa controle de acesso granular na tabela `permissoes_perfil`:
 - Cada perfil possui permissões booleanas para as ações fixas: `visualizar`, `criar`, `alterar`, `excluir`.
 - Ações especiais são tratadas no campo `extras` (JSON), tais como: `publicar`, `arquivar`, `download`, `exportar`, `importar`.
-- O helper `requirePermission(event, modulo, acao)` valida diretamente no banco ou cache de sessão, negando a requisição com **HTTP 403 Forbidden** se o perfil não tiver a permissão concedida.
+- O helper `requirePermission(event, modulo, acao)` (**roadmap — ainda não existe**) será o
+  ponto único de autorização por módulo: validará no banco/cache de sessão e negará com
+  **HTTP 403 Forbidden**; hoje as rotas exigem apenas sessão válida (`auth-api.ts`, §3.4).
 
-A tabela de perfis (`perfis_acesso`) terá o schema alvo (migration futura — a página
-`/admin/perfis-acesso` hoje é demo em memória, `docs/07`; DDL completo em `docs/bd/01`):
+A tabela de perfis (`perfis_acesso`) existe na migration `01_create_tables.sql`
+(a página `/admin/perfis-acesso` já lê/grava via API — `docs/07`; DDL completo em `docs/bd/01`):
 
 ```sql
 CREATE TABLE IF NOT EXISTS perfis_acesso (
@@ -273,11 +295,37 @@ CREATE TABLE IF NOT EXISTS perfis_acesso (
 
 ### 3.6. Sistema de Auditoria Centralizada (`server/utils/audit.ts`)
 
-Todas as operações de escrita (Inclusão, Alteração, Exclusão, Homologação, etc.) disparam o helper `registrarAuditoria`:
-- Captura o IP real do cliente via `getRequestIP(event, { xForwardedFor: true })`.
-- Obtém o ID e o Nome do usuário logado via contexto do token.
-- Grava na tabela `auditoria` com data/hora e detalhes textuais da operação.
-- A falha na auditoria nunca interrompe a requisição principal (resiliência operacional).
+Implementado pela change `auditoria-backend-integracao`. As operações de escrita das rotas
+administrativas (Inclusão, Alteração, Exclusão — Homologação reservada para a esteira) e os
+eventos de autenticação bem-sucedidos (tipo `Acesso`) disparam `registrarAuditoria`
+**após o sucesso da operação**:
+
+```typescript
+import { registrarAuditoria } from '../../utils/audit'
+
+await registrarAuditoria(event, {
+  acao: 'Inclusão',              // um dos 4 tipos — é o que alimenta o badge da tela
+  recurso: 'Usuários',           // coluna `entidade` da tabela
+  entidadeId: usuario.id,        // coluna `entidade_id` ('' quando não aplicável)
+  detalhes: `Criou o usuário '${usuario.nome}'…`  // texto humano da operação
+})
+```
+
+- **Sessão:** ID, nome e perfil do usuário logado vêm de `getSessionUser(event)`.
+- **IP real do cliente:** `ipDoCliente(event)` (`getRequestIP(event, { xForwardedFor: true })`).
+- **Gravação:** INSERT com `UUID()` e `data_hora` pelo DEFAULT da coluna na tabela `auditoria`
+  (migration 01 §18 — mapeamento: `recurso` da tela ↔ coluna `entidade`).
+- **Resiliência:** o helper envolve tudo em `try/catch` e só loga no console — a falha na
+  auditoria **nunca** interrompe nem altera a resposta da requisição principal.
+- **Escopo:** 19 rotas auditadas (15 de escrita: usuários, perfis, configurações, uploads,
+  convite, liberação de bloqueio + 4 de autenticação: login, logout, troca e recuperação de
+  senha, com o 5º tipo **`Acesso`** e recurso "Autenticação"). Nos casos em que o request
+  ainda não carrega a sessão (login — os cookies são da resposta — e `esqueci-senha`,
+  público), o chamador informa `sessao: { id, nome, perfil }` explicitamente. Tentativas
+  de credencial inválida não geram evento na trilha: seguem exclusivamente no log
+  `seguranca_eventos_login` (fonte da aba Segurança de Configurações Globais).
+  A leitura é servida por `GET /api/auditoria` (`server/api/auditoria/index.get.ts`,
+  filtros por query param) para a tela `/admin/auditoria` (`docs/05` §6).
 
 ---
 
@@ -586,19 +634,20 @@ JWT_REFRESH_SECRET=defina_uma_chave_longa_para_refresh_token
 
 ### Passo 4: Copiar os Utilitários de Infraestrutura do Backend
 
-Crie/adicione em `server/utils/` os seguintes arquivos:
+Arquivos de `server/utils/` — **existente** vs **roadmap** (marcado; o código real do projeto
+é o que está implementado):
 
-1. `server/utils/db.ts` — Connection pool MariaDB e suporte a transações.
-2. `server/utils/migration-runner.ts` — Executor das migrations SQL.
-3. `server/utils/safeError.ts` — Tratamento de erros HTTP/SQL amigável e seguro.
-4. `server/utils/jwt.ts` — Assinatura e validação de tokens JWT.
-5. `server/utils/password.ts` — Hashing de senha com bcrypt.
-6. `server/utils/permission.ts` — Middleware RBAC (`requirePermission`).
-7. `server/utils/audit.ts` — Gravação automática na tabela de auditoria.
-8. `server/utils/validation.ts` — Helper `validateBody()` com Zod.
+1. `server/utils/db.ts` — Connection pool MariaDB e suporte a transações. **[existe]**
+2. `server/utils/migration-runner.ts` — Executor das migrations SQL. **[existe]**
+3. `server/utils/safeError.ts` — Tratamento de erros HTTP/SQL amigável e seguro. **[roadmap]**
+4. `server/utils/auth.ts` — Sessão JWT, cookies, bcrypt e lockout (o `jwt.ts`/`password.ts`
+   planejados vivem aqui hoje). **[existe]**
+5. `server/utils/permission.ts` — Middleware RBAC (`requirePermission`). **[roadmap]**
+6. `server/utils/audit.ts` — Gravação automática na tabela de auditoria. **[existe]**
+7. `server/utils/validation.ts` — Helper `validateBody()` com Zod. **[roadmap]**
 
 E registre o plugin Nitro em:
-`server/plugins/migration.ts`
+`server/plugins/migration.ts` **[existe]**
 
 ---
 
@@ -649,7 +698,7 @@ Na inicialização:
 | **SQL & Banco** | Sempre utilize queries parametrizadas com placeholders `?` para prevenir injeção SQL. |
 | **Identificadores** | Utilize `UUID()` nativo do MariaDB como chave primária em tabelas de negócio para evitar previsibilidade de IDs sequenciais. |
 | **Migrations** | Nunca altere uma migration já executada em produção. Sempre crie uma nova migration com o próximo número sequencial (ex: `02_nova_coluna.sql`). |
-| **Erros** | Centralize erros no `handleApiError` para não expor a topologia do banco a usuários maliciosos. |
+| **Erros** | Lance `createError({ statusCode, statusMessage })` com mensagem amigável para não expor a topologia do banco a usuários maliciosos (centralização em `handleApiError` é roadmap — §3.2). |
 | **Auditoria** | Registre sempre a ação, o recurso e o identificador do item alterado nas operações de escrita. |
 | **Permissões** | Mantenha as 4 ações CRUD padronizadas (`visualizar`, `criar`, `alterar`, `excluir`) e utilize a coluna `extras` JSON para comportamentos específicos do módulo. |
 | **Tokens** | Mantenha o token de acesso em cookie `HttpOnly` com tempo de vida curto (ex: 15 a 60 minutos) e utilize refresh tokens rotativos no banco de dados. |

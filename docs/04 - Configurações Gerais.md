@@ -131,7 +131,8 @@ Conteúdo da aba "Retenção de Auditoria" (puro, sem card — vive dentro do co
   (verde de texto, §2.1 do design system), `UiSlider` com `marks` (30/90/180/365/730) e atalhos
   `UiCheckChip variant="slate" show-check` (30/60/90/180/365/730).
 - Banner azul "Rotina de Expurgo Automático" (markup de domínio — **não** há `UiAlert` no kit) com a
-  query interpolada `DELETE FROM auditoria WHERE registrado_em < NOW() - INTERVAL {{dias}} DAY`.
+  query interpolada `DELETE FROM auditoria WHERE data_hora < NOW() - INTERVAL {{dias}} DAY`
+  (coluna `data_hora` da tabela `auditoria` — migration 01 §18).
 
 ### 3.4 `AbaLogomarcas.vue` → `<ConfiguracoesAbaLogomarcas>`
 

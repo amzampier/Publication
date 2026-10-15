@@ -12,13 +12,19 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { perfis, carregando, carregarPerfis } = usePerfisDemo()
+const { perfis, carregarPerfis } = usePerfisDemo()
 
-// Carga inicial pela API (spec perfis-acesso): overlay de carregamento no voo e
-// toast de erro + lista vazia na falha — a base de demonstração NUNCA aparece
-// fingindo ser persistida.
+// Loading no F5 (padrão Meu Perfil/Configurações): `carregando` nasce true — o SSR
+// renderiza só o overlay e o conteúdo só monta via v-else após a resposta, sem
+// flash de KPIs/tabela vazios. Carga inicial pela API (spec perfis-acesso): falha →
+// toast de erro + lista vazia; a base de demonstração NUNCA aparece fingindo ser
+// persistida.
+const carregando = ref(true)
+
 onMounted(async () => {
+  carregando.value = true
   const ok = await carregarPerfis()
+  carregando.value = false
   if (!ok) {
     toast.danger(
       'Perfis de Acesso (RBAC)',
@@ -114,10 +120,10 @@ const confirmarExclusao = async () => {
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
-    <div class="mx-auto max-w-7xl">
-      <!-- Carregamento da base: overlay do kit enquanto GET /api/perfis está em voo -->
-      <UiLoading v-if="carregando" message="Carregando perfis…" />
+    <!-- Loading no F5: enquanto o GET resolve, só o overlay (sem conteúdo parcial) -->
+    <UiLoading v-if="carregando" message="Carregando perfis…" />
 
+    <div v-else class="mx-auto max-w-7xl">
       <PerfisCabecalho @novo="abrirNovo" />
 
       <PerfisKpis class="mt-6" />

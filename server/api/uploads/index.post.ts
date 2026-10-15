@@ -7,6 +7,7 @@ import {
   sanitizarNomeArquivo,
   type UploadDestino
 } from '../../utils/uploads'
+import { registrarAuditoria } from '../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const partes = await readMultipartFormData(event)
@@ -41,5 +42,10 @@ export default defineEventHandler(async (event) => {
 
   const nome = sanitizarNomeArquivo(campoArquivo.filename ?? 'arquivo')
   const url = gravarUpload(destinoTexto as UploadDestino, nome, campoArquivo.data)
+  await registrarAuditoria(event, {
+    acao: 'Inclusão',
+    recurso: 'Logomarcas',
+    detalhes: `Enviou o arquivo '${nome}' para '${destinoTexto}'`
+  })
   return { url }
 })

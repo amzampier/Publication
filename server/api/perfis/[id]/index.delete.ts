@@ -1,8 +1,18 @@
 // DELETE /api/perfis/:id — exclusão (200 | 404 | 409 com usuários vinculados)
-import { excluirPerfil, validarId } from '../../../utils/perfis'
+import { buscarPerfil, excluirPerfil, validarId } from '../../../utils/perfis'
+import { registrarAuditoria } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const id = validarId(getRouterParam(event, 'id'))
+  const existente = await buscarPerfil(id)
   await excluirPerfil(id)
+  if (existente) {
+    await registrarAuditoria(event, {
+      acao: 'Exclusão',
+      recurso: 'Perfis de Acesso',
+      entidadeId: id,
+      detalhes: `Removeu o perfil '${existente.nome}'`
+    })
+  }
   return { ok: true }
 })

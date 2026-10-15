@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir o comportamento da página de Gestão de Auditoria — consulta dos registros das operações (fase 1 em memória) com KPIs, filtros estruturais, tabela paginada, detalhe do registro e exportação CSV/PDF — para que a Área Administrativa ofereça rastreabilidade das ações conforme o modelo `registrarAuditoria` descrito no `docs/02`.
+Definir o comportamento da página de Gestão de Auditoria — consulta dos registros de operações persistidos no banco e servidos pela API, com KPIs, filtros estruturais, tabela paginada, detalhe do registro e exportação CSV/PDF — e o contrato da trilha (registro de escrita via `registrarAuditoria`), para que a Área Administrativa ofereça rastreabilidade das ações conforme o modelo descrito no `docs/02`.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ O sistema SHALL servir a Gestão de Auditoria em `/admin/auditoria`, renderizada
 
 #### Scenario: Acesso direto por URL
 - **WHEN** a rota é carregada diretamente pela URL (recarga)
-- **THEN** a página renderiza com os registros de demonstração e sem erro
+- **THEN** a página renderiza com os registros persistidos servidos pela API e sem erro
 
 ### Requirement: Os atalhos de navegação apontam para a página
 O sistema SHALL declarar a rota `/admin/auditoria` no item "Gestão de Auditoria" da sidebar e no mesmo item do menu da conta, de modo que ambos naviguem para a página e o item da sidebar correspondente apareça como ativo.
@@ -33,7 +33,7 @@ O sistema SHALL exibir no topo da página os KPIs "Registros" (contagem do conju
 
 #### Scenario: Sem filtros ativos
 - **WHEN** a página é aberta sem nenhum filtro aplicado
-- **THEN** "Registros" mostra a contagem total da base de demonstração e "Última atividade" corresponde ao registro mais recente
+- **THEN** "Registros" mostra a contagem total do conjunto servido pela API e "Última atividade" corresponde ao registro mais recente
 
 #### Scenario: Filtro de ação recalcula os KPIs
 - **WHEN** o usuário aplica o filtro de ação "Inclusão"
@@ -75,15 +75,15 @@ O sistema SHALL oferecer o botão "Filtros" na toolbar da tabela de auditoria (�
 - **THEN** apenas o popup fecha, o modal permanece aberto e o rascunho em edição é preservado; um segundo `Escape`, com nenhum popup aberto, fecha o modal
 
 ### Requirement: A tabela lista os registros da trilha de auditoria com paginação, ordenação e busca
-O sistema SHALL exibir os registros em `UiDataTable` com colunas de data/hora, usuário, ação (badge), recurso, detalhes e IP, ordenados do registro mais recente para o mais antigo, com paginação e busca textual do componente, e badge de ação distinguível por tipo de operação (Inclusão, Alteração, Exclusão, Homologação) — cabendo as sete colunas (seis de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
+O sistema SHALL exibir os registros em `UiDataTable` com colunas de data/hora, usuário, ação (badge), recurso, detalhes e IP, ordenados do registro mais recente para o mais antigo, com paginação e busca textual do componente, e badge de ação distinguível por tipo de operação (Inclusão, Alteração, Exclusão, Homologação e **Acesso** — este último em variante neutra) — cabendo as sete colunas (seis de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
 
 #### Scenario: Colunas e ordenação
 - **WHEN** a página é aberta
 - **THEN** a tabela mostra as colunas data/hora, usuário, ação, recurso, detalhes e IP, com o registro mais recente no topo e paginação funcionando
 
 #### Scenario: Badge distinto por ação
-- **WHEN** os registros de Inclusão, Alteração, Exclusão e Homologação são exibidos
-- **THEN** cada tipo de ação aparece com badge de variante própria, visualmente distinguível
+- **WHEN** os registros de Inclusão, Alteração, Exclusão, Homologação e Acesso são exibidos
+- **THEN** cada tipo de ação aparece com badge de variante própria, visualmente distinguível (Acesso em variante neutra)
 
 #### Scenario: Busca textual
 - **WHEN** o usuário digita texto na busca da tabela
@@ -92,6 +92,10 @@ O sistema SHALL exibir os registros em `UiDataTable` com colunas de data/hora, u
 #### Scenario: Trocar a quantidade de linhas não abre rolagem horizontal
 - **WHEN** o usuário altera "Linhas por página" (ex.: de 5 para 20 ou 50) numa janela ≥ ~1280px com sidebar expandida
 - **THEN** a área da tabela ganha linhas sem exibir barra de rolagem horizontal, com as sete colunas visíveis
+
+#### Scenario: Filtro de ação oferece os cinco tipos
+- **WHEN** o modal de filtros é aberto
+- **THEN** o select de Ação oferece Inclusão, Alteração, Exclusão, Homologação e Acesso como opções
 
 ### Requirement: O detalhe do registro abre por controle na coluna Ações
 O sistema SHALL oferecer na coluna "Ações" da tabela um controle acessível (com texto alternativo/tooltip) que abre um `UiModal` exibindo todos os campos do registro selecionado dentro de uma sessão `UiModalSection` intitulada **"Dados do Registro"**, com fechamento pelos controles do modal.
@@ -123,16 +127,97 @@ O sistema SHALL oferecer no cabeçalho o menu "Exportar" com as opções "Export
 - **WHEN** o download em PDF é acionado
 - **THEN** `window.print()` não é chamado e o arquivo é salvo diretamente no dispositivo
 
-### Requirement: A fase 1 opera sem persistência e sem chamadas de rede
-O sistema SHALL manter os registros, filtros e exportações inteiramente em memória, restaurando os dados de demonstração a cada recarga da página, sem requisições HTTP.
-
-#### Scenario: Recarga restaura o estado inicial
-- **WHEN** a página é recarregada após filtrar
-- **THEN** a base de registros de demonstração aparece novamente, sem filtros aplicados
-
 ### Requirement: O rodapé informa a política de retenção com acesso às Configurações
 O sistema SHALL exibir abaixo da tabela uma nota de que os registros estão sujeitos à política de retenção, com caminho de navegação para Configurações Globais.
 
 #### Scenario: Nota e navegação
 - **WHEN** a página é exibida
 - **THEN** a nota sobre a política de retenção aparece sob a tabela e seu controle leva o usuário a `/admin/configuracoes-globais`
+
+### Requirement: A página carrega os registros pela API com carregamento no F5 e toast de erro
+O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria` na montagem da página `/admin/auditoria`, exibindo um overlay `UiLoading` (mensagem "Carregando auditoria…") enquanto a requisição estiver em voo — no mesmo padrão de Meu Perfil e Configurações Globais, sem renderizar conteúdo parcial — e um toast de erro caso a carga falhe, mantendo a tabela em estado vazio e **nunca** exibindo a base de demonstração antiga como se fosse persistida. Os filtros estruturais SHALL permanecer em estado de sessão (preservados na navegação interna, descartados no F5) e a recarga da página SHALL rebuscar os registros pela API.
+
+#### Scenario: Carga inicial mostra os registros do banco
+- **WHEN** o navegador abre `/admin/auditoria` com sessão válida
+- **THEN** o overlay de carregamento é exibido enquanto `GET /api/auditoria` responde e, em seguida, a tabela exibe os registros persistidos (seed da migration + operações reais registradas), ordenados do mais recente para o mais antigo
+
+#### Scenario: Loading no F5 sem conteúdo parcial
+- **WHEN** o usuário recarrega a página (F5) com o `GET /api/auditoria` em voo
+- **THEN** apenas o overlay `UiLoading` com a mensagem "Carregando auditoria…" aparece na área de conteúdo — a tabela, os KPIs e os modais não são renderizados até a resposta
+
+#### Scenario: Falha na carga exibe erro sem simular dados
+- **WHEN** a requisição `GET /api/auditoria` falha (rede ou banco indisponível)
+- **THEN** um toast de erro informa a falha de carregamento e a tabela permanece em estado vazio/erro, sem exibir a base de demonstração como se fosse persistida
+
+#### Scenario: Recarga rebusca pela API e descarta os filtros
+- **WHEN** a página é recarregada após aplicar filtros ou após operações de escrita em outros módulos
+- **THEN** os filtros voltam ao estado vazio e o `GET /api/auditoria` devolve o conjunto atualizado do banco (o que foi gravado persiste; a demo antiga não retorna)
+
+### Requirement: A API de auditoria filtra no servidor e serve as opções dos selects
+O sistema SHALL expor `GET /api/auditoria` sob a sessão autenticada (sem sessão → `401`), aceitando os filtros estruturais como parâmetros de consulta opcionais (`dataInicial`, `dataFinal` em `yyyy-mm-dd`, `usuario`, `acao`, `recurso` — parâmetro ausente ou vazio equivale a "todos"), filtrando no servidor o conjunto de registros (datas como janela inclusiva do dia local) e devolvendo `{ registros, opcoes }` — `registros` com todos os campos do registro (data/hora, usuário id+nome, ação, recurso, detalhes e IP) ordenados do mais recente para o mais antigo, e `opcoes` com as listas distintas de usuários e recursos do conjunto **não** filtrado (as opções dos `UiSelect` do modal de filtros não podem sumir em razão de um filtro aplicado). Os KPIs, a busca textual, a paginação e as exportações SHALL continuar operando no cliente sobre o conjunto retornado.
+
+#### Scenario: Acesso sem sessão é negado
+- **WHEN** `GET /api/auditoria` é chamado sem cookie de sessão válido
+- **THEN** a API responde `401` e nenhum registro é retornado
+
+#### Scenario: Filtros estruturais chegam por query param
+- **WHEN** a chamada é feita com `?acao=Inclusão&dataInicial=2026-10-01&dataFinal=2026-10-02`
+- **THEN** `registros` contém somente os registros que atendem a todos os filtros, em ordem decrescente de data/hora
+
+#### Scenario: Sem parâmetros devolve o conjunto completo
+- **WHEN** a chamada é feita sem nenhum parâmetro de consulta
+- **THEN** `registros` contém todos os registros da trilha (dentro da política de retenção) ordenados do mais recente para o mais antigo
+
+#### Scenario: Opções derivam do conjunto não filtrado
+- **WHEN** a chamada é feita com um filtro de usuário aplicado
+- **THEN** `registros` reflete o filtro, enquanto `opcoes.usuarios` e `opcoes.recursos` seguem listando todos os usuários e recursos distintos da trilha
+
+#### Scenario: Ação desconhecida não quebra a consulta
+- **WHEN** o parâmetro `acao` contém valor fora dos cinco tipos (Inclusão, Alteração, Exclusão, Homologação e Acesso)
+- **THEN** a API responde normalmente e o filtro por ação resulta em conjunto vazio (nenhum registro tem aquela ação)
+
+### Requirement: As operações de escrita registram a trilha de auditoria
+O sistema SHALL registrar em `auditoria` um evento, via helper `registrarAuditoria`, após cada gravação bem-sucedida nas rotas administrativas de escrita — criação, alteração, alteração de situação, exclusão, importação, edição do próprio perfil, gestão de perfis (incluindo matriz de permissões e cópia), configurações globais, upload de logomarca, convite de usuário e liberação de bloqueio —, preenchendo o tipo da operação (Inclusão, Alteração, Exclusão ou Homologação), o recurso afetado, o identificador da entidade quando houver, o usuário da sessão (id, nome e perfil), o IP do cliente e os detalhes textuais da operação. A falha na gravação do registro de auditoria SHALL ser isolada: nunca interrompe nem altera a resposta da operação principal. Os eventos de autenticação não participam deste requirement — registram como **Acesso** no requirement próprio abaixo (e seguem também no log de segurança da aba Segurança de Configurações Globais).
+
+#### Scenario: Criação de usuário gera registro de Inclusão
+- **WHEN** `POST /api/usuarios` completa com sucesso
+- **THEN** um registro de Inclusão do recurso "Usuários" aparece na trilha com o usuário da sessão, o IP da requisição e detalhes descrevendo a criação
+
+#### Scenario: Exclusão e alteração geram registros próprios
+- **WHEN** `DELETE /api/usuarios/:id` ou `PUT /api/usuarios/:id` completam com sucesso
+- **THEN** a trilha recebe, respectivamente, um registro de Exclusão e um de Alteração do recurso "Usuários", com o identificador do registro afetado nos detalhes
+
+#### Scenario: Gravação falhada não gera registro
+- **WHEN** uma operação de escrita falha (validação, conflito ou erro de banco) e não grava nada
+- **THEN** nenhum registro de auditoria é inserido para aquela operação
+
+#### Scenario: Falha no log de auditoria não derruba a operação principal
+- **WHEN** a gravação do registro de auditoria falha (banco indisponível, constraint, timeout)
+- **THEN** a resposta da operação administrativa permanece a de sucesso e a falha é apenas logada no console do servidor
+
+#### Scenario: Recurso e tipo refletem a operação
+- **WHEN** qualquer rota de escrita auditada completa
+- **THEN** o tipo gravado é um dos tipos de escrita (Inclusão, Alteração, Exclusão ou Homologação) e o recurso identifica o módulo afetado (ex.: "Usuários", "Perfis de Acesso", "Configurações Globais", "Logomarcas", "Rate Limits"), de modo que o badge de ação da tabela distingue visualmente cada tipo
+
+### Requirement: Os eventos de autenticação registram na trilha como Acesso
+O sistema SHALL registrar na trilha `auditoria`, com tipo **Acesso** e recurso **"Autenticação"**, cada evento das rotas de autenticação: **login** bem-sucedido (com a conta autenticada — id, nome e perfil —, identificada explicitamente pois os cookies pertencem à resposta), **logout** (somente quando há sessão identificada no request — o logout idempotente sem cookie não gera evento), **troca de senha** (do usuário autenticado) e **solicitação de recuperação de senha** (com o e-mail alvo, em qualquer um dos dois caminhos — conta ativa ou não — preservada a resposta genérica anti-enumeração). Cada registro SHALL conter o IP do cliente e detalhes textuais do evento. **Tentativas de credencial inválidas NÃO geram evento Acesso na trilha** — elas seguem exclusivamente no log de segurança (`seguranca_eventos_login`), que permanece a fonte da aba Segurança.
+
+#### Scenario: Login registra Acesso com a conta correta
+- **WHEN** `POST /api/auth/login` autentica com sucesso
+- **THEN** um registro de Acesso do recurso "Autenticação" entra na trilha com `usuario_id` e nome da conta autenticada (nunca "Desconhecido"), o IP e detalhes informando o login e o perfil
+
+#### Scenario: Tentativa inválida não gera Acesso
+- **WHEN** `POST /api/auth/login` falha com credencial inválida (401)
+- **THEN** nenhum registro de Acesso é inserido na trilha (o evento fica no log de segurança como senha inválida)
+
+#### Scenario: Logout registra Acesso quando há sessão
+- **WHEN** `POST /api/auth/logout` é chamado com cookies de sessão válidos
+- **THEN** um registro de Acesso com detalhes de encerramento de sessão entra na trilha com o usuário identificado; chamado sem nenhum cookie, o logout idempotente não insere evento
+
+#### Scenario: Troca de senha registra Acesso
+- **WHEN** `POST /api/auth/trocar-senha` troca a senha do autenticado
+- **THEN** um registro de Acesso com detalhes da alteração de senha entra na trilha com o usuário autenticado
+
+#### Scenario: Recuperação de senha registra nos dois caminhos
+- **WHEN** `POST /api/auth/esqueci-senha` é chamado com e-mail de conta ativa e depois com e-mail inexistente
+- **THEN** ambos os casos inserem um registro de Acesso identificando o e-mail alvo, e a resposta HTTP continua sendo o mesmo `{ ok: true }` genérico nos dois casos

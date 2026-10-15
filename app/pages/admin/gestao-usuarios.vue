@@ -11,12 +11,18 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { usuarios, carregando, carregarUsuarios } = useUsuarios()
+const { usuarios, carregarUsuarios } = useUsuarios()
 
-// Carga inicial pela API (spec gestao-usuarios): overlay do kit no voo e
-// toast de erro + lista vazia na falha — nada de simular dados.
+// Loading no F5 (padrão Meu Perfil/Configurações): `carregando` nasce true — o SSR
+// renderiza só o overlay e o conteúdo só monta via v-else após a resposta, sem
+// flash de KPIs/tabela vazios. Carga inicial pela API (spec gestao-usuarios):
+// falha → toast de erro + lista vazia — nada de simular dados.
+const carregando = ref(true)
+
 onMounted(async () => {
+  carregando.value = true
   const ok = await carregarUsuarios()
+  carregando.value = false
   if (!ok) {
     toast.danger(
       'Gestão de Usuários',
@@ -127,10 +133,10 @@ const confirmarBloqueio = async () => {
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
-    <div class="mx-auto max-w-7xl">
-      <!-- Carregamento da base: overlay do kit enquanto GET /api/usuarios está em voo -->
-      <UiLoading v-if="carregando" message="Carregando usuários…" />
+    <!-- Loading no F5: enquanto o GET resolve, só o overlay (sem conteúdo parcial) -->
+    <UiLoading v-if="carregando" message="Carregando usuários…" />
 
+    <div v-else class="mx-auto max-w-7xl">
       <UsuariosCabecalho @novo="abrirNovo" />
 
       <UsuariosKpis class="mt-6" />

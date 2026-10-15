@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { RegistroAuditoria } from '../../components/auditoria/useAuditoriaDemo'
+import { onMounted, ref } from 'vue'
+import { useAuditoriaDemo, type RegistroAuditoria } from '../../components/auditoria/useAuditoriaDemo'
+import { useToast } from '../../composables/useToast'
 
 definePageMeta({ layout: 'admin' })
+
+const { toast } = useToast()
+const { carregarAuditoria } = useAuditoriaDemo()
 
 // Coordenação entre painéis (state dos filtros fica no composable)
 const filtrosAbertos = ref(false)
@@ -13,11 +17,31 @@ const abrirDetalhe = (registro: RegistroAuditoria) => {
   registroDetalhe.value = registro
   detalheAberto.value = true
 }
+
+// Loading no F5 (padrão Meu Perfil / Configurações Globais): enquanto o GET
+// voa, só o overlay — sem conteúdo parcial; falha → toast + tabela vazia
+// (a demo antiga nunca aparece fingindo ser persistida).
+const carregando = ref(true)
+
+onMounted(async () => {
+  carregando.value = true
+  const ok = await carregarAuditoria()
+  carregando.value = false
+  if (!ok) {
+    toast.danger(
+      'Gestão de Auditoria',
+      'Não foi possível carregar os registros de auditoria. Verifique a conexão com o banco e recarregue a página.'
+    )
+  }
+})
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
-    <div class="mx-auto max-w-7xl">
+    <!-- Loading no F5: enquanto o GET resolve, só o estado de espera -->
+    <UiLoading v-if="carregando" message="Carregando auditoria…" />
+
+    <div v-else class="mx-auto max-w-7xl">
       <AuditoriaCabecalho />
 
       <AuditoriaKpis class="mt-6" />

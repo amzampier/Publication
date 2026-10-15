@@ -1,5 +1,6 @@
 // POST /api/usuarios — criação (201; 400 validações; 409 e-mail duplicado)
 import { criarUsuario } from '../../utils/usuarios'
+import { registrarAuditoria } from '../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<Record<string, unknown>>(event)
@@ -20,5 +21,11 @@ export default defineEventHandler(async (event) => {
     smtp: body.smtp
   })
   setResponseStatus(event, 201)
+  await registrarAuditoria(event, {
+    acao: 'Inclusão',
+    recurso: 'Usuários',
+    entidadeId: usuario.id,
+    detalhes: `Criou o usuário '${usuario.nome}' (${usuario.email}) com perfil ${usuario.perfil}`
+  })
   return usuario
 })

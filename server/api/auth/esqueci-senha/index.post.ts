@@ -15,6 +15,7 @@ import { buscarUsuarioPorEmail } from '../../../utils/auth'
 import { query } from '../../../utils/db'
 import { enviarEmail } from '../../../utils/mailer'
 import { exigirRateLimit } from '../../../utils/rateLimit'
+import { registrarAuditoria } from '../../../utils/audit'
 
 const RESPOSTA_GENERICA = { ok: true }
 
@@ -29,6 +30,14 @@ export default defineEventHandler(async (event) => {
 
   const usuario = await buscarUsuarioPorEmail(email)
   if (!usuario || usuario.situacao !== 'Ativo') {
+    // Trilha 'Acesso': tentativa registrada mesmo sem conta — a resposta ao
+    // cliente continua genérica (anti-enumeração), o log é interno.
+    await registrarAuditoria(event, {
+      acao: 'Acesso',
+      recurso: 'Autenticação',
+      detalhes: `Solicitou recuperação de senha para e-mail sem conta ativa (${email})`,
+      sessao: { id: null, nome: email }
+    })
     // Genérico: mesma resposta de um e-mail cadastrado (nenhum e-mail sai).
     return RESPOSTA_GENERICA
   }
@@ -52,6 +61,14 @@ export default defineEventHandler(async (event) => {
     // Resposta idêntica em qualquer falha (D11) — detalhe só no servidor.
     console.error('[auth/esqueci-senha] falha no envio via Resend:', erro)
   }
+
+  await registrarAuditoria(event, {
+    acao: 'Acesso',
+    recurso: 'Autenticação',
+    entidadeId: usuario.id,
+    detalhes: `Solicitou a recuperação de senha (senha provisória enviada por e-mail para ${usuario.email})`,
+    sessao: { id: usuario.id, nome: usuario.nome }
+  })
 
   return RESPOSTA_GENERICA
 })

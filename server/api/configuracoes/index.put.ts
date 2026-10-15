@@ -1,6 +1,7 @@
 // PUT /api/configuracoes — atualização parcial das colunas editadas pela tela
 import { atualizarConfiguracoes, getConfiguracoes } from '../../utils/configuracoes'
 import { invalidarCacheLimite } from '../../utils/rateLimit'
+import { registrarAuditoria } from '../../utils/audit'
 
 const CHAVES_SIDEBAR = ['publicacoes', 'movimentos', 'cadastros', 'administracao']
 
@@ -87,5 +88,10 @@ export default defineEventHandler(async (event) => {
   await atualizarConfiguracoes(patch)
   // Limite novo vale imediatamente — sem esperar o cache de 60s expirar
   if (patch.rate_limit) invalidarCacheLimite()
+  await registrarAuditoria(event, {
+    acao: 'Alteração',
+    recurso: 'Configurações Globais',
+    detalhes: `Atualizou as configurações: ${Object.keys(patch).join(', ')}`
+  })
   return await getConfiguracoes()
 })

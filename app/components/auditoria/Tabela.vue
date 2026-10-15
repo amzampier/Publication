@@ -29,7 +29,7 @@ const colunas: ColumnDef[] = [
   <section aria-label="Registros de auditoria">
     <UiDataTable
       title="Registros de Auditoria"
-      subtitle="Ordenados do mais recente para o mais antigo — fase 1 em memória"
+      subtitle="Ordenados do mais recente para o mais antigo — registros persistidos no banco"
       :data="registrosFiltrados"
       :columns="colunas"
       :default-page-size="5"

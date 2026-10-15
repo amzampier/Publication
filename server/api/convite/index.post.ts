@@ -16,6 +16,7 @@ import { getSessionUser } from '../../utils/auth'
 import { query, getTransaction } from '../../utils/db'
 import { enviarEmail } from '../../utils/mailer'
 import { exigirRateLimit } from '../../utils/rateLimit'
+import { registrarAuditoria } from '../../utils/audit'
 
 interface BodyConvite {
   email?: unknown
@@ -109,6 +110,15 @@ export default defineEventHandler(async (event) => {
     await tx.rollback().catch(() => {})
     throw erro
   }
+
+  // Conta gravada (mesmo se o e-mail abaixo falhar) — a trilha registra a gravação.
+  await registrarAuditoria(event, {
+    acao: 'Inclusão',
+    recurso: 'Usuários',
+    detalhes: criado
+      ? `Convidou '${nome}' (${email}) com perfil ${perfil} via ${canal}`
+      : `Reenviou convite para '${nome}' (${email}) com perfil ${perfil} via ${canal} — senha provisória redefinida`
+  })
 
   if (canal === 'email') {
     try {

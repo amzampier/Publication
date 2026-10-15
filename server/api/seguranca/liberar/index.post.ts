@@ -4,6 +4,7 @@
 // da aba Segurança, fora do rascunho do Salvar global.
 import { liberarBloqueio, liberarBloqueioEmail } from '../../../utils/seguranca'
 import { ipDoCliente } from '../../../utils/rateLimit'
+import { registrarAuditoria } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ usuarioId?: unknown; email?: unknown }>(event)
@@ -15,11 +16,22 @@ export default defineEventHandler(async (event) => {
     if (!liberado) {
       throw createError({ statusCode: 404, statusMessage: 'Usuário não encontrado.' })
     }
+    await registrarAuditoria(event, {
+      acao: 'Alteração',
+      recurso: 'Rate Limits',
+      entidadeId: usuarioId,
+      detalhes: 'Liberou o bloqueio de uma conta de usuário (zerou falhas e bloqueio)'
+    })
     return { ok: true }
   }
 
   if (email) {
     await liberarBloqueioEmail(email, ipDoCliente(event))
+    await registrarAuditoria(event, {
+      acao: 'Alteração',
+      recurso: 'Rate Limits',
+      detalhes: `Liberou o bloqueio do e-mail inexistente '${email}'`
+    })
     return { ok: true }
   }
 

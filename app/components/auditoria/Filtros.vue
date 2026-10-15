@@ -12,11 +12,13 @@ import {
 // Modal de filtros estruturais — aberto pelo botão "Filtros" da toolbar da
 // tabela (spec auditoria: sessões Período, Usuário e Ação e Recurso — datas em
 // UiDatePicker e os demais filtros em UiSelect — com Limpar Filtros à esquerda
-// e Cancelar + Aplicar à direita).
+// e Cancelar + Aplicar à direita). Aplicar/Limpar refazem o GET no servidor
+// (filtros estruturais vivem na query da API — change auditoria-backend-integracao).
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoesUsuarios, opcoesRecursos, limparFiltros } = useAuditoriaDemo()
+const { filtros, opcoesUsuarios, opcoesRecursos, limparFiltros, carregarAuditoria } =
+  useAuditoriaDemo()
 
 const rascunho = ref<FiltrosAuditoria>({ ...filtros.value })
 
@@ -40,6 +42,8 @@ const VAZIO: FiltrosAuditoria = { dataInicial: '', dataFinal: '', usuario: '', a
 const aplicar = () => {
   filtros.value = { ...rascunho.value }
   emit('update:modelValue', false)
+  // Filtros estruturais valem no servidor — recarrega o conjunto filtrado
+  void carregarAuditoria()
 }
 
 const cancelar = () => {
@@ -49,6 +53,7 @@ const cancelar = () => {
 const limpar = () => {
   rascunho.value = { ...VAZIO }
   limparFiltros()
+  void carregarAuditoria()
 }
 </script>
 

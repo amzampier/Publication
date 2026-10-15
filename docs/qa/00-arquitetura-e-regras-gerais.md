@@ -23,11 +23,11 @@ Seu foco é **proteger a qualidade do Publications** — um sistema de publicaç
 A fonte dos fatos de arquitetura é **`docs/02 - Guia de Arquitetura e Migrations.md`** — não duplique esses fatos aqui; consulte-o. Resumo do que importa para o QA (estados "a construir" são escopo não aplicável até existirem):
 
 * **Frontend**: Nuxt 4 (`srcDir: app/`), Vue 3, TypeScript, Composition API, TailwindCSS (`@nuxtjs/tailwindcss`), ícones `lucide-vue-next`, UI kit próprio em `app/components/ui/`, composables em `app/composables/`.
-* **Backend**: Nitro (`server/`), rotas REST em `server/api/` com `defineEventHandler`, SQL direto via **mysql2/promise** (MariaDB) sem ORM — `query()` e `getTransaction()` em `server/utils/db.ts`, validação **Zod** em `server/utils/validation.ts`, middlewares (`auth` com rotas públicas declaradas, `rate-limit`, `security-headers`), auditoria via `registrarAuditoria`.
+* **Backend**: Nitro (`server/`), rotas REST em `server/api/` com `defineEventHandler`, SQL direto via **mysql2/promise** (MariaDB) sem ORM — `query()` e `getTransaction()` em `server/utils/db.ts`, validação ad hoc com `createError(400)` na rota/utilitário (Zod em `server/utils/validation.ts` é roadmap), middleware `server/middleware/auth-api.ts` (sessão em `/api/*`, isento `/api/auth/*` e `/api/configuracoes/identidade` — `rate-limit`/`security-headers` como middlewares não existem: rate limit é chamado nas rotas de auth via `exigirRateLimit`), auditoria via `registrarAuditoria` (`server/utils/audit.ts`).
 * **Banco**: MariaDB, migrations SQL versionadas em `server/migration/` executadas automaticamente na inicialização (runner idempotente), queries parametrizadas, `utf8mb4`, chaves `UUID()` nativas.
 * **Autenticação**: JWT em cookie `HttpOnly` (`__Host-auth-token`) + refresh token rotativo em tabela de sessões + blacklist em logout, bcrypt cost 12, lockout por tentativas e rate limit persistido.
-* **Autorização**: RBAC por perfil — ações fixas `visualizar/criar/alterar/excluir` + `extras` (JSON) por módulo, validado por `requirePermission`. Perfis e módulos são definidos em specs de identidade/quando especificados — não os suponha.
-* **Escopo único**: não há empresas nem filiais nem isolamento por tenant — a proteção é a **fronteira Área Pública × Área Administrativa** (rotas públicas declaradas × `/admin/**`) somada ao **RBAC** por perfil.
+* **Autorização**: RBAC por perfil — ações fixas `visualizar/criar/alterar/excluir` + `extras` (JSON) por módulo; a **validação por módulo nas rotas (`requirePermission`) é roadmap** — hoje as APIs exigem apenas sessão válida (`auth-api.ts`). Perfis e módulos são definidos em specs de identidade/quando especificados — não os suponha.
+* **Escopo único**: não há empresas nem filiais nem isolamento por tenant — a proteção é a **fronteira Área Pública × Área Administrativa** (guard do cliente em `/admin/**` + `401` nas APIs sem sessão) somada ao **RBAC** por perfil (quando implementado).
 
 ---
 

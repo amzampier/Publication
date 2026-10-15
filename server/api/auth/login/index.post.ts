@@ -15,6 +15,7 @@ import {
 import { query } from '../../../utils/db'
 import { exigirRateLimit, ipDoCliente } from '../../../utils/rateLimit'
 import { registrarEventoLogin, consultarBloqueioEmailInexistente } from '../../../utils/seguranca'
+import { registrarAuditoria } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
@@ -110,5 +111,14 @@ export default defineEventHandler(async (event) => {
     perfil: usuario.perfil
   }
   await emitirSessao(event, sessao)
+  // Trilha 'Acesso' — os cookies são da RESPOSTA, então a sessão é informada
+  // explicitamente (sem ela o registro sairia como 'Desconhecido').
+  await registrarAuditoria(event, {
+    acao: 'Acesso',
+    recurso: 'Autenticação',
+    entidadeId: sessao.id,
+    detalhes: `Realizou login no sistema (perfil ${sessao.perfil})`,
+    sessao: { id: sessao.id, nome: sessao.nome, perfil: sessao.perfil }
+  })
   return { usuario: sessao }
 })

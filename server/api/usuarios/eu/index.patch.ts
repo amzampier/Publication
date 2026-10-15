@@ -2,6 +2,7 @@
 // (sessão do cookie); e-mail, perfil, situação e senha não são editáveis aqui (D7).
 import { getSessionUser } from '../../../utils/auth'
 import { atualizarProprioRegistro } from '../../../utils/usuarios'
+import { registrarAuditoria } from '../../../utils/audit'
 
 const NAO_EDITAVEIS = ['email', 'email_corporativo', 'perfil', 'situacao', 'status', 'senha']
 
@@ -24,11 +25,18 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  return await atualizarProprioRegistro(sessao.id, {
+  const atualizado = await atualizarProprioRegistro(sessao.id, {
     nome: body.nome,
     telefone: body.telefone,
     endereco: body.endereco,
     smtp: body.smtp,
     avatar: body.avatar
   })
+  await registrarAuditoria(event, {
+    acao: 'Alteração',
+    recurso: 'Meu Perfil',
+    entidadeId: sessao.id,
+    detalhes: `'${sessao.nome}' atualizou o próprio perfil`
+  })
+  return atualizado
 })
