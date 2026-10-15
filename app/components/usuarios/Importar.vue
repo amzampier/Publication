@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Import, AlertTriangle, BetweenHorizontalEnd } from '@lucide/vue'
+import { Import, AlertTriangle, BetweenHorizontalEnd, LoaderCircle } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
 import {
   lerPlanilhaUsuarios,
@@ -31,7 +31,10 @@ type LinhaSel = LinhaImportacao & { selecionada: boolean }
 
 const linhas = ref<LinhaSel[]>([])
 const erro = ref<string | null>(null)
+/** Leitura/parsing da planilha (fase de arquivo). */
 const processando = ref(false)
+/** POST de importação em voo — mostra o painel de progresso dos registros. */
+const importando = ref(false)
 
 // Abertura sempre começa do zero (rascunho descartado no Cancelar/Escape/X)
 watch(
@@ -41,6 +44,7 @@ watch(
       linhas.value = []
       erro.value = null
       processando.value = false
+      importando.value = false
     }
   }
 )
@@ -95,8 +99,8 @@ const importar = async () => {
     perfil: l.perfil as PerfilUsuario,
     status: l.status as StatusUsuario
   }))
-  if (!registros.length || processando.value) return
-  processando.value = true
+  if (!registros.length || processando.value || importando.value) return
+  importando.value = true
   erro.value = null
   try {
     // Commit via API (D4): o servidor revalida contra o banco e grava em
@@ -114,7 +118,7 @@ const importar = async () => {
     const mensagem = e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível importar.'
     erro.value = motivos?.length ? [mensagem, ...motivos].join(' ') : mensagem
   } finally {
-    processando.value = false
+    importando.value = false
   }
 }
 
@@ -176,8 +180,46 @@ const colunas: ColumnDef[] = [
         </div>
       </UiModalSection>
 
+      <!-- Durante o POST: painel de progresso lista os registros em voo
+           (nenhum marcado como concluído antes da resposta da API) -->
       <UiModalSection
-        v-if="linhas.length"
+        v-if="importando && selecionadas.length"
+        title="Importando registros"
+        :icon="BetweenHorizontalEnd"
+      >
+        <div class="flex items-center gap-2 text-xs font-medium text-slate-700">
+          <LoaderCircle
+            class="h-4 w-4 shrink-0 animate-spin motion-reduce:animate-none text-brand-structure"
+            aria-hidden="true"
+          />
+          Importando {{ selecionadas.length }} registro(s)…
+        </div>
+        <ul
+          class="max-h-[240px] grid gap-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3"
+        >
+          <li
+            v-for="r in selecionadas"
+            :key="r.email"
+            class="flex items-center justify-between gap-3 text-xs"
+          >
+            <span class="min-w-0">
+              <span class="font-medium text-slate-800">{{ r.nome }}</span>
+              <span class="text-slate-500"> — {{ r.email }}</span>
+            </span>
+            <LoaderCircle
+              class="h-3.5 w-3.5 shrink-0 animate-spin motion-reduce:animate-none text-brand-structure"
+              aria-hidden="true"
+            />
+          </li>
+        </ul>
+        <p class="text-[11px] text-slate-500">
+          Os registros são gravados em lote; nenhum é marcado como concluído até a confirmação
+          do servidor.
+        </p>
+      </UiModalSection>
+
+      <UiModalSection
+        v-if="linhas.length && !importando"
         title="Pré-visualização da importação"
         :icon="BetweenHorizontalEnd"
       >
@@ -245,8 +287,8 @@ const colunas: ColumnDef[] = [
           <UiButton variant="outline" @click="fechar">Cancelar</UiButton>
           <UiButton
             variant="primary"
-            :disabled="selecionadas.length === 0"
-            :loading="processando"
+            :disabled="selecionadas.length === 0 || importando"
+            :loading="importando"
             @click="importar"
           >
             Importar ({{ selecionadas.length }})

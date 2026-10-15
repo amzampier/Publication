@@ -170,10 +170,18 @@ senha não exige salvar abas não tocadas).
 
 Os mesmos 8 campos do modal de usuários (CEP com máscara + botão ViaCEP, Endereço, Número,
 Complemento, Bairro, Cidade, Estado (`UFS`), Região (`REGIOES`)), com os mesmos `grid-cols`.
-A busca de CEP continua sendo **stub** da fase 1 (`toast.info` "…próxima etapa"), sem
-preencher campos.
 
-- **Prop:** `endereco` (objeto `EnderecoUsuario` do rascunho — edição direta).
+- **Busca de CEP real (capability `busca-cep`, change `integrar-via-cep`):** o botão ao lado
+  do CEP consulta a API ViaCEP via `useBuscaCep` (com título de toast "Meu Perfil") e
+  preenche **Endereço, Bairro, Cidade, Estado e Região** — Número e Complemento digitados
+  são preservados, campos vazios na resposta mantêm o valor atual e o sucesso **não** gera
+  toast (o preenchimento é o feedback). Falhas têm toast próprio: CEP incompleto
+  (aviso, sem requisição), CEP não encontrado e falha de rede/timeout (10 s de limite, com
+  requisição abortada). Enquanto a consulta está em voo o ícone vira `LoaderCircle`
+  girando (`aria-busy`, cliques bloqueados — clique duplo não duplica a requisição) e o
+  preenchimento bem-sucedido emite `change`, habilitando "Salvar alterações".
+- **Prop:** `endereco` (objeto `EnderecoUsuario` do rascunho — edição direta; lido por
+  getter no composable porque a página troca a referência ao cancelar/salvar).
 - **Emite:** `change()`.
 
 ### 3.8 `AbaEmail.vue` → `<PerfilAbaEmail>`
@@ -209,7 +217,7 @@ máquina de estados para os dois consumidores:
 | :--- | :--- | :--- |
 | Dados Pessoais | Nome (validado), telefone; Cargo/Setor leitura (sem campo de e-mail) | Salvar global |
 | Segurança | Troca de senha (botão próprio) + mini-card "Sua conta está segura" | Imediato |
-| Endereço | 8 campos + CEP stub | Salvar global |
+| Endereço | 8 campos + busca ViaCEP (preenche e habilita o salvar) | Salvar global |
 | E-mail | SMTP (`CamposSmtp`) | Salvar global |
 
 Mudar de aba (`UiTabs`) não altera dados nem a flag `alterado`; a aba Dados Pessoais é a
@@ -268,7 +276,11 @@ o acesso é exclusivamente pelo menu da conta (`docs/03` §3).
   4. Segurança: layout em duas colunas; senha atual errada → erro; confirmação divergente →
      erro; senha curta → erro; troca válida → toast e novo login com a senha nova; mini-card
      "Sua conta está segura" presente ao final.
-  5. Endereço: campos editam; botão CEP → toast stub.
+  5. Endereço: campos editam; CEP `01001-000` + botão → preenche Endereço, Bairro, Cidade,
+     Estado e Região sem toast e habilita "Salvar alterações" (Número/Complemento intactos);
+     CEP com menos de 8 dígitos → toast de aviso sem requisição; CEP inexistente ou falha de
+     rede → toast de erro sem alterar campos; clique duplo dispara uma única consulta (ícone
+     vira spinner durante o voo).
   6. E-mail: título/subtítulo com espaçamento confortável sobre os campos; segurança sugere
      porta; editar zera status; "Testar conexão" com porta 587 → "Conectado"; "Enviar teste"
      habilita.
@@ -284,7 +296,6 @@ o acesso é exclusivamente pelo menu da conta (`docs/03` §3).
 - ~~Backend do perfil~~ — **entregue** (change `gestao-usuarios-backend`): registro lido de
   `GET /api/usuarios/eu` e gravado via `PATCH /api/usuarios/eu` (dados, endereço, SMTP e
   foto como arquivo em `avatares`); a troca de senha já era real (`POST /api/auth/trocar-senha`).
-- **ViaCEP real:** o stub da aba Endereço vira busca com preenchimento automático.
 - **RBAC no cliente:** `usePermissions` (docs/02 §5.3) — hoje qualquer sessão acessa a tela.
 - **Nome de usuário:** não existe no modelo (`UsuarioDemo`); se virar campo de login, esta
   tela ganha o rótulo e a validação de unicidade correspondentes.

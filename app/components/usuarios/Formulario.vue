@@ -6,10 +6,12 @@ import {
   Mail,
   Clock,
   MapPinCheck,
+  LoaderCircle,
   Eye,
   EyeOff
 } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
+import { useBuscaCep } from '../../composables/useBuscaCep'
 import { UFS, REGIOES } from '../../config/brasil'
 import {
   formatarDataHora,
@@ -301,13 +303,12 @@ const aoFotoCapturada = (dataUrl: string) => {
   cameraAberta.value = false
 }
 
-// --- CEP: integração ViaCEP só na próxima etapa ---
-const buscarCep = () => {
-  toast.info(
-    'Gestão de Usuários',
-    'Busca de CEP (ViaCEP): funcionalidade disponível na próxima etapa.'
-  )
-}
+// --- CEP: busca ViaCEP real (capability busca-cep) ---
+// Getter porque o rascunho é trocado por referência a cada abertura do modal
+const { carregando: carregandoCep, buscar: buscarCep } = useBuscaCep(
+  () => rascunho.value.endereco,
+  'Gestão de Usuários'
+)
 
 // --- Datas de cadastro (desabilitadas; seção só na edição) ---
 const dataCadastroTexto = computed(() => formatarDataHora(rascunho.value.dataCadastro))
@@ -446,11 +447,22 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
                 role="button"
                 tabindex="0"
                 aria-label="Buscar CEP (ViaCEP)"
-                class="mb-[1px] flex h-[34px] w-5 shrink-0 cursor-pointer items-center justify-center text-slate-400 transition-colors hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+                :aria-busy="carregandoCep ? 'true' : undefined"
+                :class="[
+                  'mb-[1px] flex h-[34px] w-5 shrink-0 items-center justify-center text-slate-400 transition-colors hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus',
+                  carregandoCep
+                    ? 'pointer-events-none'
+                    : 'cursor-pointer'
+                ]"
                 @click="buscarCep"
                 @keydown.enter.prevent="buscarCep"
               >
-                <MapPinCheck class="h-4 w-4" aria-hidden="true" />
+                <LoaderCircle
+                  v-if="carregandoCep"
+                  class="h-4 w-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                <MapPinCheck v-else class="h-4 w-4" aria-hidden="true" />
               </span>
             </UiTooltip>
           </div>

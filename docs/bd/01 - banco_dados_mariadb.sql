@@ -93,7 +93,7 @@ CREATE TABLE usuarios (
     situacao ENUM('Ativo', 'Inativo', 'Bloqueado') NOT NULL DEFAULT 'Ativo' COMMENT 'Status de acesso do usuário',
     cep VARCHAR(10) NOT NULL DEFAULT '' COMMENT 'Código de Endereçamento Postal',
     endereco VARCHAR(255) NOT NULL DEFAULT '' COMMENT 'Logradouro / Rua / Avenida',
-    numero VARCHAR(20) NOT NULL DEFAULT 'S/N' COMMENT 'Número residencial ou S/N',
+    numero VARCHAR(20) NOT NULL DEFAULT '' COMMENT 'Número residencial ou S/N (vazio quando o endereço não é informado — migration 04)',
     complemento VARCHAR(100) NULL COMMENT 'Complemento de endereço',
     bairro VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Bairro ou Distrito',
     cidade VARCHAR(100) NOT NULL DEFAULT '' COMMENT 'Município de residência',
