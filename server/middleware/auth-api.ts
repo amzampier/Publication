@@ -10,6 +10,10 @@ export default defineEventHandler(async (event) => {
   const caminho = event.path ?? ''
   if (!caminho.startsWith('/api/')) return
   if (caminho.startsWith('/api/auth/')) return
+  // Identidade pública do portal de autenticação (só logo_login_url) —
+  // change auth-layout-logomarca-login: as telas sem sessão (/admin/login,
+  // /admin/esqueci-senha) hidratam a logomarca via este endpoint mínimo.
+  if (caminho.startsWith('/api/configuracoes/identidade')) return
 
   const sessao = await getSessionUser(event)
   if (!sessao) {

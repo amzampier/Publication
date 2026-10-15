@@ -51,9 +51,11 @@ O Login é a porta de entrada da Área Administrativa:
 
 - **Rotas de autenticação:** `/admin/login` (`app/pages/admin/login.vue`) e
   `/admin/esqueci-senha` (`app/pages/admin/esqueci-senha.vue`), ambas com
-  `definePageMeta({ layout: false })` - **não** herdam o shell (header + sidebar): são as
+  `definePageMeta({ layout: 'auth' })` - **não** herdam o shell (header + sidebar): são as
   **únicas** rotas sob `/admin/**` sem shell, exceção formalizada em
-  `design-system/layout-navigation` (spec `login`).
+  `design-system/layout-navigation` (spec `login`). A composição canônica (fundo, card,
+  identidade e divisor) e a hidratação da logomarca são dono do layout próprio
+  `app/layouts/auth.vue` (change `auth-layout-logomarca-login`).
 - **Modelo de dados:** real, no banco — credenciais em `usuarios` (`hash_senha` bcrypt,
   `ultimo_login`, `tentativas_falhas`/`bloqueado_ate`, `senha_provisoria`); sessões em
   `sessoes` (hash do refresh rotativo, `expira_em`, `revogado_em`). O login valida contra a
@@ -61,7 +63,11 @@ O Login é a porta de entrada da Área Administrativa:
 - **Identidade:** card branco centralizado sobre o canvas animado `AuthBackground`; o
   cabeçalho exibe a logomarca de Configurações > Logomarcas (`useLogomarcaLogin`) quando
   personalizada — ou a marca padrão do sistema (ícone `Building2` + "Publications") quando não
-  — no lugar do título, com o subtítulo "Área Administrativa" abaixo.
+  — no lugar do título, com o subtítulo "Área Administrativa" abaixo. A logomarca é hidratada
+  no carregamento da página pelo layout `auth` via **endpoint público mínimo**
+  `GET /api/configuracoes/identidade` (retorna somente `logo_login_url` - o `GET /api/configuracoes`
+  completo exige sessão e é bloqueado ao visitante anônimo por `server/middleware/auth-api.ts`),
+  assim ela aparece também em acesso direto/F5/aba anônima, já no primeiro paint (SSR).
 
 ```
 /qualquer rota
@@ -73,6 +79,7 @@ app/middleware/auth.global.ts  (async — consulta a API quando sem estado)
       +-- /admin/login
       |      |  sessão? --> redirect /admin
       |      v
+      |   layout 'auth': GET /api/configuracoes/identidade (público) --> logo no card
       |   card: AuthLoginHeader + AuthLoginForm  (sobre AuthBackground)
       |      |  submit { email, senha, lembrar }
       |      v
@@ -84,6 +91,7 @@ app/middleware/auth.global.ts  (async — consulta a API quando sem estado)
       +-- /admin/esqueci-senha
       |      |  sessão? --> redirect /admin
       |      v
+      |   layout 'auth' (mesma identidade hidratada)
       |   card: AuthLoginHeader + AuthForgotForm  (sobre AuthBackground)
       |      |  POST /api/auth/esqueci-senha  (resposta SEMPRE generica)
       |      v
@@ -95,22 +103,24 @@ app/middleware/auth.global.ts  (async — consulta a API quando sem estado)
 
 ## 2. Estrutura da página (componentização)
 
-`app/pages/admin/login.vue` monta, de fora para dentro:
+A composição canônica das telas de autenticação é dona do layout `app/layouts/auth.vue`
+(change `auth-layout-logomarca-login`) - as páginas declaradas com `definePageMeta({ layout: 'auth' })`
+são donas apenas do próprio formulário. O layout monta, de fora para dentro:
 
 | Camada | Componente | Papel |
 | :--- | :--- | :--- |
+| Hidratação | layout (`<script setup>`) | `await carregarIdentidadeLogin()` - `GET /api/configuracoes/identidade` (**público**, retorna só `logo_login_url`; dispensa de sessão em `server/middleware/auth-api.ts`) preenche `useLogomarcaLogin` antes do primeiro paint; falha do GET mantém a marca padrão |
 | Fundo | `AuthBackground` | canvas animado (`pointer-events-none`, `aria-hidden`), paleta brand (§7) |
-| Container | página | `flex` centralizado, `min-h-dvh`, `p-6` |
-| Card | página | `max-w-xs` (320px), branco, `rounded-xl`, `shadow-lg`, `p-8` |
+| Container | layout | `flex` centralizado, `min-h-dvh`, `p-6` |
+| Card | layout | `max-w-xs` (320px), branco, `rounded-xl`, `shadow-lg`, `p-8` |
 | Cabeçalho | `AuthLoginHeader` | identidade centralizada — logomarca (`useLogomarcaLogin`: `preview \|\| caminho`) ou, sem personalização, a marca padrão (ícone `Building2` + "Publications", como no `AppHeader`) — e subtítulo "Área Administrativa" abaixo |
-| Divisor | página | linha `h-px` em `bg-brand-focus` (`#1a9e07`) com `role="separator"`, separando o cabeçalho do formulário |
-| Formulário | `AuthLoginForm` | `UiInput` e-mail + `UiInput` senha (olho à direita alterna visibilidade) + `UiCheckbox` "Lembrar-me" (`size="sm"`, cinza) + "Esqueceu a senha?" + `UiButton` "Entrar no Portal" (`w-full`, `:loading`) |
+| Divisor | layout | linha `h-px` em `bg-brand-focus` (`#1a9e07`) com `role="separator"`, separando o cabeçalho do formulário |
+| Formulário | página | `AuthLoginForm` em `/admin/login`: `UiInput` e-mail + `UiInput` senha (olho à direita alterna visibilidade) + `UiCheckbox` "Lembrar-me" (`size="sm"`, cinza) + "Esqueceu a senha?" + `UiButton` "Entrar no Portal" (`w-full`, `:loading`); `AuthForgotForm` em `/admin/esqueci-senha` (§5) |
 
-A página é dona do estado de `loading` e da navegação pós-login (`aoSubmeter` — chama
-`await useAuth().entrar`); o `AuthLoginForm` é dono da validação de campos e emite `submit`.
-
-A página `/admin/esqueci-senha` reusa a mesma composição (fundo, card, cabeçalho e divisor),
-trocando o formulário por `AuthForgotForm` — ver §5.
+A página `/admin/login` é dona do estado de `loading` e da navegação pós-login
+(`aoSubmeter` — chama `await useAuth().entrar`); o `AuthLoginForm` é dono da validação de
+campos e emite `submit`. A `/admin/esqueci-senha` reusa o mesmo layout trocando o formulário
+por `AuthForgotForm` — ver §5.
 
 **Adesão ao kit (componentes `app/components/auth/`):** inalterada em relação à fase 1
 (`leftIcon`/`rightIcon` do `UiInput`, foco no primeiro campo inválido via `$el`, olho da

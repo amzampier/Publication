@@ -1,0 +1,21 @@
+# Tasks
+
+## 1. Layout `auth` (hidratação + composição unificada)
+
+- [x] 1.1 Criar `app/layouts/auth.vue` com `<script setup>` assíncrono — `await carregarIdentidadeLogin()` no topo (loader leve público de 1.2), `useLogomarcaLogin()` com `logo = preview || caminho` — e template copiando as classes idênticas das páginas atuais (raiz `relative min-h-dvh overflow-hidden bg-[#070d22]`, `<AuthBackground />`, wrapper `relative z-10 flex min-h-dvh items-center justify-center p-6`, card `w-full max-w-xs rounded-xl bg-white p-8 shadow-lg`, `<AuthLoginHeader subtitulo="Área Administrativa" :logo="logo" class="mb-4" />`, divisor `h-px bg-brand-focus` com `role="separator"`, `<slot />`); verificar: `npm run dev` sobe sem erro de compilação apontando o arquivo novo
+- [x] 1.2 Criar a peça server/client da hidratação pública: `server/api/configuracoes/identidade/index.get.ts` retornando somente `{ logo_login_url }` (via `getConfiguracoes()`), adicionar em `server/middleware/auth-api.ts` a exemption desse caminho (todo `/api/**` exceto `/api/auth/*` exige sessão hoje), criar `carregarIdentidadeLogin()` em `app/composables/useLogomarcaLogin.ts` (GET via `useApiFetch`, escreve `caminho`/`preview`, `catch` mantém marca padrão) e trocar o await do layout para esse loader; verificar: `curl` **sem cookies** em `/api/configuracoes/identidade` responde 200 com o campo (enquanto `/api/configuracoes` segue 401 para o anônimo)
+
+## 2. Migração das telas de autenticação
+
+- [x] 2.1 Em `app/pages/admin/login.vue`: trocar `definePageMeta({ layout: false })` por `layout: 'auth'`, remover do template a composição que o layout passou a donar (fundo, card, header, divisor) mantendo só `<AuthLoginForm :loading="carregando" @submit="aoSubmeter" />`, e remover o import/use de `useLogomarcaLogin`; verificar em dev com logomarca salva: abrir `http://localhost:3000/admin/login` por **URL direta em aba anônima** → a logomarca aparece já no primeiro paint (sem flash de "Publications"); sem logomarca → marca padrão `Building2` + "Publications"
+- [x] 2.2 Em `app/pages/admin/esqueci-senha.vue`: aplicar a mesma migração (layout `'auth'`, só `<AuthForgotForm />` no template, sem estado de logo); verificar em dev: URL direta de `/admin/esqueci-senha` em aba anônima exibe a mesma identidade do login, a navegação login ↔ esqueci-senha preserva a identidade (mesmo layout montado uma vez) e o console do navegador/dev **não** exibe warning de async setup/Suspense do layout — se houver warning, aplicar o fallback `useAsyncData` previsto em design D1/R1 e revalidar
+- [x] 2.3 Verificar o fluxo pós-login em dev: logar a partir do `/admin/login` → shell `admin` renderiza com a logo do header coerente (o `layouts/admin.vue` re-aplica as mesmas configurações); "Encerrar Sessão" → volta ao `/admin/login` exibindo a logomarca (auth layout rehidrata)
+
+## 3. Documentação
+
+- [x] 3.1 Atualizar `docs/08 - Login de Autenticação.md`: §1 — as rotas de autenticação passam a declarar `definePageMeta({ layout: 'auth' })` (mantendo a nota de que são as únicas rotas sob `/admin/**` sem shell); §2 — a tabela de composição passa a atribuir Fundo/Container/Card/Cabeçalho/Divisor a `app/layouts/auth.vue` (com a linha de que o layout hidrata `GET /api/configuracoes` no `<script setup>`, dono da logo via `useLogomarcaLogin`) e as páginas donas só do formulário; o diagrama de fluxo da §1 acompanha a menção ao layout; verificar: o documento descreve exatamente a estrutura implementada nas tasks 1-2 e não menciona mais `layout: false` como mecanismo das páginas
+
+## 4. Verificação final (integração)
+
+- [x] 4.1 Rodar `npm run build` e verificar que a build passa (gate estrutural do repositório — não há lint/test)
+- [x] 4.2 Bateria manual em dev comparando com o comportamento pré-mudança: (a) logo salva em Configurações > Logomarcas aparece em `/admin/login` e `/admin/esqueci-senha` por URL direta e após F5; (b) limpar a logo → as duas telas voltam à marca padrão; (c) com o banco indisponível (GET falha) → marca padrão sem quebrar a tela; (d) composição visual idêntica à anterior em desktop e 375px (mesmas classes, sem regressão de layout); (e) rota `/admin` sem sessão ainda redireciona para `/admin/login?redirect=` normalmente (guarda intacta)
