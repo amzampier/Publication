@@ -9,6 +9,9 @@ import { type ConfigSmtpUsuario, type StatusSmtp } from './useUsuariosDemo'
 // Usuários) para reuso na aba E-mail do Meu Perfil — mesma máquina de estados:
 // segurança sugere a porta (flag impede sobrescrever porta digitada à mão),
 // editar qualquer campo zera o Status e o teste é simulado (1.200 ms, sem rede).
+// O StatusSmtp é estado EFÊMERO interno (ref local, change
+// smtp-status-estado-efemero): não vive no modelo ConfigSmtpUsuario nem viaja
+// no v-model — a API nunca conheceu o campo.
 
 interface Props {
   modelValue: ConfigSmtpUsuario
@@ -33,6 +36,12 @@ const emit = defineEmits<{
 // Espelho local do objeto pai: edições mutam aqui e só então emitem
 // update:modelValue — evita loop e permite guardar flags de edição à mão.
 const interno = ref<ConfigSmtpUsuario>({ ...props.modelValue })
+
+// Status efêmero DONO deste componente (não faz parte do modelo de dados):
+// reseta na troca externa do objeto e na edição de qualquer campo, e é
+// conduzido pela máquina do teste simulado. Sempre definido — o badge não
+// pode mais cair em `undefined` (bug da aba E-mail do Meu Perfil).
+const status = ref<StatusSmtp>('nao-testado')
 
 // Evita que os watchers de abertura (porta sugerida/reset do SMTP) rodem no
 // bootstrap ou quando o dono substitui o objeto inteiro (abertura do modal,
@@ -65,6 +74,9 @@ watch(
     inicializando = true
     limparTimer()
     portaManual = false
+    // Troca externa do objeto = novo bloco de dados = não testado (antes o
+    // reset dependia do objeto de fora trazer o campo — fonte do bug).
+    status.value = 'nao-testado'
     interno.value = { ...novo }
     nextTick(() => {
       inicializando = false
@@ -96,8 +108,8 @@ watch(
   () => {
     if (inicializando) return
     limparTimer()
-    if (interno.value.status !== 'nao-testado') {
-      interno.value.status = 'nao-testado'
+    if (status.value !== 'nao-testado') {
+      status.value = 'nao-testado'
     }
   }
 )
@@ -117,21 +129,21 @@ watch(
 // --- Máquina de estados do SMTP (simulada, 1.200 ms, sem rede) ---
 onBeforeUnmount(limparTimer)
 
-const testando = computed(() => interno.value.status === 'testando')
+const testando = computed(() => status.value === 'testando')
 
 const podeTestar = computed(() => {
   const s = interno.value
   return Boolean(s.servidor.trim() && s.porta.trim() && s.email.trim())
 })
 
-const podeEnviar = computed(() => interno.value.status === 'conectado')
+const podeEnviar = computed(() => status.value === 'conectado')
 
 const testarConexao = () => {
   if (!podeTestar.value || testando.value) return
-  interno.value.status = 'testando'
+  status.value = 'testando'
   timer = setTimeout(() => {
     timer = null
-    interno.value.status = PORTAS_SMTP_VALIDAS.includes(interno.value.porta.trim())
+    status.value = PORTAS_SMTP_VALIDAS.includes(interno.value.porta.trim())
       ? 'conectado'
       : 'falha'
   }, 1200)
@@ -147,7 +159,7 @@ const SMTP_POR_STATUS: Record<
   falha: { variant: 'blocked', rotulo: 'Falha' }
 }
 
-const statusSmtp = computed(() => SMTP_POR_STATUS[interno.value.status])
+const statusSmtp = computed(() => SMTP_POR_STATUS[status.value])
 </script>
 
 <template>

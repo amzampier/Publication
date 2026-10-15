@@ -80,7 +80,7 @@ const rascunhoDoUsuario = (u: UsuarioDemo): Rascunho => ({
   funcao: u.funcao,
   departamento: u.departamento,
   endereco: { ...u.endereco },
-  smtp: { ...u.smtp, status: 'nao-testado' },
+  smtp: { ...u.smtp },
   avatar: u.avatar,
   dataCadastro: u.dataCadastro,
   atualizadoEm: u.atualizadoEm,
