@@ -125,34 +125,35 @@ const variantClasses = computed(() => {
     return 'border-slate-300 bg-slate-100 text-slate-400'
   }
   if (props.error) {
-    return 'border-rose-300 text-rose-600 focus-visible:ring-rose-500/20'
+    // Erro canônico rose-700 e foco sempre brand-focus (RL02 B-06).
+    return 'border-rose-700 text-rose-700 focus-visible:ring-brand-focus/20'
   }
 
   switch (props.variant) {
     case 'slate':
       return isChecked.value || props.indeterminate
-    ? 'border-brand-primary bg-brand-primary text-white focus-visible:ring-brand-primary/20'
-    : 'border-slate-300 bg-white hover:border-slate-400 focus-visible:ring-brand-primary/20'
+    ? 'border-brand-primary bg-brand-primary text-white focus-visible:ring-brand-focus/20'
+    : 'border-slate-300 bg-white hover:border-slate-400 focus-visible:ring-brand-focus/20'
     case 'emerald':
       return isChecked.value || props.indeterminate
-        ? 'border-emerald-600 bg-emerald-600 text-white focus-visible:ring-emerald-600/20'
-        : 'border-slate-300 bg-white hover:border-emerald-400 focus-visible:ring-emerald-600/20'
+        ? 'border-emerald-600 bg-emerald-600 text-white focus-visible:ring-brand-focus/20'
+        : 'border-slate-300 bg-white hover:border-emerald-400 focus-visible:ring-brand-focus/20'
     case 'indigo':
       return isChecked.value || props.indeterminate
-        ? 'border-indigo-600 bg-indigo-600 text-white focus-visible:ring-indigo-600/20'
-        : 'border-slate-300 bg-white hover:border-indigo-400 focus-visible:ring-indigo-600/20'
+        ? 'border-indigo-600 bg-indigo-600 text-white focus-visible:ring-brand-focus/20'
+        : 'border-slate-300 bg-white hover:border-indigo-400 focus-visible:ring-brand-focus/20'
     case 'rose':
       return isChecked.value || props.indeterminate
-        ? 'border-rose-600 bg-rose-600 text-white focus-visible:ring-rose-600/20'
-        : 'border-slate-300 bg-white hover:border-rose-400 focus-visible:ring-rose-600/20'
+        ? 'border-rose-600 bg-rose-600 text-white focus-visible:ring-brand-focus/20'
+        : 'border-slate-300 bg-white hover:border-rose-400 focus-visible:ring-brand-focus/20'
     case 'sky':
       return isChecked.value || props.indeterminate
-        ? 'border-sky-600 bg-sky-600 text-white focus-visible:ring-sky-600/20'
-        : 'border-slate-300 bg-white hover:border-sky-400 focus-visible:ring-sky-600/20'
+        ? 'border-sky-600 bg-sky-600 text-white focus-visible:ring-brand-focus/20'
+        : 'border-slate-300 bg-white hover:border-sky-400 focus-visible:ring-brand-focus/20'
     case 'lime':
     default:
       return isChecked.value || props.indeterminate
-      ? 'border-lime-500 bg-lime-500 text-white focus-visible:ring-brand-focus/20 shadow-xs'
+      ? 'border-brand-accent bg-brand-accent text-white focus-visible:ring-brand-focus/20 shadow-xs'
       : 'border-slate-300 bg-white hover:border-brand-accent focus-visible:ring-brand-focus/20'
   }
 })

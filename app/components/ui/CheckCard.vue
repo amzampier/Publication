@@ -125,7 +125,7 @@ const badgeStyle = computed(() => {
           v-if="icon"
           :class="[
             'p-2 rounded-lg transition-colors shrink-0',
-            isChecked ? 'bg-lime-500/15 text-lime-700' : 'bg-slate-100 text-slate-500'
+            isChecked ? 'bg-brand-accent/15 text-brand-focus' : 'bg-slate-100 text-slate-500'
           ]"
         >
           <component :is="icon" class="h-4 w-4" />

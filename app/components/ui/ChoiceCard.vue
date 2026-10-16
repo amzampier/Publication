@@ -137,7 +137,7 @@ const TOM_SELECIONADO: Record<ChoiceCardTone, string> = {
 const TILE_SELECIONADO: Record<ChoiceCardTone, string> = {
   sky: 'bg-sky-500/15 text-sky-700',
   emerald: 'bg-emerald-500/15 text-emerald-700',
-  lime: 'bg-lime-500/15 text-lime-700',
+      lime: 'bg-brand-accent/15 text-brand-focus',
   indigo: 'bg-indigo-500/15 text-indigo-700',
   slate: 'bg-slate-500/15 text-slate-700'
 }

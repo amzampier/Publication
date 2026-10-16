@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Eye } from '@lucide/vue'
-import { formatarDataHora, VARIANTE_POR_ACAO, type RegistroAuditoria } from './useAuditoriaDemo'
+import { formatarDataHora, VARIANTE_POR_ACAO, type RegistroAuditoria } from './useAuditoriaModelo'
 
 defineProps<{
   modelValue: boolean

@@ -21,8 +21,8 @@ export function getDbPool(): mysql.Pool {
       database: config.dbName as string,
       charset: 'utf8mb4',
       waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 50,
+      connectionLimit: Number(config.dbPoolLimit) || 10,
+      queueLimit: Number(config.dbPoolQueueLimit) || 50,
       ...(process.env.DB_SSL === 'true'
         ? {
             ssl: {
@@ -55,13 +55,19 @@ export async function getTransaction(): Promise<Transaction> {
   }
 
   const commit = async () => {
-    await conn.commit()
-    conn.release()
+    try {
+      await conn.commit()
+    } finally {
+      conn.release()
+    }
   }
 
   const rollback = async () => {
-    await conn.rollback()
-    conn.release()
+    try {
+      await conn.rollback()
+    } finally {
+      conn.release()
+    }
   }
 
   return { query: txQuery, commit, rollback, release: () => conn.release() }

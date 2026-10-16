@@ -2,12 +2,12 @@
 import { ref, watch, computed } from 'vue'
 import { Funnel, CalendarDays, User, Tags } from '@lucide/vue'
 import {
-  useAuditoriaDemo,
+  useAuditoriaModelo,
   ACOES,
   dataIsoParaDate,
   dateParaIso,
   type FiltrosAuditoria
-} from './useAuditoriaDemo'
+} from './useAuditoriaModelo'
 
 // Modal de filtros estruturais — aberto pelo botão "Filtros" da toolbar da
 // tabela (spec auditoria: sessões Período, Usuário e Ação e Recurso — datas em
@@ -17,8 +17,8 @@ import {
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoesUsuarios, opcoesRecursos, limparFiltros, carregarAuditoria } =
-  useAuditoriaDemo()
+const { filtros, opcoesUsuarios, opcoesRecursos, limparFiltros, aplicarFiltros } =
+  useAuditoriaModelo()
 
 const rascunho = ref<FiltrosAuditoria>({ ...filtros.value })
 
@@ -42,8 +42,8 @@ const VAZIO: FiltrosAuditoria = { dataInicial: '', dataFinal: '', usuario: '', a
 const aplicar = () => {
   filtros.value = { ...rascunho.value }
   emit('update:modelValue', false)
-  // Filtros estruturais valem no servidor — recarrega o conjunto filtrado
-  void carregarAuditoria()
+  // Filtros estruturais valem no servidor — volta à 1ª página e recarrega
+  void aplicarFiltros()
 }
 
 const cancelar = () => {
@@ -53,7 +53,7 @@ const cancelar = () => {
 const limpar = () => {
   rascunho.value = { ...VAZIO }
   limparFiltros()
-  void carregarAuditoria()
+  void aplicarFiltros()
 }
 </script>
 

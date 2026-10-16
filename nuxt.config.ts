@@ -13,10 +13,21 @@ export default defineNuxtConfig({
     dbUser: process.env.DB_USER || 'root',
     dbPassword: process.env.DB_PASSWORD || '',
     dbName: process.env.DB_NAME || 'publications',
+    // Pool (change paginacao-server-side-e-performance): limites ajustáveis por env.
+    dbPoolLimit: process.env.DB_POOL_LIMIT || '',
+    dbPoolQueueLimit: process.env.DB_POOL_QUEUE_LIMIT || '',
     // Autenticação (change auth-backend-resend): segredo HS256 do access JWT
     // (obrigatório — server/plugins/auth-config.ts falha no boot sem ele) e
     // Resend (server/utils/mailer.ts). Nunca expostos ao cliente (fora de `public`).
     authJwtSecret: process.env.AUTH_JWT_SECRET || '',
+    // Cifra de segredos em repouso (senha SMTP) — change endurecer-sessao-
+    // segredos-e-uploads. Obrigatório no boot (server/plugins/auth-config.ts).
+    smtpEncKey: process.env.SMTP_ENC_KEY || '',
+    // Origem dos links de e-mail (convite/recuperação) — não usa o Host recebido.
+    appUrl: process.env.APP_URL || '',
+    // Lista de proxies confiáveis (IPs/CIDRs separados por vírgula) — vazia =
+    // nenhum: o X-Forwarded-For é ignorado e vale o IP da conexão.
+    trustedProxies: process.env.TRUSTED_PROXIES || '',
     resendApiKey: process.env.RESEND_API_KEY || '',
     mailFrom: process.env.MAIL_FROM || '',
     // Sobrescrita por NUXT_DB_* se necessária; DB_* é a interface principal.
@@ -28,6 +39,13 @@ export default defineNuxtConfig({
   // contrário de public/uploads/ (copiada só no build). Nitro 2.13: fonte das
   // migrations = <rootDir>/server/migration; destino = nitro.options.output.serverDir.
   nitro: {
+    // Servimento dos uploads com nosniff (RL02 A-02): o navegador não adivinha
+    // o tipo do arquivo — defesa extra contra conteúdo interpretado (HTML/SVG).
+    routeRules: {
+      '/uploads/**': {
+        headers: { 'X-Content-Type-Options': 'nosniff' }
+      }
+    },
     publicAssets: [
       {
         baseURL: '/uploads',

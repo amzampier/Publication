@@ -6,11 +6,19 @@
 export default defineNitroPlugin(() => {
   const config = useRuntimeConfig()
   const segredo = config.authJwtSecret
+  const chave = config.smtpEncKey
 
   if (!segredo || typeof segredo !== 'string' || segredo.length < 32) {
     throw new Error(
       '[auth-config] AUTH_JWT_SECRET ausente ou fraco (mínimo 32 caracteres). ' +
         'Adicione AUTH_JWT_SECRET ao .env (veja .env.example) e reinicie o servidor.'
+    )
+  }
+
+  if (!chave || typeof chave !== 'string' || chave.length < 32) {
+    throw new Error(
+      '[auth-config] SMTP_ENC_KEY ausente ou fraca (mínimo 32 caracteres). ' +
+        'Adicione SMTP_ENC_KEY ao .env (veja .env.example) e reinicie o servidor.'
     )
   }
 })

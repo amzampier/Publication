@@ -3,7 +3,7 @@
 // estado e da gravação, como no modal de usuários): reutiliza UiModal/UiModalSection
 // e emite apenas update:modelValue e confirmar.
 import { AlertTriangle, ShieldX, Trash2 } from '@lucide/vue'
-import type { LinhaPerfil } from './usePerfisDemo'
+import type { LinhaPerfil } from './usePerfisModelo'
 
 interface Props {
   modelValue: boolean

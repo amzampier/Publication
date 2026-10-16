@@ -3,11 +3,11 @@
 // estado e da gravação, como no modal de cadastro): reutiliza UiModal/UiModalSection
 // e emite apenas update:modelValue e confirmar.
 import { AlertTriangle, Trash2, UserX } from '@lucide/vue'
-import type { UsuarioDemo } from './useUsuariosDemo'
+import type { UsuarioModelo } from './useUsuariosModelo'
 
 interface Props {
   modelValue: boolean
-  usuario: UsuarioDemo | null
+  usuario: UsuarioModelo | null
 }
 
 defineProps<Props>()

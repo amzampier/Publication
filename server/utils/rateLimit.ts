@@ -13,7 +13,7 @@ interface Janela {
 const janelas = new Map<string, Janela>()
 const JANELA_MS = 60_000
 
-let cacheLimite: { valor: number; lidoEm: number } | null = null
+let cacheLimite: { ativo: boolean; valor: number; lidoEm: number } | null = null
 const CACHE_MS = 60_000
 
 /** Zera o cache do limite — chamar após gravar um novo valor (PUT de configurações). */
@@ -21,30 +21,41 @@ export function invalidarCacheLimite(): void {
   cacheLimite = null
 }
 
-async function limitePorMinuto(): Promise<number> {
+async function limitePorMinuto(): Promise<{ ativo: boolean; valor: number }> {
   const agora = Date.now()
-  if (cacheLimite && agora - cacheLimite.lidoEm < CACHE_MS) return cacheLimite.valor
+  if (cacheLimite && agora - cacheLimite.lidoEm < CACHE_MS) {
+    return { ativo: cacheLimite.ativo, valor: cacheLimite.valor }
+  }
 
+  let ativo = true
   let valor = 120
   try {
-    const linhas = await query<Array<{ limite_requisicoes_minuto: number }>>(
-      "SELECT limite_requisicoes_minuto FROM configuracoes_limite_requisicao WHERE id = 'rate_limit_default' LIMIT 1"
+    const linhas = await query<Array<{ ativo: number; limite_requisicoes_minuto: number }>>(
+      "SELECT ativo, limite_requisicoes_minuto FROM configuracoes_limite_requisicao WHERE id = 'rate_limit_default' LIMIT 1"
     )
-    if (linhas.length > 0 && Number(linhas[0].limite_requisicoes_minuto) > 0) {
-      valor = Number(linhas[0].limite_requisicoes_minuto)
+    if (linhas.length > 0) {
+      ativo = Number(linhas[0].ativo) === 1
+      if (Number(linhas[0].limite_requisicoes_minuto) > 0) {
+        valor = Number(linhas[0].limite_requisicoes_minuto)
+      }
     }
   } catch {
     // Banco indisponível: mantém o último/default — rate limit nunca derruba
     // a autenticação por falha de leitura da configuração.
   }
-  cacheLimite = { valor, lidoEm: agora }
-  return valor
+  cacheLimite = { ativo, valor, lidoEm: agora }
+  return { ativo, valor }
 }
 
-/** IP do cliente (xForwardedFor quando houver proxy) — usado pelo rate limit e pelo log de login. */
+/**
+ * IP do cliente — RL02 A-03: usa o IP da CONEXÃO; só considera o cabeçalho
+ * `X-Forwarded-For` quando TRUSTED_PROXIES está configurado (evita que um
+ * cliente contorne o rate limit forjando o header).
+ */
 export function ipDoCliente(event: any): string {
   try {
-    return getRequestIP(event, { xForwardedFor: true }) ?? '0.0.0.0'
+    const confiaveis = String(useRuntimeConfig().trustedProxies || '').trim()
+    return getRequestIP(event, { xForwardedFor: confiaveis.length > 0 }) ?? '0.0.0.0'
   } catch {
     return '0.0.0.0'
   }
@@ -58,7 +69,10 @@ export function ipDoCliente(event: any): string {
 export async function exigirRateLimit(event: any): Promise<void> {
   const ip = ipDoCliente(event)
   const agora = Date.now()
-  const limite = await limitePorMinuto()
+  const { ativo, valor: limite } = await limitePorMinuto()
+
+  // Status desligado: não conta nem rejeita (RL02 M-02).
+  if (!ativo) return
 
   // Varredura oportunista de janelas vencidas (map pequeno: single-node).
   if (janelas.size > 500) {

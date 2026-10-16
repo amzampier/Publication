@@ -3,16 +3,14 @@ import { computed } from 'vue'
 import { Users, UserCheck, UserX, ShieldCheck } from '@lucide/vue'
 import { useUsuarios } from './useUsuarios'
 
-// KPIs derivam do conjunto VIGENTE (spec gestao-usuarios: recalculam quando o
-// conjunto de usuários muda — o conjunto vem da API e o filtro o refina)
-const { usuariosFiltrados } = useUsuarios()
+// KPIs calculados no SERVIDOR sobre o conjunto filtrado (change
+// paginacao-server-side-e-performance) — refletem o banco, não só a página.
+const { kpis } = useUsuarios()
 
-const total = computed(() => usuariosFiltrados.value.length)
-const ativos = computed(() => usuariosFiltrados.value.filter((u) => u.status === 'Ativo').length)
-const inativos = computed(() => usuariosFiltrados.value.filter((u) => u.status === 'Inativo').length)
-const perfisDistintos = computed(
-  () => new Set(usuariosFiltrados.value.map((u) => u.perfil)).size
-)
+const total = computed(() => kpis.value.total)
+const ativos = computed(() => kpis.value.ativos)
+const inativos = computed(() => kpis.value.inativos)
+const perfisDistintos = computed(() => kpis.value.perfisDistintos)
 </script>
 
 <template>

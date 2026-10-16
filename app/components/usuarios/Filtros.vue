@@ -5,7 +5,7 @@ import {
   PERFIS,
   STATUSES,
   type FiltrosUsuarios
-} from './useUsuariosDemo'
+} from './useUsuariosModelo'
 import { useUsuarios } from './useUsuarios'
 
 // Modal de filtros estruturais — aberto pelo botão "Filtros" da toolbar da
@@ -15,7 +15,7 @@ import { useUsuarios } from './useUsuarios'
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoesUsuarios, limparFiltros } = useUsuarios()
+const { filtros, opcoesUsuarios, limparFiltros, aplicarFiltros } = useUsuarios()
 
 const rascunho = ref<FiltrosUsuarios>({ ...filtros.value })
 
@@ -39,6 +39,8 @@ const VAZIO: FiltrosUsuarios = { usuario: '', perfil: '', status: '' }
 const aplicar = () => {
   filtros.value = { ...rascunho.value }
   emit('update:modelValue', false)
+  // Filtros estruturais valem no servidor — volta à 1ª página e recarrega
+  void aplicarFiltros()
 }
 
 const cancelar = () => {
@@ -50,6 +52,7 @@ const cancelar = () => {
 const limpar = () => {
   rascunho.value = { ...VAZIO }
   limparFiltros()
+  void aplicarFiltros()
 }
 </script>
 

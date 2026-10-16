@@ -1,8 +1,10 @@
 // PUT /api/usuarios/:id — edição (200; 404; 409 e-mail duplicado; 400 validações)
 import { atualizarUsuario, buscarUsuarioTelaPorId } from '../../../utils/usuarios'
 import { registrarAuditoria } from '../../../utils/audit'
+import { requirePermission } from '../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'gestao-usuarios', 'alterar')
   const id = String(getRouterParam(event, 'id') ?? '')
   if (!(await buscarUsuarioTelaPorId(id))) {
     throw createError({ statusCode: 404, statusMessage: 'Usuário não encontrado.' })
@@ -23,7 +25,8 @@ export default defineEventHandler(async (event) => {
     funcao: body.funcao,
     departamento: body.departamento,
     endereco: body.endereco,
-    smtp: body.smtp
+    smtp: body.smtp,
+    avatar: body.avatar
   })
   await registrarAuditoria(event, {
     acao: 'Alteração',

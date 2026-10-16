@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { Funnel, ShieldCheck, Activity } from '@lucide/vue'
-import { usePerfisDemo, SITUACOES, type FiltrosPerfis } from './usePerfisDemo'
+import { usePerfisModelo, SITUACOES, type FiltrosPerfis } from './usePerfisModelo'
 
 // Modal de filtros estruturais — aberto pelo botão "Filtros" da toolbar da
 // tabela (spec perfis-acesso: sessões Perfil e Status — UiSelect com '' =
@@ -10,7 +10,7 @@ import { usePerfisDemo, SITUACOES, type FiltrosPerfis } from './usePerfisDemo'
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoesPerfis, limparFiltros } = usePerfisDemo()
+const { filtros, opcoesPerfis, limparFiltros } = usePerfisModelo()
 
 const rascunho = ref<FiltrosPerfis>({ ...filtros.value })
 

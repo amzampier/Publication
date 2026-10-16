@@ -1,8 +1,10 @@
 // PUT /api/usuarios/:id/situacao — Bloquear/Desbloquear real (Ativo/Inativo)
 import { alterarSituacaoUsuario } from '../../../../utils/usuarios'
 import { registrarAuditoria } from '../../../../utils/audit'
+import { requirePermission } from '../../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'gestao-usuarios', 'alterar')
   const id = String(getRouterParam(event, 'id') ?? '')
   const body = await readBody<{ situacao?: unknown }>(event)
   const atualizado = await alterarSituacaoUsuario(id, body?.situacao)

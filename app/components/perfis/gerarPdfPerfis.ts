@@ -8,11 +8,11 @@ import autoTable from 'jspdf-autotable'
 import {
   contarPermissoes,
   PERMISSOES_POR_PERFIL,
-  type PerfilDemo
-} from './usePerfisDemo'
+  type PerfilModelo
+} from './usePerfisModelo'
 
 interface OpcoesRelatorio {
-  perfis: PerfilDemo[]
+  perfis: PerfilModelo[]
   /** contagem de usuários vinculados por nome de perfil (derivada da base de usuários) */
   usuariosPorPerfil: Record<string, number>
   /** preview da logo de login: dataURL (upload) | caminho remoto | '' (marca padrão) */

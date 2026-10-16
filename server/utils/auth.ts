@@ -13,6 +13,10 @@ export interface UsuarioSessao {
   nome: string
   email: string
   perfil: string
+  /** Senha provisória pendente de troca (capability `primeiro-acesso`). */
+  provisoria: boolean
+  /** Versão da sessão da conta — revogada ao incrementar (capability `revogacao-sessao`). */
+  tokenVersion: number
 }
 
 export interface UsuarioLoginRow {
@@ -22,6 +26,12 @@ export interface UsuarioLoginRow {
   hash_senha: string
   situacao: string
   perfil: string
+  /** Situação do PERFIL (Ativo/Inativo/Bloqueado) — login recusa perfil não-Ativo (M-05). */
+  perfil_situacao: string
+  /** 1 = senha provisória pendente de troca. */
+  provisoria: number
+  /** Versão da sessão vigente da conta. */
+  token_version: number
   /** Bloqueio de brute-force vigente (null = livre) — usado pelo login. */
   bloqueado_ate: Date | string | null
 }
@@ -70,6 +80,12 @@ export function limparCookiesAuth(event: any): void {
   deleteCookie(event, NOME_REFRESH, { path: '/' })
 }
 
+/** Reemite SÓ o cookie de access (ex.: após limpar a provisória) — preserva o refresh. */
+export async function reemitirAccesso(event: any, usuario: UsuarioSessao): Promise<void> {
+  const access = await emitirAccessToken(usuario)
+  setCookie(event, NOME_ACCESS, access, { ...opcoesBase, maxAge: ACCESS_TTL_SEG })
+}
+
 // ---------------------------------------------------------------------------
 // Access JWT
 // ---------------------------------------------------------------------------
@@ -78,7 +94,9 @@ export async function emitirAccessToken(usuario: UsuarioSessao): Promise<string>
   return await new SignJWT({
     nome: usuario.nome,
     email: usuario.email,
-    perfil: usuario.perfil
+    perfil: usuario.perfil,
+    provisoria: usuario.provisoria,
+    tv: usuario.tokenVersion
   })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(usuario.id)
@@ -89,7 +107,7 @@ export async function emitirAccessToken(usuario: UsuarioSessao): Promise<string>
 
 export async function validarAccessToken(
   token: string | undefined
-): Promise<{ sub: string; nome: string; email: string; perfil: string } | null> {
+): Promise<{ sub: string; nome: string; email: string; perfil: string; provisoria: boolean; tokenVersion: number } | null> {
   if (!token) return null
   try {
     const { payload } = await jwtVerify(token, segredo(), { algorithms: ['HS256'] })
@@ -98,7 +116,9 @@ export async function validarAccessToken(
       sub: String(payload.sub),
       nome: String(payload.nome ?? ''),
       email: String(payload.email ?? ''),
-      perfil: String(payload.perfil ?? '')
+      perfil: String(payload.perfil ?? ''),
+      provisoria: payload.provisoria === true,
+      tokenVersion: Number(payload.tv ?? 0)
     }
   } catch {
     return null
@@ -116,7 +136,9 @@ const gerarRefresh = (): string => randomBytes(32).toString('base64url')
 
 const ipDe = (event: any): string => {
   try {
-    return getRequestIP(event, { xForwardedFor: true }) ?? '0.0.0.0'
+    // RL02 A-03: só confia no X-Forwarded-For quando há proxies confiáveis.
+    const confiaveis = String(useRuntimeConfig().trustedProxies || '').trim()
+    return getRequestIP(event, { xForwardedFor: confiaveis.length > 0 }) ?? '0.0.0.0'
   } catch {
     return '0.0.0.0'
   }
@@ -223,7 +245,9 @@ export async function renovarSessao(event: any): Promise<UsuarioSessao | null> {
     id: usuario.id,
     nome: usuario.nome,
     email: usuario.email,
-    perfil: usuario.perfil
+    perfil: usuario.perfil,
+    provisoria: usuario.provisoria === 1,
+    tokenVersion: usuario.token_version
   }
   const accessNovo = await emitirAccessToken(sessao)
   gravarCookies(event, accessNovo, rotacao.refresh)
@@ -239,7 +263,14 @@ export async function getSessionUser(event: any): Promise<UsuarioSessao | null> 
   const access = getCookie(event, NOME_ACCESS)
   const payload = await validarAccessToken(access)
   if (payload) {
-    return { id: payload.sub, nome: payload.nome, email: payload.email, perfil: payload.perfil }
+    return {
+      id: payload.sub,
+      nome: payload.nome,
+      email: payload.email,
+      perfil: payload.perfil,
+      provisoria: payload.provisoria,
+      tokenVersion: payload.tokenVersion
+    }
   }
   return await renovarSessao(event)
 }
@@ -257,6 +288,9 @@ const montarLoginRow = (row: Row): UsuarioLoginRow => ({
   hash_senha: String(row.hash_senha ?? ''),
   situacao: String(row.situacao ?? ''),
   perfil: String(row.nome_perfil ?? ''),
+  perfil_situacao: String(row.perfil_situacao ?? ''),
+  provisoria: Number(row.senha_provisoria ?? 0),
+  token_version: Number(row.token_version ?? 0),
   bloqueado_ate: (row.bloqueado_ate as Date | string | null) ?? null
 })
 
@@ -264,7 +298,7 @@ const montarLoginRow = (row: Row): UsuarioLoginRow => ({
 export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioLoginRow | null> {
   const linhas = await query<Row[]>(
     `SELECT u.id, u.nome_completo, u.email_corporativo, u.hash_senha, u.situacao,
-            u.bloqueado_ate, p.nome_perfil
+            u.senha_provisoria, u.token_version, u.bloqueado_ate, p.nome_perfil, p.situacao AS perfil_situacao
        FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
       WHERE u.email_corporativo = ? LIMIT 1`,
     [email]
@@ -275,12 +309,36 @@ export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioLogin
 /** Conta por id (sessão, troca de senha). */
 export async function buscarUsuarioPorId(id: string): Promise<UsuarioLoginRow | null> {
   const linhas = await query<Row[]>(
-    `SELECT u.id, u.nome_completo, u.email_corporativo, u.hash_senha, u.situacao, p.nome_perfil
+    `SELECT u.id, u.nome_completo, u.email_corporativo, u.hash_senha, u.situacao,
+            u.senha_provisoria, u.token_version, p.nome_perfil, p.situacao AS perfil_situacao
        FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
       WHERE u.id = ? LIMIT 1`,
     [id]
   )
   return linhas.length ? montarLoginRow(linhas[0]) : null
+}
+
+/**
+ * A sessão ainda é válida no servidor? (capability `revogacao-sessao`): conta
+ * existe, está Ativa e a versão do token confere com a da conta. Usada pelo
+ * middleware a cada requisição autenticada.
+ */
+export async function sessaoAtivaNoServidor(sessao: {
+  id: string
+  tokenVersion: number
+}): Promise<boolean> {
+  const linhas = await query<Array<{ situacao: string; token_version: number }>>(
+    'SELECT situacao, token_version FROM usuarios WHERE id = ? LIMIT 1',
+    [sessao.id]
+  )
+  if (linhas.length === 0) return false
+  if (String(linhas[0].situacao) !== 'Ativo') return false
+  return Number(linhas[0].token_version) === sessao.tokenVersion
+}
+
+/** Incrementa a versão da sessão da conta — revoga todos os access vigentes (logout/desativação). */
+export async function revogarAccessVigente(usuarioId: string): Promise<void> {
+  await query('UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?', [usuarioId])
 }
 
 // ---------------------------------------------------------------------------
@@ -304,25 +362,42 @@ export function bloqueioVigente(bloqueadoAte: Date | string | null | undefined):
 export async function registrarFalhaLogin(
   usuarioId: string
 ): Promise<{ bloqueou: boolean; tentativas: number }> {
-  const linhas = await query<Array<{ tentativas_falhas: number; bloqueado_ate: Date | null }>>(
-    'SELECT tentativas_falhas, bloqueado_ate FROM usuarios WHERE id = ?',
-    [usuarioId]
-  )
-  if (linhas.length === 0) return { bloqueou: false, tentativas: 0 }
-  const vigente = bloqueioVigente(linhas[0].bloqueado_ate)
-  if (vigente) return { bloqueou: false, tentativas: Number(linhas[0].tentativas_falhas) } // já bloqueado: não incrementa além da janela
+  // Atômico (change endurecer-banco-e-bootstrap, RL02 M-12): o SELECT ... FOR
+  // UPDATE serializa tentativas concorrentes — sem ele, o read-modify-write
+  // subcontava falhas e o bloqueio podia não disparar em 5.
+  const tx = await getTransaction()
+  try {
+    const linhas = await tx.query<Array<{ tentativas_falhas: number; bloqueado_ate: Date | null }>>(
+      'SELECT tentativas_falhas, bloqueado_ate FROM usuarios WHERE id = ? FOR UPDATE',
+      [usuarioId]
+    )
+    if (linhas.length === 0) {
+      await tx.commit()
+      return { bloqueou: false, tentativas: 0 }
+    }
+    const vigente = bloqueioVigente(linhas[0].bloqueado_ate)
+    if (vigente) {
+      await tx.commit()
+      return { bloqueou: false, tentativas: Number(linhas[0].tentativas_falhas) } // já bloqueado: não incrementa além da janela
+    }
 
-  const novas = Number(linhas[0].tentativas_falhas) + 1
-  if (novas >= TENTATIVAS_MAX) {
-    const ate = new Date(Date.now() + JANELA_BLOQUEIO_MIN * 60000)
-    await query('UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = ? WHERE id = ?', [
-      ate,
-      usuarioId
-    ])
-    return { bloqueou: true, tentativas: TENTATIVAS_MAX }
+    const novas = Number(linhas[0].tentativas_falhas) + 1
+    if (novas >= TENTATIVAS_MAX) {
+      const ate = new Date(Date.now() + JANELA_BLOQUEIO_MIN * 60000)
+      await tx.query('UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = ? WHERE id = ?', [
+        ate,
+        usuarioId
+      ])
+      await tx.commit()
+      return { bloqueou: true, tentativas: TENTATIVAS_MAX }
+    }
+    await tx.query('UPDATE usuarios SET tentativas_falhas = ? WHERE id = ?', [novas, usuarioId])
+    await tx.commit()
+    return { bloqueou: false, tentativas: novas }
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
   }
-  await query('UPDATE usuarios SET tentativas_falhas = ? WHERE id = ?', [novas, usuarioId])
-  return { bloqueou: false, tentativas: novas }
 }
 
 /**

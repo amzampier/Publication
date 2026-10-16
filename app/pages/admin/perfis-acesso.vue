@@ -2,17 +2,17 @@
 import { nextTick, onMounted, ref } from 'vue'
 import {
   excluirPerfil,
-  usePerfisDemo,
+  usePerfisModelo,
   type LinhaPerfil,
-  type PerfilDemo,
+  type PerfilModelo,
   type ModoPerfis
-} from '../../components/perfis/usePerfisDemo'
+} from '../../components/perfis/usePerfisModelo'
 import { useToast } from '../../composables/useToast'
 
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { perfis, carregarPerfis } = usePerfisDemo()
+const { perfis, carregarPerfis } = usePerfisModelo()
 
 // Loading no F5 (padrão Meu Perfil/Configurações): `carregando` nasce true — o SSR
 // renderiza só o overlay e o conteúdo só monta via v-else após a resposta, sem
@@ -37,7 +37,7 @@ onMounted(async () => {
 // demais modais desta tela). A ação Permissões (KeyRound) abre o modal com a matriz
 // do perfil — sem toast de transição (spec perfis-acesso).
 const permissoesAbertas = ref(false)
-const perfilPermissoes = ref<PerfilDemo | null>(null)
+const perfilPermissoes = ref<PerfilModelo | null>(null)
 
 const abrirPermissoes = (linha: LinhaPerfil) => {
   // O modal precisa da matriz completa - resolve por id na base.
@@ -51,7 +51,7 @@ const abrirPermissoes = (linha: LinhaPerfil) => {
 // de gestao-usuarios e do modal de exclusão desta tela).
 const modalAberto = ref(false)
 const modo = ref<ModoPerfis>('novo')
-const perfilEditar = ref<PerfilDemo | null>(null)
+const perfilEditar = ref<PerfilModelo | null>(null)
 
 const abrirNovo = () => {
   modo.value = 'novo'

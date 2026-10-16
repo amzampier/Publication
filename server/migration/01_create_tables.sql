@@ -8,42 +8,14 @@
 -- Engine Padrão: InnoDB | Charset: utf8mb4 | Collation: utf8mb4_unicode_520_ci
 -- Otimizado para MariaDB 11.8: colunas JSON nativas, UUID nativo,
 -- Precisão de microssegundos (DATETIME(6)) e Integridade Referencial.
--- DROPs em ordem inversa de dependência (filhas primeiro) — sem
--- SET FOREIGN_KEY_CHECKS, para funcionar com qualquer runner de migration.
--- NUNCA edite este arquivo depois de aplicado (docs/qa/03): correções
--- entram como 03_*.sql nova.
+-- SEM DROPs: a migration NUNCA remove tabelas/views existentes (spec
+-- migracoes-banco — "Migrations não destrutivas"); a base vazia é criada
+-- pelos CREATEs abaixo. Correções futuras entram como NN_*.sql nova.
 -- SEM `USE`: o pool da aplicação já conecta no banco de DB_NAME — um USE
 -- hardcoded quebraria a configuração de outro banco (spec migracoes-banco).
 -- (Para execução manual via cliente SQL, rode no banco certo ou use o
 -- `USE` do docs/bd/01 — a referência humana mantém o comando.)
 -- =========================================================================
-
--- =========================================================================
--- 2. REMOÇÃO LIMPA (views primeiro, depois tabelas em ordem inversa de FK)
--- =========================================================================
-DROP VIEW IF EXISTS v_manual_itens;
-DROP VIEW IF EXISTS v_projeto_itens;
-DROP VIEW IF EXISTS v_release_itens;
-DROP VIEW IF EXISTS manuais;
-
-DROP TABLE IF EXISTS anexos_midias;
-DROP TABLE IF EXISTS historico_esteira_revisao;
-DROP TABLE IF EXISTS sessoes;
-DROP TABLE IF EXISTS tokens_acesso;
-DROP TABLE IF EXISTS notificacoes_sistema;
-DROP TABLE IF EXISTS auditoria;
-DROP TABLE IF EXISTS entregas_itens;
-DROP TABLE IF EXISTS manuais_mensal;
-DROP TABLE IF EXISTS release_week;
-DROP TABLE IF EXISTS projetos_escopo;
-DROP TABLE IF EXISTS token_blacklist;
-DROP TABLE IF EXISTS permissoes_perfil;
-DROP TABLE IF EXISTS usuarios;
-DROP TABLE IF EXISTS perfis_acesso;
-DROP TABLE IF EXISTS parceiros;
-DROP TABLE IF EXISTS softwares;
-DROP TABLE IF EXISTS configuracoes_globais;
-DROP TABLE IF EXISTS configuracoes_limite_requisicao;
 
 -- =========================================================================
 -- 3. PERFIS DE ACESSO PARA CONTROLE RBAC (DINÂMICO)

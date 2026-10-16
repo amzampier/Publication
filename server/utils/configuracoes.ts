@@ -1,6 +1,6 @@
 // server/utils/configuracoes.ts — acesso à linha única de configurações globais
 // Tabela: configuracoes_globais (id = 'config_default', seedada em 02_seed.sql).
-import { query } from './db'
+import { query, getTransaction } from './db'
 
 export interface ConfiguracoesGlobais {
   id: string
@@ -129,17 +129,27 @@ export async function atualizarConfiguracoes(patch: PatchConfiguracoes): Promise
     colunas.push('sidebar_expandida = ?')
     valores.push(patch.sidebar_expandida ? 1 : 0)
   }
-  if (colunas.length > 0) {
-    await query(`UPDATE configuracoes_globais SET ${colunas.join(', ')} WHERE id = 'config_default'`, valores)
-  }
-  // Rate limit vive em outra tabela ('rate_limit_default', seedada em 02_seed.sql)
-  if (patch.rate_limit !== undefined) {
-    const rate = patch.rate_limit
-    await query(
-      `INSERT INTO configuracoes_limite_requisicao (id, ativo, limite_requisicoes_minuto)
-       VALUES ('rate_limit_default', ?, ?)
-       ON DUPLICATE KEY UPDATE ativo = VALUES(ativo), limite_requisicoes_minuto = VALUES(limite_requisicoes_minuto)`,
-      [rate.ativo ? 1 : 0, rate.limite_requisicoes_minuto]
-    )
+  if (colunas.length === 0 && patch.rate_limit === undefined) return
+  // Atômico entre as duas tabelas (change endurecer-banco-e-bootstrap, RL02 M-11):
+  // ou ambas as superfícies são gravadas, ou nenhuma — sem estado parcial.
+  const tx = await getTransaction()
+  try {
+    if (colunas.length > 0) {
+      await tx.query(`UPDATE configuracoes_globais SET ${colunas.join(', ')} WHERE id = 'config_default'`, valores)
+    }
+    // Rate limit vive em outra tabela ('rate_limit_default', seedada em 02_seed.sql)
+    if (patch.rate_limit !== undefined) {
+      const rate = patch.rate_limit
+      await tx.query(
+        `INSERT INTO configuracoes_limite_requisicao (id, ativo, limite_requisicoes_minuto)
+         VALUES ('rate_limit_default', ?, ?)
+         ON DUPLICATE KEY UPDATE ativo = VALUES(ativo), limite_requisicoes_minuto = VALUES(limite_requisicoes_minuto)`,
+        [rate.ativo ? 1 : 0, rate.limite_requisicoes_minuto]
+      )
+    }
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
   }
 }

@@ -2,8 +2,10 @@
 // origem em transação (200 | 400 sem destino | 404 origem/destino inexistente)
 import { buscarPerfil, copiarMatriz, validarId } from '../../../../../utils/perfis'
 import { registrarAuditoria } from '../../../../../utils/audit'
+import { requirePermission } from '../../../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'perfis-acesso', 'alterar')
   const origemId = validarId(getRouterParam(event, 'id'))
 
   const body = await readBody<Record<string, unknown>>(event)

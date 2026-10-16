@@ -75,7 +75,14 @@ async function applyMigrationFile(conn: PoolConnection, fileName: string, filePa
       throw new Error(`[migrations] Falha fatal em "${fileName}" (errno ${errno}): ${message}\nStatement: ${statement.slice(0, 300)}`)
     }
   }
-  await conn.query('INSERT INTO _migrations (nome) VALUES (?)', [fileName])
+  // Registro resiliente (change endurecer-banco-e-bootstrap, RL02 M-13): numa
+  // corrida (duas instâncias subindo), o 2º INSERT viola a PK (1062) — trata
+  // como "já registrada" e prossegue em vez de abortar o boot.
+  try {
+    await conn.query('INSERT INTO _migrations (nome) VALUES (?)', [fileName])
+  } catch (err) {
+    if (!isTolerated(err)) throw err
+  }
 }
 
 /**

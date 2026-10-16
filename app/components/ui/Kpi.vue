@@ -13,7 +13,7 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  cor: '#2161ef',
+  cor: '#0364f7',
   icone: undefined,
   metrica: '',
   metricaRotulo: '',

@@ -228,6 +228,7 @@ onUnmounted(() => {
         <button
           type="button"
           class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+          aria-label="Menu da conta"
           aria-haspopup="menu"
           :aria-expanded="contaAberto"
           @click="alternarConta"

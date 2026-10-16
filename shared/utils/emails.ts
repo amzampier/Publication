@@ -170,6 +170,8 @@ export function renderHtmlRecuperacao(dados: DadosRecuperacao): string {
 /**
  * Senha provisória com a mesma régua da validação do formulário:
  * mínimo de 8 caracteres com maiúscula, minúscula, número e símbolo.
+ * Usa CSPRNG (Web Crypto — disponível no Node e no navegador; RL02 M-08),
+ * nunca Math.random.
  */
 export function gerarSenhaProvisoria(tamanho = 12): string {
   const maiusculas = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
@@ -178,13 +180,19 @@ export function gerarSenhaProvisoria(tamanho = 12): string {
   const simbolos = '@#$%&*!?'
   const todas = maiusculas + minusculas + numeros + simbolos
 
-  const sorteio = (conjunto: string) => conjunto[Math.floor(Math.random() * conjunto.length)]
+  const sorteio = (conjunto: string) => {
+    const array = new Uint32Array(1)
+    globalThis.crypto.getRandomValues(array)
+    return conjunto[array[0] % conjunto.length]
+  }
 
   const chars = [sorteio(maiusculas), sorteio(minusculas), sorteio(numeros), sorteio(simbolos)]
   while (chars.length < Math.max(8, tamanho)) chars.push(sorteio(todas))
 
   for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
+    const array = new Uint32Array(1)
+    globalThis.crypto.getRandomValues(array)
+    const j = array[0] % (i + 1)
       ;[chars[i], chars[j]] = [chars[j], chars[i]]
   }
   return chars.join('')

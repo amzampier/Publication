@@ -57,8 +57,8 @@ export const MODULOS: { id: ModuloId; label: string; descricao: string }[] = [
 /** 99 = 11 módulos × 9 ações (4 fixas + 5 extras). */
 export const PERMISSOES_POR_PERFIL = MODULOS.length * (ACOES.length + EXTRAS.length)
 
-/** Registro do perfil no shape da API (espelho do PerfilDemo da fase 1). */
-export interface PerfilDemo {
+/** Registro do perfil no shape da API (espelho do PerfilModelo da fase 1). */
+export interface PerfilModelo {
   id: string
   nome: PerfilId | string
   descricao: string
@@ -104,7 +104,7 @@ export const clonarMatriz = (
 /** Matriz de um perfil sem nenhuma ação concedida (0/99) — criação nova e rascunho vazio. */
 export const matrizVazia = (): Record<ModuloId, Permissao[]> => matriz({})
 
-export const contarPermissoes = (perfil: PerfilDemo): number =>
+export const contarPermissoes = (perfil: PerfilModelo): number =>
   MODULOS.reduce((total, modulo) => total + (perfil.permissoes[modulo.id]?.length ?? 0), 0)
 
 // ---------------------------------------------------------------------------
@@ -115,23 +115,23 @@ export const contarPermissoes = (perfil: PerfilDemo): number =>
 
 /** Cria (POST) ou edita (PUT) o perfil; devolve a base com a resposta do servidor. */
 export const salvarPerfil = async (
-  base: PerfilDemo[],
-  registro: PerfilDemo,
+  base: PerfilModelo[],
+  registro: PerfilModelo,
   modo: ModoPerfis
-): Promise<{ base: PerfilDemo[] }> => {
+): Promise<{ base: PerfilModelo[] }> => {
   const corpo = {
     nome: registro.nome,
     descricao: registro.descricao,
     situacao: registro.situacao
   }
   if (modo === 'novo') {
-    const criado = await useApiFetch<PerfilDemo>('/api/perfis', {
+    const criado = await useApiFetch<PerfilModelo>('/api/perfis', {
       method: 'POST',
       body: corpo
     })
     return { base: [...base, criado] }
   }
-  const atualizado = await useApiFetch<PerfilDemo>(`/api/perfis/${registro.id}`, {
+  const atualizado = await useApiFetch<PerfilModelo>(`/api/perfis/${registro.id}`, {
     method: 'PUT',
     body: corpo
   })
@@ -140,11 +140,11 @@ export const salvarPerfil = async (
 
 /** Grava a matriz inteira do perfil (PUT .../permissoes) e devolve a base atualizada. */
 export const salvarPermissoes = async (
-  base: PerfilDemo[],
+  base: PerfilModelo[],
   id: string,
   permissoes: Record<ModuloId, Permissao[]>
-): Promise<{ base: PerfilDemo[] }> => {
-  const atualizado = await useApiFetch<PerfilDemo>(`/api/perfis/${id}/permissoes`, {
+): Promise<{ base: PerfilModelo[] }> => {
+  const atualizado = await useApiFetch<PerfilModelo>(`/api/perfis/${id}/permissoes`, {
     method: 'PUT',
     body: { permissoes }
   })
@@ -156,9 +156,9 @@ export const salvarPermissoes = async (
  * usuários vinculados (o chamador exibe o toast de bloqueio e mantém a base).
  */
 export const excluirPerfil = async (
-  base: PerfilDemo[],
+  base: PerfilModelo[],
   id: string
-): Promise<{ base: PerfilDemo[] }> => {
+): Promise<{ base: PerfilModelo[] }> => {
   await useApiFetch(`/api/perfis/${id}`, { method: 'DELETE' })
   return { base: base.filter((p) => p.id !== id) }
 }
@@ -169,11 +169,11 @@ export const excluirPerfil = async (
  * atualizado.
  */
 export const copiarMatrizPara = async (
-  base: PerfilDemo[],
+  base: PerfilModelo[],
   origemId: string,
   destinoId: string
-): Promise<{ base: PerfilDemo[] }> => {
-  const destino = await useApiFetch<PerfilDemo>(
+): Promise<{ base: PerfilModelo[] }> => {
+  const destino = await useApiFetch<PerfilModelo>(
     `/api/perfis/${origemId}/permissoes/copiar`,
     { method: 'POST', body: { destino_id: destinoId } }
   )
@@ -190,10 +190,10 @@ export interface LinhaPerfil {
   permissoesTexto: string
 }
 
-export const usePerfisDemo = () => {
+export const usePerfisModelo = () => {
   // Base reativa compartilhada: inicia VAZIA (a carga preenche com o banco —
   // spec: nunca exibir a demo como se fosse persistida).
-  const perfis = useState<PerfilDemo[]>('perfis-base', () => [])
+  const perfis = useState<PerfilModelo[]>('perfis-base', () => [])
   const carregando = useState<boolean>('perfis-carregando', () => false)
   const carregado = useState<boolean>('perfis-carregado', () => false)
 
@@ -207,7 +207,7 @@ export const usePerfisDemo = () => {
     if (carregando.value) return false
     carregando.value = true
     try {
-      const lista = await useApiFetch<PerfilDemo[]>('/api/perfis')
+      const lista = await useApiFetch<PerfilModelo[]>('/api/perfis')
       perfis.value = Array.isArray(lista) ? lista : []
       carregado.value = true
       return true
@@ -226,7 +226,7 @@ export const usePerfisDemo = () => {
     situacao: ''
   }))
 
-  const perfisFiltrados = computed<PerfilDemo[]>(() => {
+  const perfisFiltrados = computed<PerfilModelo[]>(() => {
     const f = filtros.value
     return perfis.value.filter((p) => {
       if (f.perfil && p.nome !== f.perfil) return false
@@ -242,7 +242,7 @@ export const usePerfisDemo = () => {
 
   // Opções do select de Perfil derivam da BASE (não do conjunto filtrado): um
   // filtro de Status não pode esconder opções do select de Perfil (espelho da
-  // regra de opcoesUsuarios de useUsuariosDemo).
+  // regra de opcoesUsuarios de useUsuariosModelo).
   const opcoesPerfis = computed(() =>
     perfis.value.map((p) => p.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'))
   )

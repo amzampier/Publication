@@ -2,18 +2,27 @@
 import { Eye } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
 import {
-  useAuditoriaDemo,
+  useAuditoriaModelo,
   formatarDataHora,
   VARIANTE_POR_ACAO,
   type RegistroAuditoria
-} from './useAuditoriaDemo'
+} from './useAuditoriaModelo'
 
 const emit = defineEmits<{
   (e: 'open-filters'): void
   (e: 'open-details', registro: RegistroAuditoria): void
 }>()
 
-const { registrosFiltrados, filtrosAtivosCount } = useAuditoriaDemo()
+const {
+  registrosFiltrados,
+  filtrosAtivosCount,
+  pagina,
+  porPagina,
+  total,
+  irParaPagina,
+  mudarPorPagina,
+  buscar
+} = useAuditoriaModelo()
 
 const colunas: ColumnDef[] = [
   { id: 'dataHora', header: 'Data / Hora', accessorKey: 'registradoEm', minWidth: 130, format: (v) => formatarDataHora(v) },
@@ -32,11 +41,18 @@ const colunas: ColumnDef[] = [
       subtitle="Ordenados do mais recente para o mais antigo — registros persistidos no banco"
       :data="registrosFiltrados"
       :columns="colunas"
-      :default-page-size="5"
+      :default-page-size="20"
+      server-mode
+      :total="total"
+      :page="pagina"
+      :per-page="porPagina"
       show-header-top
       show-filters
       :filters-count="filtrosAtivosCount"
       @open-filters="emit('open-filters')"
+      @page-change="irParaPagina"
+      @per-page-change="mudarPorPagina"
+      @search="buscar"
     >
       <template #cell(acao)="{ value }">
         <UiBadge :variant="VARIANTE_POR_ACAO[value]" size="sm">

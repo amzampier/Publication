@@ -3,18 +3,18 @@ import { ref, watch, nextTick } from 'vue'
 import { ShieldCheck, Clock } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
 import {
-  usePerfisDemo,
+  usePerfisModelo,
   salvarPerfil,
   matrizVazia,
-  type PerfilDemo,
+  type PerfilModelo,
   type ModoPerfis,
   type SituacaoPerfil
-} from './usePerfisDemo'
+} from './usePerfisModelo'
 
 interface Props {
   modelValue: boolean
   modo: ModoPerfis
-  perfil: PerfilDemo | null
+  perfil: PerfilModelo | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -26,10 +26,10 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { perfis } = usePerfisDemo()
+const { perfis } = usePerfisModelo()
 
 /** Rascunho do modal: o registro completo do perfil (mesmo contrato do Formulario de usuários). */
-const rascunhoVazio = (): PerfilDemo => ({
+const rascunhoVazio = (): PerfilModelo => ({
   id: '',
   nome: '',
   descricao: '',
@@ -40,14 +40,14 @@ const rascunhoVazio = (): PerfilDemo => ({
   permissoes: matrizVazia()
 })
 
-const rascunhoDoPerfil = (p: PerfilDemo): PerfilDemo => ({ ...p })
+const rascunhoDoPerfil = (p: PerfilModelo): PerfilModelo => ({ ...p })
 
-const rascunho = ref<PerfilDemo>(rascunhoVazio())
+const rascunho = ref<PerfilModelo>(rascunhoVazio())
 const erros = ref<Record<string, string>>({})
 
 const ORDEM_FOCO = ['nome']
 
-const validar = (r: PerfilDemo): Record<string, string> => {
+const validar = (r: PerfilModelo): Record<string, string> => {
   const e: Record<string, string> = {}
 
   if (!r.nome.trim()) e.nome = 'Informe o nome do perfil.'

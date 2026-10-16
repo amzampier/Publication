@@ -13,6 +13,8 @@ export interface UsuarioLogado {
   nome: string
   email: string
   perfil: string
+  /** Senha provisória pendente de troca (capability `primeiro-acesso`). */
+  provisoria?: boolean
 }
 
 export interface CredenciaisLogin {
@@ -96,7 +98,7 @@ export const useAuth = () => {
       } else if (status === 403 && mensagem) {
         toast.warning(mensagem)
       } else if (status === 429) {
-        toast.warning(mensagem ?? 'Muitas tentativas. Aguarde um minuto e tente novamente.')
+        toast.danger(mensagem ?? 'Muitas tentativas. Aguarde um minuto e tente novamente.')
       } else {
         toast.danger('Não foi possível conectar ao servidor. Tente novamente.')
       }

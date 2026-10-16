@@ -4,7 +4,7 @@
 // exceljs via import() dinâmico (bundle só carrega no uso), cabeçalho com trim e
 // sem distinção de maiúsculas, linhas vazias ignoradas, e-mail case-insensitive e
 // classificação na ordem inválida -> repetida -> já cadastrada -> pronta.
-import { PERFIS, STATUSES } from './useUsuariosDemo'
+import { PERFIS, STATUSES } from './useUsuariosModelo'
 
 export type SituacaoImportacao = 'pronto' | 'ja-cadastrado' | 'repetido' | 'invalido'
 

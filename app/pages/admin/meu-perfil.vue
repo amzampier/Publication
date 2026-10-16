@@ -11,8 +11,8 @@ import {
   smtpVazio,
   type ConfigSmtpUsuario,
   type EnderecoUsuario,
-  type UsuarioDemo
-} from '../../components/usuarios/useUsuariosDemo'
+  type UsuarioModelo
+} from '../../components/usuarios/useUsuariosModelo'
 
 definePageMeta({ layout: 'admin' })
 
@@ -21,12 +21,12 @@ const { toast } = useToast()
 // Registro REAL do logado (change gestao-usuarios-backend, design D7): lido de
 // GET /api/usuarios/eu — sem espelho por e-mail na base demo; a aba Segurança
 // continua autônoma (POST /api/auth/trocar-senha, change de auth).
-const registro = ref<UsuarioDemo | null>(null)
+const registro = ref<UsuarioModelo | null>(null)
 const carregando = ref(true)
 
 const carregarEu = async (): Promise<boolean> => {
   try {
-    const eu = await useApiFetch<UsuarioDemo>('/api/usuarios/eu')
+    const eu = await useApiFetch<UsuarioModelo>('/api/usuarios/eu')
     registro.value = eu
     return true
   } catch {
@@ -57,7 +57,7 @@ interface Rascunho {
   smtp: ConfigSmtpUsuario
 }
 
-const clonar = (u: UsuarioDemo): Rascunho => ({
+const clonar = (u: UsuarioModelo): Rascunho => ({
   nome: u.nome,
   telefone: u.telefone,
   avatar: u.avatar,
@@ -101,7 +101,7 @@ const salvar = async () => {
       avatar = await enviarAvatar(avatar)
     }
 
-    const atualizado = await useApiFetch<UsuarioDemo>('/api/usuarios/eu', {
+    const atualizado = await useApiFetch<UsuarioModelo>('/api/usuarios/eu', {
       method: 'PATCH',
       body: {
         nome: rascunho.value.nome.trim(),

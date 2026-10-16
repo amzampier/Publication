@@ -38,6 +38,9 @@ export default defineEventHandler(async (event) => {
       detalhes: `Solicitou recuperação de senha para e-mail sem conta ativa (${email})`,
       sessao: { id: null, nome: email }
     })
+    // M-07: custo bcrypt equivalente ao caminho de conta existente (o tempo de
+    // resposta não deve revelar se o e-mail existe).
+    await hash(gerarSenhaProvisoria(), 12).catch(() => '')
     // Genérico: mesma resposta de um e-mail cadastrado (nenhum e-mail sai).
     return RESPOSTA_GENERICA
   }
@@ -45,21 +48,24 @@ export default defineEventHandler(async (event) => {
   try {
     const senha = gerarSenhaProvisoria()
     const hashSenha = await hash(senha, 12)
-    await query('UPDATE usuarios SET hash_senha = ?, senha_provisoria = 1 WHERE id = ?', [
-      hashSenha,
-      usuario.id
-    ])
-
-    const link = `${getRequestURL(event).origin}/admin/login`
+    // M-09: origem fixa dos links (APP_URL) — não confia no Host recebido.
+    const base = String(useRuntimeConfig().appUrl || '') || getRequestURL(event).origin
+    const link = `${base}/admin/login`
+    // 5.1: entrega o e-mail PRIMEIRO; só grava a nova senha se o envio der certo
+    // (falha do provedor mantém a senha anterior válida).
     await enviarEmail({
       para: usuario.email,
       assunto: ASSUNTO_RECUPERACAO,
       html: renderHtmlRecuperacao({ nome: usuario.nome, senha, link }),
       text: renderTextoRecuperacao({ nome: usuario.nome, senha, link })
     })
+    await query('UPDATE usuarios SET hash_senha = ?, senha_provisoria = 1 WHERE id = ?', [
+      hashSenha,
+      usuario.id
+    ])
   } catch (erro) {
     // Resposta idêntica em qualquer falha (D11) — detalhe só no servidor.
-    console.error('[auth/esqueci-senha] falha no envio via Resend:', erro)
+    console.error('[auth/esqueci-senha] falha ao gravar/enviar a senha provisória:', erro)
   }
 
   await registrarAuditoria(event, {

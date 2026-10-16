@@ -2,10 +2,12 @@
 import { atualizarConfiguracoes, getConfiguracoes } from '../../utils/configuracoes'
 import { invalidarCacheLimite } from '../../utils/rateLimit'
 import { registrarAuditoria } from '../../utils/audit'
+import { requirePermission } from '../../utils/permission'
 
 const CHAVES_SIDEBAR = ['publicacoes', 'movimentos', 'cadastros', 'administracao']
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'configuracoes-globais', 'alterar')
   const body = await readBody<Record<string, unknown>>(event)
   if (!body || typeof body !== 'object') {
     throw createError({ statusCode: 400, statusMessage: 'Corpo JSON ausente ou inválido.' })

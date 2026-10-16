@@ -9,10 +9,10 @@ import {
   ChevronDown
 } from '@lucide/vue'
 import {
-  usePerfisDemo,
+  usePerfisModelo,
   contarPermissoes,
   PERMISSOES_POR_PERFIL
-} from './usePerfisDemo'
+} from './usePerfisModelo'
 import { gerarPdfPerfis } from './gerarPdfPerfis'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 
@@ -43,7 +43,7 @@ onUnmounted(() => {
 // Exportação sobre o conjunto vigente vindo da API (com filtro aplicado, sai
 // apenas o conjunto filtrado — spec perfis-acesso; filtros/exportações seguem
 // client-side, sem requisição por geração de arquivo)
-const { perfisFiltrados, usuariosPorPerfil } = usePerfisDemo()
+const { perfisFiltrados, usuariosPorPerfil } = usePerfisModelo()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
 const exportarCsv = () => {

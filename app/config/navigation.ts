@@ -101,9 +101,11 @@ export const sessoes: SidebarSession[] = [
   }
 ]
 
+// Fallback do bloco Account quando a sessão ainda não hidratou — SEM valores
+// fictícios (o nome/perfil reais vêm de useAuth; RL02 DIV-12).
 export const conta: Conta = {
-  nome: 'Ana Carolina Ribeiro',
-  perfil: 'Super Admin'
+  nome: '',
+  perfil: ''
 }
 
 // Ordem fixa do menu suspenso do Account:
@@ -127,23 +129,6 @@ export const accountEncerrarSessao: MenuItem = {
   cor: '#f45f71'
 }
 
-export const notificacoesIniciais: Notificacao[] = [
-  {
-    id: 'not-1',
-    titulo: 'Conciliação bancária disponível',
-    mensagem: 'O extrato do Itaú de 28/09 já está pronto para conciliação.',
-    tempo: 'há 5 min'
-  },
-  {
-    id: 'not-2',
-    titulo: 'Fechamento mensal',
-    mensagem: 'A filial Campinas aguarda aprovação do fechamento de setembro.',
-    tempo: 'há 2 h'
-  },
-  {
-    id: 'not-3',
-    titulo: 'Novo perfil publicado',
-    mensagem: 'O perfil "Analista Fiscal" foi atualizado pelo RH.',
-    tempo: 'ontem'
-  }
-]
+// Sem dados de demonstração (RL02 DIV-13): a central de notificações nasce
+// vazia e exibe o estado vazio ("Nenhuma notificação nova.") até existir fonte real.
+export const notificacoesIniciais: Notificacao[] = []

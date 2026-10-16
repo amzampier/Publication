@@ -26,20 +26,23 @@ export interface ConfiguracoesGlobaisApi {
 /**
  * Busca `GET /api/configuracoes` e aplica no estado compartilhado do shell:
  * logomarcas (header/login), sidebar expandida/recolhida e sessões do menu.
+ * Memoriza o resultado em `useState` (PERF-08): o layout admin e a página de
+ * configurações compartilham UMA única chamada por carga (o segundo chamador
+ * recebe o cache). `forcar = true` refaz a busca (ex.: após salvar).
  * Retorna os dados em sucesso e `null` em falha (defaults do seed valem).
  */
-export async function carregarConfiguracoesGlobais(): Promise<ConfiguracoesGlobaisApi | null> {
+export async function carregarConfiguracoesGlobais(
+  forcar = false
+): Promise<ConfiguracoesGlobaisApi | null> {
   // useState-backed composables ANTES do await — após await o contexto Nuxt se
-  // perde no SSR (NUXT_E1001) e o estado não hidrata no payload. Só o GET e as
-  // atribuições ficam depois.
+  // perde no SSR (NUXT_E1001) e o estado não hidrata no payload.
   const { caminho: caminhoHeader, preview: previewHeader } = useLogomarcaHeader()
   const { caminho: caminhoLogin, preview: previewLogin } = useLogomarcaLogin()
   const { expandida, marcarPreferenciaManual } = useSidebarExpandida()
   const { abertas } = useSessoesAbertas()
+  const cache = useState<ConfiguracoesGlobaisApi | null>('config-globais-cache', () => null)
 
-  try {
-    const cfg = await useApiFetch<ConfiguracoesGlobaisApi>('/api/configuracoes')
-
+  const aplicar = (cfg: ConfiguracoesGlobaisApi) => {
     caminhoHeader.value = cfg.logo_header_url ?? ''
     previewHeader.value = cfg.logo_header_url ?? ''
     caminhoLogin.value = cfg.logo_login_url ?? ''
@@ -54,7 +57,17 @@ export async function carregarConfiguracoesGlobais(): Promise<ConfiguracoesGloba
         return [sessao.label, chave ? (cfg.sidebar_grupos[chave] ?? sessao.aberto) : sessao.aberto]
       })
     )
+  }
 
+  if (!forcar && cache.value) {
+    aplicar(cache.value)
+    return cache.value
+  }
+
+  try {
+    const cfg = await useApiFetch<ConfiguracoesGlobaisApi>('/api/configuracoes')
+    cache.value = cfg
+    aplicar(cfg)
     return cfg
   } catch {
     return null

@@ -4,11 +4,11 @@
 // de linha abre a confirmação e alterna Ativo <-> Inativo).
 import { computed } from 'vue'
 import { Lock, LockOpen, ShieldAlert } from '@lucide/vue'
-import type { UsuarioDemo } from './useUsuariosDemo'
+import type { UsuarioModelo } from './useUsuariosModelo'
 
 interface Props {
   modelValue: boolean
-  usuario: UsuarioDemo | null
+  usuario: UsuarioModelo | null
 }
 
 const props = defineProps<Props>()

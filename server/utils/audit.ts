@@ -35,13 +35,35 @@ export interface FiltrosAuditoriaApi {
   usuario?: string
   acao?: string
   recurso?: string
+  /** busca textual (detalhes/usuário/recurso/ação) */
+  busca?: string
+  /** paginação server-side (1-based); ignorada no modo exportação */
+  pagina?: number
+  porPagina?: number
+  /** devolve o conjunto filtrado completo (bounded) para exportação */
+  exportar?: boolean
+}
+
+export interface KpisAuditoria {
+  registros: number
+  usuariosDistintos: number
+  /** ISO do registro mais recente do conjunto filtrado (null = vazio) */
+  ultimaAtividade: string | null
 }
 
 export interface RespostaAuditoria {
   registros: RegistroAuditoriaApi[]
+  total: number
+  kpis: KpisAuditoria
   /** Conjunto NÃO filtrado — opções dos selects de filtro nunca somem */
   opcoes: { usuarios: string[]; recursos: string[] }
+  pagina: number
+  porPagina: number
 }
+
+const POR_PAGINA_PADRAO = 20
+const POR_PAGINA_MAX = 200
+const TETO_EXPORTACAO = 10_000
 
 /** Formato de data aceito nos filtros; qualquer outra coisa é ignorada. */
 const DATA_ISO = /^\d{4}-\d{2}-\d{2}$/
@@ -105,9 +127,10 @@ export async function registrarAuditoria(
 
 /**
  * Lista os registros para a tela /admin/auditoria (GET /api/auditoria).
- * Filtros estruturais no servidor; datas como janela inclusiva do dia;
- * ordenação do mais recente para o mais antigo; `opcoes` sempre do
- * conjunto completo (regra das demais telas: opção não some por filtro).
+ * Filtros/paginação/KPIs no SERVIDOR (change paginacao-server-side-e-performance):
+ * devolve a página corrente + `total` + KPIs do conjunto filtrado; `opcoes`
+ * sempre do conjunto completo. O modo exportação devolve o conjunto filtrado
+ * completo (teto de segurança) para CSV/PDF.
  */
 export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<RespostaAuditoria> {
   const clausulas: string[] = []
@@ -120,8 +143,10 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
   }
   const dataFinal = (filtros.dataFinal ?? '').trim()
   if (DATA_ISO.test(dataFinal)) {
-    clausulas.push('data_hora <= ?')
-    params.push(`${dataFinal} 23:59:59`)
+    // Janela inclusiva do dia inteiro: `< início do dia seguinte` captura
+    // também os microssegundos de 23:59:59 (RL02 M-06).
+    clausulas.push('data_hora < DATE_ADD(?, INTERVAL 1 DAY)')
+    params.push(`${dataFinal} 00:00:00`)
   }
   const usuario = (filtros.usuario ?? '').trim()
   if (usuario) {
@@ -138,14 +163,40 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
     clausulas.push('entidade = ?')
     params.push(recurso)
   }
+  const busca = (filtros.busca ?? '').trim()
+  if (busca) {
+    const like = `%${busca}%`
+    clausulas.push('(detalhes LIKE ? OR usuario_nome LIKE ? OR entidade LIKE ? OR acao LIKE ?)')
+    params.push(like, like, like, like)
+  }
 
   const clausula = clausulas.length > 0 ? `WHERE ${clausulas.join(' AND ')}` : ''
 
-  const [linhas, usuariosRows, recursosRows] = await Promise.all([
-    query<AuditoriaRow[]>(
-      `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, endereco_ip, detalhes
-         FROM auditoria ${clausula}
-        ORDER BY data_hora DESC, id DESC`,
+  const pagina = Math.max(1, Math.trunc(filtros.pagina ?? 1))
+  const porPagina = Math.min(POR_PAGINA_MAX, Math.max(1, Math.trunc(filtros.porPagina ?? POR_PAGINA_PADRAO)))
+  const exportar = filtros.exportar === true
+
+  const consultaPagina = exportar
+    ? query<AuditoriaRow[]>(
+        `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, endereco_ip, detalhes
+           FROM auditoria ${clausula}
+          ORDER BY data_hora DESC, id DESC
+          LIMIT ${TETO_EXPORTACAO}`,
+        params
+      )
+    : query<AuditoriaRow[]>(
+        `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, endereco_ip, detalhes
+           FROM auditoria ${clausula}
+          ORDER BY data_hora DESC, id DESC
+          LIMIT ? OFFSET ?`,
+        [...params, porPagina, (pagina - 1) * porPagina]
+      )
+
+  const [linhas, agregadoRows, usuariosRows, recursosRows] = await Promise.all([
+    consultaPagina,
+    query<Array<{ registros: number; usuarios_distintos: number; ultima: Date | null }>>(
+      `SELECT COUNT(*) AS registros, COUNT(DISTINCT usuario_nome) AS usuarios_distintos, MAX(data_hora) AS ultima
+         FROM auditoria ${clausula}`,
       params
     ),
     query<Array<{ usuario_nome: string }>>(
@@ -155,6 +206,9 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
       'SELECT DISTINCT entidade FROM auditoria ORDER BY entidade ASC'
     )
   ])
+
+  const agregado = agregadoRows[0]
+  const total = Number(agregado?.registros ?? 0)
 
   const registros: RegistroAuditoriaApi[] = linhas.map((row) => ({
     id: String(row.id),
@@ -168,9 +222,17 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
 
   return {
     registros,
+    total,
+    kpis: {
+      registros: total,
+      usuariosDistintos: Number(agregado?.usuarios_distintos ?? 0),
+      ultimaAtividade: agregado?.ultima ? new Date(agregado.ultima).toISOString() : null
+    },
     opcoes: {
       usuarios: usuariosRows.map((r) => String(r.usuario_nome)),
       recursos: recursosRows.map((r) => String(r.entidade))
-    }
+    },
+    pagina: exportar ? 1 : pagina,
+    porPagina: exportar ? total : porPagina
   }
 }

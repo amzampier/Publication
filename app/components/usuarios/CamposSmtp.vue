@@ -3,7 +3,7 @@ import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { PlugZap, Send } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
 import { PROVEDORES_SMTP, SEGURANCAS_SMTP, PORTAS_SMTP_VALIDAS } from '../../config/brasil'
-import { type ConfigSmtpUsuario, type StatusSmtp } from './useUsuariosDemo'
+import { type ConfigSmtpUsuario, type StatusSmtp } from './useUsuariosModelo'
 
 // Bloco de configuração SMTP extraído do Formulario.vue (modal de Gestão de
 // Usuários) para reuso na aba E-mail do Meu Perfil — mesma máquina de estados:
@@ -178,7 +178,7 @@ const statusSmtp = computed(() => SMTP_POR_STATUS[status.value])
       class="sm:col-span-6"
       label="Senha SMTP"
       type="password"
-      placeholder="Senha da conta SMTP"
+      :placeholder="interno.temSenha ? 'Senha cadastrada — deixe em branco para manter' : 'Senha da conta SMTP'"
     />
     <UiSelect
       v-model="interno.provedor"

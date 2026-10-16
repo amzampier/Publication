@@ -5,7 +5,8 @@
 import { hash, compare } from 'bcrypt'
 import {
   getSessionUser,
-  buscarUsuarioPorId
+  buscarUsuarioPorId,
+  reemitirAccesso
 } from '../../../utils/auth'
 import { query } from '../../../utils/db'
 import { exigirRateLimit } from '../../../utils/rateLimit'
@@ -53,6 +54,9 @@ export default defineEventHandler(async (event) => {
     'UPDATE usuarios SET hash_senha = ?, senha_provisoria = 0 WHERE id = ?',
     [hashNova, usuario.id]
   )
+  // Reemite o access já sem a marca de provisória — sem isso o token em uso
+  // continuaria bloqueado pelo middleware (change endurecer-banco-e-bootstrap).
+  await reemitirAccesso(event, { ...sessao, provisoria: false })
   await registrarAuditoria(event, {
     acao: 'Acesso',
     recurso: 'Autenticação',

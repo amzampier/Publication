@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import { KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
-import { usePerfisDemo, VARIANTE_POR_STATUS, type LinhaPerfil } from './usePerfisDemo'
+import { usePerfisModelo, VARIANTE_POR_STATUS, type LinhaPerfil } from './usePerfisModelo'
 
 // Abre modais na página (coordenação dela): cadastro/edição e exclusão têm modal;
 // permissões continua em transição por toast (spec perfis-acesso)
@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
-const { linhas, filtrosAtivosCount } = usePerfisDemo()
+const { linhas, filtrosAtivosCount } = usePerfisModelo()
 
 const colunas: ColumnDef[] = [
   { id: 'nome', header: 'Nome', accessorKey: 'nome', minWidth: 150 },

@@ -118,7 +118,7 @@ watch(email, () => {
     <div>
       <button
         type="button"
-        class="inline-flex items-center gap-1 text-[11px] font-medium text-[#2161ef]
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-brand-structure
                transition hover:text-[#183b8c] hover:underline"
         @click="voltarLogin"
       >
@@ -163,7 +163,7 @@ watch(email, () => {
 
     <button
       type="button"
-      class="block w-full text-center text-[11px] font-medium text-[#2161ef]
+      class="block w-full text-center text-[11px] font-medium text-brand-structure
              transition hover:text-[#183b8c] hover:underline"
       @click="reenviar"
     >

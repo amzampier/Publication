@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ShieldCheck, UserCheck, UserX, ShieldOff, KeyRound } from '@lucide/vue'
-import { usePerfisDemo } from './usePerfisDemo'
+import { usePerfisModelo } from './usePerfisModelo'
 
 // KPIs derivam do conjunto VIGENTE (spec perfis-acesso: recalculam quando o
 // conjunto de perfis muda — inclusive quando um filtro do módulo o refina); o
 // conjunto vem da API (/api/perfis) e, sem filtro, é a base persistida no banco
-const { perfisFiltrados, totalPermissoesConcedidas, totalPermissoesPossiveis } = usePerfisDemo()
+const { perfisFiltrados, totalPermissoesConcedidas, totalPermissoesPossiveis } = usePerfisModelo()
 
 const total = computed(() => perfisFiltrados.value.length)
 const ativos = computed(() => perfisFiltrados.value.filter((p) => p.situacao === 'Ativo').length)

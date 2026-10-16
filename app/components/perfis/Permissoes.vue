@@ -4,7 +4,7 @@ import { KeyRound, Info, ClipboardCopy, ClipboardPaste } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
 import { sessoes, type SidebarItem } from '../../config/navigation'
 import {
-  usePerfisDemo,
+  usePerfisModelo,
   MODULOS,
   ACOES,
   EXTRAS,
@@ -13,15 +13,15 @@ import {
   contarPermissoes,
   salvarPermissoes,
   copiarMatrizPara,
-  type PerfilDemo,
+  type PerfilModelo,
   type ModuloId,
   type Permissao,
   type Acao
-} from './usePerfisDemo'
+} from './usePerfisModelo'
 
 interface Props {
   modelValue: boolean
-  perfil: PerfilDemo | null
+  perfil: PerfilModelo | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -33,7 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { perfis } = usePerfisDemo()
+const { perfis } = usePerfisModelo()
 
 // Colunas editáveis: só as 4 ações fixas (docs/02 §3.5). As 5 extras aparecem como
 // JSON `extras` — sem interruptor nesta etapa (edição ficará para a

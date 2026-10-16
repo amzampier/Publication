@@ -17,6 +17,10 @@ import { exigirRateLimit, ipDoCliente } from '../../../utils/rateLimit'
 import { registrarEventoLogin, consultarBloqueioEmailInexistente } from '../../../utils/seguranca'
 import { registrarAuditoria } from '../../../utils/audit'
 
+// Hash bcrypt fixo (cost 12) para o trabalho de tempo equivalente quando a
+// conta não existe (RL02 M-07) — nunca autentica nada.
+const HASH_TIMING = '$2b$12$sJ0Oyrd9.IfUDWhwbDv/Ye1x.PSqznvqNJeI3qA3felsn2YPSGVLW'
+
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
 
@@ -55,6 +59,8 @@ export default defineEventHandler(async (event) => {
       tipo: 'email-inexistente',
       tentativas: bloqueioEmail.tentativas + 1
     })
+    // M-07: custo bcrypt equivalente ao caminho de conta existente.
+    await compare(senha, HASH_TIMING).catch(() => false)
     throw createError({ statusCode: 401, statusMessage: 'E-mail ou senha inválidos.' })
   }
 
@@ -63,6 +69,14 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 403,
       statusMessage: 'Usuário inativo. Contate o administrador.'
+    })
+  }
+
+  // Perfil não-Ativo também bloqueia o acesso (RL02 M-05).
+  if (usuario.perfil_situacao !== 'Ativo') {
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Perfil de acesso inativo. Contate o administrador.'
     })
   }
 
@@ -108,7 +122,9 @@ export default defineEventHandler(async (event) => {
     id: usuario.id,
     nome: usuario.nome,
     email: usuario.email,
-    perfil: usuario.perfil
+    perfil: usuario.perfil,
+    provisoria: usuario.provisoria === 1,
+    tokenVersion: usuario.token_version
   }
   await emitirSessao(event, sessao)
   // Trilha 'Acesso' — os cookies são da RESPOSTA, então a sessão é informada

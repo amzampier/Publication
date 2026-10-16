@@ -17,6 +17,7 @@ import { query, getTransaction } from '../../utils/db'
 import { enviarEmail } from '../../utils/mailer'
 import { exigirRateLimit } from '../../utils/rateLimit'
 import { registrarAuditoria } from '../../utils/audit'
+import { requirePermission } from '../../utils/permission'
 
 interface BodyConvite {
   email?: unknown
@@ -34,6 +35,8 @@ const SITUACOES = ['Ativo', 'Inativo', 'Bloqueado']
 
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
+
+  await requirePermission(event, 'gestao-usuarios', 'criar')
 
   const sessao = await getSessionUser(event)
   if (!sessao) {
@@ -67,12 +70,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Canal de envio inválido.' })
   }
 
-  const perfis = await query<Array<{ id: string }>>(
-    'SELECT id FROM perfis_acesso WHERE nome_perfil = ? LIMIT 1',
+  const perfis = await query<Array<{ id: string; situacao: string }>>(
+    'SELECT id, situacao FROM perfis_acesso WHERE nome_perfil = ? LIMIT 1',
     [perfil]
   )
   if (perfis.length === 0) {
     throw createError({ statusCode: 400, statusMessage: `Perfil desconhecido: ${perfil}.` })
+  }
+  if (String(perfis[0].situacao) !== 'Ativo') {
+    throw createError({ statusCode: 400, statusMessage: `O perfil "${perfil}" não está ativo e não pode ser atribuído.` })
   }
   const perfilId = String(perfis[0].id)
 
@@ -113,7 +119,7 @@ export default defineEventHandler(async (event) => {
 
   // Conta gravada (mesmo se o e-mail abaixo falhar) — a trilha registra a gravação.
   await registrarAuditoria(event, {
-    acao: 'Inclusão',
+    acao: criado ? 'Inclusão' : 'Alteração',
     recurso: 'Usuários',
     detalhes: criado
       ? `Convidou '${nome}' (${email}) com perfil ${perfil} via ${canal}`
@@ -122,7 +128,8 @@ export default defineEventHandler(async (event) => {
 
   if (canal === 'email') {
     try {
-      const link = `${getRequestURL(event).origin}/admin/login`
+      const base = String(useRuntimeConfig().appUrl || '') || getRequestURL(event).origin
+      const link = `${base}/admin/login`
       const dados = { nome, email, perfil, senha, telefone }
       await enviarEmail({
         para: email,

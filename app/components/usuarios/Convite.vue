@@ -10,7 +10,6 @@ import {
   EyeOff,
   Copy,
   Sparkles,
-  RefreshCw,
   Smartphone
 } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
@@ -18,8 +17,8 @@ import { useApiFetch } from '../../composables/useApiFetch'
 import {
   VARIANTE_POR_PERFIL,
   VARIANTE_POR_STATUS,
-  type UsuarioDemo
-} from './useUsuariosDemo'
+  type UsuarioModelo
+} from './useUsuariosModelo'
 import {
   renderHtmlConvite,
   renderTextoConvite,
@@ -30,7 +29,7 @@ import {
 
 interface Props {
   modelValue: boolean
-  usuario: UsuarioDemo | null
+  usuario: UsuarioModelo | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -48,7 +47,7 @@ type Canal = 'email' | 'whatsapp'
 // Registro vigente: a linha REAL vinda da lista (a API nunca expõe senha —
 // design D9: o modal sempre oferece "Gerar senha"; a provisória vive só no
 // rascunho até o envio gravar o hash no banco).
-const registro = computed<UsuarioDemo | null>(() => props.usuario ?? null)
+const registro = computed<UsuarioModelo | null>(() => props.usuario ?? null)
 
 // Rascunho local — descartado no Cancelar/Escape/X, gravado só no envio (D6/D7)
 const canal = ref<Canal>('email')
@@ -87,8 +86,8 @@ watch(
 
 const temTelefone = computed(() => Boolean(registro.value?.telefone?.trim()))
 // A lista real não tem campo de senha (hash no banco, nunca exposto): o modal
-// sempre começa sem senha — o admin gera/define antes de enviar (D9).
-const senhaExistente = computed(() => false)
+// sempre começa sem senha — o admin gera/define a provisória antes de enviar
+// (D9; RL02 M-04: a UI nunca exibe a senha vigente).
 const podeEnviar = computed(() => senha.value.trim().length >= 8)
 
 const iniciais = computed(() =>
@@ -289,32 +288,9 @@ const enviar = async () => {
           <div class="grid grid-cols-2 gap-3 items-start">
             <UiInput label="Login (e-mail)" :model-value="registro.email" disabled />
 
-            <!-- Senha existente: somente-leitura com olho e copiar (D6) -->
-            <div v-if="senhaExistente" class="flex items-end gap-2">
-              <UiInput
-                class="min-w-0 flex-1"
-                label="Senha provisória"
-                :type="mostrarSenha ? 'text' : 'password'"
-                :model-value="senha"
-                disabled
-                :right-icon="mostrarSenha ? EyeOff : Eye"
-                @right-icon-click="mostrarSenha = !mostrarSenha"
-              />
-              <UiTooltip content="Copiar senha" position="top">
-                <button
-                  type="button"
-                  aria-label="Copiar senha provisória"
-                  class="mb-[1px] flex h-[34px] w-5 shrink-0 cursor-pointer items-center justify-center text-slate-400 transition-colors hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-                  @click="copiar(senha, 'Senha provisória copiada.')"
-                >
-                  <Copy class="h-4 w-4" aria-hidden="true" />
-                </button>
-              </UiTooltip>
-            </div>
-
-            <!-- Senha vazia: campo editável (mínimo 8) -->
+            <!-- Senha provisória do envio: sempre editável (o servidor guarda só o
+                 hash e nunca devolve a senha vigente — RL02 M-04) -->
             <UiInput
-              v-else
               v-model="senha"
               label="Senha provisória"
               :type="mostrarSenha ? 'text' : 'password'"
@@ -329,14 +305,13 @@ const enviar = async () => {
             />
           </div>
 
-          <!-- Gerar senha (vazia) / Redefinir senha (existente) — abaixo, à direita -->
+          <!-- Gerar senha provisória — abaixo, à direita -->
           <div class="flex justify-end">
             <UiButton variant="outline" size="sm" @click="gerarSenha">
               <template #leftIcon>
-                <RefreshCw v-if="senhaExistente" class="h-3.5 w-3.5" />
-                <Sparkles v-else class="h-3.5 w-3.5" />
+                <Sparkles class="h-3.5 w-3.5" />
               </template>
-              {{ senhaExistente ? 'Redefinir senha' : 'Gerar senha' }}
+              Gerar senha
             </UiButton>
           </div>
         </div>

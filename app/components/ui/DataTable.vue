@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, useId } from 'vue'
 import {
   ChevronDown,
   ChevronRight,
@@ -40,6 +40,16 @@ interface Props {
   showFilters?: boolean
   /** Quantidade de filtros ativos exibida no badge do botao Filtros */
   filtersCount?: number
+  /** Modo servidor: renderiza a página recebida e emite eventos (change paginacao-server-side-e-performance) */
+  serverMode?: boolean
+  /** Total de registros do conjunto (modo servidor) — deriva as páginas */
+  total?: number
+  /** Página corrente controlada pelo pai (modo servidor) */
+  page?: number
+  /** Registros por página controlados pelo pai (modo servidor) */
+  perPage?: number
+  /** Debounce (ms) da busca no modo servidor antes de emitir `search` */
+  searchDebounceMs?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,12 +60,23 @@ const props = withDefaults(defineProps<Props>(), {
   defaultPageSize: 5,
   showHeaderTop: false,
   showFilters: false,
-  filtersCount: 0
+  filtersCount: 0,
+  serverMode: false,
+  total: 0,
+  page: 1,
+  perPage: 0,
+  searchDebounceMs: 300
 })
 
 const emit = defineEmits<{
   (e: 'open-filters'): void
+  (e: 'page-change', pagina: number): void
+  (e: 'per-page-change', porPagina: number): void
+  (e: 'sort-change', regras: SortRule[]): void
+  (e: 'search', termo: string): void
 }>()
+
+const serverMode = computed(() => props.serverMode === true)
 
 // Estado de Busca Global
 const searchQuery = ref('')
@@ -68,6 +89,17 @@ const focarBusca = () => {
   buscaRef.value?.querySelector('input')?.focus()
 }
 defineExpose({ focarBusca })
+
+// Modo servidor: a busca é debounced e emitida (o pai consulta a API).
+let buscaTimer: ReturnType<typeof setTimeout> | null = null
+watch(searchQuery, (q) => {
+  if (!serverMode.value) return
+  if (buscaTimer) clearTimeout(buscaTimer)
+  buscaTimer = setTimeout(() => emit('search', q), props.searchDebounceMs)
+})
+onUnmounted(() => {
+  if (buscaTimer) clearTimeout(buscaTimer)
+})
 
 // Estado de Agrupamento (até 3 níveis)
 const groupedColumns = ref<string[]>([...props.initialGroupedColumns.slice(0, 3)])
@@ -87,8 +119,30 @@ const draggedColumnId = ref<string | null>(null)
 const sortRules = ref<SortRule[]>([])
 
 // Estado de Paginação
-const currentPage = ref(1)
-const pageSize = ref(props.defaultPageSize)
+const currentPage = ref(serverMode.value ? (props.page || 1) : 1)
+const pageSize = ref(serverMode.value ? (props.perPage || props.defaultPageSize) : props.defaultPageSize)
+// id estável (SSR-safe) para associar o rótulo ao seletor "Linhas por página"
+const pageSizeId = useId()
+
+// Modo servidor: espelha a página/tamanho controlados pelo pai e emite mudanças.
+watch(
+  () => props.page,
+  (p) => {
+    if (serverMode.value && p && p !== currentPage.value) currentPage.value = p
+  }
+)
+watch(
+  () => props.perPage,
+  (s) => {
+    if (serverMode.value && s && s !== pageSize.value) pageSize.value = s
+  }
+)
+watch(currentPage, (p) => {
+  if (serverMode.value) emit('page-change', p)
+})
+watch(pageSize, (s) => {
+  if (serverMode.value) emit('per-page-change', s)
+})
 
 // Estado de Totalizadores no Rodapé (por coluna)
 const footerAggregates = ref<Record<string, AggregateOperation>>({})
@@ -276,6 +330,8 @@ const onDropBox = (e: DragEvent) => {
 // FILTRO E ORDENAÇÃO MULTI-COLUNA
 // ==========================================
 const filteredData = computed(() => {
+  // Modo servidor: as linhas já vêm filtradas/paginadas pelo servidor.
+  if (serverMode.value) return props.data
   if (!searchQuery.value.trim()) return props.data
 
   const q = searchQuery.value.toLowerCase().trim()
@@ -316,6 +372,9 @@ const toggleSort = (col: ColumnDef, event: MouseEvent) => {
       sortRules.value = [{ columnId: col.id, direction: 'asc' }]
     }
   }
+
+  // Modo servidor: a ordenação é aplicada pela API.
+  if (serverMode.value) emit('sort-change', [...sortRules.value])
 }
 
 const getSortInfo = (colId: string) => {
@@ -329,6 +388,8 @@ const getSortInfo = (colId: string) => {
 }
 
 const sortedData = computed(() => {
+  // Modo servidor: a ordenação é responsabilidade do servidor.
+  if (serverMode.value) return props.data
   return sortMultiColumn(filteredData.value, sortRules.value, props.columns)
 })
 
@@ -424,11 +485,15 @@ const visibleFlatRows = computed<FlatRow[]>(() => {
 // Em modo agrupado, a população paginada é visibleFlatRows (linhas efetivamente
 // renderizadas: cabeçalhos de grupo + itens expandidos); no modo plano, sortedData.
 const totalEntries = computed(() =>
-  groupedColumns.value.length > 0 ? visibleFlatRows.value.length : sortedData.value.length
+  serverMode.value
+    ? props.total
+    : groupedColumns.value.length > 0
+      ? visibleFlatRows.value.length
+      : sortedData.value.length
 )
 
 const paginatedFlatRows = computed<FlatRow[]>(() => {
-  if (groupedColumns.value.length === 0) return []
+  if (serverMode.value || groupedColumns.value.length === 0) return []
   const start = (currentPage.value - 1) * pageSize.value
   return visibleFlatRows.value.slice(start, start + pageSize.value)
 })
@@ -438,6 +503,8 @@ const totalPages = computed(() => {
 })
 
 const paginatedData = computed(() => {
+  // Modo servidor: as linhas recebidas já são a página corrente.
+  if (serverMode.value) return props.data
   if (groupedColumns.value.length > 0) {
     return []
   }
@@ -466,7 +533,7 @@ watch(totalEntries, (total) => {
 const getGroupBorderClass = (row: FlatRow) => {
   if (row.type === 'group1') {
     const isExp = isNodeExpanded(row.node!.id, 1)
-    if (!isExp) return 'border-l-4 border-l-lime-500'
+    if (!isExp) return 'border-l-4 border-l-brand-accent'
     return 'border-l-4 border-l-sky-500'
   }
   if (row.type === 'group2') {
@@ -520,7 +587,7 @@ onUnmounted(() => {
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border-b border-slate-200"
     >
       <div v-if="title || subtitle" class="flex items-start gap-3">
-        <div class="p-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-lime-500 shrink-0 mt-0.5">
+        <div class="p-2 rounded-lg bg-brand-accent/10 border border-brand-accent/30 text-brand-accent shrink-0 mt-0.5">
           <FileSpreadsheet class="h-5 w-5" />
         </div>
         <div>
@@ -574,7 +641,7 @@ onUnmounted(() => {
     <div
       :class="[
         'px-4 py-2.5 min-h-[42px] bg-slate-50 border-b border-slate-200 flex flex-wrap items-center gap-2.5 text-xs transition-colors',
-        isDraggingOverBox ? 'bg-lime-50/80 border-lime-500 ring-2 ring-lime-500/30' : ''
+        isDraggingOverBox ? 'bg-brand-accent/10 border-brand-accent ring-2 ring-brand-accent/30' : ''
       ]"
       @dragover="onDragOverBox"
       @dragleave="onDragLeaveBox"
@@ -582,7 +649,7 @@ onUnmounted(() => {
     >
       <!-- Label -->
       <div class="flex items-center gap-1.5 font-semibold text-slate-700 text-xs shrink-0">
-        <Layers class="h-4 w-4 text-lime-500" />
+        <Layers class="h-4 w-4 text-brand-accent" />
         <span>Agrupamento:</span>
       </div>
 
@@ -917,10 +984,11 @@ onUnmounted(() => {
       <div class="flex items-center gap-2.5 text-[11px]">
         <!-- Linhas por Página -->
         <div class="flex items-center gap-1.5 text-slate-600">
-          <span>Linhas por página:</span>
+          <label :for="pageSizeId">Linhas por página:</label>
           <select
+            :id="pageSizeId"
             v-model="pageSize"
-            class="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs text-slate-800 font-medium focus:outline-none cursor-pointer shadow-2xs hover:border-slate-400"
+            class="bg-white border border-slate-300 rounded px-1.5 py-0.5 text-xs text-slate-800 font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50 cursor-pointer shadow-2xs hover:border-slate-400"
             @change="currentPage = 1"
           >
             <option v-for="opt in pageSizeOptions" :key="opt" :value="opt">

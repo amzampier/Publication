@@ -3,11 +3,13 @@ import {
   UPLOAD_DESTINOS,
   UPLOAD_LIMITE_BYTES,
   UPLOAD_MIMES,
+  ehImagemReal,
   gravarUpload,
   sanitizarNomeArquivo,
   type UploadDestino
 } from '../../utils/uploads'
 import { registrarAuditoria } from '../../utils/audit'
+import { requirePermission } from '../../utils/permission'
 
 export default defineEventHandler(async (event) => {
   const partes = await readMultipartFormData(event)
@@ -29,6 +31,12 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  // Logomarcas alimentam as Configurações Globais (RBAC); avatares são o
+  // retrato do próprio perfil (autoatendimento, só sessão — D3 do design).
+  if (destinoTexto === 'logomarcas') {
+    await requirePermission(event, 'configuracoes-globais', 'alterar')
+  }
+
   if (!UPLOAD_MIMES.includes(campoArquivo.type)) {
     throw createError({
       statusCode: 400,
@@ -40,11 +48,20 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Arquivo acima do limite de 5 MB.' })
   }
 
+  // Conteúdo real (magic bytes) — RL02 A-02: impede armazenar HTML/SVG
+  // disfarçados de imagem e servidos na mesma origem.
+  if (!ehImagemReal(campoArquivo.data)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'O conteúdo do arquivo não é uma imagem válida (PNG, JPEG, WebP ou GIF).'
+    })
+  }
+
   const nome = sanitizarNomeArquivo(campoArquivo.filename ?? 'arquivo')
-  const url = gravarUpload(destinoTexto as UploadDestino, nome, campoArquivo.data)
+  const url = await gravarUpload(destinoTexto as UploadDestino, nome, campoArquivo.data)
   await registrarAuditoria(event, {
     acao: 'Inclusão',
-    recurso: 'Logomarcas',
+    recurso: destinoTexto === 'logomarcas' ? 'Logomarcas' : 'Avatares',
     detalhes: `Enviou o arquivo '${nome}' para '${destinoTexto}'`
   })
   return { url }

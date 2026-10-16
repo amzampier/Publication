@@ -50,9 +50,9 @@ const totalSelecionado = computed(() => arquivos.value.length)
 const nomesArquivos = computed(() => arquivos.value.map((a) => a.name))
 
 const classesRaiz = computed(() => {
-  if (arrastando.value) return 'border-dashed border-lime-500 bg-lime-50/60'
+  if (arrastando.value) return 'border-dashed border-brand-accent bg-brand-accent/10'
   if (previewAtual.value || totalSelecionado.value > 0) return 'border-solid border-slate-200 bg-white'
-  return 'border-dashed border-slate-300 bg-slate-50/50 cursor-pointer hover:border-lime-500 hover:bg-lime-50/40'
+  return 'border-dashed border-slate-300 bg-slate-50/50 cursor-pointer hover:border-brand-accent hover:bg-brand-accent/10'
 })
 
 const formatarTamanho = (bytes: number): string => {
@@ -144,8 +144,8 @@ function aoSoltar(ev: DragEvent) {
         type="button"
         class="flex min-h-28 w-full cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed px-4 py-3 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
         :class="arrastando
-          ? 'border-lime-500 bg-lime-50/60'
-          : 'border-slate-300 bg-slate-50/50 hover:border-lime-500 hover:bg-lime-50/40'"
+          ? 'border-brand-accent bg-brand-accent/10'
+          : 'border-slate-300 bg-slate-50/50 hover:border-brand-accent hover:bg-brand-accent/10'"
         @click="abrirPicker"
       >
         <span

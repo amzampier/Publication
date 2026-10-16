@@ -13,7 +13,7 @@ import {
   type PerfilUsuario,
   type StatusUsuario,
   type RegistroImportacao
-} from './useUsuariosDemo'
+} from './useUsuariosModelo'
 import { importarUsuarios, useUsuarios } from './useUsuarios'
 import { useToast } from '../../composables/useToast'
 

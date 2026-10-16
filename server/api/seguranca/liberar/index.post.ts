@@ -5,8 +5,10 @@
 import { liberarBloqueio, liberarBloqueioEmail } from '../../../utils/seguranca'
 import { ipDoCliente } from '../../../utils/rateLimit'
 import { registrarAuditoria } from '../../../utils/audit'
+import { requirePermission } from '../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'configuracoes-globais', 'alterar')
   const body = await readBody<{ usuarioId?: unknown; email?: unknown }>(event)
   const usuarioId = typeof body?.usuarioId === 'string' ? body.usuarioId.trim() : ''
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''

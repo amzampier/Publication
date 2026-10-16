@@ -88,7 +88,7 @@ onUnmounted(() => {
 
 <template>
   <div
-    class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+    class="fixed top-5 right-5 z-50 flex flex-col gap-2.5 w-[calc(100vw-2.5rem)] max-w-sm pointer-events-none"
     role="status"
     aria-live="polite"
   >
@@ -130,9 +130,10 @@ onUnmounted(() => {
           <button
             type="button"
             class="text-slate-400 hover:text-slate-700 p-0.5 rounded transition-colors focus:outline-none"
+            aria-label="Fechar"
             @click="remove(item.id)"
           >
-            <X class="h-3.5 w-3.5" />
+            <X class="h-3.5 w-3.5" aria-hidden="true" />
           </button>
         </div>
 

@@ -5,6 +5,7 @@
 // cenário "Matriz com módulo ou ação desconhecida é recusada").
 import { createError } from 'h3'
 import { query, getTransaction } from './db'
+import type { Transaction } from './db'
 
 export type SituacaoPerfil = 'Ativo' | 'Inativo' | 'Bloqueado'
 
@@ -53,7 +54,7 @@ export const ACOES_IDS = [
 ] as const
 
 /** Ações fixas -> colunas TINYINT do permissoes_perfil (docs/02 §3.5). */
-const COLUNA_POR_ACAO: Record<string, string> = {
+export const COLUNA_POR_ACAO: Record<string, string> = {
   visualizar: 'pode_visualizar',
   criar: 'pode_incluir',
   alterar: 'pode_editar',
@@ -61,6 +62,11 @@ const COLUNA_POR_ACAO: Record<string, string> = {
 }
 
 const EXTRAS_IDS = ['publicar', 'arquivar', 'download', 'exportar', 'importar'] as const
+/**
+ * Módulos essenciais da administração (change rbac-require-permission, D5): o
+ * sistema não pode ficar sem NENHUM usuário ativo com `alterar` nestes três.
+ */
+const MODULOS_ESSENCIAIS = ['gestao-usuarios', 'perfis-acesso', 'configuracoes-globais'] as const
 const SITUACOES: SituacaoPerfil[] = ['Ativo', 'Inativo', 'Bloqueado']
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -143,7 +149,8 @@ const dataIso = (valor: unknown): string => {
   return ''
 }
 
-const parseExtras = (extras: unknown): string[] => {
+/** Normaliza o campo `extras` (JSON) para a lista de ações extras conhecidas. */
+export const parseExtras = (extras: unknown): string[] => {
   let valor: unknown = extras
   if (typeof valor === 'string') {
     try {
@@ -263,10 +270,17 @@ export async function criarPerfil(dados: {
 
   const [u] = await query<{ id: string }[]>('SELECT UUID() AS id')
   const id = String(u.id)
-  await query(
-    'INSERT INTO perfis_acesso (id, nome_perfil, descricao, situacao) VALUES (?, ?, ?, ?)',
-    [id, nome, descricao, situacao]
-  )
+  try {
+    await query(
+      'INSERT INTO perfis_acesso (id, nome_perfil, descricao, situacao) VALUES (?, ?, ?, ?)',
+      [id, nome, descricao, situacao]
+    )
+  } catch (erro: unknown) {
+    if ((erro as { errno?: number } | null)?.errno === 1062) {
+      erro409(`Já existe um perfil com o nome "${nome}".`)
+    }
+    throw erro
+  }
   const perfil = await buscarPerfil(id)
   if (!perfil) erro404('Falha ao criar o perfil.')
   return perfil
@@ -284,10 +298,17 @@ export async function atualizarPerfil(
   const descricao = 'descricao' in dados ? validarDescricao(dados.descricao) : existente.descricao
   const situacao = 'situacao' in dados ? validarSituacao(dados.situacao) : existente.situacao
 
-  await query(
-    'UPDATE perfis_acesso SET nome_perfil = ?, descricao = ?, situacao = ? WHERE id = ?',
-    [nome, descricao, situacao, id]
-  )
+  try {
+    await query(
+      'UPDATE perfis_acesso SET nome_perfil = ?, descricao = ?, situacao = ? WHERE id = ?',
+      [nome, descricao, situacao, id]
+    )
+  } catch (erro: unknown) {
+    if ((erro as { errno?: number } | null)?.errno === 1062) {
+      erro409(`Já existe um perfil com o nome "${nome}".`)
+    }
+    throw erro
+  }
   const perfil = await buscarPerfil(id)
   if (!perfil) erro404()
   return perfil
@@ -318,6 +339,35 @@ export async function excluirPerfil(id: string): Promise<void> {
       )
     }
     throw erro
+  }
+}
+
+/**
+ * Conta usuários ATIVOS cujo perfil concede `alterar` (pode_editar) nos três
+ * módulos essenciais, DENTRO da transação — enxerga a matriz recém-gravada, de
+ * modo que 0 significa lockout pós-alteração.
+ */
+async function contarAdministradoresEssenciais(tx: Transaction): Promise<number> {
+  const joins = MODULOS_ESSENCIAIS.map(
+    (_m, i) =>
+      `JOIN permissoes_perfil p${i} ON p${i}.perfil_id = u.perfil_id AND p${i}.modulo = ? AND p${i}.pode_editar = 1`
+  ).join('\n       ')
+  const linhas = await tx.query<Array<{ total: number }>>(
+    `SELECT COUNT(*) AS total
+       FROM usuarios u
+       ${joins}
+      WHERE u.situacao = 'Ativo'`,
+    [...MODULOS_ESSENCIAIS]
+  )
+  return Number(linhas[0]?.total ?? 0)
+}
+
+/** 409 quando a gravação deixaria o sistema sem administração essencial. */
+async function garantirAdministracao(tx: Transaction): Promise<void> {
+  if ((await contarAdministradoresEssenciais(tx)) === 0) {
+    erro409(
+      'Esta alteração deixaria o sistema sem nenhum usuário ativo com permissão de alterar em Gestão de Usuários, Perfis de Acesso e Configurações Globais.'
+    )
   }
 }
 
@@ -354,6 +404,7 @@ export async function salvarMatriz(
         ]
       )
     }
+    await garantirAdministracao(tx)
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
@@ -396,6 +447,7 @@ export async function copiarMatriz(origemId: string, destinoId: string): Promise
         ]
       )
     }
+    await garantirAdministracao(tx)
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ScrollText, Download, FileSpreadsheet, ChevronDown, DownloadIcon } from '@lucide/vue'
-import { useAuditoriaDemo, formatarDataHora } from './useAuditoriaDemo'
+import { useAuditoriaModelo, formatarDataHora } from './useAuditoriaModelo'
 import { gerarPdfAuditoria } from './gerarPdfAuditoria'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 
@@ -24,15 +24,17 @@ onUnmounted(() => {
   window.removeEventListener('keydown', aoKeydown)
 })
 
-// Exportação sobre os registros filtrados (fase 1 — tudo em memória)
-const { registrosFiltrados, filtros, periodoRotulo } = useAuditoriaDemo()
+// Exportação sobre o conjunto filtrado COMPLETO (buscado pela API, pois a
+// listagem é paginada — change paginacao-server-side-e-performance)
+const { filtros, periodoRotulo, buscarParaExportacao } = useAuditoriaModelo()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
+  const registros = await buscarParaExportacao()
   const escapar = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
   const cabecalho = ['Data/Hora', 'Usuário', 'Ação', 'Recurso', 'Detalhes', 'IP']
-  const linhas = registrosFiltrados.value.map((r) =>
+  const linhas = registros.map((r) =>
     [formatarDataHora(r.registradoEm), r.usuario.nome, r.acao, r.recurso, r.detalhes, r.ip]
       .map(escapar)
       .join(';')
@@ -50,8 +52,9 @@ const exportarCsv = () => {
 const baixarPdf = async () => {
   menuAberto.value = false
   try {
+    const registros = await buscarParaExportacao()
     await gerarPdfAuditoria({
-      registros: registrosFiltrados.value,
+      registros,
       filtros: filtros.value,
       periodoRotulo: periodoRotulo.value,
       logoPreview: previewLoginGlobal.value

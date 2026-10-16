@@ -7,19 +7,20 @@ import {
   formatarUltimoAcesso,
   VARIANTE_POR_PERFIL,
   VARIANTE_POR_STATUS,
-  type UsuarioDemo
-} from './useUsuariosDemo'
+  type UsuarioModelo
+} from './useUsuariosModelo'
 
-const { usuariosFiltrados, filtrosAtivosCount } = useUsuarios()
+const { usuariosFiltrados, filtrosAtivosCount, pagina, porPagina, total, irParaPagina, mudarPorPagina, buscar } =
+  useUsuarios()
 
 // Abre modais na página (coordenação dela): filtros, edição, exclusão, importação, convite e bloqueio
 const emit = defineEmits<{
   (e: 'filtros'): void
-  (e: 'editar', usuario: UsuarioDemo): void
-  (e: 'excluir', usuario: UsuarioDemo): void
+  (e: 'editar', usuario: UsuarioModelo): void
+  (e: 'excluir', usuario: UsuarioModelo): void
   (e: 'importar'): void
-  (e: 'convite', usuario: UsuarioDemo): void
-  (e: 'bloquear', usuario: UsuarioDemo): void
+  (e: 'convite', usuario: UsuarioModelo): void
+  (e: 'bloquear', usuario: UsuarioModelo): void
 }>()
 
 // Encadeia o foco da busca do kit (usado quando a linha do gatilho sai do DOM)
@@ -49,11 +50,18 @@ const colunas: ColumnDef[] = [
       subtitle="Dados persistidos via API (MariaDB)"
       :data="usuariosFiltrados"
       :columns="colunas"
-      :default-page-size="5"
+      :default-page-size="20"
+      server-mode
+      :total="total"
+      :page="pagina"
+      :per-page="porPagina"
       show-header-top
       show-filters
       :filters-count="filtrosAtivosCount"
       @open-filters="emit('filtros')"
+      @page-change="irParaPagina"
+      @per-page-change="mudarPorPagina"
+      @search="buscar"
     >
       <template #filtersLeft>
         <UiTooltip content="Importar Novos Usuários" position="top">

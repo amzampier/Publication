@@ -267,9 +267,10 @@ onUnmounted(() => {
           v-if="inputStr && !disabled"
           type="button"
           class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none"
+          aria-label="Limpar data"
           @click="clearDate"
         >
-          <X class="h-3.5 w-3.5" />
+          <X class="h-3.5 w-3.5" aria-hidden="true" />
         </button>
       </div>
     </div>

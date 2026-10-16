@@ -1,8 +1,10 @@
 // POST /api/perfis — criação (201) com validação nome/situação (400)
 import { criarPerfil } from '../../utils/perfis'
 import { registrarAuditoria } from '../../utils/audit'
+import { requirePermission } from '../../utils/permission'
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'perfis-acesso', 'criar')
   const body = await readBody<Record<string, unknown>>(event)
   if (!body || typeof body !== 'object') {
     throw createError({ statusCode: 400, statusMessage: 'Corpo JSON ausente ou inválido.' })

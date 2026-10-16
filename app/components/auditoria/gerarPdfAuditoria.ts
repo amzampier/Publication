@@ -3,7 +3,7 @@
 // composable compartilhado (useLogomarcaLogin) e só entra quando houver arquivo.
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { formatarDataHora, type FiltrosAuditoria, type RegistroAuditoria } from './useAuditoriaDemo'
+import { formatarDataHora, type FiltrosAuditoria, type RegistroAuditoria } from './useAuditoriaModelo'
 
 interface OpcoesRelatorio {
   registros: RegistroAuditoria[]

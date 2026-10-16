@@ -11,11 +11,11 @@ import type {
   ModoUsuario,
   RegistroImportacao,
   StatusUsuario,
-  UsuarioDemo
-} from './useUsuariosDemo'
+  UsuarioModelo
+} from './useUsuariosModelo'
 
 /** Rascunho do modal de usuário: registro + senha provisória digitada no form. */
-export type RascunhoUsuario = UsuarioDemo & { confirmarSenha?: string }
+export type RascunhoUsuario = UsuarioModelo & { confirmarSenha?: string }
 
 /**
  * Envia uma dataURL (upload/câmera) para o destino 'avatares' e devolve a URL
@@ -60,10 +60,10 @@ const corpoDoRascunho = (rascunho: RascunhoUsuario, avatar: string) => ({
  * (regra do servidor). Lança FetchError (400/404/409) para o chamador mapear.
  */
 export const salvarUsuario = async (
-  base: UsuarioDemo[],
+  base: UsuarioModelo[],
   rascunho: RascunhoUsuario,
   modo: ModoUsuario
-): Promise<{ base: UsuarioDemo[]; usuario: UsuarioDemo }> => {
+): Promise<{ base: UsuarioModelo[]; usuario: UsuarioModelo }> => {
   let avatar = rascunho.avatar
   if (avatar.startsWith('data:')) {
     avatar = await enviarAvatar(avatar)
@@ -71,13 +71,13 @@ export const salvarUsuario = async (
   const corpo = corpoDoRascunho(rascunho, avatar)
 
   if (modo === 'novo') {
-    const criado = await useApiFetch<UsuarioDemo>('/api/usuarios', {
+    const criado = await useApiFetch<UsuarioModelo>('/api/usuarios', {
       method: 'POST',
       body: corpo
     })
     return { base: [...base, criado], usuario: criado }
   }
-  const atualizado = await useApiFetch<UsuarioDemo>(`/api/usuarios/${rascunho.id}`, {
+  const atualizado = await useApiFetch<UsuarioModelo>(`/api/usuarios/${rascunho.id}`, {
     method: 'PUT',
     body: corpo
   })
@@ -86,9 +86,9 @@ export const salvarUsuario = async (
 
 /** Remove o usuário via API (DELETE) e devolve a base sem ele. */
 export const excluirUsuario = async (
-  base: UsuarioDemo[],
+  base: UsuarioModelo[],
   id: string
-): Promise<{ base: UsuarioDemo[] }> => {
+): Promise<{ base: UsuarioModelo[] }> => {
   await useApiFetch(`/api/usuarios/${id}`, { method: 'DELETE' })
   return { base: base.filter((u) => u.id !== id) }
 }
@@ -98,11 +98,11 @@ export const excluirUsuario = async (
  * resposta substitui o registro na base (badge/KPIs acompanham).
  */
 export const alterarSituacaoUsuario = async (
-  base: UsuarioDemo[],
+  base: UsuarioModelo[],
   id: string,
   situacao: StatusUsuario
-): Promise<{ base: UsuarioDemo[] }> => {
-  const atualizado = await useApiFetch<UsuarioDemo>(`/api/usuarios/${id}/situacao`, {
+): Promise<{ base: UsuarioModelo[] }> => {
+  const atualizado = await useApiFetch<UsuarioModelo>(`/api/usuarios/${id}/situacao`, {
     method: 'PUT',
     body: { situacao }
   })
@@ -116,7 +116,7 @@ export const alterarSituacaoUsuario = async (
  * (`carregarUsuarios(true)`).
  */
 export const importarUsuarios = async (
-  _base: UsuarioDemo[],
+  _base: UsuarioModelo[],
   registros: RegistroImportacao[]
 ): Promise<{ importados: number }> => {
   const resp = await useApiFetch<{ importados: number }>('/api/usuarios/importar', {
@@ -133,25 +133,73 @@ export const importarUsuarios = async (
   return { importados: resp.importados }
 }
 
+export interface KpisUsuarios {
+  total: number
+  ativos: number
+  inativos: number
+  perfisDistintos: number
+}
+
+interface RespostaUsuariosApi {
+  usuarios: UsuarioModelo[]
+  total: number
+  kpis: KpisUsuarios
+  opcoes: { usuarios: string[]; perfis: string[] }
+  pagina: number
+  porPagina: number
+}
+
+export const POR_PAGINA_PADRAO = 20
+
 export const useUsuarios = () => {
-  // Base reativa compartilhada: inicia VAZIA (a carga preenche com o banco —
-  // spec: nunca simular dados na falha).
-  const usuarios = useState<UsuarioDemo[]>('usuarios-base', () => [])
+  const usuarios = useState<UsuarioModelo[]>('usuarios-base', () => [])
   const carregando = useState<boolean>('usuarios-carregando', () => false)
   const carregado = useState<boolean>('usuarios-carregado', () => false)
 
-  /**
-   * Hidrata a base de GET /api/usuarios (idempotente; `forcar` refaz após
-   * mutações em lote como a importação). Devolve false em falha (o chamador
-   * mostra o toast; a lista fica vazia).
-   */
-  const carregarUsuarios = async (forcar = false): Promise<boolean> => {
-    if (carregado.value && !forcar) return true
+  // Filtros estruturais (agora no servidor — change paginacao-server-side-e-performance)
+  const filtros = useState<FiltrosUsuarios>('usuarios-filtros', () => ({
+    usuario: '',
+    perfil: '',
+    status: ''
+  }))
+  const pagina = useState<number>('usuarios-pagina', () => 1)
+  const porPagina = useState<number>('usuarios-por-pagina', () => POR_PAGINA_PADRAO)
+  const total = useState<number>('usuarios-total', () => 0)
+  const kpis = useState<KpisUsuarios>('usuarios-kpis', () => ({
+    total: 0,
+    ativos: 0,
+    inativos: 0,
+    perfisDistintos: 0
+  }))
+  const opcoes = useState<{ usuarios: string[]; perfis: string[] }>('usuarios-opcoes', () => ({
+    usuarios: [],
+    perfis: []
+  }))
+  const busca = useState<string>('usuarios-busca', () => '')
+
+  /** Carrega a página/filtros vigentes do servidor. Devolve false em falha. */
+  const carregarUsuarios = async (_forcar = false): Promise<boolean> => {
     if (carregando.value) return false
     carregando.value = true
     try {
-      const lista = await useApiFetch<UsuarioDemo[]>('/api/usuarios')
-      usuarios.value = Array.isArray(lista) ? lista : []
+      const f = filtros.value
+      const resposta = await useApiFetch<RespostaUsuariosApi>('/api/usuarios', {
+        query: {
+          usuario: f.usuario || undefined,
+          perfil: f.perfil || undefined,
+          status: f.status || undefined,
+          busca: busca.value || undefined,
+          pagina: pagina.value,
+          porPagina: porPagina.value
+        }
+      })
+      usuarios.value = Array.isArray(resposta?.usuarios) ? resposta.usuarios : []
+      total.value = Number(resposta?.total ?? 0)
+      kpis.value = resposta?.kpis ?? { total: 0, ativos: 0, inativos: 0, perfisDistintos: 0 }
+      opcoes.value = {
+        usuarios: resposta?.opcoes?.usuarios ?? [],
+        perfis: resposta?.opcoes?.perfis ?? []
+      }
       carregado.value = true
       return true
     } catch {
@@ -162,32 +210,48 @@ export const useUsuarios = () => {
     }
   }
 
-  // Filtros estruturais — em memória sobre o conjunto carregado (spec).
-  const filtros = useState<FiltrosUsuarios>('usuarios-filtros', () => ({
-    usuario: '',
-    perfil: '',
-    status: ''
-  }))
+  const aplicarFiltros = async (): Promise<void> => {
+    pagina.value = 1
+    await carregarUsuarios(true)
+  }
+  const irParaPagina = async (p: number): Promise<void> => {
+    pagina.value = p
+    await carregarUsuarios(true)
+  }
+  const mudarPorPagina = async (n: number): Promise<void> => {
+    porPagina.value = n
+    pagina.value = 1
+    await carregarUsuarios(true)
+  }
+  const buscar = async (termo: string): Promise<void> => {
+    busca.value = termo
+    pagina.value = 1
+    await carregarUsuarios(true)
+  }
 
-  const usuariosFiltrados = computed<UsuarioDemo[]>(() => {
+  /** Conjunto filtrado COMPLETO (todas as páginas) para CSV/PDF. */
+  const buscarParaExportacao = async (): Promise<UsuarioModelo[]> => {
     const f = filtros.value
-    return usuarios.value.filter((u) => {
-      if (f.usuario && u.nome !== f.usuario) return false
-      if (f.perfil && u.perfil !== f.perfil) return false
-      if (f.status && u.status !== f.status) return false
-      return true
+    const resposta = await useApiFetch<RespostaUsuariosApi>('/api/usuarios', {
+      query: {
+        usuario: f.usuario || undefined,
+        perfil: f.perfil || undefined,
+        status: f.status || undefined,
+        busca: busca.value || undefined,
+        exportar: '1'
+      }
     })
-  })
+    return Array.isArray(resposta?.usuarios) ? resposta.usuarios : []
+  }
+
+  const usuariosFiltrados = computed<UsuarioModelo[]>(() => usuarios.value)
 
   const filtrosAtivosCount = computed(() => {
     const f = filtros.value
     return [!!f.usuario, !!f.perfil, !!f.status].filter(Boolean).length
   })
 
-  // Opções do select de Usuário derivam da BASE (não do conjunto filtrado).
-  const opcoesUsuarios = computed(() =>
-    [...new Set(usuarios.value.map((u) => u.nome))].sort((a, b) => a.localeCompare(b, 'pt-BR'))
-  )
+  const opcoesUsuarios = computed(() => opcoes.value.usuarios)
 
   const limparFiltros = () => {
     filtros.value = { usuario: '', perfil: '', status: '' }
@@ -202,6 +266,17 @@ export const useUsuarios = () => {
     usuariosFiltrados,
     filtrosAtivosCount,
     opcoesUsuarios,
-    limparFiltros
+    limparFiltros,
+    pagina,
+    porPagina,
+    total,
+    kpis,
+    opcoes,
+    busca,
+    aplicarFiltros,
+    irParaPagina,
+    mudarPorPagina,
+    buscar,
+    buscarParaExportacao
   }
 }

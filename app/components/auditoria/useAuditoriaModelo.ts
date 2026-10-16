@@ -1,6 +1,6 @@
 // Estado da página de Gestão de Auditoria sobre a API /api/auditoria (change
 // auditoria-backend-integracao). O contrato público da fase 1 é preservado
-// (mesmo precedente de usePerfisDemo): os registros vêm do banco, as gravações
+// (mesmo precedente de usePerfisModelo): os registros vêm do banco, as gravações
 // são feitas pelas rotas de escrita e nada é semeado em memória — sem resposta,
 // a lista fica vazia com erro, nunca a demo antiga fingindo ser real.
 // Modelo de registro conforme docs/02 §3.6 (registrarAuditoria): o servidor
@@ -33,11 +33,23 @@ export interface FiltrosAuditoria {
   recurso: string
 }
 
+export interface KpisAuditoria {
+  registros: number
+  usuariosDistintos: number
+  ultimaAtividade: string | null
+}
+
 /** Resposta de GET /api/auditoria (espelho de server/utils/audit.ts). */
 interface RespostaAuditoriaApi {
   registros: RegistroAuditoria[]
+  total: number
+  kpis: KpisAuditoria
   opcoes: { usuarios: string[]; recursos: string[] }
+  pagina: number
+  porPagina: number
 }
+
+export const POR_PAGINA_PADRAO = 20
 
 export const ACOES: AcaoAuditoria[] = ['Inclusão', 'Alteração', 'Exclusão', 'Homologação', 'Acesso']
 
@@ -87,9 +99,7 @@ export const VAZIO_FILTROS: FiltrosAuditoria = {
   recurso: ''
 }
 
-export const useAuditoriaDemo = () => {
-  // Base reativa compartilhada: inicia VAZIA (a carga preenche com o banco —
-  // spec: nunca exibir a demo antiga como se fosse persistida).
+export const useAuditoriaModelo = () => {
   const registros = useState<RegistroAuditoria[]>('auditoria-registros', () => [])
   const carregando = useState<boolean>('auditoria-carregando', () => false)
   const carregado = useState<boolean>('auditoria-carregado', () => false)
@@ -97,14 +107,23 @@ export const useAuditoriaDemo = () => {
     usuarios: [],
     recursos: []
   }))
-
   const filtros = useState<FiltrosAuditoria>('auditoria-filtros', () => ({ ...VAZIO_FILTROS }))
 
+  // Estado de paginação/KPIs no servidor (change paginacao-server-side-e-performance)
+  const pagina = useState<number>('auditoria-pagina', () => 1)
+  const porPagina = useState<number>('auditoria-por-pagina', () => POR_PAGINA_PADRAO)
+  const total = useState<number>('auditoria-total', () => 0)
+  const kpis = useState<KpisAuditoria>('auditoria-kpis', () => ({
+    registros: 0,
+    usuariosDistintos: 0,
+    ultimaAtividade: null
+  }))
+  const busca = useState<string>('auditoria-busca', () => '')
+
   /**
-   * Busca os registros com os filtros VIGENTES no servidor (spec auditoria).
+   * Busca a página com os filtros/busca/paginação VIGENTES no servidor.
    * Devolve `false` quando a carga falha — o chamador mostra o toast de erro e
-   * a lista permanece vazia. Sem gate de `carregado`: filtros mudam e a página
-   * refaz a carga a cada montagem (o que foi gravado em outros módulos aparece).
+   * a lista permanece vazia.
    */
   const carregarAuditoria = async (): Promise<boolean> => {
     if (carregando.value) return false
@@ -117,10 +136,15 @@ export const useAuditoriaDemo = () => {
           dataFinal: f.dataFinal || undefined,
           usuario: f.usuario || undefined,
           acao: f.acao || undefined,
-          recurso: f.recurso || undefined
+          recurso: f.recurso || undefined,
+          busca: busca.value || undefined,
+          pagina: pagina.value,
+          porPagina: porPagina.value
         }
       })
       registros.value = Array.isArray(resposta?.registros) ? resposta.registros : []
+      total.value = Number(resposta?.total ?? 0)
+      kpis.value = resposta?.kpis ?? { registros: 0, usuariosDistintos: 0, ultimaAtividade: null }
       opcoes.value = {
         usuarios: resposta?.opcoes?.usuarios ?? [],
         recursos: resposta?.opcoes?.recursos ?? []
@@ -135,8 +159,46 @@ export const useAuditoriaDemo = () => {
     }
   }
 
-  // O conjunto servido já vem filtrado pelo servidor (filtros estruturais no
-  // backend); KPIs, busca, paginação e exportações seguem operando no cliente.
+  /** Aplica os filtros vigentes: volta à 1ª página e recarrega. */
+  const aplicarFiltros = async (): Promise<void> => {
+    pagina.value = 1
+    await carregarAuditoria()
+  }
+
+  const irParaPagina = async (p: number): Promise<void> => {
+    pagina.value = p
+    await carregarAuditoria()
+  }
+
+  const mudarPorPagina = async (n: number): Promise<void> => {
+    porPagina.value = n
+    pagina.value = 1
+    await carregarAuditoria()
+  }
+
+  const buscar = async (termo: string): Promise<void> => {
+    busca.value = termo
+    pagina.value = 1
+    await carregarAuditoria()
+  }
+
+  /** Conjunto filtrado COMPLETO (todas as páginas) para CSV/PDF. */
+  const buscarParaExportacao = async (): Promise<RegistroAuditoria[]> => {
+    const f = filtros.value
+    const resposta = await useApiFetch<RespostaAuditoriaApi>('/api/auditoria', {
+      query: {
+        dataInicial: f.dataInicial || undefined,
+        dataFinal: f.dataFinal || undefined,
+        usuario: f.usuario || undefined,
+        acao: f.acao || undefined,
+        recurso: f.recurso || undefined,
+        busca: busca.value || undefined,
+        exportar: '1'
+      }
+    })
+    return Array.isArray(resposta?.registros) ? resposta.registros : []
+  }
+
   const registrosFiltrados = computed<RegistroAuditoria[]>(() => registros.value)
 
   const filtrosAtivosCount = computed(() => {
@@ -152,8 +214,6 @@ export const useAuditoriaDemo = () => {
     return 'Tudo'
   })
 
-  // Opções dos selects derivam do conjunto NÃO filtrado (servidas pela API):
-  // um filtro aplicado não pode esconder opções do modal.
   const opcoesUsuarios = computed(() => opcoes.value.usuarios)
   const opcoesRecursos = computed(() => opcoes.value.recursos)
 
@@ -166,6 +226,16 @@ export const useAuditoriaDemo = () => {
     carregando,
     carregado,
     carregarAuditoria,
+    aplicarFiltros,
+    irParaPagina,
+    mudarPorPagina,
+    buscar,
+    buscarParaExportacao,
+    pagina,
+    porPagina,
+    total,
+    kpis,
+    busca,
     registros,
     registrosFiltrados,
     filtrosAtivosCount,

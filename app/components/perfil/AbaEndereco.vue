@@ -2,7 +2,7 @@
 import { MapPin, MapPinCheck, LoaderCircle } from '@lucide/vue'
 import { useBuscaCep } from '../../composables/useBuscaCep'
 import { UFS, REGIOES } from '../../config/brasil'
-import type { EnderecoUsuario } from '../usuarios/useUsuariosDemo'
+import type { EnderecoUsuario } from '../usuarios/useUsuariosModelo'
 
 // Mesmo contrato do modal de Gestão de Usuários (seção Endereço) — o objeto
 // endereco é do rascunho compartilhado da página.

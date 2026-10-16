@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Info } from '@lucide/vue'
-import type { ConfigSmtpUsuario } from '../usuarios/useUsuariosDemo'
+import type { ConfigSmtpUsuario } from '../usuarios/useUsuariosModelo'
 
 // Aba E-mail: consome o bloco compartilhado extraído do modal de usuários
 // (UsuariosCamposSmtp) — mesma máquina de estados (porta sugerida, reset de

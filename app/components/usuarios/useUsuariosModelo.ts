@@ -29,12 +29,14 @@ export interface ConfigSmtpUsuario {
   servidor: string
   porta: string
   seguranca: string
+  /** true quando há senha SMTP gravada no servidor (a senha nunca volta em claro — RL02 A-01) */
+  temSenha?: boolean
   // O status SMTP (StatusSmtp) NÃO mora aqui: é estado efêmero de UI, donado
   // pelo ref interno de CamposSmtp (change smtp-status-estado-efemero) — a API
   // nunca envia nem devolve o campo.
 }
 
-export interface UsuarioDemo {
+export interface UsuarioModelo {
   id: string
   nome: string
   email: string
@@ -107,7 +109,8 @@ export const smtpVazio = (): ConfigSmtpUsuario => ({
   provedor: '',
   servidor: '',
   porta: '',
-  seguranca: ''
+  seguranca: '',
+  temSenha: false
 })
 
 /** 'dd/mm/yyyy HH:mm'; null/vazio -> '-' (nunca gravado) */

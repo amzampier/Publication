@@ -3,10 +3,10 @@
 // composable compartilhado (useLogomarcaLogin) e só entra quando houver arquivo.
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { formatarUltimoAcesso, type UsuarioDemo } from './useUsuariosDemo'
+import { formatarUltimoAcesso, type UsuarioModelo } from './useUsuariosModelo'
 
 interface OpcoesRelatorio {
-  usuarios: UsuarioDemo[]
+  usuarios: UsuarioModelo[]
   /** preview da logo de login: dataURL (upload) | caminho remoto | '' (marca padrão) */
   logoPreview: string
 }

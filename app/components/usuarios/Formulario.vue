@@ -18,17 +18,17 @@ import {
   enderecoVazio,
   smtpVazio,
   PERFIS,
-  type UsuarioDemo,
+  type UsuarioModelo,
   type ModoUsuario,
   type PerfilUsuario,
   type StatusUsuario
-} from './useUsuariosDemo'
+} from './useUsuariosModelo'
 import { salvarUsuario, useUsuarios } from './useUsuarios'
 
 interface Props {
   modelValue: boolean
   modo: ModoUsuario
-  usuario: UsuarioDemo | null
+  usuario: UsuarioModelo | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -40,10 +40,10 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { usuarios } = useUsuarios()
+const { usuarios, carregarUsuarios } = useUsuarios()
 
 /** Rascunho do modal: base do usuário + senha/confirmação e perfis ainda sem seleção. */
-type Rascunho = Omit<UsuarioDemo, 'perfil' | 'status'> & {
+type Rascunho = Omit<UsuarioModelo, 'perfil' | 'status'> & {
   perfil: PerfilUsuario | ''
   status: StatusUsuario | ''
   senha: string
@@ -69,7 +69,7 @@ const rascunhoVazio = (): Rascunho => ({
   confirmarSenha: ''
 })
 
-const rascunhoDoUsuario = (u: UsuarioDemo): Rascunho => ({
+const rascunhoDoUsuario = (u: UsuarioModelo): Rascunho => ({
   id: u.id,
   nome: u.nome,
   email: u.email,
@@ -101,7 +101,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const validar = (
   r: Rascunho,
   modo: ModoUsuario,
-  base: UsuarioDemo[]
+  base: UsuarioModelo[]
 ): Record<string, string> => {
   const e: Record<string, string> = {}
 
@@ -195,7 +195,7 @@ const salvar = async () => {
   }
 
   const { senha, confirmarSenha, perfil, status, ...base } = rascunho.value
-  const registro: UsuarioDemo = {
+  const registro: UsuarioModelo = {
     ...base,
     // Senha provisória: a digitada; na edição com campos vazios a API mantém a
     // vigente (regra do servidor). Avatar dataURL vira arquivo no salvar (D6).
@@ -206,8 +206,9 @@ const salvar = async () => {
 
   salvando.value = true
   try {
-    const { base: novaBase } = await salvarUsuario(usuarios.value, registro, props.modo)
-    usuarios.value = novaBase
+    await salvarUsuario(usuarios.value, registro, props.modo)
+    // Listagem paginada: recarrega a página/KPIs do servidor (RL02 M-14).
+    await carregarUsuarios(true)
 
     toast.success(
       'Gestão de Usuários',

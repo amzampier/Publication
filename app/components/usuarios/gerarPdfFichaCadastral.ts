@@ -3,10 +3,10 @@
 // vertical: cada usuário do conjunto vigente ganha uma ficha com dados
 // cadastrais e acesso. Fase 1: tudo em memória, sem window.print().
 import { jsPDF } from 'jspdf'
-import { formatarUltimoAcesso, type UsuarioDemo } from './useUsuariosDemo'
+import { formatarUltimoAcesso, type UsuarioModelo } from './useUsuariosModelo'
 
 interface OpcoesFicha {
-  usuarios: UsuarioDemo[]
+  usuarios: UsuarioModelo[]
   /** preview da logo de login: dataURL (upload) | caminho remoto | '' (marca padrão) */
   logoPreview: string
 }

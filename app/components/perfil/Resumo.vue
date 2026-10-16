@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarDays, Clock, Mail } from '@lucide/vue'
-import { VARIANTE_POR_PERFIL, VARIANTE_POR_STATUS, type PerfilUsuario, type StatusUsuario } from '../usuarios/useUsuariosDemo'
+import { VARIANTE_POR_PERFIL, VARIANTE_POR_STATUS, type PerfilUsuario, type StatusUsuario } from '../usuarios/useUsuariosModelo'
 
 interface Props {
   nome: string

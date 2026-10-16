@@ -5,7 +5,7 @@ import {
   alterarSituacaoUsuario,
   useUsuarios
 } from '../../components/usuarios/useUsuarios'
-import type { UsuarioDemo, ModoUsuario } from '../../components/usuarios/useUsuariosDemo'
+import type { UsuarioModelo, ModoUsuario } from '../../components/usuarios/useUsuariosModelo'
 import { useToast } from '../../composables/useToast'
 
 definePageMeta({ layout: 'admin' })
@@ -34,10 +34,10 @@ onMounted(async () => {
 // Coordenação dos modais: a página é dona do estado
 const modalAberto = ref(false)
 const modo = ref<ModoUsuario>('novo')
-const usuarioAlvo = ref<UsuarioDemo | null>(null)
+const usuarioAlvo = ref<UsuarioModelo | null>(null)
 
 const exclusaoAberta = ref(false)
-const usuarioExcluir = ref<UsuarioDemo | null>(null)
+const usuarioExcluir = ref<UsuarioModelo | null>(null)
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 
 // Modal de filtros: a página é dona do estado, como os demais
@@ -48,13 +48,13 @@ const importarAberto = ref(false)
 
 // Modal de convite: a página é dona do estado, como os demais
 const conviteAberto = ref(false)
-const usuarioConvite = ref<UsuarioDemo | null>(null)
+const usuarioConvite = ref<UsuarioModelo | null>(null)
 
 // Modal de bloqueio (Bloquear/Desbloquear real — spec gestao-usuarios)
 const bloqueioAberto = ref(false)
-const usuarioBloquear = ref<UsuarioDemo | null>(null)
+const usuarioBloquear = ref<UsuarioModelo | null>(null)
 
-const abrirConvite = (usuario: UsuarioDemo) => {
+const abrirConvite = (usuario: UsuarioModelo) => {
   usuarioConvite.value = usuario
   conviteAberto.value = true
 }
@@ -65,18 +65,18 @@ const abrirNovo = () => {
   modalAberto.value = true
 }
 
-const abrirEdicao = (usuario: UsuarioDemo) => {
+const abrirEdicao = (usuario: UsuarioModelo) => {
   modo.value = 'editar'
   usuarioAlvo.value = usuario
   modalAberto.value = true
 }
 
-const abrirExclusao = (usuario: UsuarioDemo) => {
+const abrirExclusao = (usuario: UsuarioModelo) => {
   usuarioExcluir.value = usuario
   exclusaoAberta.value = true
 }
 
-const abrirBloqueio = (usuario: UsuarioDemo) => {
+const abrirBloqueio = (usuario: UsuarioModelo) => {
   usuarioBloquear.value = usuario
   bloqueioAberto.value = true
 }
@@ -89,8 +89,8 @@ const confirmarExclusao = async () => {
   usuarioExcluir.value = null
 
   try {
-    const { base } = await excluirUsuario(usuarios.value, alvo.id)
-    usuarios.value = base
+    await excluirUsuario(usuarios.value, alvo.id)
+    await carregarUsuarios(true)
     toast.success('Gestão de Usuários', 'Usuário excluído com sucesso.')
     // O gatilho (Trash2) saiu do DOM com a linha: o próximo tick move o foco
     // à busca da tabela.
@@ -113,8 +113,8 @@ const confirmarBloqueio = async () => {
 
   try {
     const destino = alvo.status === 'Ativo' ? 'Inativo' : 'Ativo'
-    const { base } = await alterarSituacaoUsuario(usuarios.value, alvo.id, destino)
-    usuarios.value = base
+    await alterarSituacaoUsuario(usuarios.value, alvo.id, destino)
+    await carregarUsuarios(true)
     toast.success(
       'Gestão de Usuários',
       destino === 'Inativo'

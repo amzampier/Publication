@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useToast } from './useToast'
 import { useViaCep, type EnderecoViaCep } from './useViaCep'
-import type { EnderecoUsuario } from '../components/usuarios/useUsuariosDemo'
+import type { EnderecoUsuario } from '../components/usuarios/useUsuariosModelo'
 
 /** Tempo máximo de voo da consulta ViaCEP antes de abortar (vira toast de falha). */
 const TIMEOUT_MS = 10000

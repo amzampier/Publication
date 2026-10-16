@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Users, Plus, NotebookText, FileText, FileDown, FileSpreadsheet, ChevronDown } from '@lucide/vue'
-import { formatarUltimoAcesso } from './useUsuariosDemo'
+import { formatarUltimoAcesso } from './useUsuariosModelo'
 import { useUsuarios } from './useUsuarios'
 import { gerarPdfUsuarios } from './gerarPdfUsuarios'
 import { gerarPdfFichaCadastral } from './gerarPdfFichaCadastral'
@@ -31,16 +31,17 @@ onUnmounted(() => {
   window.removeEventListener('keydown', aoKeydown)
 })
 
-// Exportação sobre o conjunto vigente carregado da API (filtros/relatórios
-// permanecem locais — spec gestao-usuarios)
-const { usuariosFiltrados } = useUsuarios()
+// Exportação sobre o conjunto filtrado COMPLETO (buscado pela API, pois a
+// listagem é paginada — change paginacao-server-side-e-performance)
+const { buscarParaExportacao } = useUsuarios()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
+  const usuarios = await buscarParaExportacao()
   const escapar = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
   const cabecalho = ['Nome', 'E-mail', 'Perfil', 'Status', 'Último acesso']
-  const linhas = usuariosFiltrados.value.map((u) =>
+  const linhas = usuarios.map((u) =>
     [u.nome, u.email, u.perfil, u.status, formatarUltimoAcesso(u.ultimoAcesso)]
       .map(escapar)
       .join(';')
@@ -58,10 +59,8 @@ const exportarCsv = () => {
 const fichaCadastralPdf = async () => {
   menuAberto.value = false
   try {
-    await gerarPdfFichaCadastral({
-      usuarios: usuariosFiltrados.value,
-      logoPreview: previewLoginGlobal.value
-    })
+    const usuarios = await buscarParaExportacao()
+    await gerarPdfFichaCadastral({ usuarios, logoPreview: previewLoginGlobal.value })
   } catch (erro) {
     console.error('[pdf] falha ao gerar a ficha cadastral:', erro)
   }
@@ -70,10 +69,8 @@ const fichaCadastralPdf = async () => {
 const relacaoCompletaPdf = async () => {
   menuAberto.value = false
   try {
-    await gerarPdfUsuarios({
-      usuarios: usuariosFiltrados.value,
-      logoPreview: previewLoginGlobal.value
-    })
+    const usuarios = await buscarParaExportacao()
+    await gerarPdfUsuarios({ usuarios, logoPreview: previewLoginGlobal.value })
   } catch (erro) {
     console.error('[pdf] falha ao gerar o relatorio:', erro)
   }

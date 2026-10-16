@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useAuditoriaDemo, type RegistroAuditoria } from '../../components/auditoria/useAuditoriaDemo'
+import { useAuditoriaModelo, type RegistroAuditoria } from '../../components/auditoria/useAuditoriaModelo'
 import { useToast } from '../../composables/useToast'
 
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { carregarAuditoria } = useAuditoriaDemo()
+const { carregarAuditoria } = useAuditoriaModelo()
 
 // Coordenação entre painéis (state dos filtros fica no composable)
 const filtrosAbertos = ref(false)
