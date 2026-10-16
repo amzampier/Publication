@@ -28,8 +28,19 @@ Reexecutar migrations já aplicadas ou reexecutar o boot SHALL ser seguro: erros
 - **WHEN** o servidor reinicia com os seeds já aplicados
 - **THEN** as chaves únicas impedem duplicidade e os registros originais permanecem intactos
 
+### Requirement: Migrations não destrutivas
+Os arquivos de migration SHALL NOT remover dados ou objetos existentes de forma implícita: nenhuma migration pode conter `DROP TABLE`, `DROP VIEW` ou `DROP DATABASE` de objetos da aplicação, de modo que aplicar uma migration pendente nunca cause perda de dados. Objetos já existentes SHALL ser tratados de forma idempotente (`CREATE ... IF NOT EXISTS`).
+
+#### Scenario: Migration aplicada sobre banco existente não apaga dados
+- **WHEN** uma migration pendente é aplicada sobre um banco que já contém tabelas com dados
+- **THEN** nenhum dado é removido e as tabelas e objetos permanecem intactos
+
+#### Scenario: Base vazia é provisionada pelos CREATEs
+- **WHEN** as migrations rodam sobre um banco sem tabelas
+- **THEN** o schema completo é criado pelos `CREATE TABLE` (sem depender de `DROP` prévio)
+
 ### Requirement: Registro das migrations executadas
-O sistema SHALL manter uma tabela de controle (`_migrations`) com uma linha por arquivo de migration executado, contendo o nome do arquivo e o momento da execução.
+O sistema SHALL manter uma tabela de controle (`_migrations`) com uma linha por arquivo de migration executado, contendo o nome do arquivo e o momento da execução. O registro SHALL ser resiliente: se o nome já estiver registrado (ex.: duas instâncias subindo ao mesmo tempo), a gravação duplicada SHALL ser tratada como já aplicada e o boot SHALL prosseguir, sem abortar.
 
 #### Scenario: Registro após execução bem-sucedida
 - **WHEN** um arquivo de migration termina de executar sem erro fatal
@@ -38,6 +49,10 @@ O sistema SHALL manter uma tabela de controle (`_migrations`) com uma linha por 
 #### Scenario: Erro fatal não registra a migration
 - **WHEN** um arquivo de migration aborta por erro não tolerado
 - **THEN** ele não é registrado na tabela de controle e será tentado novamente no próximo boot
+
+#### Scenario: Registro duplicado (corrida entre instâncias) não aborta o boot
+- **WHEN** duas instâncias executam a mesma migration e a segunda tenta gravar um nome já presente em `_migrations`
+- **THEN** o erro de chave duplicada é tolerado, o boot conclui e a migration não é reaplicada
 
 ### Requirement: Convenção dos arquivos de migration
 Os arquivos SQL de `server/migration/` SHALL seguir as convenções do `docs/02` §4.5: nomes sequenciais (`01_`, `02_`...), `;` como delimitador de statements e bloco de rollback comentado ao final. Os executáveis NÃO contêm `USE`: o pool conecta já no banco selecionado por `DB_NAME` (a referência `docs/bd/` mantém o `USE` para execução manual via cliente SQL).
@@ -65,15 +80,19 @@ Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 
 - **THEN** existe exatamente uma linha `config_default` com sidebar expandida e retenção de 180 dias
 
 ### Requirement: Administrador inicial com hash bcrypt real
-O usuário administrador inicial SHALL existir no banco com hash bcrypt válido (cost 12) da senha provisória documentada (`Public@2026`), permitindo login real quando a autenticação for implementada. O bootstrap SHALL ser idempotente: um admin já existente não é sobrescrito.
+O usuário administrador inicial SHALL existir no banco com hash bcrypt válido (cost 12) da senha provisória documentada (`Public@2026`), permitindo login real. O provisionamento automático SHALL ocorrer **somente quando o ambiente não for de produção** (`NODE_ENV !== 'production'`), SHALL marcar a senha como provisória (`senha_provisoria = 1`) para exigir a troca no primeiro acesso e SHALL ser idempotente: um admin já existente não é sobrescrito.
 
 #### Scenario: Bootstrap cria o admin na primeira execução
-- **WHEN** o provisionamento roda sem o usuário `ana.carolina@empresa.com.br`
-- **THEN** o usuário é criado com perfil Administrador, situação Ativo e hash bcrypt verificável
+- **WHEN** o provisionamento roda em ambiente não-produção sem o usuário `ana.carolina@empresa.com.br`
+- **THEN** o usuário é criado com perfil Administrador, situação Ativo, hash bcrypt verificável e marcado com senha provisória
 
 #### Scenario: Admin existente não é modificado
 - **WHEN** o provisionamento roda com o admin já existente (mesmo com hash trocado)
 - **THEN** nenhum dado do usuário é alterado
+
+#### Scenario: Produção não cria administrador padrão
+- **WHEN** o provisionamento roda com `NODE_ENV=production` e sem o administrador
+- **THEN** nenhum usuário administrador é criado automaticamente e o log informa que o provisionamento foi ignorado
 
 ### Requirement: Pool de conexões utf8mb4
 A aplicação SHALL acessar o banco por um pool de conexões com charset `utf8mb4`, limites de conexão/fila configurados, suporte a queries parametrizadas e transações explícitas com commit/rollback.

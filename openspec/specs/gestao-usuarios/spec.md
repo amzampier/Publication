@@ -54,19 +54,19 @@ administrativas SHALL operar normalmente.
 - **THEN** as requisições são atendidas conforme seus contratos (sem `401` espúrio)
 
 ### Requirement: Os KPIs derivam do conjunto de usuários vigente
-O sistema SHALL exibir no topo da página os KPIs "Total de usuários" (contagem do conjunto vigente), "Ativos", "Inativos" e "Perfis distintos" (quantidade de perfis diferentes presentes no conjunto), recalculados sempre que o conjunto de usuários muda — o conjunto vem da API e, com filtro aplicado, passa a ser o conjunto filtrado.
+O sistema SHALL exibir no topo da página os KPIs "Total de usuários", "Ativos", "Inativos" e "Perfis distintos", calculados **no servidor** sobre o conjunto filtrado e devolvidos pela API, de modo que reflitam o banco inteiro (não apenas a página corrente) e sejam recalculados quando os filtros mudam ou quando o conjunto é alterado por uma escrita.
 
 #### Scenario: Base completa
 - **WHEN** a página é aberta sem nenhum filtro aplicado
-- **THEN** os quatro KPIs refletem os usuários servidos pela API (ex.: contagem total, quantidades de ativos e inativos e os perfis distintos presentes no banco)
+- **THEN** os quatro KPIs refletem o conjunto calculado no servidor (contagem total, ativos, inativos e perfis distintos do banco)
 
 #### Scenario: Conjunto alterado recalcula os KPIs
-- **WHEN** o conjunto de usuários exibido muda (por filtro do módulo)
-- **THEN** "Total de usuários", "Ativos", "Inativos" e "Perfis distintos" passam a considerar apenas esse conjunto
+- **WHEN** o conjunto de usuários muda (por filtro do módulo)
+- **THEN** "Total de usuários", "Ativos", "Inativos" e "Perfis distintos" passam a considerar apenas esse conjunto, recalculados no servidor
 
 #### Scenario: Criar ou editar usuário recalcula os KPIs
 - **WHEN** o usuário salva um novo usuário ou altera um existente
-- **THEN** os quatro KPIs refletem imediatamente o conjunto resultante (ex.: "Total de usuários" cresce em 1 na criação, "Ativos"/"Inativos" acompanham a Situação escolhida)
+- **THEN** os quatro KPIs refletem imediatamente o conjunto resultante (a listagem é rebuscada pela API)
 
 ### Requirement: A tabela lista os usuários com paginação, ordenação, busca e badges
 O sistema SHALL exibir os usuários em `UiDataTable` com colunas Nome, E-mail, Perfil (badge), Status (badge) e Último acesso (do `ultimo_login` real quando houver), com paginação, ordenação e busca textual do componente, badge de Status distinguível entre "Ativo" e "Inativo" e badge de Perfil distinguível por perfil — cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
@@ -145,7 +145,7 @@ SHALL fechar o modal de confirmação sem alterar nada.
 - **THEN** o modal fecha sem nenhuma requisição e a situação do usuário permanece a mesma
 
 ### Requirement: A exportação gera arquivos sobre o conjunto de usuários vigente
-O sistema SHALL oferecer no cabeçalho o menu "Relatórios" (posicionado à esquerda do botão "Novo Usuário") com as opções "Ficha Cadastral" (gera um PDF em folha retrato com uma ficha por página para cada usuário do conjunto vigente), "Relação Completa" (gera e baixa o relatório `usuarios.pdf` em folha paisagem sobre os mesmos usuários) e "Exportar em CSV" (download do conjunto vigente com cabeçalhos), com um divisor separando as opções em PDF do CSV, sem abrir o diálogo de impressão do navegador.
+O sistema SHALL oferecer no cabeçalho o menu "Relatórios" (posicionado à esquerda do botão "Novo Usuário") com as opções "Ficha Cadastral" (gera um PDF em folha retrato com uma ficha por página para cada usuário do conjunto vigente), "Relação Completa" (gera e baixa o relatório `usuarios.pdf` em folha paisagem sobre os mesmos usuários) e "Exportar em CSV" (download do conjunto vigente com cabeçalhos), com um divisor separando as opções em PDF do CSV, sem abrir o diálogo de impressão do navegador. Como a listagem é paginada, a exportação SHALL obter da API o conjunto filtrado **completo** (todas as páginas) antes de gerar o arquivo.
 
 #### Scenario: Exportar em CSV
 - **WHEN** o usuário escolhe "Exportar em CSV"
@@ -289,33 +289,27 @@ Enquanto o envio das linhas selecionadas à API estiver em voo, o modal de impor
 - **THEN** o painel é encerrado, o modal fecha, os KPIs e a tabela refletem os registros gravados e um toast de sucesso exibe a contagem
 
 ### Requirement: A tela opera sobre a API de usuários; filtros e exportações permanecem locais
-O sistema SHALL carregar a listagem de usuários (e, com ela, os dados que alimentam KPIs,
-tabela, filtros e exportações) a partir de `GET /api/usuarios` na montagem da página,
-exibindo estado de carregamento e toast de erro na falha (sem simular dados). CRUD,
-importação, exclusão, bloqueio e convite SHALL operar via API, com as mutações refletidas
-imediatamente no conjunto vigente. Filtros, busca, paginação, KPIs derivados e exportações
-CSV/PDF SHALL permanecer processados no cliente sobre o conjunto carregado, sem requisição
-por filtro ou exportação; os filtros SHALL continuar sendo descartados na recarga.
+O sistema SHALL carregar a listagem de usuários de `GET /api/usuarios` na montagem da página e a cada mudança de página/tamanho/ordenação/busca (com debounce), exibindo estado de carregamento e toast de erro na falha (sem simular dados). CRUD, importação, exclusão, bloqueio e convite SHALL operar via API, com as mutações refletidas imediatamente (a listagem é rebuscada). Filtros, busca, paginação e KPIs SHALL ser processados **no servidor** sobre o conjunto filtrado; a exportação SHALL buscar o conjunto filtrado completo pela API. Os filtros SHALL continuar sendo descartados na recarga.
 
 #### Scenario: Carga inicial mostra os usuários do banco
 - **WHEN** o navegador abre `/admin/gestao-usuarios` com sessão ativa
-- **THEN** um estado de carregamento é exibido enquanto `GET /api/usuarios` responde, e em
-  seguida a tabela exibe os usuários persistidos no banco (ex.: o administrador provisionado
-  e as contas criadas por convite)
+- **THEN** um estado de carregamento é exibido enquanto `GET /api/usuarios` responde, e em seguida a tabela exibe a primeira página de usuários persistidos no banco (ex.: o administrador provisionado e as contas criadas por convite)
 
 #### Scenario: Falha na carga exibe erro sem simular dados
 - **WHEN** a requisição de listagem falha (rede, banco ou sessão expirada sem refresh)
-- **THEN** um toast de erro informa a falha e a tabela permanece em estado vazio/erro, sem
-  exibir a base de demonstração antiga
+- **THEN** um toast de erro informa a falha e a tabela permanece em estado vazio/erro, sem exibir a base de demonstração antiga
 
 #### Scenario: Recarga rebusca o banco
 - **WHEN** a página é recarregada após criar, editar, importar, excluir, bloquear ou convidar
 - **THEN** a listagem vem da API com os dados persistentes (nada volta a uma base demo)
 
-#### Scenario: Filtro e exportação não fazem requisição
-- **WHEN** o usuário aplica filtros, busca na tabela ou gera CSV/PDF
-- **THEN** nenhuma requisição de rede é emitida por essas operações (elas processam o
-  conjunto já carregado)
+#### Scenario: Filtro e exportação consultam o servidor
+- **WHEN** o usuário aplica filtros, busca na tabela (com debounce), muda de página ou gera CSV/PDF
+- **THEN** a aplicação consulta a API uma vez por interação (filtro/página) — sem uma requisição por tecla — e a exportação obtém o conjunto filtrado completo para montar o arquivo
+
+#### Scenario: Exportação busca o conjunto completo
+- **WHEN** o usuário gera CSV ou PDF
+- **THEN** a aplicação obtém da API o conjunto filtrado completo (todas as páginas) e gera o arquivo sobre ele
 
 ### Requirement: O modal de usuário reúne os blocos de cadastro com busca de CEP
 O sistema SHALL exibir um único modal de usuário, aberto em modo de criação pelo botão "Novo Usuário" do cabeçalho e em modo de edição pelo lápis da linha, com os blocos **Dados do Usuário** (avatar, Nome, E-mail, Telefone, Função, Departamento e, numa linha própria de largura total começando abaixo do avatar, Status — em controle segmentado Ativo/Inativo, sem dropdown —, Perfil, Senha e Confirmar Senha — sem seção/cabeçalho próprio de "Acesso ao Sistema"), **Endereço** (CEP, Endereço, Número, Complemento, Bairro, Cidade, Estado, Região) e **Configurações de E-mail** (E-mail SMTP, Senha SMTP, Provedor, Servidor SMTP, Porta, Segurança, ações de teste e Status da Configuração) nos dois modos, acrescidos do bloco **Informações de Cadastro** (Data Cadastro e Última Atualização, ambos desabilitados) **somente em modo de edição** — o modo de criação SHALL abrir o modal apenas com os três blocos anteriores, sem a seção "Informações de Cadastro" e sem os campos de data. O ícone de busca de CEP SHALL consultar a ViaCEP e preencher o endereço conforme a capability `busca-cep` (com estado de carregamento, feedback de falha e bloqueio de cliques), sem nenhum toast de "próxima etapa".
@@ -493,11 +487,10 @@ sempre em quatro `UiModalSection`: **"Destinatário"** (avatar ou iniciais, nome
 telefone, badges de Perfil e Status), **"Canal de Envio"** (escolha única entre "E-mail" e
 "WhatsApp" por dois cartões `UiChoiceCard`, iniciando em E-mail; o cartão de WhatsApp SHALL
 chegar desabilitado, com dica explicando a ausência, quando o usuário não tiver telefone
-cadastrado), **"Credenciais de Acesso"** (login = e-mail do usuário e senha provisória
-exibidos **na mesma linha**; a senha, quando existir, aparece em modo somente-leitura com
-controle de visibilidade e cópia, e o botão de **redefinir**, que gera nova provisória no
-rascunho, fica abaixo dos campos; quando vazia, o campo de definição acompanha abaixo do botão
-de **gerar**, com no mínimo 8 caracteres) e **"Pré-visualização"** (apenas o template de
+cadastrado), **"Credenciais de Acesso"** (login = e-mail do usuário e a **senha provisória do
+envio** — o sistema **nunca** devolve a senha vigente, pois guarda apenas o hash, então o campo
+de senha vem **vazio** e um botão **Gerar** produz uma nova provisória no rascunho, com no
+mínimo 8 caracteres; não há exibição da senha antiga) e **"Pré-visualização"** (apenas o template de
 convite renderizado conforme o canal escolhido — HTML no E-mail e texto puro no WhatsApp —,
 sem tarja de cabeçalho). A mensagem SHALL vir de um template pré-definido do sistema
 compartilhado entre cliente e servidor, contendo o nome, o e-mail, o link de acesso
@@ -517,7 +510,8 @@ listagem da tela — que vem do banco — reflete a conta real na sua linha.
 - **WHEN** o usuário clica no `MailCheck` de uma linha
 - **THEN** o modal de convite abre exibindo as quatro seções (com Destinatário, Canal de Envio
   e Credenciais à esquerda e Pré-visualização à direita em telas `xl` ou maiores), subtítulo
-  descritivo e canal "E-mail" já selecionado, sem nenhum toast de "próxima etapa"
+  descritivo, canal "E-mail" já selecionado e o campo de senha provisória vazio, sem nenhum
+  toast de "próxima etapa"
 
 #### Scenario: WhatsApp desabilitado sem telefone
 - **WHEN** o modal de convite é aberto para um usuário sem telefone cadastrado
@@ -530,15 +524,15 @@ listagem da tela — que vem do banco — reflete a conta real na sua linha.
   versão HTML quando o canal volta a "E-mail"
 
 #### Scenario: Senha vazia bloqueia o envio e pode ser gerada
-- **WHEN** o modal é aberto para um usuário sem senha provisória (ex.: importado)
+- **WHEN** o modal é aberto (o campo de senha sempre parte vazio)
 - **THEN** o botão "Enviar Convite" está desabilitado com aviso, e a ação de gerar preenche uma
   senha provisória válida (no mínimo 8 caracteres) habilitando o envio
 
 #### Scenario: Redefinir senha antes do envio
-- **WHEN** com senha já existente no registro o usuário aciona "Redefinir senha"
-- **THEN** uma nova senha provisória válida (no mínimo 8 caracteres) substitui a atual no
-  rascunho e no campo somente-leitura, a ação pode ser repetida antes do envio e a nova senha
-  só é gravada no banco ao enviar — descartada se o modal for fechado
+- **WHEN** o usuário aciona "Gerar" (ou redefine) a senha provisória no rascunho
+- **THEN** uma nova senha provisória válida (no mínimo 8 caracteres) substitui a do rascunho, a
+  ação pode ser repetida antes do envio e a nova senha só é gravada no banco ao enviar —
+  descartada se o modal for fechado; a senha vigente do registro nunca é exibida
 
 #### Scenario: Convite cria a conta quando ela não existe no banco
 - **WHEN** o usuário aciona "Enviar Convite" numa linha que ainda não tem conta no banco
@@ -573,4 +567,22 @@ listagem da tela — que vem do banco — reflete a conta real na sua linha.
 - **WHEN** a página é recarregada após um envio de convite
 - **THEN** a listagem da API exibe o usuário normalmente e a conta (e a sua senha) seguem no
   banco — ela continua autenticando no login
+
+### Requirement: As APIs de usuários não expõem a senha do SMTP
+O sistema SHALL NOT devolver a senha do SMTP nas respostas das APIs de usuários (listagem, criação
+e edição): no lugar do valor, a API SHALL informar apenas se há senha cadastrada, e a senha SHALL
+ser gravada **cifrada em repouso**. Em uma edição enviada sem nova senha SMTP, a senha já
+armazenada SHALL ser preservada.
+
+#### Scenario: Listagem não traz a senha
+- **WHEN** `GET /api/usuarios` é chamado
+- **THEN** cada usuário traz um indicador de existência de senha SMTP e **nunca** o valor em claro
+
+#### Scenario: Senha vazia preserva a existente
+- **WHEN** uma edição de usuário é enviada sem uma nova senha SMTP
+- **THEN** a senha SMTP armazenada permanece inalterada (a edição não a apaga)
+
+#### Scenario: Nova senha é gravada cifrada
+- **WHEN** uma edição envia uma nova senha SMTP
+- **THEN** o valor é gravado de forma cifrada, sem que a leitura da API o devolva em claro
 

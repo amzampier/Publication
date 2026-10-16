@@ -543,3 +543,77 @@ declarando-se a fonte que o modal de permissões da fase 2 SHALL implementar.
 - **WHEN** o `docs/07` é lido
 - **THEN** ele identifica a matriz como fonte normativa para o modal de permissões por perfil
   da fase 2 e documenta os gatilhos da fase 1 como pendência de modal
+
+### Requirement: A matriz de permissões é aplicada pelas APIs administrativas
+A matriz de permissões de um perfil SHALL determinar, no servidor, o que os usuários vinculados a
+ele podem fazer nas APIs administrativas — deixando de ser apenas normativa. Após salvar a matriz
+de um perfil (ou copiá-la), os usuários daquele perfil SHALL passar a ter exatamente as ações
+concedidas (e a perder as revogadas) na próxima requisição, conforme a capability
+`autorizacao-rbac`.
+
+#### Scenario: Conceder uma ação passa a permitir a operação
+- **WHEN** a matriz de um perfil recebe uma ação que não tinha (ex.: `criar` em `gestao-usuarios`) e a gravação é confirmada
+- **THEN** os usuários daquele perfil passam a poder executar a operação correspondente
+
+#### Scenario: Revogar uma ação passa a negar a operação
+- **WHEN** a matriz de um perfil perde uma ação que tinha (ex.: `excluir` em `gestao-usuarios`) e a gravação é confirmada
+- **THEN** os usuários daquele perfil passam a receber `403` na operação correspondente
+
+### Requirement: A gravação da matriz protege contra o lockout administrativo
+O sistema SHALL recusar com `409` (sem gravar) a substituição ou cópia de matriz que deixaria o
+sistema **sem nenhum usuário ativo** cujo perfil conceda a ação `alterar` nos **três módulos
+essenciais** (`gestao-usuarios`, `perfis-acesso` e `configuracoes-globais`), evitando que o sistema
+fique sem administração possível. As demais gravações seguem permitidas, preservada a
+editabilidade da matriz de qualquer perfil na abertura do modal.
+
+#### Scenario: Retirar a última administração é recusado
+- **WHEN** a gravação da matriz do único perfil cujos usuários ativos detêm `alterar` nos três módulos essenciais remove uma dessas permissões
+- **THEN** a API responde `409`, a matriz permanece intacta e uma mensagem informa que a alteração deixaria o sistema sem administração
+
+#### Scenario: Cópia que removeria a última administração é recusada
+- **WHEN** "copiar para" sobrescreveria a matriz do último perfil detentor das permissões essenciais de modo a removê-las
+- **THEN** a API responde `409`, a matriz do destino permanece intacta e nada é gravado
+
+#### Scenario: Alteração permitida quando há outra administração
+- **WHEN** existe ao menos um outro usuário ativo cujo perfil detém `alterar` nos três módulos essenciais
+- **THEN** a gravação da matriz é aceita normalmente (200), recalculando a coluna Permissões e os KPIs
+
+### Requirement: O nome do perfil é único
+O sistema SHALL garantir a unicidade do nome do perfil no banco (`perfis_acesso.nome_perfil`): criar
+um perfil ou renomear um perfil para um nome já existente SHALL responder `409` sem gravar,
+preservando o registro existente. A restrição de unicidade do banco é a garantia de integridade
+final.
+
+#### Scenario: Criação com nome duplicado é recusada
+- **WHEN** `POST /api/perfis` é chamado com um `nome_perfil` já existente
+- **THEN** a API responde `409` e nenhum perfil é criado
+
+#### Scenario: Edição para nome existente é recusada
+- **WHEN** `PUT /api/perfis/:id` renomeia um perfil para o nome de outro perfil já existente
+- **THEN** a API responde `409` e nenhum nome é alterado
+
+### Requirement: A situação do perfil controla o acesso e a atribuição
+O sistema SHALL impedir o login de um usuário cujo perfil esteja **Inativo** ou **Bloqueado**
+(aviso próprio, sem autenticar) e SHALL recusar a atribuição de um perfil não-Ativo na criação,
+na edição e no convite de usuários.
+
+#### Scenario: Usuário de perfil não-Ativo não loga
+- **WHEN** um usuário com credenciais válidas cujo perfil está Inativo ou Bloqueado tenta autenticar
+- **THEN** o login é recusado com aviso de que o perfil não está ativo e nenhuma sessão é criada
+
+#### Scenario: Perfil não-Ativo não é atribuível
+- **WHEN** uma criação, edição ou convite tenta atribuir um perfil Inativo ou Bloqueado
+- **THEN** a operação é recusada (`400`) e nada é gravado
+
+### Requirement: A edição do perfil preserva campos omitidos
+O sistema SHALL atualizar o perfil de forma **parcial**: um campo ausente no corpo do
+`PUT /api/perfis/:id` SHALL manter o valor vigente (não apagar). Em particular, omitir a
+`descricao` SHALL preservar a descrição atual.
+
+#### Scenario: Omitir a descrição não a apaga
+- **WHEN** `PUT /api/perfis/:id` é chamado apenas com `nome` (sem `descricao`)
+- **THEN** a descrição do perfil permanece inalterada
+
+#### Scenario: Enviar a descrição a altera
+- **WHEN** `PUT /api/perfis/:id` é chamado com `descricao` preenchida
+- **THEN** a descrição é atualizada para o valor enviado

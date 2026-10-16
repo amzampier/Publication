@@ -230,3 +230,26 @@ O sistema SHALL aplicar as configurações globais salvas (logomarcas do header 
 #### Scenario: Hidratação não conta como alteração
 - **WHEN** a página de Configurações Globais carrega e aplica os valores do servidor
 - **THEN** o botão "Salvar Alterações Globais" permanece desabilitado até que o usuário altere algo
+
+### Requirement: A gravação das configurações é atômica
+O sistema SHALL gravar a atualização das configurações de forma atômica entre as tabelas envolvidas
+(`configuracoes_globais` e `configuracoes_limite_requisicao`): se qualquer escrita falhar, nenhuma
+alteração SHALL persistir e o cliente SHALL receber erro, sem estado parcial gravado.
+
+#### Scenario: Falha parcial não deixa estado inconsistente
+- **WHEN** um `PUT /api/configuracoes` altera as duas superfícies e a gravação de uma delas falha
+- **THEN** nenhuma configuração muda (rollback) e a API responde com erro, mantendo os valores anteriores
+
+### Requirement: A política de retenção de auditoria é aplicada automaticamente
+O sistema SHALL aplicar a política de retenção de forma automática: registros de auditoria mais
+antigos que `dias_retencao_auditoria` SHALL ser expurgados por uma rotina agendada no banco de
+dados (um evento do MariaDB executado diariamente às 03:00), de modo que a trilha não cresça
+além da janela configurada — sem exigir ação do operador.
+
+#### Scenario: Registros fora da janela são expurgados
+- **WHEN** existem registros de auditoria mais antigos que o número de dias configurado e o evento agendado executa
+- **THEN** esses registros são removidos e a trilha mantém apenas os dentro da janela
+
+#### Scenario: A janela acompanha a configuração
+- **WHEN** o valor de `dias_retencao_auditoria` é alterado nas Configurações Globais
+- **THEN** o expurgo seguinte passa a usar o novo valor

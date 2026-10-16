@@ -29,15 +29,15 @@ O sistema SHALL declarar a rota `/admin/auditoria` no item "Gestão de Auditoria
 - **THEN** o navegador navega para `/admin/auditoria`
 
 ### Requirement: Os KPIs derivam do conjunto de registros filtrado
-O sistema SHALL exibir no topo da página os KPIs "Registros" (contagem do conjunto filtrado), "Período" (rótulo do período vigente), "Usuários distintos" e "Última atividade" (data/hora do registro mais recente do conjunto), recalculados sempre que os filtros mudam.
+O sistema SHALL exibir no topo da página os KPIs "Registros" (contagem do conjunto filtrado), "Período" (rótulo do período vigente), "Usuários distintos" e "Última atividade" (data/hora do registro mais recente do conjunto), calculados **no servidor** sobre o conjunto filtrado e devolvidos pela API, de modo que reflitam o banco inteiro (não apenas a página corrente) e sejam recalculados quando os filtros mudam.
 
 #### Scenario: Sem filtros ativos
 - **WHEN** a página é aberta sem nenhum filtro aplicado
-- **THEN** "Registros" mostra a contagem total do conjunto servido pela API e "Última atividade" corresponde ao registro mais recente
+- **THEN** "Registros" mostra a contagem total do conjunto (calculada no servidor) e "Última atividade" corresponde ao registro mais recente
 
 #### Scenario: Filtro de ação recalcula os KPIs
 - **WHEN** o usuário aplica o filtro de ação "Inclusão"
-- **THEN** "Registros", "Usuários distintos" e "Última atividade" passam a considerar apenas os registros de Inclusão
+- **THEN** "Registros", "Usuários distintos" e "Última atividade" passam a considerar apenas os registros de Inclusão, recalculados no servidor
 
 #### Scenario: Período vigente vira rótulo
 - **WHEN** as datas inicial e final estão preenchidas (ex.: 01/10/2026 a 02/10/2026)
@@ -109,7 +109,7 @@ O sistema SHALL oferecer na coluna "Ações" da tabela um controle acessível (c
 - **THEN** o modal fecha e a tabela permanece no mesmo estado
 
 ### Requirement: A exportação gera arquivos sobre os registros filtrados
-O sistema SHALL oferecer no cabeçalho o menu "Exportar" com as opções "Exportar em CSV" (download dos registros que passam pelos filtros ativos, com cabeçalhos) e "Download em PDF" (gera e baixa o relatório `auditoria.pdf` em folha paisagem sobre os mesmos registros), sem abrir o diálogo de impressão do navegador.
+O sistema SHALL oferecer no cabeçalho o menu "Exportar" com as opções "Exportar em CSV" (download dos registros que passam pelos filtros ativos, com cabeçalhos) e "Download em PDF" (gera e baixa o relatório `auditoria.pdf` em folha paisagem sobre os mesmos registros), sem abrir o diálogo de impressão do navegador. Como a listagem é paginada, a exportação SHALL obter da API o conjunto filtrado **completo** (todas as páginas) antes de gerar o arquivo.
 
 #### Scenario: Exportar em CSV respeita os filtros
 - **WHEN** há filtros ativos e o usuário escolhe "Exportar em CSV"
@@ -135,11 +135,11 @@ O sistema SHALL exibir abaixo da tabela uma nota de que os registros estão suje
 - **THEN** a nota sobre a política de retenção aparece sob a tabela e seu controle leva o usuário a `/admin/configuracoes-globais`
 
 ### Requirement: A página carrega os registros pela API com carregamento no F5 e toast de erro
-O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria` na montagem da página `/admin/auditoria`, exibindo um overlay `UiLoading` (mensagem "Carregando auditoria…") enquanto a requisição estiver em voo — no mesmo padrão de Meu Perfil e Configurações Globais, sem renderizar conteúdo parcial — e um toast de erro caso a carga falhe, mantendo a tabela em estado vazio e **nunca** exibindo a base de demonstração antiga como se fosse persistida. Os filtros estruturais SHALL permanecer em estado de sessão (preservados na navegação interna, descartados no F5) e a recarga da página SHALL rebuscar os registros pela API.
+O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria` na montagem da página `/admin/auditoria`, exibindo um overlay `UiLoading` (mensagem "Carregando auditoria…") enquanto a requisição estiver em voo — no mesmo padrão de Meu Perfil e Configurações Globais, sem renderizar conteúdo parcial — e um toast de erro caso a carga falhe, mantendo a tabela em estado vazio e **nunca** exibindo a base de demonstração antiga como se fosse persistida. A listagem SHALL ser **paginada no servidor**: a tabela opera em modo servidor, cada mudança de página/tamanho/ordenação/busca (com debounce) SHALL consultar a API, e a recarga da página SHALL rebuscar pela API. Os filtros estruturais SHALL permanecer em estado de sessão (preservados na navegação interna, descartados no F5).
 
 #### Scenario: Carga inicial mostra os registros do banco
 - **WHEN** o navegador abre `/admin/auditoria` com sessão válida
-- **THEN** o overlay de carregamento é exibido enquanto `GET /api/auditoria` responde e, em seguida, a tabela exibe os registros persistidos (seed da migration + operações reais registradas), ordenados do mais recente para o mais antigo
+- **THEN** o overlay de carregamento é exibido enquanto `GET /api/auditoria` responde e, em seguida, a tabela exibe a primeira página de registros persistidos (seed da migration + operações reais registradas), ordenados do mais recente para o mais antigo
 
 #### Scenario: Loading no F5 sem conteúdo parcial
 - **WHEN** o usuário recarrega a página (F5) com o `GET /api/auditoria` em voo
@@ -149,28 +149,32 @@ O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria`
 - **WHEN** a requisição `GET /api/auditoria` falha (rede ou banco indisponível)
 - **THEN** um toast de erro informa a falha de carregamento e a tabela permanece em estado vazio/erro, sem exibir a base de demonstração como se fosse persistida
 
+#### Scenario: Paginar consulta o servidor
+- **WHEN** o usuário muda de página, tamanho, ordenação ou digita na busca (com debounce)
+- **THEN** a página corrente é rebuscada pela API (nenhum slicing local sobre uma página única)
+
 #### Scenario: Recarga rebusca pela API e descarta os filtros
 - **WHEN** a página é recarregada após aplicar filtros ou após operações de escrita em outros módulos
 - **THEN** os filtros voltam ao estado vazio e o `GET /api/auditoria` devolve o conjunto atualizado do banco (o que foi gravado persiste; a demo antiga não retorna)
 
 ### Requirement: A API de auditoria filtra no servidor e serve as opções dos selects
-O sistema SHALL expor `GET /api/auditoria` sob a sessão autenticada (sem sessão → `401`), aceitando os filtros estruturais como parâmetros de consulta opcionais (`dataInicial`, `dataFinal` em `yyyy-mm-dd`, `usuario`, `acao`, `recurso` — parâmetro ausente ou vazio equivale a "todos"), filtrando no servidor o conjunto de registros (datas como janela inclusiva do dia local) e devolvendo `{ registros, opcoes }` — `registros` com todos os campos do registro (data/hora, usuário id+nome, ação, recurso, detalhes e IP) ordenados do mais recente para o mais antigo, e `opcoes` com as listas distintas de usuários e recursos do conjunto **não** filtrado (as opções dos `UiSelect` do modal de filtros não podem sumir em razão de um filtro aplicado). Os KPIs, a busca textual, a paginação e as exportações SHALL continuar operando no cliente sobre o conjunto retornado.
+O sistema SHALL expor `GET /api/auditoria` sob a sessão autenticada (sem sessão → `401`), aceitando os filtros estruturais como parâmetros de consulta opcionais (`dataInicial`, `dataFinal` em `yyyy-mm-dd`, `usuario`, `acao`, `recurso` — parâmetro ausente ou vazio equivale a "todos") **e a paginação** (`pagina`, `porPagina`), filtrando e paginando no servidor (datas como janela inclusiva do dia local) e devolvendo `{ registros, total, kpis, opcoes, pagina, porPagina }` — `registros` com os campos do registro (data/hora, usuário id+nome, ação, recurso, detalhes e IP) da **página corrente** ordenados do mais recente para o mais antigo; `total` com a contagem do conjunto filtrado; `kpis` com "Registros", "Usuários distintos" e "Última atividade" calculados sobre o conjunto filtrado; e `opcoes` com as listas distintas de usuários e recursos do conjunto **não** filtrado (as opções dos `UiSelect` do modal de filtros não podem sumir em razão de um filtro aplicado). A API SHALL aceitar ainda um modo **exportação** que devolve o conjunto filtrado completo (bounded por um teto de segurança) para CSV/PDF.
 
 #### Scenario: Acesso sem sessão é negado
 - **WHEN** `GET /api/auditoria` é chamado sem cookie de sessão válido
 - **THEN** a API responde `401` e nenhum registro é retornado
 
 #### Scenario: Filtros estruturais chegam por query param
-- **WHEN** a chamada é feita com `?acao=Inclusão&dataInicial=2026-10-01&dataFinal=2026-10-02`
-- **THEN** `registros` contém somente os registros que atendem a todos os filtros, em ordem decrescente de data/hora
+- **WHEN** a chamada é feita com `?acao=Inclusão&pagina=2&porPagina=20`
+- **THEN** `registros` contém apenas a 2ª página de 20 registros de Inclusão, em ordem decrescente de data/hora, e `total`/`kpis` refletem o conjunto filtrado inteiro
 
 #### Scenario: Sem parâmetros devolve o conjunto completo
 - **WHEN** a chamada é feita sem nenhum parâmetro de consulta
-- **THEN** `registros` contém todos os registros da trilha (dentro da política de retenção) ordenados do mais recente para o mais antigo
+- **THEN** `registros` contém a primeira página dos registros da trilha (dentro da política de retenção) ordenados do mais recente para o mais antigo, com `total` do conjunto
 
 #### Scenario: Opções derivam do conjunto não filtrado
 - **WHEN** a chamada é feita com um filtro de usuário aplicado
-- **THEN** `registros` reflete o filtro, enquanto `opcoes.usuarios` e `opcoes.recursos` seguem listando todos os usuários e recursos distintos da trilha
+- **THEN** `registros`/`total` refletem o filtro, enquanto `opcoes.usuarios` e `opcoes.recursos` seguem listando todos os usuários e recursos distintos da trilha
 
 #### Scenario: Ação desconhecida não quebra a consulta
 - **WHEN** o parâmetro `acao` contém valor fora dos cinco tipos (Inclusão, Alteração, Exclusão, Homologação e Acesso)
@@ -221,3 +225,13 @@ O sistema SHALL registrar na trilha `auditoria`, com tipo **Acesso** e recurso *
 #### Scenario: Recuperação de senha registra nos dois caminhos
 - **WHEN** `POST /api/auth/esqueci-senha` é chamado com e-mail de conta ativa e depois com e-mail inexistente
 - **THEN** ambos os casos inserem um registro de Acesso identificando o e-mail alvo, e a resposta HTTP continua sendo o mesmo `{ ok: true }` genérico nos dois casos
+
+### Requirement: O IP registrado na trilha é o da conexão, salvo proxy confiável
+O sistema SHALL registrar na trilha de auditoria o IP real da conexão do cliente; o cabeçalho
+`X-Forwarded-For` SHALL ser considerado **somente** quando a implantação declarar uma lista de
+proxies confiáveis (por configuração), de modo que o IP da trilha não possa ser forjado por um
+cliente arbitrário.
+
+#### Scenario: IP da conexão é o registrado sem proxy confiável
+- **WHEN** uma operação de escrita é registrada sem proxies confiáveis configurados e a requisição traz um `X-Forwarded-For` forjado
+- **THEN** a trilha registra o IP da conexão, não o valor do cabeçalho
