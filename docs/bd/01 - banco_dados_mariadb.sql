@@ -631,3 +631,19 @@ CREATE OR REPLACE VIEW manuais AS
 -- FIM DO SCRIPT DDL (MARIADB 11.8) - ESTRUTURA DAS TABELAS
 -- Seeds iniciais (perfis, admin, config): ver 02_seed.sql
 -- =========================================================================
+
+-- =========================================================================
+-- COMPLEMENTO — OBJETOS ADICIONADOS POR MIGRATIONS POSTERIORES
+-- Este arquivo (referência humana) nasceu como a migration 01. As migrations
+-- seguintes alteram o schema e NÃO estão refletidas no DDL acima; os objetos
+-- reais aplicados incluem:
+--   - 03: `configuracoes_globais.sidebar_expandida TINYINT(1) NOT NULL DEFAULT 1`
+--   - 04: `usuarios.numero` passa a default '' (limpeza dos 'S/N')
+--   - 05/06: tabela `seguranca_eventos_login` (log append-only de tentativas,
+--     ENUM de tipo ampliado pela 06) — ver `server/migration/05_*.sql`
+--   - 08: `UNIQUE uk_perfis_nome (perfis_acesso.nome_perfil)`; índices
+--     `auditoria(acao)` e `seguranca_eventos_login(email_alvo, tipo, ocorrido_em)`
+--   - 09: `usuarios.token_version INT NOT NULL DEFAULT 0`
+--   - 10: EVENT `ev_expurgo_auditoria` (expurgo diário da trilha às 03:00)
+-- A fonte da verdade do schema é `server/migration/*.sql` (aplicado no boot).
+-- =========================================================================

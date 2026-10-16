@@ -14,12 +14,12 @@ O objetivo deste guia é servir de referência técnica para o desenvolvimento d
 | **Frontend Core** | **Vue 3** (`^3.5.43`) | Composition API com `<script setup lang="ts">`, reatividade nativa e tipagem rigorosa. |
 | **Linguagem** | **TypeScript** | Compartilhamento de tipos e interfaces entre cliente e servidor. |
 | **Estilização** | **Tailwind CSS** (`@nuxtjs/tailwindcss`) | Design System próprio em `app/components/ui/` sem sobrecarga de bibliotecas externas pesadas (sem dependência de Shadcn, Vuetify ou Element). |
-| **Ícones** | **lucide-vue-next** (`^1.0.0`) | Ícones SVG limpos e padronizados consumidos via tree-shaking. |
+| **Ícones** | **@lucide/vue** | Ícones SVG limpos e padronizados, importados como componentes nomeados e consumidos via tree-shaking. |
 | **Banco de Dados** | **MariaDB 11.8** via **mysql2/promise** (`^3.22.3`) | Conexão direta via Connection Pool, transações nativas e queries SQL parametrizadas (raw SQL). Alta performance sem complexidade e gargalos de ORMs pesados. |
-| **Validação** | **Zod** (`^4.4.3`) | Schemas de validação no backend para payloads HTTP (e no frontend para validações de sessão). |
-| **Autenticação & Criptografia** | **JWT** (`jsonwebtoken`) + **bcrypt** (`^6.0.0`) | Tokens de acesso curtos, Refresh Tokens com rotação no banco, senhas em bcrypt (custo 12), proteção contra brute force. |
-| **Utilitários Frontend** | **@vueuse/core** (`^14.3.0`) | Composables essenciais para ciclo de vida, clipboard, storage e eventos de janela. |
-| **Manipulação de Arquivos** | **easy-template-x**, **pdf-lib**, **exceljs**, **qrcode** | Geração e manipulação de DOCX/PDF, exportação de planilhas e emissão de QR Codes. |
+| **Validação** | *Roadmap:* **Zod** | Ainda **não instalado** — a validação atual é feita ad hoc com `createError(400)` nas rotas e utilitários (`server/utils/validation.ts` é roadmap). |
+| **Autenticação & Criptografia** | **JWT** (`jose`) + **bcrypt** (`^6.0.0`) | Tokens de acesso curtos (HS256 via `jose`), Refresh Tokens com rotação no banco, senhas em bcrypt (custo 12), proteção contra brute force e cifra de segredos em repouso (AES-256-GCM). |
+| **Utilitários Frontend** | *(composables próprios)* | Não há `@vueuse/core` instalado; os composables reativos são próprios em `app/composables/`. |
+| **Geração de Arquivos** | **exceljs** + **jspdf** + **jspdf-autotable** | Leitura de planilhas de importação (`exceljs`, carregado dinamicamente) e geração de PDF **no cliente** (`jspdf`/`jspdf-autotable`). |
 
 ---
 
@@ -30,28 +30,27 @@ A arquitetura adota o padrão moderno do Nuxt 4, separando a aplicação em dois
 ```
 raiz-do-projeto/
 ├── app/                           # CAMADA CLIENTE / FRONTEND (Vue 3 + Tailwind)
-│   ├── app.vue                    # Ponto de entrada (NuxtLayout + NuxtPage + UiToastContainer)
+│   ├── app.vue                    # Ponto de entrada (NuxtRouteAnnouncer + NuxtLayout + NuxtPage + UiToastContainer)
 │   ├── components/
-│   │   ├── layout/                # Layout base (AppLayout, AppSidebar, AppHeader)
-│   │   ├── ui/                    # Design System interno (19 componentes atômicos)
-│   │   └── [modulo]/              # Componentes de domínio (ex: releases, manuais, escopos, publicacoes)
+│   │   ├── layout/                # Shell (AppHeader, AppSidebar)
+│   │   ├── ui/                    # Design System interno (26 componentes atômicos)
+│   │   └── [modulo]/              # Componentes de domínio (usuarios, perfis, auditoria, configuracoes, perfil, auth)
 │   ├── composables/               # Regras de negócio e hooks reativos reutilizáveis
 │   ├── config/
 │   │   └── navigation.ts          # Definição centralizada do menu lateral e rotas
-│   ├── layouts/                   # Layouts de tela (default.vue, presenca.vue, etc.)
+│   ├── layouts/                   # Layouts de tela (default.vue, admin.vue, auth.vue)
 │   ├── middleware/
 │   │   └── auth.global.ts         # Route guard global no cliente
-│   ├── pages/                     # Roteamento baseado em arquivos (File-based routing)
-│   └── types/                     # Definições TypeScript do domínio frontend
+│   └── pages/                     # Roteamento por arquivos (admin/**, index, design, error)
 │
 ├── server/                        # CAMADA SERVIDORA / BACKEND (Nitro Engine)
-│   ├── api/                       # Endpoints HTTP RESTful
-│   ├── middleware/                # Middlewares HTTP do Nitro (ex: auth.ts)
+│   ├── api/                       # Endpoints REST (auth, usuarios, perfis, auditoria, configuracoes, seguranca, convite, uploads)
+│   ├── middleware/                # auth-api.ts (sessão global nas /api/**)
 │   ├── migration/                 # Scripts SQL versionados (01_..., 02_..., etc.)
-│   ├── plugins/                   # Plugins de inicialização do Nitro (ex: migration.ts)
-│   ├── services/                  # Regras de negócio complexas do servidor
-│   └── utils/                     # Utilitários de infraestrutura (db, jwt, permission, validation)
+│   ├── plugins/                   # migration.ts, auth-config.ts
+│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner
 │
+├── shared/                        # Tipos/utilitários compartilhados (ex.: shared/utils/emails.ts)
 ├── docs/                          # Documentação de arquitetura e especificações de negócio
 ├── public/                        # Arquivos estáticos (favicon, robots.txt)
 ├── uploads/                       # Armazenamento de uploads em disco (organizado por subpastas)
@@ -67,8 +66,8 @@ O Publications possui **duas áreas** com natureza e proteção distintas (escop
 
 | Área | Roteamento | Acesso | Conteúdo |
 |---|---|---|---|
-| **Área Pública** | rotas raiz de `app/pages/` (ex.: `/`, `/releases`, `/manuais`, `/escopos`) | anônimo, sem autenticação | leitura das publicações: Releases Week Semanal, Manuais e Escopo de Projetos |
-| **Área Administrativa** | `app/pages/admin/**` (ex.: `/admin/login`, `/admin/releases`) | autenticação (JWT + cookie) e permissões RBAC | cadastros, edição e publicação dos conteúdos acima, usuários, perfis, auditoria e configurações |
+| **Área Pública** | rotas raiz de `app/pages/` (hoje apenas `/`) | anônimo, sem autenticação | **Roadmap:** leitura das publicações (Releases Week Semanal, Manuais e Escopo de Projetos). Hoje só existe o placeholder `app/pages/index.vue` — não há páginas `/releases`, `/manuais` nem `/escopos` na Área Pública (a sidebar exibe "Módulo em construção"). |
+| **Área Administrativa** | `app/pages/admin/**` (ex.: `/admin/login`, `/admin/gestao-usuarios`) | autenticação (JWT + cookie) e permissões RBAC | cadastros, edição e publicação dos conteúdos acima, usuários, perfis, auditoria e configurações |
 
 - No servidor, toda requisição sob `/api/` exige sessão válida (middleware `server/middleware/auth-api.ts`,
   com isenções para `/api/auth/*` e `/api/configuracoes/identidade`) e responde `401` sem sessão;
@@ -211,11 +210,11 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
-> **Roadmap (não implementado):** `requirePermission(event, modulo, acao)`
-> (`server/utils/permission.ts`), `validateBody`/Zod (`server/utils/validation.ts`) e
-> `handleApiError` (`server/utils/safeError.ts`) são o alvo arquitetural descrito nas changes
-> de RBAC/backend; o código atual faz a validação ad hoc e ainda não aplica permissão por
-> módulo nas rotas.
+> **Roadmap (não implementado):** `validateBody`/Zod (`server/utils/validation.ts`) e
+> `handleApiError` (`server/utils/safeError.ts`) permanecem o alvo arquitetural; hoje a validação
+> é ad hoc (`createError(400)`). A **autorização por módulo já é aplicada**:
+> `requirePermission(event, modulo, acao)` (`server/utils/permission.ts`) é chamado nas rotas
+> administrativas e responde `403` quando a permissão falta (ver §3.5).
 
 ---
 
@@ -239,7 +238,7 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 > As regras de segurança obrigatórias do projeto (incluindo a vedação de acesso ao banco pelo frontend) estão consolidadas na seção **"Segurança"** do `AGENTS.md`. Este guia descreve os mecanismos que as implementam.
 
 1. **Tokens JWT com HttpOnly Cookies**:
-   - O token de acesso fica em cookie com flag `__Host-auth-token`, `HttpOnly`, `SameSite=Lax`, e `Secure` em produção.
+   - O token de acesso fica em cookie `HttpOnly`, `SameSite=Lax`, com `Secure` e prefixo `__Host-` **somente em produção** (`__Host-auth-token`); em desenvolvimento os nomes são `auth-token`/`auth-refresh` (sem `Secure`/`__Host-`, que o navegador não persiste sem HTTPS).
    - O middleware global `server/middleware/auth-api.ts` valida a sessão de toda requisição
      sob `/api/` via `getSessionUser()` (`server/utils/auth.ts`), exceto as portas sem sessão:
      `/api/auth/*` (autenticação) e `/api/configuracoes/identidade` (só logo do login) —
@@ -250,12 +249,12 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
      API próprias implementadas hoje.
 2. **Refresh Tokens com Rotação de Sessão (`sessoes`)**:
    - Cada login gera um token de atualização registrado na tabela `sessoes`. Ao renovar, o token antigo é invalidado e substituído por um novo.
-3. **Blacklist de Tokens (`token_blacklist`)**:
-   - No logout, o identificador do token (`jti`) é gravado em banco para impedir reutilização até sua expiração.
+3. **Revogação de sessão (`usuarios.token_version`)**:
+   - O access JWT carrega a versão da sessão; o middleware valida (conta ativa + versão) a cada requisição. Logout e desativação incrementam a versão (revogando os tokens vigentes) e a exclusão remove a conta. A tabela `token_blacklist` existe no schema, mas a revogação é feita por versão (não pela blacklist).
 4. **Proteção contra Brute-Force (Lockout)**:
    - Contador de tentativas falhas (`tentativas_falhas`) e bloqueio temporário (`bloqueado_ate`) na tabela `usuarios`.
-5. **Rate Limiting Persistido no MariaDB (`rate_limits`)**:
-   - Controle de taxa por IP ou chave na tabela `rate_limits` (evita dependência de Redis para arquiteturas simples).
+5. **Rate limiting em memória + configuração persistida**:
+   - Limite por IP em memória (janela de 1 minuto), com o valor lido de `configuracoes_limite_requisicao` (cache de 60s) e o status `ativo` respeitado; o IP considerado é o da conexão (X-Forwarded-For só com `TRUSTED_PROXIES`).
 
 ---
 
@@ -264,9 +263,12 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 O sistema implementa controle de acesso granular na tabela `permissoes_perfil`:
 - Cada perfil possui permissões booleanas para as ações fixas: `visualizar`, `criar`, `alterar`, `excluir`.
 - Ações especiais são tratadas no campo `extras` (JSON), tais como: `publicar`, `arquivar`, `download`, `exportar`, `importar`.
-- O helper `requirePermission(event, modulo, acao)` (**roadmap — ainda não existe**) será o
-  ponto único de autorização por módulo: validará no banco/cache de sessão e negará com
-  **HTTP 403 Forbidden**; hoje as rotas exigem apenas sessão válida (`auth-api.ts`, §3.4).
+- O helper `requirePermission(event, modulo, acao)` (`server/utils/permission.ts`) é o ponto
+  único de autorização por módulo: carrega a matriz do perfil da sessão e nega com **HTTP 403
+  Forbidden** quando a ação falta. **Já aplicado** nas rotas administrativas (change
+  `rbac-require-permission`); a autenticação por sessão continua em `auth-api.ts` (§3.4). O
+  cliente dispõe de `.can(modulo, acao)` em `app/composables/usePermissions.ts`.
+- A **guarda anti-lockout** impede que a gravação da matriz deixe o sistema sem administração essencial.
 
 A tabela de perfis (`perfis_acesso`) existe na migration `01_create_tables.sql`
 (a página `/admin/perfis-acesso` já lê/grava via API — `docs/07`; DDL completo em `docs/bd/01`):
@@ -329,6 +331,19 @@ await registrarAuditoria(event, {
 
 ---
 
+### 3.7. Endpoints auxiliares (contratos nomeados)
+
+Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio — com contrato observável (método, sessão exigida, payload e respostas):
+
+- `GET /api/usuarios/eu` e `PATCH /api/usuarios/eu` — registro do próprio usuário (sessão apenas; PATCH grava dados/endereço/SMTP/avatar, **não** e-mail/perfil/situação/senha).
+- `GET /api/usuarios/eu/permissoes` — matriz de permissões do próprio usuário (sessão apenas), que alimenta `usePermissions().can()`.
+- `POST /api/convite` — find-or-create por e-mail + envio (requer `gestao-usuarios`/`criar`).
+- `GET /api/seguranca/estado` (visualizar) e `POST /api/seguranca/liberar` (alterar) — aba Segurança (rate limit/lockout).
+- `GET /api/configuracoes/identidade` — **público**; devolve apenas `logo_login_url` para as telas de autenticação.
+- `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`); `logomarcas` exige `configuracoes-globais`/`alterar`, `avatares` é session-only.
+
+---
+
 ## 4. O Sistema de Migrations Automáticas do Banco de Dados
 
 O Sistema utiliza uma estratégia de migração **100% automatizada e declarativa**, executada diretamente na inicialização do servidor.
@@ -385,12 +400,23 @@ O Nitro permite rodar rotinas assíncronas no momento em que o servidor sobe, an
 
 ```typescript
 // server/plugins/migration.ts
-import { runMigrations } from '../utils/migration-runner'
-
-export default defineNitroPlugin(() => {
-  return runMigrations()
+export default defineNitroPlugin(async () => {
+  try {
+    await runMigrations()       // aplica as migrations pendentes
+    await ensureAdminUser()     // bootstrap do admin (só fora de produção; senha provisória)
+    await migrarSenhasSmtp()    // cifra senhas SMTP legadas em repouso
+    await garantirEventScheduler() // habilita o Event Scheduler (expurgo de auditoria)
+  } catch (erro) {
+    // fail-fast: loga e encerra o processo (exit != 0) quando o banco está indisponível
+    process.exitCode = 1
+    // ...
+  }
 })
 ```
+
+> Diferenças em relação a versões antigas deste guia: o plugin real é **assíncrono**, tem
+> `try/catch` com **fail-fast** (exit != 0) e chama também o bootstrap/backfill; não há mais
+> o `return runMigrations()` simples mostrado antes.
 
 ---
 
@@ -398,13 +424,12 @@ export default defineNitroPlugin(() => {
 
 O runner contém as seguintes responsabilidades:
 
-1. **Criação da Tabela de Controle**:
+1. **Criação da Tabela de Controle** (colunas reais: `nome` PK e `aplicado_em`):
    ```sql
    CREATE TABLE IF NOT EXISTS _migrations (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     nome VARCHAR(255) NOT NULL UNIQUE,
-     executado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-   ) COMMENT = 'Registro de migrations executadas automaticamente';
+     nome VARCHAR(255) NOT NULL PRIMARY KEY,
+     aplicado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
    ```
 
 2. **Resolução Dinâmica do Caminho (Dev vs Build)**:
@@ -440,8 +465,8 @@ export default defineNuxtConfig({
   nitro: {
     hooks: {
       'compiled': async (nitro) => {
-        const src = join(nitro.options.srcDir, 'migration')
-        const dest = join(nitro.options.output.dir, 'server', 'migration')
+        const src = join(nitro.options.rootDir, 'server', 'migration')
+        const dest = join(nitro.options.output.serverDir, 'migration')
         await cp(src, dest, { recursive: true })
       }
     }
@@ -459,8 +484,8 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 1. **Nomenclatura Sequencial de Dois ou Três Dígitos**:
    - Exemplo: `01_create_tables.sql`, `02_add_status_to_publicacoes.sql`, `03_permissoes_perfil.sql`.
    - A ordenação alfabética do runner garante a ordem exata de execução.
-2. **Comando `USE seu_banco;` no Início**:
-   - Toda migration inicia definindo o banco alvo: `USE publications;`.
+2. **Sem `USE` nas migrations executáveis**:
+   - Os arquivos de `server/migration/` **não** contêm `USE` — o pool conecta já no banco definido por `DB_NAME` (a referência humana `docs/bd/01` mantém o `USE` para execução manual via cliente SQL).
 3. **Uso de Delimitador Padrão**:
    - Utilize ponto e vírgula (`;`) ao final de cada comando.
 4. **Bloco de Rollback Documentado**:
@@ -493,53 +518,23 @@ Em vez de acoplar a aplicação a bibliotecas com dependências instáveis ou de
 
 O composable `useApiFetch` encapsula o `$fetch` nativo do Nuxt, trazendo:
 1. **Injeção de Credenciais**: `credentials: 'include'` para envio transparente de cookies de autenticação.
-2. **Headers de Contexto**: `x-usuario-id` e `x-usuario-nome` para auditoria rápida.
-3. **Auto-Refresh Transparente de Token**: Se qualquer chamada receber **HTTP 401 Unauthorized**, o composable intercepta, dispara a rota `/api/auth/refresh` e, em caso de sucesso, refaz a requisição original sem interromper a experiência do usuário.
+2. **Headers de Contexto**: `x-usuario-id` e `x-usuario-nome` para auditoria rápida (derivados de `useState('auth-usuario')`).
+3. **Auto-Refresh com single-flight**: num **HTTP 401**, TODAS as chamadas em voo compartilham a MESMA promessa de `/api/auth/refresh` (cada rotação invalida o token anterior — N refreshes simultâneos derrubariam a sessão) e refazem a requisição original uma vez; refresh definitivamente falho → o estado local cai (sessão inválida) e o middleware leva ao login.
+4. **SSR**: no servidor usa `useRequestFetch()` para encaminhar os cookies da requisição entrante (essencial para rotas protegidas chamadas no setup do layout, como `GET /api/configuracoes`).
 
-```typescript
-// app/composables/useApiFetch.ts
-export function useApiFetch<T = any>(
-  request: Parameters<typeof $fetch>[0],
-  opts?: Parameters<typeof $fetch>[1]
-) {
-  const authState = useState<{ id?: string, name?: string } | null>('auth-user')
-  const headers: Record<string, string> = { ...opts?.headers } as Record<string, string>
-
-  if (authState.value?.id) headers['x-usuario-id'] = authState.value.id
-  if (authState.value?.name) headers['x-usuario-nome'] = encodeURIComponent(authState.value.name)
-
-  const doFetch = () => $fetch<T>(request, {
-    ...opts,
-    headers,
-    credentials: 'include',
-  })
-
-  return doFetch().catch(async (err: any) => {
-    if (err.statusCode !== 401) throw err
-
-    try {
-      // Tenta refresh token automático
-      await $fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-      return doFetch()
-    } catch {
-      throw err
-    }
-  }) as Promise<T>
-}
-```
+> O código real está em `app/composables/useApiFetch.ts` (single-flight via `refreshEmVoz` + `useRequestFetch` no SSR).
 
 ---
 
 ### 5.3. Gerenciamento de Autenticação e Permissões no Cliente
 
 1. **`useAuth.ts`**:
-   - Controla os estados reativos `loggedIn`, `user` e a inicialização via cookie/sessão (`initFromCookie`).
-   - Sincroniza dados básicos em `sessionStorage` para consistência em recarregamentos de página (F5).
+   - Controla os estados reativos `usuario` e `sessaoVerificada` (via `useState`) e as ações `entrar`, `sair`, `ensureSessao` e `sessaoInvalidada`. A sessão é real (cookies HttpOnly) e hidratada por `GET /api/auth/seguro` no primeiro acesso; **não** usa `sessionStorage` nem cookie de sessão fino.
 2. **`app/middleware/auth.global.ts`**:
    - Middleware global de rota: intercepta todas as navegações.
-   - Rotas da **Área Pública** (leituras anônimas) e `/admin/login` são liberadas. As demais rotas `/admin/**` exigem `loggedIn === true` ou redirecionam imediatamente para `/admin/login`.
+   - Área Pública e as telas de autenticação (`/admin/login`, `/admin/esqueci-senha`) são liberadas; as demais rotas `/admin/**` exigem sessão (`ensureSessao`) e, sem ela, vão para `/admin/login?redirect=`. Sessões com senha provisória são conduzidas a `/admin/primeiro-acesso`.
 3. **`usePermissions.ts`**:
-   - Fornece o helper reativo `.can(modulo, acao)`.
+   - Fornece o helper reativo `.can(modulo, acao)` (busca a matriz do próprio usuário em `GET /api/usuarios/eu/permissoes`). Nesta etapa está **disponível** para uso incremental da UI.
    - Permite controlar a renderização de botões e links no frontend:
    ```vue
 <UiButton v-if="can('publicacoes', 'criar')" @click="abrirModal">
@@ -562,9 +557,8 @@ Crie o projeto e instale as dependências essenciais:
 npx nuxi@latest init publications
 cd publications
 
-# Instalar dependências de banco, validação, segurança e estilos
-npm install @nuxtjs/tailwindcss @vueuse/core lucide-vue-next mysql2 zod bcrypt jsonwebtoken
-npm install -D @types/jsonwebtoken
+# Dependências reais do projeto (banco, sessão, e-mails, estilos, arquivos)
+npm install @nuxtjs/tailwindcss @lucide/vue mysql2 bcrypt jose exceljs jspdf jspdf-autotable
 ```
 
 ---
@@ -599,8 +593,8 @@ export default defineNuxtConfig({
   nitro: {
     hooks: {
       'compiled': async (nitro) => {
-        const src = join(nitro.options.srcDir, 'migration')
-        const dest = join(nitro.options.output.dir, 'server', 'migration')
+        const src = join(nitro.options.rootDir, 'server', 'migration')
+        const dest = join(nitro.options.output.serverDir, 'migration')
         await cp(src, dest, { recursive: true })
       }
     }

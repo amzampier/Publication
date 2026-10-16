@@ -1,11 +1,11 @@
 # Design System — Publications (Dicas Teorema)
 
 **Versão:** 1.0.0 · **Data:** 2026-09-28 · **Idioma:** Português do Brasil (pt-BR)
-**Stack:** Nuxt 4 · Vue 3 (`<script setup>`) · Tailwind CSS · lucide-vue-next · Google Fonts (Plus Jakarta Sans + JetBrains Mono)
+**Stack:** Nuxt 4 · Vue 3 (`<script setup>`) · Tailwind CSS · @lucide/vue · Google Fonts (Plus Jakarta Sans + JetBrains Mono)
 **Autoridade de comportamento:** specs em [`openspec/specs/design-system/`](../openspec/specs/design-system) — uma spec por capability (ex.: `upload`, `modais`, `typography`, `form-control-states`); em caso de divergência, a spec prevalece sobre este documento. Quando a capability não tiver spec própria, este documento é a referência oficial do padrão.
-**Vitrine:** rota [`/design`](../app/pages/design.vue) (16 seções numeradas)
+**Vitrine:** rota [`/design`](../app/pages/design.vue) (20 seções numeradas)
 
-> Este documento descreve **apenas o que está implementado**: os 21 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
+> Este documento descreve **apenas o que está implementado**: os 26 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
 
 ---
 
@@ -50,7 +50,7 @@
 
 1. **Clareza e Precisão da Informação** — informações críticas (títulos de publicação, datas, versões e códigos como `REL-2026-W39`) têm hierarquia rigorosa; valores numéricos e códigos usam `JetBrains Mono` com `font-variant-numeric: tabular-nums`.
 2. **Identidade Visual Navy & Verde Accent** — ação primária e cabeçalhos em Navy (`#112051`) com destaques em Verde Accent (`#4ed813` / `#1a9e07`); sobriedade institucional, sem azuis genéricos de marketing.
-3. **Dualidade de Áreas Inconfundível** — o usuário sempre sabe em qual área está: **Área Pública** (leitura das publicações, sem autenticação) e **Área Administrativa** (cadastros e publicação de Releases Week Semanal, Manuais e Escopo de Projetos, com autenticação e permissões); identidade visual e navegação deixam a área atual explícita.
+3. **Dualidade de Áreas Inconfundível** — o usuário sempre sabe em qual área está: **Área Pública** (leitura das publicações, sem autenticação — hoje apenas o placeholder `/`; a leitura de Releases Week Semanal, Manuais e Escopo de Projetos é roadmap) e **Área Administrativa** (cadastros e publicação de Releases Week Semanal, Manuais e Escopo de Projetos, com autenticação e permissões); identidade visual e navegação deixam a área atual explícita.
 4. **Disciplina "Zero-Pill" & Anti-Slop** — metadados, datas e categorias são texto limpo e unboxed com separadores sutis (`·`); badges operacionais usam `rounded-md` (nunca `rounded-full`); filtros são botões de controle segmentado.
 5. **Layout Bimodal Retrátil & Sessões Agrupadas** — sidebar retrátil (expandida `w-52`, rail `w-[46px]`) com sessões de menu colapsáveis (ver [seção 3](#3-layout--navegação)).
 
@@ -392,7 +392,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 
 - **Emits:** `change(arquivos: File[] | null)` — lista selecionada, ou `null` ao excluir · `camera()` (sem payload, para abrir o `CameraWeb`).
 - **Slots:** nenhum.
-- **Estados visuais** (borda `rounded-xl border-2`): **vazio** = tracejada `slate-300` + fundo `slate-50/50`, círculo com ícone `Cloud`, rótulo verde, dica e sugestão; **arrastando** = tracejada verde `border-lime-500 bg-lime-50/60`; **preenchido** = sólida `border-slate-200 bg-white`, altura equivalente (`min-h-28`).
+- **Estados visuais** (borda `rounded-xl border-2`): **vazio** = tracejada `slate-300` + fundo `slate-50/50`, círculo com ícone `Cloud`, rótulo verde, dica e sugestão; **arrastando** = tracejada verde `border-brand-accent bg-brand-accent/10`; **preenchido** = sólida `border-slate-200 bg-white`, altura equivalente (`min-h-28`).
 - **Modo `listaSeparada`:** a raiz fica **sem borda** (`grid gap-3`) e renderiza — quando há arquivo — o rótulo `rotuloLista` + um **card `emerald` por arquivo** (`border-emerald-200 bg-emerald-50`, ícone `FileText`, nome truncado e tamanho em pt-BR, remover à direita em `rose-600` no hover). A caixa tracejada abaixo usa ícone `Upload` (não `Cloud`) com `rotulo`/`dica` e **some enquanto houver arquivo no single-file** (fica só o card), **voltando** quando o arquivo é removido; no `multiple` ela permanece para acrescentar mais. Sem nome por dentro da caixa e **sem ações de canto** (remover é só do card).
 - **Preview por `forma`:** `circular` 96px `object-cover` (preenche o círculo, corte centralizado — fotos horizontais da câmera não ficam "achadas") · `retrato` 96×72 `object-cover` · `retangular` `max-h-20 contain` (logo integral, sem corte).
 - **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`). Excluir desabilitado sem arquivo. No modo `compacto` as ações viram `size-6` com ícones `h-3.5` e recuo `bottom-1 right-1 gap-1` (cabe em colunas de ~88px sem vazar/ser cortado pelo `overflow-hidden`).

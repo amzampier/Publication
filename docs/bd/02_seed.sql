@@ -81,31 +81,14 @@ INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir,
     ('10000000-0000-4000-8000-000000000004', 'configuracoes-globais', 0, 0, 0, 0, NULL);
 
 -- =========================================================================
--- 3. USUÁRIO ADMINISTRADOR INICIAL
--- E-mail e senha provisória conforme a base de demo (useUsuariosDemo):
--- ana.carolina@empresa.com.br / Public@2026
--- ATENÇÃO: o hash abaixo é um PLACEHOLDER. O provisionamento real deve
--- gerar bcrypt($2b$, cost 12) de 'Public@2026' (docs/qa/02) e substituí-lo
--- antes do primeiro login — a migration Nitro fará isso via bcrypt no
--- runner (docs/02 §3.4/§5).
+-- 3. USUÁRIO ADMINISTRADOR INICIAL — NÃO É SEMEADO POR SQL
+-- O administrador é provisionado em TypeScript pelo bootstrap do Nitro
+-- (`server/utils/bootstrap-admin.ts`, chamado por `server/plugins/migration.ts`)
+-- após as migrations: cria `ana.carolina@empresa.com.br` com bcrypt cost 12 de
+-- 'Public@2026' e `senha_provisoria = 1`, SOMENTE fora de produção
+-- (NODE_ENV !== 'production'). Por isso este arquivo de referência NÃO contém o
+-- INSERT do admin (um hash placeholder aqui produziria lockout silencioso).
 -- =========================================================================
-INSERT INTO usuarios (
-    id, nome_completo, email_corporativo, hash_senha, perfil_id,
-    departamento_setor, funcao, telefone, situacao,
-    senha_provisoria, tentativas_falhas
-) VALUES (
-    '20000000-0000-4000-8000-000000000001',
-    'Ana Carolina Ribeiro',
-    'ana.carolina@empresa.com.br',
-    '$2b$12$PLACEHOLDERPLACEHOLDERPLACEHOLDERPLACEHOLDERPLACEHOLD',
-    '10000000-0000-4000-8000-000000000001',
-    'Tecnologia',
-    'Administradora de Sistemas',
-    '(11) 98888-1001',
-    'Ativo',
-    0,
-    0
-);
 
 -- =========================================================================
 -- 4. CONFIGURAÇÕES GLOBAIS (linha única padrão)

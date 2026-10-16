@@ -347,9 +347,9 @@ Sem lint/test no projeto — o gate é:
 
 ## 12. Pendências e próximos passos
 
-1. Persistência real (`configuracoes_globais` — colunas `dias_retencao_auditoria`,
-   `logo_header_url`, `logo_login_url` e `sidebar_grupos` JSON, DDL em `docs/bd/01`),
-   fetch/PUT da API e confirmação de erro — fase 2.
-2. Auth/RBAC e permissões da tela — fora do escopo (sem middleware).
+1. ~~Persistência real~~ — **concluída**: a tela carrega de `GET /api/configuracoes` e grava via `PUT /api/configuracoes` (colunas `dias_retencao_auditoria`, `logo_header_url`, `logo_login_url`, `sidebar_grupos`/`sidebar_expandida` e o rate limit).
+2. ~~Auth/RBAC da tela~~ — **concluída**: as rotas `/api/**` exigem sessão (`auth-api.ts`) e a autorização por módulo é aplicada por `requirePermission(event, 'configuracoes-globais', ...)` (change `rbac-require-permission`).
 3. Conferência visual final com o usuário (fidelidade aos 4 mockups, cores dos ícones das abas,
    navegação na demo §14 do `/design`).
+
+> Colunas de `configuracoes_globais` **sem UI** (`nome_empresa`, `banner_publico_ativo`, `banner_texto`, `banner_tipo`, `exigir_revisao_para_publicar`, `notificar_por_email`): reservadas/roadmap (spec futura ou remoção); existem no schema mas não são editadas por esta tela (MEL-01).

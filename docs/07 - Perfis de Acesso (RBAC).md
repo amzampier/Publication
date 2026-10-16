@@ -665,10 +665,10 @@ exportação:
   `PUT /api/perfis/:id/permissoes`, `POST /api/perfis/:id/permissoes/copiar` — com a página
   integrada (carga + gravações via `useApiFetch`) e as seeds da §7 já aplicadas em
   `02_seed.sql`. A §7 permanece como fonte normativa.
-- **Autenticação/autorização server-side:** as rotas `/api/perfis/**` seguem **abertas**
-  (mesmo padrão atual de `/api/configuracoes`; `useAuth` ainda é fase 1). O helper
-  `requirePermission(event, modulo, acao)` (docs/02 §3.5/§7) e o 401/403 vêm junto com a
-  change de auth (JWT/sessões) — prioridade de segurança.
+- **Autenticação/autorização server-side:** as rotas `/api/perfis/**` exigem **sessão**
+  (`auth-api.ts`) e a permissão do módulo `perfis-acesso` (`requirePermission`, change
+  `rbac-require-permission`). O helper `.can(modulo, acao)` do cliente está disponível em
+  `usePermissions` (uso incremental da UI).
 - **Colunas futuras do banco:** **`padrao_sistema`** (flag de perfil nativo bloqueado para
   exclusão + guarda correspondente no modal de exclusão) e **`cor_identificacao`** (badge
   colorido — componente de cor novo no kit) continuam fora do UI atual.

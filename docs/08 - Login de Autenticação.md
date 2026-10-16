@@ -49,13 +49,14 @@ usados (`UiInput`, `UiCheckbox`, `UiButton`, `useToast`) e tokens `brand.*` do c
 
 O Login é a porta de entrada da Área Administrativa:
 
-- **Rotas de autenticação:** `/admin/login` (`app/pages/admin/login.vue`) e
-  `/admin/esqueci-senha` (`app/pages/admin/esqueci-senha.vue`), ambas com
+- **Rotas de autenticação:** `/admin/login` (`app/pages/admin/login.vue`),
+  `/admin/esqueci-senha` (`app/pages/admin/esqueci-senha.vue`) e
+  `/admin/primeiro-acesso` (`app/pages/admin/primeiro-acesso.vue`), todas com
   `definePageMeta({ layout: 'auth' })` - **não** herdam o shell (header + sidebar): são as
-  **únicas** rotas sob `/admin/**` sem shell, exceção formalizada em
-  `design-system/layout-navigation` (spec `login`). A composição canônica (fundo, card,
-  identidade e divisor) e a hidratação da logomarca são dono do layout próprio
-  `app/layouts/auth.vue` (change `auth-layout-logomarca-login`).
+  rotas sob `/admin/**` sem shell, exceção formalizada em
+  `design-system/layout-navigation` (spec `login`; `primeiro-acesso` na spec homônima). A
+  composição canônica (fundo, card, identidade e divisor) e a hidratação da logomarca são dono
+  do layout próprio `app/layouts/auth.vue` (change `auth-layout-logomarca-login`).
 - **Modelo de dados:** real, no banco — credenciais em `usuarios` (`hash_senha` bcrypt,
   `ultimo_login`, `tentativas_falhas`/`bloqueado_ate`, `senha_provisoria`); sessões em
   `sessoes` (hash do refresh rotativo, `expira_em`, `revogado_em`). O login valida contra a
@@ -98,7 +99,9 @@ app/middleware/auth.global.ts  (async — consulta a API quando sem estado)
       |   servidor: se a conta existir -> gera provisória, grava hash
       |             e ENVIA POR E-MAIL via Resend (senha nunca aparece na tela)
       |
+      +-- /admin/primeiro-acesso .............. sessão provisória --> troca obrigatória da senha
       +-- /admin/** ........................... sem sessão --> /admin/login?redirect=...
+      |                                          sessão provisória --> /admin/primeiro-acesso
 ```
 
 ## 2. Estrutura da página (componentização)
@@ -205,14 +208,18 @@ sessão (`ensureSessao`) com redirect para `/admin/login?redirect=`.
     na tela**; botão "Voltar ao login" e link "Enviar para outro e-mail".
 - **Servidor (`POST /api/auth/esqueci-senha`):** resposta **sempre `{ ok: true }`** com o
   mesmo corpo — para e-mail cadastrado e não cadastrado a aparência é idêntica (nenhuma
-  mensagem ou sinal indica existência; anti-enumeração). Quando a conta existe e está Ativa,
-  o servidor: gera a senha provisória (régua do `shared/utils/emails` — ≥8 com maiúscula,
-  minúscula, número e símbolo), grava o `hash_senha` (bcrypt) com `senha_provisoria = 1` e
-  **envia por e-mail via Resend** (template `renderHtmlRecuperacao`/`renderTextoRecuperacao`
-  com a senha e o link de acesso). Falha do provedor é logada no servidor **sem** alterar a
-  resposta (não pode vazar existência).
+  mensagem ou sinal indica existência; anti-enumeração; o caminho sem conta executa trabalho
+  bcrypt equivalente, sem diferença de tempo). Quando a conta existe e está Ativa, o servidor:
+  gera a senha provisória (régua do `shared/utils/emails` — ≥8 com maiúscula, minúscula, número
+  e símbolo, por **CSPRNG**), **envia por e-mail via Resend** (template
+  `renderHtmlRecuperacao`/`renderTextoRecuperacao` com a senha e o link de acesso) e **somente
+  após o envio bem-sucedido** grava o `hash_senha` (bcrypt) com `senha_provisoria = 1` — falha
+  do provedor mantém a senha anterior válida. Os links de acesso usam a origem configurada
+  (`APP_URL`), não o `Host` recebido (change `endurecer-sessao-segredos-e-uploads`).
 - **Login com a provisória:** a senha recebida autentica normalmente; a anterior deixa de
-  valer; a troca recomendada é feita em Meu Perfil > Segurança (spec `meu-perfil`).
+  valer. Como a conta fica marcada com **senha provisória**, o acesso administrativo é
+  bloqueado (`403`) até a troca e o usuário é conduzido à tela **`/admin/primeiro-acesso`**
+  (capability `primeiro-acesso`, change `endurecer-banco-e-bootstrap`).
 - **Guarda/retorno:** rota livre sem sessão; com sessão redireciona para `/admin`;
   "Voltar ao login" navega para `/admin/login`.
 
@@ -224,18 +231,24 @@ sessão (`ensureSessao`) com redirect para `/admin/login?redirect=`.
 > (`POST /api/convite`, find-or-create — spec `gestao-usuarios`), que materializa a conta
 > (hash da provisória) e envia o e-mail real.
 >
-> Credencial do administrador provisionado (`server/utils/bootstrap-admin.ts`):
+> **Administrador provisionado** (`server/utils/bootstrap-admin.ts`): criado automaticamente
+> **apenas em ambiente de demonstração/desenvolvimento** (`NODE_ENV !== 'production'`) e com
+> **senha provisória** — em produção nenhum administrador é criado (change
+> `endurecer-banco-e-bootstrap`). Contas com **senha provisória** (provisionadas, convidadas
+> ou recuperadas) só liberam a Área Administrativa depois da troca em `/admin/primeiro-acesso`;
+> contas com senha definitiva já vigente entram direto.
 >
 > **`ana.carolina@empresa.com.br`** / **`Public@2026`**
 
 | Exercício | Credencial | Resultado esperado |
 | :--- | :--- | :--- |
-| Login completo (Administrador) | `ana.carolina@empresa.com.br` / `Public@2026` | entra em `/admin`; header mostra "Ana Carolina Ribeiro / Administrador" |
+| Login completo (Administrador, senha definitiva) | `ana.carolina@empresa.com.br` / senha vigente | entra em `/admin`; header mostra "Ana Carolina Ribeiro / Administrador" |
+| Primeiro acesso (senha provisória) | conta recém-provisionada/convite/recuperação | login aceito, porém o acesso fica bloqueado (`403`) até a troca em `/admin/primeiro-acesso` |
 | Conta inexistente no banco | qualquer e-mail sem cadastro | toast genérico "E-mail ou senha inválidos." |
 | Senha errada | admin + senha errada | mesmo toast genérico |
 | Bloqueio por tentativas | 5 senhas erradas seguidas | 6ª tentativa (mesmo correta) → aviso de conta bloqueada temporariamente (15 min) |
-| Recuperação | `/admin/esqueci-senha` com e-mail cadastrado | e-mail real com senha provisória; a provisória autentica |
-| Convite | Gestão de Usuários → `MailCheck` → "Enviar Convite" | conta criada no banco + e-mail real; a provisória do convite autentica |
+| Recuperação | `/admin/esqueci-senha` com e-mail cadastrado | e-mail real com senha provisória; a provisória autentica e força a troca em `/admin/primeiro-acesso` |
+| Convite | Gestão de Usuários → `MailCheck` → "Enviar Convite" | conta criada no banco + e-mail real; a provisória do convite autentica e força a troca |
 
 ## 7. Background e identidade
 
@@ -257,7 +270,10 @@ o campo de pontos conforme avança (`ONDA_LARGURA = 48 px`, `ONDA_FORCA = 10`);
 - **Encerrar Sessão** (item fixo do menu da conta, `AppHeader`): `await useAuth.sair()` —
   a chamada `POST /api/auth/logout` **é aguardada** antes de navegar (navegar primeiro
   cancelaria o fetch e a sessão viveria no servidor) —, fecha o menu e vai para
-  `/admin/login`.
+  `/admin/login`. O logout revoga a sessão no servidor: além do refresh, incrementa a
+  **versão da sessão** da conta (`usuarios.token_version`), de modo que o cookie de acesso
+  em uso deixa de autenticar imediatamente (capability `revogacao-sessao`, change
+  `endurecer-sessao-segredos-e-uploads`).
 - **Bloco Account:** nome, perfil e iniciais derivam de `useAuth().usuario` (hidratado pelo
   login ou por `GET /api/auth/seguro`), com fallback no valor fixo `conta` de
   `app/config/navigation.ts`. A ordem do menu segue governada por
@@ -297,16 +313,11 @@ o campo de pontos conforme avança (`ONDA_LARGURA = 48 px`, `ONDA_FORCA = 10`);
 
 ## 11. Pendências e próximos passos
 
-- **Proteção das demais APIs:** as rotas `/api/**` (usuários, perfis, configurações, uploads)
-  já exigem sessão via `server/middleware/auth-api.ts` (change `gestao-usuarios-backend`);
-  falta apenas o `requirePermission(event, modulo, acao)` — docs/02 §3.5 — junto com a
-  matriz de permissões no servidor e o `usePermissions`/`.can()` no cliente.
-- **Auditoria de login:** gravar eventos (sucesso/falha/bloqueio/recuperação) na tabela
-  `auditoria` quando existir `server/utils/audit.ts`.
-- **RBAC no cliente:** `usePermissions` com `.can(modulo, acao)` derivando da matriz do
-  banco (expor a matriz na sessão ou rota própria).
-- **Rate limit global:** mover o contador em memória para
-  `configuracoes_limite_requisicao`/banco e estender a todas as rotas (hoje: só auth).
+- **Proteção das demais APIs:** as rotas `/api/**` exigem sessão via `server/middleware/auth-api.ts` e a **autorização por módulo já é aplicada** por `requirePermission(event, modulo, acao)` (change `rbac-require-permission`); o cliente dispõe de `usePermissions().can()`.
+- **Auditoria de login:** **implementada** — `server/utils/audit.ts` grava eventos tipo `Acesso` (login, logout, troca e recuperação de senha) na tabela `auditoria` (change `auditoria-backend-integracao`).
+- **RBAC no cliente:** **implementado** — `usePermissions().can(modulo, acao)` deriva a matriz do próprio usuário via `GET /api/usuarios/eu/permissoes`.
+- **Rate limit global:** o contador em memória já lê `configuracoes_limite_requisicao` e honra o status `ativo`; estendê-lo às demais rotas permanece como melhoria.
+- **Lockout por conta (risco aceito — MEL-03):** cinco falhas bloqueiam a conta por 15 min, o que permite a um terceiro negar acesso a um usuário legítimo (negação por conveniência). Mantido como risco aceito nesta fase; mitigação futura: backoff progressivo/feedback por IP confiável.
 - **Página de redefinição por token:** fluxo com link único em `tokens_acesso`
   (tipo `recuperacao`, com expiração) substituindo a provisória por e-mail — mais seguro
   (o token não viaja no corpo do e-mail como senha).
