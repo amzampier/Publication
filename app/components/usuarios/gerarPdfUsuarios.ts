@@ -1,8 +1,6 @@
 // Relatório de Gestão de Usuários em PDF — jsPDF (A4 paisagem) + jspdf-autotable.
 // Fase 1: opera sobre o conjunto vigente em memória; a logo de login vem do
 // composable compartilhado (useLogomarcaLogin) e só entra quando houver arquivo.
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { formatarUltimoAcesso, type UsuarioModelo } from './useUsuariosModelo'
 
 interface OpcoesRelatorio {
@@ -53,6 +51,8 @@ const rasterizarLogo = async (src: string): Promise<{ data: string; proporcao: n
 }
 
 export const gerarPdfUsuarios = async (opcoes: OpcoesRelatorio): Promise<void> => {
+  const { jsPDF } = await import('jspdf')
+  const autoTable = (await import('jspdf-autotable')).default
   const { usuarios, logoPreview } = opcoes
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
   const largura = doc.internal.pageSize.getWidth() // 297mm

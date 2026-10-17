@@ -143,7 +143,7 @@ const classeSegmento = (opt: SegmentedOption) => {
       v-if="label"
       :id="labelId"
       :class="[
-        'text-xs font-semibold select-none',
+        'text-xs font-medium select-none',
         error ? 'text-rose-700' : 'text-slate-700',
         labelClass
       ]"

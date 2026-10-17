@@ -189,9 +189,9 @@ sessão, evitando card vazio) contendo um `dl` de duas colunas:
 Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; rodapé com
 "Fechar" como **botão primário** (X/Escape também fecham, pelo `UiModal`).
 
-### 3.6 `useAuditoriaDemo.ts` — composable de estado (API-backed)
+### 3.6 `useAuditoriaModelo.ts` — composable de estado (API-backed)
 
-- **Contrato público estável desde a fase 1** (mesmo precedente de `usePerfisDemo`): `filtros`,
+- **Contrato público estável desde a fase 1** (mesmo precedente de `usePerfisModelo`): `filtros`,
   `registrosFiltrados`, `filtrosAtivosCount`, `periodoRotulo`, `opcoesUsuarios`,
   `opcoesRecursos`, `limparFiltros` + helpers (`formatarDataHora`, `diaLocal`,
   `dataIsoParaDate`/`dateParaIso`, `VARIANTE_POR_ACAO`, `ACOES`).
@@ -202,7 +202,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   servidor (filtros estruturais no backend).
 - `useState('auditoria-filtros')` preserva os filtros na navegação do mesmo ciclo; zeram no F5.
 - Arquivo em `components/auditoria/` (não é auto-importado): consumidores importam
-  explicitamente de `./useAuditoriaDemo` (ou `../../components/auditoria/useAuditoriaDemo`
+  explicitamente de `./useAuditoriaModelo` (ou `../../components/auditoria/useAuditoriaModelo`
   na página).
 
 ## 4. Componentes de kit (criados/alterados)

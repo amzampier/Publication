@@ -5,7 +5,6 @@
 // admin repete e regrava/reenvia); canal "whatsapp" só grava (o cliente abre
 // o app). A listagem de /admin/gestao-usuarios continua a base demo.
 import { hash } from 'bcrypt'
-import { getRequestURL } from 'h3'
 import {
   gerarSenhaProvisoria,
   renderHtmlConvite,
@@ -128,7 +127,10 @@ export default defineEventHandler(async (event) => {
 
   if (canal === 'email') {
     try {
-      const base = String(useRuntimeConfig().appUrl || '') || getRequestURL(event).origin
+      const base = String(useRuntimeConfig().appUrl || '').replace(/\/+$/, '')
+      if (!base) {
+        throw new Error('APP_URL não configurada — não é possível montar o link do convite.')
+      }
       const link = `${base}/admin/login`
       const dados = { nome, email, perfil, senha, telefone }
       await enviarEmail({

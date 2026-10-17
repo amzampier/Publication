@@ -4,7 +4,7 @@
 -- (sem o INSERT do administrador: o bootstrap do admin é feito em TS pelo
 -- plugin Nitro com bcrypt real cost 12 — design.md decisão 3)
 -- Executar APÓS 01_create_tables.sql no banco publications.
--- Fonte da matriz de permissões: docs/07 §7 / app usePerfisDemo MATRIZ_SEED
+-- Fonte da matriz de permissões: docs/07 §7 / app usePerfisModelo MATRIZ_SEED
 -- (4 perfis × 11 módulos × 9 ações = 99 permissões possíveis por perfil).
 -- Re-execução: as UNIQUE keys (uk_perfil_modulo, PKs de config) evitam
 -- duplicidade — o runner tolera erros 1062 (docs/qa/03).

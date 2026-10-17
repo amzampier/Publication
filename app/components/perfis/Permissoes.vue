@@ -35,9 +35,7 @@ const emit = defineEmits<{
 const { toast } = useToast()
 const { perfis } = usePerfisModelo()
 
-// Colunas editáveis: só as 4 ações fixas (docs/02 §3.5). As 5 extras aparecem como
-// JSON `extras` — sem interruptor nesta etapa (edição ficará para a
-// arquitetura futura da tela — decisão do usuário).
+// Ações fixas (4) editáveis por interruptor; as 5 extras são editadas por `UiCheckChip`.
 const acoesFixas: Acao[] = [...ACOES]
 
 // Identidade visual dos módulos: fonte única = config/navigation (rótulos idênticos

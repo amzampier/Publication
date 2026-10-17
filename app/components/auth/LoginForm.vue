@@ -150,7 +150,7 @@ watch(senha, () => {
       <button
         type="button"
         class="text-[11px] font-medium text-brand-structure
-               transition hover:text-[#183b8c] hover:underline"
+               transition hover:text-brand-primary hover:underline"
         @click="aoEsquecerSenha"
       >
         Esqueceu a senha?

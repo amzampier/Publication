@@ -17,7 +17,6 @@ import {
   formatarDataHora,
   enderecoVazio,
   smtpVazio,
-  PERFIS,
   type UsuarioModelo,
   type ModoUsuario,
   type PerfilUsuario,
@@ -40,7 +39,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { usuarios, carregarUsuarios } = useUsuarios()
+const { usuarios, carregarUsuarios, opcoes } = useUsuarios()
 
 /** Rascunho do modal: base do usuário + senha/confirmação e perfis ainda sem seleção. */
 type Rascunho = Omit<UsuarioModelo, 'perfil' | 'status'> & {
@@ -315,7 +314,7 @@ const { carregando: carregandoCep, buscar: buscarCep } = useBuscaCep(
 const dataCadastroTexto = computed(() => formatarDataHora(rascunho.value.dataCadastro))
 const atualizadoTexto = computed(() => formatarDataHora(rascunho.value.atualizadoEm))
 
-const opcoesPerfil = PERFIS.map((p) => ({ value: p, label: p }))
+const opcoesPerfil = computed(() => opcoes.value.perfis.map((p) => ({ value: p, label: p })))
 const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emerald' | 'slate' }[] = [
   { value: 'Ativo', label: 'Ativo', tone: 'emerald' },
   { value: 'Inativo', label: 'Inativo', tone: 'slate' }
@@ -457,6 +456,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
                 ]"
                 @click="buscarCep"
                 @keydown.enter.prevent="buscarCep"
+                @keydown.space.prevent="buscarCep"
               >
                 <LoaderCircle
                   v-if="carregandoCep"

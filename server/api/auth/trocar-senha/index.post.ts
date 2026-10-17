@@ -4,7 +4,7 @@
 // gravação do novo hash e limpeza da flag de provisória.
 import { hash, compare } from 'bcrypt'
 import {
-  getSessionUser,
+  obterSessaoValida,
   buscarUsuarioPorId,
   reemitirAccesso
 } from '../../../utils/auth'
@@ -15,9 +15,9 @@ import { registrarAuditoria } from '../../../utils/audit'
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
 
-  const sessao = await getSessionUser(event)
+  const sessao = await obterSessaoValida(event)
   if (!sessao) {
-    throw createError({ statusCode: 401, statusMessage: 'Sem sessão ativa.' })
+    throw createError({ statusCode: 401, statusMessage: 'Sessão expirada ou revogada.' })
   }
 
   const body = await readBody<{ atual?: unknown; nova?: unknown }>(event)
@@ -35,8 +35,8 @@ export default defineEventHandler(async (event) => {
   }
 
   const usuario = await buscarUsuarioPorId(sessao.id)
-  if (!usuario || usuario.situacao !== 'Ativo') {
-    throw createError({ statusCode: 401, statusMessage: 'Sem sessão ativa.' })
+  if (!usuario) {
+    throw createError({ statusCode: 401, statusMessage: 'Sessão expirada ou revogada.' })
   }
 
   let atualOk = false

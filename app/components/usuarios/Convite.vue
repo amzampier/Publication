@@ -15,7 +15,7 @@ import {
 import { useToast } from '../../composables/useToast'
 import { useApiFetch } from '../../composables/useApiFetch'
 import {
-  VARIANTE_POR_PERFIL,
+  variantePerfil,
   VARIANTE_POR_STATUS,
   type UsuarioModelo
 } from './useUsuariosModelo'
@@ -237,7 +237,7 @@ const enviar = async () => {
           <div class="min-w-0 flex-1">
             <div class="flex flex-wrap items-center gap-2">
               <p class="text-sm font-bold text-slate-900 truncate">{{ registro.nome }}</p>
-              <UiBadge :variant="VARIANTE_POR_PERFIL[registro.perfil]" size="sm">
+              <UiBadge :variant="variantePerfil(registro.perfil)" size="sm">
                 {{ registro.perfil }}
               </UiBadge>
               <UiBadge :variant="VARIANTE_POR_STATUS[registro.status]" size="sm">

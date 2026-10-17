@@ -343,10 +343,9 @@ const filteredData = computed(() => {
   })
 })
 
-const toggleSort = (col: ColumnDef, event: MouseEvent) => {
+const aplicarSort = (col: ColumnDef, isMulti: boolean) => {
   if (col.sortable === false) return
 
-  const isMulti = event.shiftKey
   const existingIdx = sortRules.value.findIndex((r) => r.columnId === col.id)
 
   if (isMulti) {
@@ -375,6 +374,23 @@ const toggleSort = (col: ColumnDef, event: MouseEvent) => {
 
   // Modo servidor: a ordenação é aplicada pela API.
   if (serverMode.value) emit('sort-change', [...sortRules.value])
+}
+
+const toggleSort = (col: ColumnDef, event: MouseEvent) => {
+  aplicarSort(col, event.shiftKey)
+}
+
+/** Ordenação por teclado (Enter/Espaço) — spec data-table: a11y da ordenação. */
+const onSortKeydown = (col: ColumnDef, event: KeyboardEvent) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return
+  event.preventDefault()
+  aplicarSort(col, event.shiftKey)
+}
+
+const ariaSortFor = (colId: string): 'ascending' | 'descending' | 'none' => {
+  const info = getSortInfo(colId)
+  if (!info) return 'none'
+  return info.direction === 'asc' ? 'ascending' : 'descending'
 }
 
 const getSortInfo = (colId: string) => {
@@ -587,7 +603,7 @@ onUnmounted(() => {
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white border-b border-slate-200"
     >
       <div v-if="title || subtitle" class="flex items-start gap-3">
-        <div class="p-2 rounded-lg bg-brand-accent/10 border border-brand-accent/30 text-brand-accent shrink-0 mt-0.5">
+        <div class="p-2 rounded-lg bg-brand-accent/10 border border-brand-accent/30 text-brand-focus shrink-0 mt-0.5">
           <FileSpreadsheet class="h-5 w-5" />
         </div>
         <div>
@@ -649,7 +665,7 @@ onUnmounted(() => {
     >
       <!-- Label -->
       <div class="flex items-center gap-1.5 font-semibold text-slate-700 text-xs shrink-0">
-        <Layers class="h-4 w-4 text-brand-accent" />
+        <Layers class="h-4 w-4 text-brand-focus" />
         <span>Agrupamento:</span>
       </div>
 
@@ -698,6 +714,9 @@ onUnmounted(() => {
               :key="col.id"
               draggable="true"
               :style="getColumnStyle(col)"
+              :tabindex="col.sortable === false ? undefined : 0"
+              :aria-sort="ariaSortFor(col.id)"
+              :aria-label="col.sortable === false ? undefined : `Ordenar por ${col.header}`"
               :class="[
                 'py-1.5 px-2.5 tracking-tight select-none transition-colors group relative cursor-pointer hover:bg-white/10',
                 col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
@@ -705,6 +724,7 @@ onUnmounted(() => {
               @dragstart="onDragStart($event, col.id)"
               @dragend="onDragEnd"
               @click="toggleSort(col, $event)"
+              @keydown="onSortKeydown(col, $event)"
             >
               <div
 

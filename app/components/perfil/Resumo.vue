@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { CalendarDays, Clock, Mail } from '@lucide/vue'
-import { VARIANTE_POR_PERFIL, VARIANTE_POR_STATUS, type PerfilUsuario, type StatusUsuario } from '../usuarios/useUsuariosModelo'
+import { variantePerfil, VARIANTE_POR_STATUS, type PerfilUsuario, type StatusUsuario } from '../usuarios/useUsuariosModelo'
 
 interface Props {
   nome: string
@@ -34,7 +34,7 @@ const linhas = [
           <UiBadge :variant="VARIANTE_POR_STATUS[status]" size="sm">
             {{ status }}
           </UiBadge>
-          <UiBadge :variant="VARIANTE_POR_PERFIL[perfil]" size="sm">
+          <UiBadge :variant="variantePerfil(perfil)" size="sm">
             {{ perfil }}
           </UiBadge>
         </div>

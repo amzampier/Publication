@@ -188,7 +188,7 @@ const colorSwatches: ColorSwatchItem[] = [
     hex: '#be123c',
     bgClass: 'bg-[#be123c]',
     badgeClass: 'text-white',
-    buttonClass: 'text-rose-600',
+    buttonClass: 'text-rose-700',
     tailwindClass: 'bg-rose-700'
   },
   {
@@ -206,7 +206,7 @@ const colorSwatches: ColorSwatchItem[] = [
     hex: '#e11d48',
     bgClass: 'bg-[#e11d48]',
     badgeClass: 'text-white',
-    buttonClass: 'text-rose-500',
+    buttonClass: 'text-rose-600',
     tailwindClass: 'bg-rose-600'
   },
   {
@@ -675,13 +675,13 @@ const secoes = [
     <header class="sticky top-0 z-40 bg-brand-primary border-b border-slate-800 text-white shadow-md no-print">
       <div class="w-full px-4 sm:px-6 lg:px-8 xl:px-12 min-h-16 py-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div class="flex items-center gap-3 min-w-0">
-          <div class="p-2 rounded-lg bg-lime-500/10 border border-lime-500/30 text-brand-accent">
+          <div class="p-2 rounded-lg bg-brand-accent/10 border border-brand-accent/30 text-brand-accent">
             <Building2 class="h-5 w-5" />
           </div>
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-sm font-bold tracking-tight text-white">Publications Design System</h1>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-lime-500/20 text-lime-300 border border-lime-500/30">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-brand-accent/20 text-brand-accent border border-brand-accent/30">
                 v2.0.0
               </span>
             </div>
@@ -711,7 +711,7 @@ const secoes = [
       <aside class="lg:w-64 shrink-0 no-print">
         <div class="sticky top-24 bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
           <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <Layers class="h-3.5 w-3.5 text-lime-500" />
+            <Layers class="h-3.5 w-3.5 text-brand-accent" />
             Navegação do Guia
           </h2>
           <nav class="flex flex-col gap-1 text-xs">
@@ -1101,7 +1101,7 @@ const secoes = [
                   <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                     VALIDAÇÃO COM ÍCONE & TOOLTIP
                   </span>
-                  <span class="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                  <span class="text-[10px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
                     Tooltip no Ícone
                   </span>
                 </div>
@@ -1241,28 +1241,28 @@ const secoes = [
           <div class="flex flex-wrap items-center justify-around gap-6 py-6 border border-dashed border-slate-200 rounded-xl bg-slate-50/40">
             <UiTooltip content="Tooltip na posição superior (Topo)" position="top">
               <UiButton variant="outline">
-                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-lime-500" /></template>
+                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-brand-accent" /></template>
                 Posição Topo
               </UiButton>
             </UiTooltip>
 
             <UiTooltip content="Tooltip na posição inferior (Rodapé)" position="bottom">
               <UiButton variant="outline">
-                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-lime-500" /></template>
+                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-brand-accent" /></template>
                 Posição Rodapé
               </UiButton>
             </UiTooltip>
 
             <UiTooltip content="Tooltip no lado esquerdo" position="left">
               <UiButton variant="outline">
-                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-lime-500" /></template>
+                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-brand-accent" /></template>
                 Lado Esquerdo
               </UiButton>
             </UiTooltip>
 
             <UiTooltip content="Tooltip no lado direito" position="right">
               <UiButton variant="outline">
-                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-lime-500" /></template>
+                <template #leftIcon><HelpCircle class="h-3.5 w-3.5 text-brand-accent" /></template>
                 Lado Direito
               </UiButton>
             </UiTooltip>
@@ -1274,7 +1274,7 @@ const secoes = [
           <!-- Header da Seção -->
           <div class="flex items-start justify-between gap-4 flex-wrap border-b border-slate-100 pb-4 mb-5">
             <div class="flex items-start gap-2.5 min-w-0">
-              <div class="p-1.5 rounded-lg bg-lime-500 text-slate-950 shrink-0 mt-0.5">
+              <div class="p-1.5 rounded-lg bg-brand-accent text-slate-950 shrink-0 mt-0.5">
                 <Bell class="h-4 w-4" />
               </div>
               <div>
@@ -1330,7 +1330,7 @@ const secoes = [
               <!-- Warning -->
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-1.5 text-[11px]">
-                  <span class="w-2 h-2 rounded-full bg-lime-500 shrink-0"></span>
+                  <span class="w-2 h-2 rounded-full bg-brand-accent shrink-0"></span>
                   <span class="font-semibold text-lime-700">Warning</span>
                   <span class="ml-auto font-mono text-slate-400">type="warning"</span>
                 </div>
@@ -1355,7 +1355,7 @@ const secoes = [
               <!-- Danger -->
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-1.5 text-[11px]">
-                  <span class="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                  <span class="w-2 h-2 rounded-full bg-rose-700 shrink-0"></span>
                   <span class="font-semibold text-rose-700">Danger</span>
                   <span class="ml-auto font-mono text-slate-400">type="danger"</span>
                 </div>
@@ -1363,7 +1363,7 @@ const secoes = [
                   <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2">
                       <div class="p-1 rounded-md bg-rose-100 shrink-0">
-                        <AlertOctagon class="h-4 w-4 text-rose-600" />
+                        <AlertOctagon class="h-4 w-4 text-rose-700" />
                       </div>
                       <div>
                         <p class="text-[11px] font-bold text-rose-950 leading-tight">Erro Crítico de Processamento</p>
@@ -1408,7 +1408,7 @@ const secoes = [
           <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/40">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
-                <Bell class="h-4 w-4 text-lime-500" />
+                <Bell class="h-4 w-4 text-brand-accent" />
                 <span class="text-xs font-bold text-slate-900">Centro de Disparo Interativo (Experimente na Tela Agora)</span>
               </div>
               <span class="text-[11px] text-slate-400">Clique para acionar notificações reais no canto superior direito do sistema</span>
@@ -1537,7 +1537,7 @@ const secoes = [
             <div class="border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <span class="text-lime-500"><ListFilter class="h-3.5 w-3.5" /></span>
+                  <span class="text-brand-accent"><ListFilter class="h-3.5 w-3.5" /></span>
                   <span class="text-xs font-bold text-slate-900">Lista Extensa com Busca</span>
                 </div>
                 <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded">
@@ -1592,7 +1592,7 @@ const secoes = [
             <div class="border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                  <AlertTriangle class="h-3.5 w-3.5 text-rose-500" />
+                  <AlertTriangle class="h-3.5 w-3.5 text-rose-700" />
                   <span class="text-xs font-bold text-slate-900">Estados de Validação &amp; Bloqueio</span>
                 </div>
                 <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 border border-rose-200">Tratamento de Erros</span>
@@ -1709,7 +1709,7 @@ const secoes = [
           <!-- Cabeçalho Oficial -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-wrap border-b border-slate-100 pb-4 mb-6">
             <div class="flex items-start gap-2.5 min-w-0">
-              <div class="p-1.5 rounded-lg bg-lime-500 text-slate-950 shrink-0 mt-0.5">
+              <div class="p-1.5 rounded-lg bg-brand-accent text-slate-950 shrink-0 mt-0.5">
                 <CheckSquare class="h-4 w-4" />
               </div>
               <div>
@@ -1740,7 +1740,7 @@ const secoes = [
             <div class="border border-slate-200 rounded-xl p-4.5 bg-slate-50/30 flex flex-col gap-4">
               <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                 <span class="text-xs font-bold text-slate-900 flex items-center gap-2">
-                  <span class="w-1.5 h-1.5 rounded-full bg-lime-500"></span>
+                  <span class="w-1.5 h-1.5 rounded-full bg-brand-accent"></span>
                   1. Checkbox Simples, Tamanhos &amp; Tri-State
                 </span>
                 <span class="text-[10px] font-mono text-slate-400">sm (14px) · md (16px) · lg (20px)</span>
@@ -2012,15 +2012,15 @@ variant="lime"
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            <UiKpi titulo="Downloads no Mês" valor="48.320" cor="#2161ef" :icone="TrendingUp" metrica="+8,4%" metrica-rotulo="vs. mês anterior" tendencia="up" />
-            <UiKpi titulo="Publicações Publicadas" valor="128" cor="#059669" :icone="FileSpreadsheet" metrica="-3,1%" metrica-rotulo="vs. mês anterior" tendencia="down" />
-            <UiKpi titulo="Em Revisão" valor="37" cor="#d97706" :icone="Clock" metrica="12 hoje" tendencia="neutral" />
+            <UiKpi titulo="Downloads no Mês" valor="48.320" cor="#0364f7" :icone="TrendingUp" metrica="+8,4%" metrica-rotulo="vs. mês anterior" tendencia="up" />
+            <UiKpi titulo="Publicações Publicadas" valor="128" cor="#047857" :icone="FileSpreadsheet" metrica="-3,1%" metrica-rotulo="vs. mês anterior" tendencia="down" />
+            <UiKpi titulo="Em Revisão" valor="37" cor="#112051" :icone="Clock" metrica="12 hoje" tendencia="neutral" />
             <UiKpi titulo="Pendências de Conteúdo" valor="8 alertas" cor="#e11d48" :icone="AlertTriangle" metrica="+2 nesta semana" tendencia="down" />
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
             <UiKpi titulo="Catálogo Total" valor="1.286 itens" metrica="+82" metrica-rotulo="nos últimos 30 dias" tendencia="up" />
-            <UiKpi titulo="Itens Bloqueados" valor="12" cor="#4f46e5" metrica="5 há muito tempo" tendencia="down" />
+            <UiKpi titulo="Itens Bloqueados" valor="12" cor="#4338ca" metrica="5 há muito tempo" tendencia="down" />
             <UiKpi titulo="Taxa de Publicação" valor="94,2%" cor="#112051" metrica="+1,8 p.p." tendencia="up" />
           </div>
         </section>
@@ -2140,7 +2140,7 @@ variant="lime"
                   <div
                     :class="[
                       'p-1.5 rounded-md',
-                      shellTradicional ? 'bg-lime-500/15 text-brand-accent' : 'bg-brand-primary/10 text-brand-primary'
+                      shellTradicional ? 'bg-brand-accent/15 text-brand-accent' : 'bg-brand-primary/10 text-brand-primary'
                     ]"
                   >
                     <Building2 class="h-4 w-4" aria-hidden="true" />
@@ -2164,7 +2164,7 @@ variant="lime"
                     <Bell class="h-4 w-4" aria-hidden="true" />
                     <span
                       v-if="notificacoes.length > 0"
-                      class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500"
+                      class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-700"
                       aria-hidden="true"
                     ></span>
                   </button>
@@ -2391,7 +2391,7 @@ variant="lime"
                         'flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full transition-colors',
                         sidebarOpen ? '' : 'justify-center',
                         sidebarActiveItem === itemRaiz.id
-                          ? (shellTradicional ? 'bg-brand-structure/10 text-lime-700' : 'bg-white/10 text-lime-300')
+                          ? (shellTradicional ? 'bg-brand-structure/10 text-lime-700' : 'bg-white/10 text-brand-accent')
                           : shellTradicional
                             ? 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                             : 'text-slate-300 hover:text-white hover:bg-white/10'
@@ -2445,7 +2445,7 @@ variant="lime"
                           :class="[
                             'flex items-center gap-2.5 rounded-lg px-2.5 py-2 w-full text-left transition-colors',
                             sidebarActiveItem === item.id
-                              ? (shellTradicional ? 'bg-brand-structure/10 text-lime-700' : 'bg-white/10 text-lime-300')
+                              ? (shellTradicional ? 'bg-brand-structure/10 text-lime-700' : 'bg-white/10 text-brand-accent')
                               : shellTradicional
                                 ? 'text-slate-600 hover:bg-slate-100 ds-item-hover'
                                 : 'text-slate-300 hover:bg-white/10 ds-item-hover'

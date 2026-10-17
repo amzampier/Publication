@@ -192,7 +192,7 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   `usuarios/Tabela.vue`): usado pela página após a exclusão confirmar, pois o `Trash2` sai do
   DOM com a linha.
 
-### 3.4 `usePerfisDemo.ts` — composable de estado sobre a API (matriz e contagens)
+### 3.4 `usePerfisModelo.ts` — composable de estado sobre a API (matriz e contagens)
 
 - **Tipos:** `PerfilDemo` (`id` UUID, `nome`, `descricao`, `situacao`, `criado_em`,
   `atualizado_em`, `usuarios`, `permissoes`), `SituacaoPerfil`

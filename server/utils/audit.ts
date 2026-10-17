@@ -117,7 +117,7 @@ export async function registrarAuditoria(
         registro.recurso.slice(0, 80),
         (registro.entidadeId ?? '').slice(0, 64),
         ipDoCliente(event),
-        registro.detalhes.slice(0, 16_000_000)
+        registro.detalhes.slice(0, 8_000)
       ]
     )
   } catch (erro) {

@@ -4,7 +4,6 @@
 // servidor só gera/grava/envia quando a conta existe. Falha do Resend é logada
 // aqui sem alterar a resposta (não pode vazar existência).
 import { hash } from 'bcrypt'
-import { getRequestURL } from 'h3'
 import {
   gerarSenhaProvisoria,
   renderHtmlRecuperacao,
@@ -48,8 +47,11 @@ export default defineEventHandler(async (event) => {
   try {
     const senha = gerarSenhaProvisoria()
     const hashSenha = await hash(senha, 12)
-    // M-09: origem fixa dos links (APP_URL) — não confia no Host recebido.
-    const base = String(useRuntimeConfig().appUrl || '') || getRequestURL(event).origin
+    // Origem fixa dos links (APP_URL) — nunca o Host da requisição (RL03 M-03).
+    const base = String(useRuntimeConfig().appUrl || '').replace(/\/+$/, '')
+    if (!base) {
+      throw new Error('APP_URL não configurada — não é possível montar o link de recuperação.')
+    }
     const link = `${base}/admin/login`
     // 5.1: entrega o e-mail PRIMEIRO; só grava a nova senha se o envio der certo
     // (falha do provedor mantém a senha anterior válida).

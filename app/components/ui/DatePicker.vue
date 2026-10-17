@@ -207,7 +207,7 @@ onUnmounted(() => {
     <label
       v-if="label"
       :for="inputId"
-      class="text-xs font-semibold text-slate-700 select-none flex items-center justify-between"
+      class="text-xs font-medium text-slate-700 select-none flex items-center justify-between"
     >
       <span>{{ label }}</span>
     </label>

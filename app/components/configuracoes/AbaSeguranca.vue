@@ -112,7 +112,8 @@ const ativo = computed({
 
 const aoDigitarLimite = (valor: string | number) => {
   const bruto = Number(valor)
-  limite.value = Number.isFinite(bruto) ? bruto : 0
+  // Mínimo 1: vazio/0/inválido não entra no rascunho (evita o 400 do PUT).
+  limite.value = Number.isFinite(bruto) && bruto >= 1 ? bruto : 1
   emit('change')
 }
 watch(ativo, () => emit('change'))

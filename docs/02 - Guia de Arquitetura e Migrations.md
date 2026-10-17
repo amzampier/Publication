@@ -48,7 +48,7 @@ raiz-do-projeto/
 │   ├── middleware/                # auth-api.ts (sessão global nas /api/**)
 │   ├── migration/                 # Scripts SQL versionados (01_..., 02_..., etc.)
 │   ├── plugins/                   # migration.ts, auth-config.ts
-│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner
+│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner, bootstrap-admin
 │
 ├── shared/                        # Tipos/utilitários compartilhados (ex.: shared/utils/emails.ts)
 ├── docs/                          # Documentação de arquitetura e especificações de negócio
@@ -498,6 +498,21 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 5. **Seeds e Dados Iniciais**:
    - Insira os dados necessários para o funcionamento inicial do sistema (Perfis padrão, usuário Administrador inicial, configurações globais) em arquivos de migration específicos ou na migration `01`.
 
+### 4.6. Integridade referencial do conteúdo público (roadmap)
+
+O schema já declara as tabelas do conteúdo público (`release_week`, `projetos_escopo`,
+`manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`), ainda **sem UI/API**. Ao implementar a
+**exclusão de releases**, atenção à interação de chaves estrangeiras:
+
+- `entregas_itens.release_id → release_week(id)` é `ON DELETE CASCADE`: excluir a release apaga os itens.
+- `historico_esteira_revisao.entrega_item_id → entregas_itens(id)` é `ON DELETE RESTRICT`: enquanto
+  houver histórico daquele item, o `CASCADE` dos itens é **bloqueado** (erro `1451`).
+
+Ou seja, excluir uma release cujos itens tenham histórico na esteira **falha**. Ao construir o módulo,
+decidir explicitamente entre: (a) apagar o histórico do item antes da exclusão (dentro da mesma
+transação) ou (b) trocar a FK do histórico para `ON DELETE CASCADE`/`SET NULL` (conforme a regra de
+retenção da trilha de revisão).
+
 ---
 
 ## 5. Arquitetura do Frontend (Vue 3 + Tailwind)
@@ -580,15 +595,17 @@ export default defineNuxtConfig({
   serverDir: 'server/',
   runtimeConfig: {
     dbHost: process.env.DB_HOST || 'localhost',
-    dbPort: process.env.DB_PORT || '3306',
+    dbPort: Number(process.env.DB_PORT || 3306),
     dbUser: process.env.DB_USER || 'root',
     dbPassword: process.env.DB_PASSWORD || '',
     dbName: process.env.DB_NAME || 'publications',
-    jwtSecret: process.env.JWT_SECRET || 'chave-secreta-jwt-super-segura',
-    jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || 'chave-secreta-refresh-jwt',
-    public: {
-      baseUrl: process.env.APP_URL || 'http://localhost:3000',
-    },
+    authJwtSecret: process.env.AUTH_JWT_SECRET || '',
+    smtpEncKey: process.env.SMTP_ENC_KEY || '',
+    appUrl: process.env.APP_URL || '',
+    trustedProxies: process.env.TRUSTED_PROXIES || '',
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    mailFrom: process.env.MAIL_FROM || '',
+    public: {}
   },
   nitro: {
     hooks: {
@@ -619,9 +636,15 @@ DB_USER=root
 DB_PASSWORD=sua_senha_forte
 DB_NAME=publications
 
-# Autenticação
-JWT_SECRET=defina_uma_chave_longa_e_aleatoria_para_jwt
-JWT_REFRESH_SECRET=defina_uma_chave_longa_para_refresh_token
+# Autenticação (segredo HS256 do access JWT — obrigatório no boot)
+AUTH_JWT_SECRET=defina_um_segredo_longo_e_aleatorio
+
+# Cifra de segredos em repouso (senha SMTP — mínimo 32 caracteres)
+SMTP_ENC_KEY=defina_um_segredo_longo_e_aleatorio_de_32_caracteres
+
+# E-mail (Resend)
+RESEND_API_KEY=
+MAIL_FROM=Publications <no-reply@exemplo.com>
 ```
 
 ---
@@ -636,7 +659,7 @@ Arquivos de `server/utils/` — **existente** vs **roadmap** (marcado; o código
 3. `server/utils/safeError.ts` — Tratamento de erros HTTP/SQL amigável e seguro. **[roadmap]**
 4. `server/utils/auth.ts` — Sessão JWT, cookies, bcrypt e lockout (o `jwt.ts`/`password.ts`
    planejados vivem aqui hoje). **[existe]**
-5. `server/utils/permission.ts` — Middleware RBAC (`requirePermission`). **[roadmap]**
+5. `server/utils/permission.ts` — Middleware RBAC (`requirePermission`). **[existe]**
 6. `server/utils/audit.ts` — Gravação automática na tabela de auditoria. **[existe]**
 7. `server/utils/validation.ts` — Helper `validateBody()` com Zod. **[roadmap]**
 

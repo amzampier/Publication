@@ -67,7 +67,7 @@ da sidebar e ao da página (`/admin/perfis-acesso`).
 O sistema SHALL exibir na sidebar, acima das sessões, o item raiz **Painel Executivo** e, em seguida,
 quatro sessões com estes itens, nesta ordem: **Publicações** (Manuais, Release Week, Escopo de Projetos),
 **Movimentos** (Esteira de Revisão, Lançar as Chamadas), **Cadastros** (Parceiros, Softwares) e
-**Administração** (Gestão de Usuários, Perfis de Acesso (RBAC), Auditoria, Configurações Globais).
+**Administração** (Gestão de Usuários, Perfis de Acesso (RBAC), Gestão de Auditoria, Configurações Globais).
 
 #### Scenario: Árvore completa
 - **WHEN** a sidebar está expandida com todas as sessões abertas

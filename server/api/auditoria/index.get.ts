@@ -1,7 +1,7 @@
 // GET /api/auditoria — registros da trilha para a tela de Gestão de Auditoria
 // (middleware auth-api.ts exige sessão: 401 sem login). Filtros estruturais por
-// query param; resposta { registros, opcoes } — opcoes do conjunto não filtrado
-// (change auditoria-backend-integracao).
+// query param; resposta { registros, total, kpis, opcoes, pagina, porPagina } —
+// opcoes do conjunto não filtrado (change auditoria-backend-integracao).
 import { listarAuditoria } from '../../utils/audit'
 import { requirePermission } from '../../utils/permission'
 

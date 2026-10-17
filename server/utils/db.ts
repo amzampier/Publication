@@ -23,6 +23,7 @@ export function getDbPool(): mysql.Pool {
       waitForConnections: true,
       connectionLimit: Number(config.dbPoolLimit) || 10,
       queueLimit: Number(config.dbPoolQueueLimit) || 50,
+      connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT) || 10000,
       ...(process.env.DB_SSL === 'true'
         ? {
             ssl: {

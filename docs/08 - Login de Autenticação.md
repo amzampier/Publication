@@ -148,11 +148,19 @@ o TTL do access em ambiente de teste.
 | Rota | Papel |
 | :--- | :--- |
 | `POST /api/auth/login` | rate limit → lockout (5 falhas → bloqueio 15 min) → bcrypt → situação Ativo → zera falhas, grava `ultimo_login`, emite os dois cookies e devolve `{ usuario }` |
-| `POST /api/auth/refresh` | rotaciona o refresh (transação: revoga o antigo e insere o novo hash) e reemite o access — o token anterior cai com `401` |
+| `POST /api/auth/refresh` | rotaciona o refresh (transação: `SELECT … FOR UPDATE` serializa a rotação, revoga o antigo e insere o novo hash) e reemite o access — reuso/renovação concorrente do token anterior cai com `401` |
 | `POST /api/auth/logout` | revoga a sessão (`revogado_em`) e limpa os cookies (idempotente) |
-| `GET /api/auth/seguro` | hidratação da sessão (`{ usuario }` ou `401`); access expirado com refresh válido é **renovado no servidor** (rotação) — o F5 não dança refresh no cliente |
+| `GET /api/auth/seguro` | hidratação da sessão (`{ usuario }` ou `401`); valida a revogação no servidor (token revogado → `401`); access expirado com refresh válido é **renovado no servidor** (rotação) — o F5 não dança refresh no cliente |
 | `POST /api/auth/esqueci-senha` | recuperação por e-mail (§5) |
-| `POST /api/auth/trocar-senha` | Meu Perfil > Segurança (bcrypt da senha atual + novo hash) |
+| `POST /api/auth/trocar-senha` | Meu Perfil > Segurança (bcrypt da senha atual + novo hash); exige sessão válida no servidor (token revogado → `401`) |
+
+**Validação de revogação nas rotas de autenticação** (change `endurecer-revogacao-sessao`): como
+`/api/auth/*` é isento do middleware global (`server/middleware/auth-api.ts`), as rotas que operam
+sob uma sessão existente — `GET /api/auth/seguro` e `POST /api/auth/trocar-senha` — revalidam a
+sessão no servidor via `obterSessaoValida(event)` (`server/utils/auth.ts`): conta **Ativa** e
+`token_version` em dia. Token revogado (logout/desativação) responde `401` e limpa os cookies. As
+portas que **estabelecem/renovam** a sessão (`login`, `refresh`, `esqueci-senha`) permanecem isentas
+por não operarem sob sessão prévia. A rotação do refresh é ainda **atômica** (lock de linha).
 
 ### 3.3 `useAuth` e guarda (`app/composables/useAuth.ts`, `app/middleware/auth.global.ts`)
 

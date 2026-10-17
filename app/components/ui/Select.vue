@@ -248,7 +248,7 @@ watch(filteredOptions, () => {
       v-if="label"
       :id="labelId"
       :for="triggerId"
-      :class="['text-xs font-semibold text-slate-700 select-none flex items-center justify-between cursor-pointer', labelClass]"
+      :class="['text-xs font-medium text-slate-700 select-none flex items-center justify-between cursor-pointer', labelClass]"
       @click.prevent="focusFromLabel"
     >
       <span>{{ label }}</span>

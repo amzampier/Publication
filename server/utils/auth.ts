@@ -176,7 +176,7 @@ export async function rotacionarSessao(
     const linhas = await tx.query<Array<{ id: string; usuario_id: string }>>(
       `SELECT id, usuario_id FROM sessoes
         WHERE refresh_token_hash = ? AND revogado_em IS NULL AND expira_em > ?
-        LIMIT 1`,
+        LIMIT 1 FOR UPDATE`,
       [hash, agora]
     )
     if (linhas.length === 0) {
@@ -336,6 +336,22 @@ export async function sessaoAtivaNoServidor(sessao: {
   return Number(linhas[0].token_version) === sessao.tokenVersion
 }
 
+/**
+ * Sessão válida no servidor para as rotas autenticadas isentas do middleware
+ * (portal de autenticação — change endurecer-revogacao-sessao, design D1):
+ * resolve a sessão pelos cookies e confirma a revogação (`sessaoAtivaNoServidor`).
+ * Devolve `null` (limpando os cookies) quando a sessão foi revogada/inativada.
+ */
+export async function obterSessaoValida(event: any): Promise<UsuarioSessao | null> {
+  const sessao = await getSessionUser(event)
+  if (!sessao) return null
+  if (!(await sessaoAtivaNoServidor(sessao))) {
+    limparCookiesAuth(event)
+    return null
+  }
+  return sessao
+}
+
 /** Incrementa a versão da sessão da conta — revoga todos os access vigentes (logout/desativação). */
 export async function revogarAccessVigente(usuarioId: string): Promise<void> {
   await query('UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?', [usuarioId])
@@ -409,5 +425,12 @@ export async function limparFalhasLogin(usuarioId: string): Promise<boolean> {
     'UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = NULL WHERE id = ?',
     [usuarioId]
   )
-  return (resultado as { affectedRows?: number }).affectedRows !== 0
+  if ((resultado as { affectedRows?: number }).affectedRows !== 0) return true
+  // affectedRows === 0 pode ser conta inexistente OU conta já limpa (UPDATE sem
+  // mudança) — confirma a existência para a liberação ser idempotente.
+  const linhas = await query<Array<{ id: string }>>(
+    'SELECT id FROM usuarios WHERE id = ? LIMIT 1',
+    [usuarioId]
+  )
+  return linhas.length > 0
 }

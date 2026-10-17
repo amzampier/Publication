@@ -133,6 +133,12 @@ export const importarUsuarios = async (
   return { importados: resp.importados }
 }
 
+/** Conjunto completo de e-mails da base (importação: pré-classificação). Lança em falha. */
+export const buscarEmailsBase = async (): Promise<string[]> => {
+  const resp = await useApiFetch<{ emails: string[] }>('/api/usuarios/emails')
+  return Array.isArray(resp?.emails) ? resp.emails : []
+}
+
 export interface KpisUsuarios {
   total: number
   ativos: number

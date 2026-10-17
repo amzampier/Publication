@@ -96,7 +96,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
       v-if="label"
       :for="inputId"
       :class="[
-        'text-xs font-bold select-none flex items-center justify-between',
+        'text-xs font-medium select-none flex items-center justify-between',
         error ? 'text-rose-700' : 'text-slate-700',
         labelClass
       ]"

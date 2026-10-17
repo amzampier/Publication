@@ -65,6 +65,7 @@ const aoEditar = () => emit('change')
               ]"
               @click="buscarCep"
               @keydown.enter.prevent="buscarCep"
+              @keydown.space.prevent="buscarCep"
             >
               <LoaderCircle
                 v-if="carregandoCep"

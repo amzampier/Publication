@@ -119,7 +119,7 @@ watch(email, () => {
       <button
         type="button"
         class="inline-flex items-center gap-1 text-[11px] font-medium text-brand-structure
-               transition hover:text-[#183b8c] hover:underline"
+               transition hover:text-brand-primary hover:underline"
         @click="voltarLogin"
       >
         <ArrowLeft class="h-3 w-3" />
@@ -164,7 +164,7 @@ watch(email, () => {
     <button
       type="button"
       class="block w-full text-center text-[11px] font-medium text-brand-structure
-             transition hover:text-[#183b8c] hover:underline"
+             transition hover:text-brand-primary hover:underline"
       @click="reenviar"
     >
       Enviar para outro e-mail

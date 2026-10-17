@@ -1,6 +1,6 @@
 // server/utils/perfis.ts — acesso às tabelas perfis_acesso / permissoes_perfil
 // (docs/02 §3.5). Fonte dos ids de módulo e das 9 ações: app/components/perfis/
-// usePerfisDemo.ts + docs/07 — a lista está duplicada de propósito (barreira
+// usePerfisModelo.ts + docs/07 — a lista está duplicada de propósito (barreira
 // app/ × server/): mantenha os dois lados em sincronia (spec perfis-acesso,
 // cenário "Matriz com módulo ou ação desconhecida é recusada").
 import { createError } from 'h3'
@@ -25,7 +25,7 @@ export interface PerfilApi {
   permissoes: Record<string, string[]>
 }
 
-/** Os 11 módulos da sidebar (mesma ordem/ids de usePerfisDemo.MODULOS). */
+/** Os 11 módulos da sidebar (mesma ordem/ids de usePerfisModelo.MODULOS). */
 export const MODULOS_IDS = [
   'manuais',
   'release-week',
@@ -40,7 +40,7 @@ export const MODULOS_IDS = [
   'configuracoes-globais'
 ] as const
 
-/** As 9 ações (4 fixas + 5 extras) — mesmos ids de usePerfisDemo.ACOES/EXTRAS. */
+/** As 9 ações (4 fixas + 5 extras) — mesmos ids de usePerfisModelo.ACOES/EXTRAS. */
 export const ACOES_IDS = [
   'visualizar',
   'criar',
@@ -241,8 +241,8 @@ export async function buscarPerfil(id: string): Promise<PerfilApi | null> {
     [id]
   )
   if (linhas.length === 0) return null
-  const [matrizes, vinculos] = await Promise.all([carregarMatrizes([id]), carregarVinculos()])
-  return montarPerfil(linhas[0], matrizes.get(id) ?? matrizVazia(), vinculos.get(id) ?? 0)
+  const [matrizes, vinculos] = await Promise.all([carregarMatrizes([id]), contarVinculos(id)])
+  return montarPerfil(linhas[0], matrizes.get(id) ?? matrizVazia(), vinculos)
 }
 
 /** Contagem de usuários vinculados (guarda da exclusão — spec 409). */
@@ -387,23 +387,25 @@ export async function salvarMatriz(
   const tx = await getTransaction()
   try {
     await tx.query('DELETE FROM permissoes_perfil WHERE perfil_id = ?', [id])
-    for (const modulo of MODULOS_IDS) {
+    const linhas = MODULOS_IDS.map((modulo) => {
       const acoes = corpo[modulo] ?? []
       const extras = acoes.filter((a) => (EXTRAS_IDS as readonly string[]).includes(a))
-      await tx.query(
-        `INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          id,
-          modulo,
-          acoes.includes('visualizar') ? 1 : 0,
-          acoes.includes('criar') ? 1 : 0,
-          acoes.includes('alterar') ? 1 : 0,
-          acoes.includes('excluir') ? 1 : 0,
-          extras.length > 0 ? JSON.stringify(extras) : null
-        ]
-      )
-    }
+      return [
+        id,
+        modulo,
+        acoes.includes('visualizar') ? 1 : 0,
+        acoes.includes('criar') ? 1 : 0,
+        acoes.includes('alterar') ? 1 : 0,
+        acoes.includes('excluir') ? 1 : 0,
+        extras.length > 0 ? JSON.stringify(extras) : null
+      ]
+    })
+    const grupos = linhas.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ')
+    await tx.query(
+      `INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras)
+       VALUES ${grupos}`,
+      linhas.flat()
+    )
     await garantirAdministracao(tx)
     await tx.commit()
   } catch (erro) {
@@ -430,23 +432,25 @@ export async function copiarMatriz(origemId: string, destinoId: string): Promise
   const tx = await getTransaction()
   try {
     await tx.query('DELETE FROM permissoes_perfil WHERE perfil_id = ?', [destinoId])
-    for (const modulo of MODULOS_IDS) {
+    const linhas = MODULOS_IDS.map((modulo) => {
       const acoes = origem.permissoes[modulo] ?? []
       const extras = acoes.filter((a) => (EXTRAS_IDS as readonly string[]).includes(a))
-      await tx.query(
-        `INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          destinoId,
-          modulo,
-          acoes.includes('visualizar') ? 1 : 0,
-          acoes.includes('criar') ? 1 : 0,
-          acoes.includes('alterar') ? 1 : 0,
-          acoes.includes('excluir') ? 1 : 0,
-          extras.length > 0 ? JSON.stringify(extras) : null
-        ]
-      )
-    }
+      return [
+        destinoId,
+        modulo,
+        acoes.includes('visualizar') ? 1 : 0,
+        acoes.includes('criar') ? 1 : 0,
+        acoes.includes('alterar') ? 1 : 0,
+        acoes.includes('excluir') ? 1 : 0,
+        extras.length > 0 ? JSON.stringify(extras) : null
+      ]
+    })
+    const grupos = linhas.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ')
+    await tx.query(
+      `INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras)
+       VALUES ${grupos}`,
+      linhas.flat()
+    )
     await garantirAdministracao(tx)
     await tx.commit()
   } catch (erro) {

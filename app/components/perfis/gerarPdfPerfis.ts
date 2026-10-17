@@ -3,8 +3,6 @@
 // composable compartilhado (useLogomarcaLogin) e só entra quando houver arquivo.
 // Molde de usuarios/gerarPdfUsuarios.ts (ficheiro isolado até um 3º relatório
 // pedir a extração de um util comum — design D5 da change de filtros/exportação).
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import {
   contarPermissoes,
   PERMISSOES_POR_PERFIL,
@@ -61,6 +59,8 @@ const rasterizarLogo = async (src: string): Promise<{ data: string; proporcao: n
 }
 
 export const gerarPdfPerfis = async (opcoes: OpcoesRelatorio): Promise<void> => {
+  const { jsPDF } = await import('jspdf')
+  const autoTable = (await import('jspdf-autotable')).default
   const { perfis, usuariosPorPerfil, logoPreview } = opcoes
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
   const largura = doc.internal.pageSize.getWidth() // 297mm

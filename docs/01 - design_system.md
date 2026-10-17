@@ -18,7 +18,7 @@
 3. [Layout & Navegação](#3-layout--navegação)
 4. [Convenções Globais](#4-convenções-globais)
 
-**Componentes** (5.1–5.17)
+**Componentes** (5.1–5.20)
 
 5. [Componentes](#5-componentes)
    - [5.1 Button](#51-button--seção-3-do-design) (seção 3)
@@ -138,7 +138,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 
 - **Modo expandido:** `w-52` — títulos completos; **modo rail:** `w-[46px]` — só ícones centralizados, maximizando a área de conteúdo. Transição `transition-all duration-200`, fundo `bg-brand-primary` (navy `#112051`), borda `border-r border-white/10`.
 - **Item raiz:** **"Painel Executivo"** (`LayoutDashboard`), renderizado acima das sessões, sem cabeçalho — no rail vira apenas o ícone com tooltip.
-- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Movimentos"** (Esteira de Revisão · Lançar as Chamadas), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão (estado inicial configurável em Configurações Globais → Sidebar, via `useSessoesAbertas`). Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Esteira de Revisão** `Workflow` `#8b5cf6`, **Lançar as Chamadas** `Megaphone` `#f59e0b`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
+- **Sessões** (`aria-expanded` no cabeçalho, chevron rotaciona 180°): **"Publicações"** (Manuais · Release Week · Escopo de Projetos), **"Movimentos"** (Esteira de Revisão · Lançar as Chamadas), **"Cadastros"** (Parceiros · Softwares) e **"Administração"** (Gestão de Usuários · Perfis de Acesso (RBAC) · Gestão de Auditoria · Configurações Globais) — recolhimento **individual**, todas abertas por padrão (estado inicial configurável em Configurações Globais → Sidebar, via `useSessoesAbertas`). Rótulo em caixa mista no dado, caixa alta no CSS (`uppercase`). Ícones coloridos (`SidebarItem.cor`) aplicam a **tinta D9** de `tinta()` (mistura 60% cor + 40% branco — ver a tabela abaixo; as cores cheias ficam abaixo de 3:1 sobre `#112051`): **Manuais** `#f45f71`, **Release Week** `Rocket` `#1a9e07`, **Escopo de Projetos** `ClipboardList` `#50a1ff`, **Esteira de Revisão** `Workflow` `#8b5cf6`, **Lançar as Chamadas** `Megaphone` `#f59e0b`, **Parceiros** `#047857`, **Softwares** `#0364f7` e, na Administração, as **mesmas cores do menu Account** — Gestão de Usuários `#b070ef`, Perfis de Acesso (RBAC) `#f5b302`, Gestão de Auditoria `#2dd4bf`, Configurações Globais `#50a1ff`. Sem cor: apenas o item raiz Painel Executivo.
 - **Cabeçalho de sessão:** `text-[9px] font-bold text-slate-400 uppercase tracking-widest`, com `hover:text-white` e `focus-visible:text-white` ao recolher — recolhimento individual, chevron rotaciona 180°.
 - **Tintas dos ícones sobre navy** (mistura 60% cor + 40% branco; aplicadas a ícone **e** a
   `--item-cor` pelo helper `tinta()` de [`app/composables/shellTintas.ts`](../app/composables/shellTintas.ts),
@@ -155,7 +155,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 | Softwares | `#0364f7` | `#68a2fa` |
 | Gestão de Usuários | `#b070ef` | `#d0a9f5` |
 | Perfis de Acesso (RBAC) | `#f5b302` | `#f9d167` |
-| Auditoria | `#2dd4bf` | `#81e5d9` |
+| Gestão de Auditoria | `#2dd4bf` | `#81e5d9` |
 
 - **No rail:** **todos os itens de todas as sessões** permanecem visíveis como ícones — o recolhimento das sessões (acordeão) vale **apenas no modo expandido** — sem chevrons, com divisor `h-px bg-white/15 mx-1 my-1.5` entre sessões; o estado (`aberto`) é preservado ao reexpandir. Cada item é envolto por `<UiTooltip position="right">` com o seu rótulo (desabilitado enquanto a sidebar está expandida), e a sidebar troca `overflow-hidden` por `overflow-visible` no rail para que o balão não seja cortado.
 - **Item ativo:** `bg-white/10 text-lime-300` (Q1 — `lime-700` daria ≈3:1 sobre navy, falha para 12px); o ícone colorido mantém a sua tinta. **Inativo:** `text-slate-300 hover:bg-white/10` + `.ds-item-hover` — no hover a opção inteira assume a **cor do próprio item** via `--item-cor` (tinta D9 para itens com `cor`; item sem `cor` cai no fallback `#f8fafc`); o item ativo não recebe a classe e não muda no hover.
@@ -216,7 +216,7 @@ Regras que valem para **todos** os componentes (derivadas da spec `design-system
 ### 4.1 Uso e auto-import
 
 - Componentes em `app/components/ui/` seguem o auto-import padrão do Nuxt (scan de `~/components` com `pathPrefix: true`): o nome no template deriva da pasta + arquivo, **basta `<UiButton />` no template, sem import manual e sem configuração em `nuxt.config.ts`**. Exceção: composables/utilitários continuam importados normalmente (`import { useToast } from '../composables/useToast'`).
-- Ícones: sempre `lucide-vue-next` (`import { Save } from 'lucide-vue-next'`), com `aria-hidden="true"` quando decorativos.
+- Ícones: sempre `@lucide/vue` (`import { Save } from '@lucide/vue'`), com `aria-hidden="true"` quando decorativos.
 
 ### 4.2 Contrato de eventos
 
@@ -645,7 +645,7 @@ type CheckboxPosition = 'start' | 'end'
 | :--- | :--- | :--- | :--- |
 | `titulo` | `string` *(obrigatória)* | — | Rótulo da métrica |
 | `valor` | `string` *(obrigatória)* | — | Valor principal (`text-2xl font-bold`) |
-| `cor` | `string` | `'#2161ef'` | HEX da borda, do ícone e das ondas |
+| `cor` | `string` | `'#0364f7'` | HEX da borda, do ícone e das ondas |
 | `icone` | `Component \| undefined` | `undefined` | Ícone no badge do canto |
 | `metrica` | `string` | `''` | Métrica complementar (ex.: `+1,8 p.p.`) |
 | `metricaRotulo` | `string` | `''` | Rótulo ao lado da métrica |
@@ -655,7 +655,7 @@ type CheckboxPosition = 'start' | 'end'
 - **Estrutura:** título + valor + métrica com indicador de tendência; borda temática `:style="{ borderColor: cor }"`; badge do ícone com fundo `${cor}1a`.
 - **Ondas animadas:** duas camadas SVG no rodapé (`fill-opacity` 0.14/0.22) com `kpi-wave-drift` em loop (9s fundo / 6s frente, tile duplicado `translate(400,0)` para loop contínuo).
 - **Acessibilidade/motion:** `@media (prefers-reduced-motion: reduce)` desliga a animação das ondas (regra da spec); SVG `aria-hidden`.
-- **Gotchas:** o default `cor: '#2161ef'` (azul) **está fora da paleta oficial** — recomendam-se os 8 tokens da [seção 2](#21-as-8-cores-oficiais) em produção (ex.: `cor="#112051"`). Métrica só renderiza se `metrica || metricaRotulo`.
+- **Gotchas:** o default `cor: '#0364f7'` (token `brand.structure`) pertence à paleta oficial — recomendam-se os 8 tokens da [seção 2](#21-as-8-cores-oficiais) em produção (ex.: `cor="#112051"`). Métrica só renderiza se `metrica || metricaRotulo`.
 
 ```vue
 <UiKpi titulo="Publicações na Semana" valor="12" cor="#112051" metrica="+3" tendencia="up" />

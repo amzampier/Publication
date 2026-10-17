@@ -1,8 +1,6 @@
 // Relatório de Auditoria em PDF — jsPDF (A4 paisagem) + jspdf-autotable.
 // Fase 1: opera sobre os registros filtrados em memória; a logo de login vem do
 // composable compartilhado (useLogomarcaLogin) e só entra quando houver arquivo.
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { formatarDataHora, type FiltrosAuditoria, type RegistroAuditoria } from './useAuditoriaModelo'
 
 interface OpcoesRelatorio {
@@ -65,6 +63,8 @@ const linhaDeFiltros = (filtros: FiltrosAuditoria, periodoRotulo: string): strin
 }
 
 export const gerarPdfAuditoria = async (opcoes: OpcoesRelatorio): Promise<void> => {
+  const { jsPDF } = await import('jspdf')
+  const autoTable = (await import('jspdf-autotable')).default
   const { registros, filtros, periodoRotulo, logoPreview } = opcoes
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
   const largura = doc.internal.pageSize.getWidth() // 297mm

@@ -2,7 +2,7 @@
 // escritas vivem em `useUsuarios.ts` (API, change gestao-usuarios-backend).
 // Campos do núcleo conforme docs/02 §3.5 (tabela usuarios); telefone/função/
 // departamento/endereço/SMTP/avatar/datas são o modelo estendido do modal.
-export type PerfilUsuario = 'Administrador' | 'Editor' | 'Revisor' | 'Leitor'
+export type PerfilUsuario = string
 /** Situação exibida: a API devolve Ativo/Inativo (escrita) e pode exibir Bloqueado. */
 export type StatusUsuario = 'Ativo' | 'Inativo' | 'Bloqueado'
 /** Modo do modal de usuário — um componente, dois usos. */
@@ -75,16 +75,20 @@ export interface RegistroImportacao {
   status: StatusUsuario
 }
 
-export const PERFIS: PerfilUsuario[] = ['Administrador', 'Editor', 'Revisor', 'Leitor']
-/** Situações oferecidas pela UI (escrita); a leitura também tolera 'Bloqueado'. */
 export const STATUSES: StatusUsuario[] = ['Ativo', 'Inativo']
 
-export const VARIANTE_POR_PERFIL: Record<PerfilUsuario, 'reconciled' | 'inReview' | 'pending' | 'neutral'> = {
+const VARIANTE_POR_PERFIL: Record<string, 'reconciled' | 'inReview' | 'pending' | 'neutral'> = {
   Administrador: 'reconciled',
   Editor: 'inReview',
   Revisor: 'pending',
   Leitor: 'neutral'
 }
+
+/** Variante de badge para o perfil — fallback 'neutral' para perfis customizados. */
+export const variantePerfil = (
+  perfil: string
+): 'reconciled' | 'inReview' | 'pending' | 'neutral' =>
+  VARIANTE_POR_PERFIL[perfil] ?? 'neutral'
 
 export const VARIANTE_POR_STATUS: Record<StatusUsuario, 'done' | 'neutral' | 'blocked'> = {
   Ativo: 'done',

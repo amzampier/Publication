@@ -8,13 +8,13 @@ import {
   type SituacaoImportacao
 } from './lerPlanilhaUsuarios'
 import {
-  VARIANTE_POR_PERFIL,
+  variantePerfil,
   VARIANTE_POR_STATUS,
   type PerfilUsuario,
   type StatusUsuario,
   type RegistroImportacao
 } from './useUsuariosModelo'
-import { importarUsuarios, useUsuarios } from './useUsuarios'
+import { importarUsuarios, buscarEmailsBase, useUsuarios } from './useUsuarios'
 import { useToast } from '../../composables/useToast'
 
 // Modal de importação de usuários — aberto pelo botão "Importar" da toolbar da
@@ -25,7 +25,7 @@ const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
 const { toast } = useToast()
-const { usuarios, carregarUsuarios } = useUsuarios()
+const { usuarios, carregarUsuarios, opcoes } = useUsuarios()
 
 type LinhaSel = LinhaImportacao & { selecionada: boolean }
 
@@ -55,10 +55,8 @@ const aoSelecionar = async (arquivos: File[] | null) => {
   if (!arquivos?.length) return
   processando.value = true
   try {
-    const resultado = await lerPlanilhaUsuarios(
-      arquivos[0],
-      usuarios.value.map((u) => u.email)
-    )
+    const emailsBase = await buscarEmailsBase()
+    const resultado = await lerPlanilhaUsuarios(arquivos[0], emailsBase, opcoes.value.perfis)
     if (resultado.erro) {
       erro.value = resultado.erro
       return
@@ -67,6 +65,8 @@ const aoSelecionar = async (arquivos: File[] | null) => {
       ...l,
       selecionada: l.situacao === 'pronto'
     }))
+  } catch {
+    erro.value = 'Não foi possível validar a planilha. Tente novamente.'
   } finally {
     processando.value = false
   }
@@ -113,10 +113,29 @@ const importar = async () => {
     )
     emit('update:modelValue', false)
   } catch (erroApi) {
-    const e = erroApi as { statusMessage?: string; data?: { statusMessage?: string; motivos?: string[] } }
-    const motivos = e?.data?.motivos
-    const mensagem = e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível importar.'
-    erro.value = motivos?.length ? [mensagem, ...motivos].join(' ') : mensagem
+    const e = erroApi as {
+      statusMessage?: string
+      data?: { statusMessage?: string; motivos?: string[]; conflitos?: string[] }
+    }
+    const conflitos = e?.data?.conflitos ?? []
+    if (conflitos.length) {
+      const mapa = new Set(conflitos.map((c) => c.trim().toLowerCase()))
+      for (const l of linhas.value) {
+        if (mapa.has(l.email.toLowerCase())) {
+          l.situacao = 'ja-cadastrado'
+          l.selecionada = false
+          l.motivo = ''
+        }
+      }
+      const restamSelecionadas = linhas.value.some((l) => l.selecionada)
+      erro.value = restamSelecionadas
+        ? null
+        : e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível importar.'
+    } else {
+      const motivos = e?.data?.motivos
+      const mensagem = e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível importar.'
+      erro.value = motivos?.length ? [mensagem, ...motivos].join(' ') : mensagem
+    }
   } finally {
     importando.value = false
   }
@@ -252,7 +271,7 @@ const colunas: ColumnDef[] = [
           </template>
 
           <template #cell(perfil)="{ value }">
-            <UiBadge :variant="VARIANTE_POR_PERFIL[value]" size="sm">
+            <UiBadge :variant="variantePerfil(value)" size="sm">
               {{ value }}
             </UiBadge>
           </template>

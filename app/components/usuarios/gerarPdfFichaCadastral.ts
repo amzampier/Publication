@@ -2,7 +2,6 @@
 // Espelho do gerarPdfUsuarios.ts (mesma logo de login e mesmo rodapé), porém
 // vertical: cada usuário do conjunto vigente ganha uma ficha com dados
 // cadastrais e acesso. Fase 1: tudo em memória, sem window.print().
-import { jsPDF } from 'jspdf'
 import { formatarUltimoAcesso, type UsuarioModelo } from './useUsuariosModelo'
 
 interface OpcoesFicha {
@@ -53,6 +52,7 @@ const rasterizarLogo = async (src: string): Promise<{ data: string; proporcao: n
 }
 
 export const gerarPdfFichaCadastral = async (opcoes: OpcoesFicha): Promise<void> => {
+  const { jsPDF } = await import('jspdf')
   const { usuarios, logoPreview } = opcoes
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const largura = doc.internal.pageSize.getWidth() // 210mm

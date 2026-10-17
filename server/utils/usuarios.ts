@@ -357,6 +357,14 @@ export async function buscarUsuarioTelaPorId(id: string): Promise<UsuarioApi | n
   return linhas.length ? montarUsuario(linhas[0]) : null
 }
 
+/** Todos os e-mails da base (importação: pré-classificação "já cadastrado" completa). */
+export async function listarEmailsUsuarios(): Promise<string[]> {
+  const linhas = await query<Array<{ email_corporativo: string }>>(
+    'SELECT email_corporativo FROM usuarios'
+  )
+  return linhas.map((l) => String(l.email_corporativo))
+}
+
 // ---------------------------------------------------------------------------
 // Escritas
 // ---------------------------------------------------------------------------
@@ -500,12 +508,15 @@ export async function migrarSenhasSmtp(): Promise<void> {
   const linhas = await query<Array<{ id: string; senha_smtp: string }>>(
     "SELECT id, senha_smtp FROM usuarios WHERE senha_smtp IS NOT NULL AND senha_smtp <> '' AND senha_smtp NOT LIKE 'enc:v1:%'"
   )
-  for (const l of linhas) {
-    await query('UPDATE usuarios SET senha_smtp = ? WHERE id = ?', [cifrar(String(l.senha_smtp)), l.id])
-  }
-  if (linhas.length > 0) {
-    console.log(`[crypto] ${linhas.length} senha(s) SMTP legada(s) cifrada(s) em repouso.`)
-  }
+  if (linhas.length === 0) return
+  const casos = linhas.map(() => 'WHEN id = ? THEN ?').join(' ')
+  const params = linhas.flatMap((l) => [l.id, cifrar(String(l.senha_smtp))])
+  const placeholders = linhas.map(() => '?').join(', ')
+  await query(
+    `UPDATE usuarios SET senha_smtp = CASE ${casos} ELSE senha_smtp END WHERE id IN (${placeholders})`,
+    [...params, ...linhas.map((l) => l.id)]
+  )
+  console.log(`[crypto] ${linhas.length} senha(s) SMTP legada(s) cifrada(s) em repouso.`)
 }
 
 /** Bloquear/desbloquear (PUT /api/usuarios/:id/situacao — Ativo/Inativo). */
@@ -651,7 +662,10 @@ export async function importarUsuarios(linhas: unknown): Promise<{ importados: n
     throw createError({
       statusCode: 400,
       statusMessage: 'A importação contém e-mails já cadastrados — nada foi gravado.',
-      data: { motivos: duplicados.map((e) => `E-mail já cadastrado: ${e}.`) }
+      data: {
+        motivos: duplicados.map((e) => `E-mail já cadastrado: ${e}.`),
+        conflitos: duplicados
+      }
     })
   }
 

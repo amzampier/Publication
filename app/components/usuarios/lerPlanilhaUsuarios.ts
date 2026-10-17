@@ -4,7 +4,7 @@
 // exceljs via import() dinâmico (bundle só carrega no uso), cabeçalho com trim e
 // sem distinção de maiúsculas, linhas vazias ignoradas, e-mail case-insensitive e
 // classificação na ordem inválida -> repetida -> já cadastrada -> pronta.
-import { PERFIS, STATUSES } from './useUsuariosModelo'
+import { STATUSES } from './useUsuariosModelo'
 
 export type SituacaoImportacao = 'pronto' | 'ja-cadastrado' | 'repetido' | 'invalido'
 
@@ -41,7 +41,8 @@ const textoCelula = (celula: unknown): string => {
 
 export const lerPlanilhaUsuarios = async (
   arquivo: File,
-  emailsNaBase: Iterable<string>
+  emailsNaBase: Iterable<string>,
+  perfisValidos: Iterable<string>
 ): Promise<ResultadoPlanilha> => {
   let Worksheet: any
   try {
@@ -72,6 +73,7 @@ export const lerPlanilhaUsuarios = async (
   }
 
   const naBase = new Set([...emailsNaBase].map((e) => e.trim().toLowerCase()))
+  const perfisValidosSet = new Set([...perfisValidos].map((p) => p.trim()))
   const vistos = new Set<string>()
   const linhas: LinhaImportacao[] = []
 
@@ -89,7 +91,7 @@ export const lerPlanilhaUsuarios = async (
     if (!nome) motivos.push('Nome ausente')
     if (!email) motivos.push('E-mail ausente')
     else if (!EMAIL_RE.test(email)) motivos.push('E-mail malformado')
-    if (!PERFIS.includes(perfil as any)) motivos.push('Perfil inválido')
+    if (!perfisValidosSet.has(perfil)) motivos.push('Perfil inválido')
     if (!STATUSES.includes(status as any)) motivos.push('Status inválido')
 
     if (motivos.length) {

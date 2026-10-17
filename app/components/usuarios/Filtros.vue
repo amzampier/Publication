@@ -2,7 +2,6 @@
 import { ref, watch, computed } from 'vue'
 import { Funnel, User, ShieldCheck } from '@lucide/vue'
 import {
-  PERFIS,
   STATUSES,
   type FiltrosUsuarios
 } from './useUsuariosModelo'
@@ -15,14 +14,14 @@ import { useUsuarios } from './useUsuarios'
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoesUsuarios, limparFiltros, aplicarFiltros } = useUsuarios()
+const { filtros, opcoes, opcoesUsuarios, limparFiltros, aplicarFiltros } = useUsuarios()
 
 const rascunho = ref<FiltrosUsuarios>({ ...filtros.value })
 
 // Opções dos UiSelect — o estado vazio ('') é representado pelo placeholder
 // ("Todos/Todas"), e o X do select (`clearable`) devolve o filtro a "todos"
 const opcoesUsuario = computed(() => opcoesUsuarios.value.map((n) => ({ value: n, label: n })))
-const opcoesPerfil = computed(() => PERFIS.map((p) => ({ value: p, label: p })))
+const opcoesPerfil = computed(() => opcoes.value.perfis.map((p) => ({ value: p, label: p })))
 const opcoesStatus = computed(() => STATUSES.map((s) => ({ value: s, label: s })))
 
 // Ao abrir, o modal espelha o estado vigente; Cancelar simplesmente fecha

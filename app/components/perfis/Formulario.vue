@@ -129,6 +129,12 @@ const salvar = async () => {
       focarCampo('nome')
       return
     }
+    if (status === 409) {
+      // Nome duplicado (unicidade no banco): erro apontado no campo Nome.
+      erros.value = { nome: 'Já existe um perfil com esse nome.' }
+      focarCampo('nome')
+      return
+    }
     toast.danger(
       'Perfis de Acesso (RBAC)',
       'Não foi possível salvar o perfil. Verifique a conexão com o banco e tente novamente.'

@@ -5,7 +5,7 @@ import { type ColumnDef } from '../../utils/dataGrid'
 import { useUsuarios } from './useUsuarios'
 import {
   formatarUltimoAcesso,
-  VARIANTE_POR_PERFIL,
+  variantePerfil,
   VARIANTE_POR_STATUS,
   type UsuarioModelo
 } from './useUsuariosModelo'
@@ -77,7 +77,7 @@ const colunas: ColumnDef[] = [
       </template>
 
       <template #cell(perfil)="{ value }">
-        <UiBadge :variant="VARIANTE_POR_PERFIL[value]" size="sm">
+        <UiBadge :variant="variantePerfil(value)" size="sm">
           {{ value }}
         </UiBadge>
       </template>
