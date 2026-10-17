@@ -124,5 +124,17 @@ INSERT INTO configuracoes_limite_requisicao (
 );
 
 -- =========================================================================
+-- 6. CATÁLOGO INICIAL DE SOFTWARES (códigos SFT-XXX)
+-- Espelho da migration 15_seed_softwares.sql (INSERT IGNORE — idempotente).
+-- =========================================================================
+INSERT IGNORE INTO softwares (codigo, descricao, categoria, situacao) VALUES
+    ('SFT-001', 'Teorema ERP', 'Delphi e Web', 'Ativo'),
+    ('SFT-002', 'Teorema WMS', 'Delphi', 'Ativo'),
+    ('SFT-003', 'Teorema Fiscal', 'Delphi e Web', 'Ativo'),
+    ('SFT-004', 'Teorema Frente de Caixa', 'Delphi', 'Ativo'),
+    ('SFT-005', 'Teorema Estoque', 'Delphi e Web', 'Inativo'),
+    ('SFT-006', 'Portal Web Teorema', 'Web', 'Ativo');
+
+-- =========================================================================
 -- FIM DOS SEEDS
 -- =========================================================================

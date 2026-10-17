@@ -85,7 +85,7 @@ export const sessoes: SidebarSession[] = [
     aberto: true,
     items: [
       { id: 'parceiros', label: 'Parceiros', icon: Handshake, cor: '#047857' },
-      { id: 'softwares', label: 'Softwares', icon: Boxes, cor: '#0364f7' }
+      { id: 'softwares', label: 'Softwares', icon: Boxes, cor: '#0364f7', to: '/admin/softwares' }
     ]
   },
   {

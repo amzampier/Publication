@@ -342,6 +342,7 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `GET /api/seguranca/estado` (visualizar) e `POST /api/seguranca/liberar` (alterar) — aba Segurança (rate limit/lockout).
 - `GET /api/configuracoes/identidade` — **público**; devolve apenas `logo_login_url` para as telas de autenticação.
 - `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`); `logomarcas` exige `configuracoes-globais`/`alterar`, `avatares` é session-only.
+- `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
 
 ---
 

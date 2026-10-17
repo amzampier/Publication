@@ -153,13 +153,13 @@ CREATE TABLE parceiros (
 -- 7. CADASTRO: SOFTWARES (SISTEMAS E SOLUÇÕES TECNOLÓGICAS)
 -- =========================================================================
 CREATE TABLE softwares (
-    id VARCHAR(64) NOT NULL COMMENT 'Identificador único do software',
+    codigo VARCHAR(20) NOT NULL COMMENT 'Código único do software (SFT-XXX)',
     descricao VARCHAR(200) NOT NULL COMMENT 'Nome/descrição do sistema',
     categoria ENUM('Delphi', 'Web', 'Delphi e Web') NOT NULL DEFAULT 'Delphi' COMMENT 'Tecnologia do sistema',
     situacao ENUM('Ativo', 'Inativo') NOT NULL DEFAULT 'Ativo' COMMENT 'Situação de manutenção',
     criado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     atualizado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    PRIMARY KEY (id),
+    PRIMARY KEY (codigo),
     KEY idx_softwares_descricao (descricao),
     KEY idx_softwares_categoria (categoria),
     KEY idx_softwares_situacao (situacao)
@@ -401,7 +401,7 @@ CREATE TABLE entregas_itens (
     release_id VARCHAR(64) NULL COMMENT 'Chave estrangeira apontando para release_week.id (se vinculado a release)',
     projeto_id VARCHAR(64) NULL COMMENT 'Chave estrangeira apontando para projetos_escopo.id (se vinculado a projeto)',
     manual_id VARCHAR(64) NULL COMMENT 'Chave estrangeira apontando para manuais_mensal.id (se possui manual criado)',
-    software_id VARCHAR(64) NULL COMMENT 'Chave estrangeira apontando para softwares.id',
+    software_id VARCHAR(20) NULL COMMENT 'Chave estrangeira apontando para softwares.codigo',
     parceiro_id VARCHAR(64) NULL COMMENT 'Chave estrangeira apontando para parceiros.id',
     autor_id UUID NULL COMMENT 'Chave estrangeira apontando para usuarios.id (operador que lançou a chamada)',
     autor_nome VARCHAR(150) NULL COMMENT 'Nome do operador autor do lançamento',
@@ -462,7 +462,7 @@ CREATE TABLE entregas_itens (
         ON UPDATE CASCADE,
     CONSTRAINT fk_entregas_soft_id
         FOREIGN KEY (software_id)
-        REFERENCES softwares(id)
+        REFERENCES softwares(codigo)
         ON DELETE RESTRICT
         ON UPDATE CASCADE,
     CONSTRAINT fk_entregas_parc_id

@@ -34,7 +34,7 @@ SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente após a
 ### Requirement: O catálogo de rotas administrativas mapeia cada rota para módulo e ação
 O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da ação indicados
 (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
-`auditoria`, `configuracoes-globais`):
+`auditoria`, `configuracoes-globais`, `softwares`):
 
 - `GET /api/usuarios` → `gestao-usuarios` / `visualizar`
 - `GET /api/usuarios/emails` → `gestao-usuarios` / `visualizar`
@@ -47,6 +47,11 @@ O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da 
 - `POST /api/perfis` → `perfis-acesso` / `criar`
 - `PUT /api/perfis/:id`, `PUT /api/perfis/:id/permissoes`, `POST /api/perfis/:id/permissoes/copiar` → `perfis-acesso` / `alterar`
 - `DELETE /api/perfis/:id` → `perfis-acesso` / `excluir`
+- `GET /api/softwares` → `softwares` / `visualizar`
+- `POST /api/softwares` → `softwares` / `criar`
+- `PUT /api/softwares/:codigo` → `softwares` / `alterar`
+- `DELETE /api/softwares/:codigo` → `softwares` / `excluir`
+- `POST /api/softwares/importar` → `softwares` / `importar`
 - `GET /api/auditoria` → `auditoria` / `visualizar`
 - `GET /api/configuracoes`, `GET /api/seguranca/estado` → `configuracoes-globais` / `visualizar`
 - `PUT /api/configuracoes`, `POST /api/seguranca/liberar` → `configuracoes-globais` / `alterar`
@@ -66,6 +71,14 @@ O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da 
 
 #### Scenario: Rota de e-mails exige visualizar de usuários
 - **WHEN** um perfil sem `gestao-usuarios`/`visualizar` chama `GET /api/usuarios/emails`
+- **THEN** a API responde `403`
+
+#### Scenario: Rotas de softwares usam o módulo softwares
+- **WHEN** um perfil concede `softwares`/`visualizar` mas não `softwares`/`excluir` chama `DELETE /api/softwares/:codigo`
+- **THEN** a API responde `403` e nenhum software é excluído
+
+#### Scenario: Importação de softwares exige a ação extra
+- **WHEN** um perfil sem `softwares`/`importar` chama `POST /api/softwares/importar`
 - **THEN** a API responde `403`
 
 ### Requirement: Portas públicas e autoatendimento exigem apenas sessão
