@@ -4,6 +4,7 @@ import { ScrollText, Download, FileSpreadsheet, ChevronDown, DownloadIcon } from
 import { useAuditoriaModelo, formatarDataHora } from './useAuditoriaModelo'
 import { gerarPdfAuditoria } from './gerarPdfAuditoria'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
+import { useToast } from '../../composables/useToast'
 
 // Menu "Exportar" (mini-menu role=menu — padrão do menu da conta do AppHeader)
 const menuAberto = ref(false)
@@ -27,30 +28,46 @@ onUnmounted(() => {
 // Exportação sobre o conjunto filtrado COMPLETO (buscado pela API, pois a
 // listagem é paginada — change paginacao-server-side-e-performance)
 const { filtros, periodoRotulo, buscarParaExportacao } = useAuditoriaModelo()
+const { toast } = useToast()
+const exportando = ref(false)
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
 const exportarCsv = async () => {
   menuAberto.value = false
-  const registros = await buscarParaExportacao()
-  const escapar = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
-  const cabecalho = ['Data/Hora', 'Usuário', 'Ação', 'Recurso', 'Detalhes', 'IP']
-  const linhas = registros.map((r) =>
-    [formatarDataHora(r.registradoEm), r.usuario.nome, r.acao, r.recurso, r.detalhes, r.ip]
-      .map(escapar)
-      .join(';')
-  )
-  const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'auditoria.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+  exportando.value = true
+  try {
+    const registros = await buscarParaExportacao()
+    // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
+    const escapar = (v: string | number) => {
+      let texto = String(v)
+      if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
+      return `"${texto.replace(/"/g, '""')}"`
+    }
+    const cabecalho = ['Data/Hora', 'Usuário', 'Ação', 'Recurso', 'Detalhes', 'IP']
+    const linhas = registros.map((r) =>
+      [formatarDataHora(r.registradoEm), r.usuario.nome, r.acao, r.recurso, r.detalhes, r.ip]
+        .map(escapar)
+        .join(';')
+    )
+    const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'auditoria.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (erro) {
+    console.error('[csv] falha ao exportar auditoria:', erro)
+    toast.danger('Exportação', 'Não foi possível exportar a auditoria. Tente novamente.')
+  } finally {
+    exportando.value = false
+  }
 }
 
 const baixarPdf = async () => {
   menuAberto.value = false
+  exportando.value = true
   try {
     const registros = await buscarParaExportacao()
     await gerarPdfAuditoria({
@@ -61,6 +78,9 @@ const baixarPdf = async () => {
     })
   } catch (erro) {
     console.error('[pdf] falha ao gerar o relatorio:', erro)
+    toast.danger('Exportação', 'Não foi possível gerar o PDF da auditoria. Tente novamente.')
+  } finally {
+    exportando.value = false
   }
 }
 </script>
@@ -87,6 +107,7 @@ const baixarPdf = async () => {
         variant="outline"
         size="md"
         class="w-full sm:w-auto"
+        :loading="exportando"
         aria-haspopup="menu"
         :aria-expanded="menuAberto"
         @click="menuAberto = !menuAberto"

@@ -131,7 +131,7 @@ export async function liberarBloqueioEmail(email: string, ip: string): Promise<v
     usuarioId: null,
     ip,
     tipo: 'bloqueio-liberado',
-    tentativas: atual.bloqueado ? atual.tentativas : null
+    tentativas: atual.bloqueado ? atual.tentativas : undefined
   })
 }
 
@@ -212,8 +212,8 @@ export async function listarEstadoSeguranca(): Promise<EstadoSeguranca> {
     constantes: {
       tentativas_max: TENTATIVAS_MAX,
       janela_bloqueio_min: JANELA_BLOQUEIO_MIN,
-      limite_requisicoes_minuto: rateRows.length > 0 ? Number(rateRows[0].limite_requisicoes_minuto) : 120,
-      rate_limit_ativo: rateRows.length > 0 ? Number(rateRows[0].ativo) === 1 : true
+      limite_requisicoes_minuto: rateRows.length > 0 ? Number(rateRows[0]!.limite_requisicoes_minuto) : 120,
+      rate_limit_ativo: rateRows.length > 0 ? Number(rateRows[0]!.ativo) === 1 : true
     },
     contas: [...contasReais, ...bloqueiosEmail],
     eventos

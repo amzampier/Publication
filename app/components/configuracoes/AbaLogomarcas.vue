@@ -77,7 +77,7 @@ const aoChangeHeader = (arquivos: File[] | null) => {
     uploadKeyHeader.value++
     return
   }
-  void enviarParaServidor(arquivos[0], logoHeader, previewHeader, veioUploadHeader, uploadKeyHeader)
+  void enviarParaServidor(arquivos[0]!, logoHeader, previewHeader, veioUploadHeader, uploadKeyHeader)
 }
 
 const aoChangeLogin = (arquivos: File[] | null) => {
@@ -88,7 +88,7 @@ const aoChangeLogin = (arquivos: File[] | null) => {
     uploadKeyLogin.value++
     return
   }
-  void enviarParaServidor(arquivos[0], logoLogin, previewLogin, veioUploadLogin, uploadKeyLogin)
+  void enviarParaServidor(arquivos[0]!, logoLogin, previewLogin, veioUploadLogin, uploadKeyLogin)
 }
 
 // Edição manual do caminho (permitida apenas quando o valor não veio do servidor)

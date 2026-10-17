@@ -305,7 +305,7 @@ o campo de pontos conforme avança (`ONDA_LARGURA = 48 px`, `ONDA_FORCA = 10`);
 
 ## 10. Verificação
 
-- `npm run build` (gate estrutural — não há lint/test no repositório) e
+- `npm run build`, `npm run lint`, `npm run test` e `npm run typecheck` (gates) e
   `openspec validate "auth-backend-resend" --strict`.
 - Bateria de API (curl/script): login 200 + cookies HttpOnly + `ultimo_login`; 401 genérico
   idêntico para senha errada × e-mail inexistente; 403 inativo e 403 bloqueio (5 falhas →

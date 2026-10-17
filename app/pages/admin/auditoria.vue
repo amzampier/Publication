@@ -30,7 +30,7 @@ onMounted(async () => {
   if (!ok) {
     toast.danger(
       'Gestão de Auditoria',
-      'Não foi possível carregar os registros de auditoria. Verifique a conexão com o banco e recarregue a página.'
+      'Não foi possível carregar os registros de auditoria. Recarregue a página e tente novamente.'
     )
   }
 })

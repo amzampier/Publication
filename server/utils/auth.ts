@@ -19,6 +19,16 @@ export interface UsuarioSessao {
   tokenVersion: number
 }
 
+/** DTO público da sessão — nunca expõe `tokenVersion` (RL05-B-04). */
+export type SessaoPublica = Omit<UsuarioSessao, 'tokenVersion'>
+export const sessaoPublica = (sessao: UsuarioSessao): SessaoPublica => ({
+  id: sessao.id,
+  nome: sessao.nome,
+  email: sessao.email,
+  perfil: sessao.perfil,
+  provisoria: sessao.provisoria
+})
+
 export interface UsuarioLoginRow {
   id: string
   nome: string
@@ -41,6 +51,8 @@ export const ACCESS_TTL_SEG = Number(process.env.AUTH_ACCESS_TTL || 0) > 0
   ? Number(process.env.AUTH_ACCESS_TTL)
   : 900
 const REFRESH_TTL_DIAS = 7
+/** TTL do refresh em SEGUNDOS — fonte única do prazo (cookie e registro de sessão). */
+const REFRESH_TTL_SEG = REFRESH_TTL_DIAS * 24 * 60 * 60
 export const TENTATIVAS_MAX = 5
 export const JANELA_BLOQUEIO_MIN = 15
 
@@ -71,13 +83,16 @@ function gravarCookies(event: any, access: string, refresh: string): void {
   setCookie(event, NOME_ACCESS, access, { ...opcoesBase, maxAge: ACCESS_TTL_SEG })
   setCookie(event, NOME_REFRESH, refresh, {
     ...opcoesBase,
-    maxAge: REFRESH_TTL_DIAS * 24 * 3600
+    maxAge: REFRESH_TTL_SEG
   })
 }
 
 export function limparCookiesAuth(event: any): void {
-  deleteCookie(event, NOME_ACCESS, { path: '/' })
-  deleteCookie(event, NOME_REFRESH, { path: '/' })
+  // RL05-M-03: o prefixo __Host- exige `Secure` também no Set-Cookie de remoção.
+  // Sem ele o navegador ignora a remoção e o cookie permanece no cliente.
+  const remocao = { path: '/', secure: ehProducao, sameSite: 'lax' as const }
+  deleteCookie(event, NOME_ACCESS, remocao)
+  deleteCookie(event, NOME_REFRESH, remocao)
 }
 
 /** Reemite SÓ o cookie de access (ex.: após limpar a provisória) — preserva o refresh. */
@@ -148,7 +163,7 @@ const ipDe = (event: any): string => {
 export async function criarSessao(event: any, usuarioId: string): Promise<string> {
   const refresh = gerarRefresh()
   const userAgent = String(getRequestHeader(event, 'user-agent') ?? '').slice(0, 255)
-  const expira = new Date(Date.now() + REFRESH_TTL_DIAS * 24 * 3600)
+  const expira = new Date(Date.now() + REFRESH_TTL_SEG * 1000)
   await query(
     `INSERT INTO sessoes (id, usuario_id, refresh_token_hash, user_agent, ip, expira_em)
      VALUES (UUID(), ?, ?, ?, ?, ?)`,
@@ -169,7 +184,7 @@ export async function rotacionarSessao(
 ): Promise<{ refresh: string; usuarioId: string } | null> {
   const hash = hashRefresh(refreshAntigo)
   const agora = new Date()
-  const expira = new Date(Date.now() + REFRESH_TTL_DIAS * 24 * 3600)
+  const expira = new Date(Date.now() + REFRESH_TTL_SEG * 1000)
 
   const tx = await getTransaction()
   try {
@@ -179,20 +194,21 @@ export async function rotacionarSessao(
         LIMIT 1 FOR UPDATE`,
       [hash, agora]
     )
-    if (linhas.length === 0) {
+    const linha = linhas[0]
+    if (!linha) {
       await tx.rollback()
       return null
     }
-    await tx.query('UPDATE sessoes SET revogado_em = ? WHERE id = ?', [agora, linhas[0].id])
+    await tx.query('UPDATE sessoes SET revogado_em = ? WHERE id = ?', [agora, linha.id])
     const novo = gerarRefresh()
     const userAgent = String(getRequestHeader(event, 'user-agent') ?? '').slice(0, 255)
     await tx.query(
       `INSERT INTO sessoes (id, usuario_id, refresh_token_hash, user_agent, ip, expira_em)
        VALUES (UUID(), ?, ?, ?, ?, ?)`,
-      [linhas[0].usuario_id, hashRefresh(novo), userAgent, ipDe(event), expira]
+      [linha.usuario_id, hashRefresh(novo), userAgent, ipDe(event), expira]
     )
     await tx.commit()
-    return { refresh: novo, usuarioId: String(linhas[0].usuario_id) }
+    return { refresh: novo, usuarioId: String(linha.usuario_id) }
   } catch (erro) {
     await tx.rollback().catch(() => {})
     throw erro
@@ -200,12 +216,37 @@ export async function rotacionarSessao(
 }
 
 /** Revoga a sessão do refresh no logout (revogado_em = agora). */
-export async function revogarSessao(refresh: string | undefined): Promise<void> {
+export async function revogarSessao(
+  refresh: string | undefined,
+  exec: ExecutorQuery = query
+): Promise<void> {
   if (!refresh) return
-  await query('UPDATE sessoes SET revogado_em = ? WHERE refresh_token_hash = ? AND revogado_em IS NULL', [
+  await exec('UPDATE sessoes SET revogado_em = ? WHERE refresh_token_hash = ? AND revogado_em IS NULL', [
     new Date(),
     hashRefresh(refresh)
   ])
+}
+
+/**
+ * Logout atômico (RL05-M-04): revoga o refresh e incrementa a versão da sessão
+ * na MESMA transação, sem rotacionar o refresh (evita a sessão órfã quando o
+ * access já expirou). `usuarioId` ausente = só revoga o refresh.
+ */
+export async function revogarSessaoEAccess(
+  refresh: string | undefined,
+  usuarioId: string | undefined
+): Promise<void> {
+  const tx = await getTransaction()
+  try {
+    await revogarSessao(refresh, (sql, values) => tx.query(sql, values))
+    if (usuarioId) {
+      await revogarAccessVigente(usuarioId, (sql, values) => tx.query(sql, values))
+    }
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -237,7 +278,8 @@ export async function renovarSessao(event: any): Promise<UsuarioSessao | null> {
   }
 
   const usuario = await buscarUsuarioPorId(rotacao.usuarioId)
-  if (!usuario || usuario.situacao !== 'Ativo') {
+  // Conta e PERFIL precisam estar ativos (D2): inativar o perfil impede renovar a sessão.
+  if (!usuario || usuario.situacao !== 'Ativo' || usuario.perfil_situacao !== 'Ativo') {
     limparCookiesAuth(event)
     return null
   }
@@ -259,19 +301,24 @@ export async function renovarSessao(event: any): Promise<UsuarioSessao | null> {
  * payload; expirado → `renovarSessao` (rotaciona o refresh no servidor).
  * Retorna null quando não há como autenticar.
  */
-export async function getSessionUser(event: any): Promise<UsuarioSessao | null> {
+/** Sessão a partir APENAS do access (não rotaciona o refresh — usado no logout). */
+export async function obterSessaoDoAccess(event: any): Promise<UsuarioSessao | null> {
   const access = getCookie(event, NOME_ACCESS)
   const payload = await validarAccessToken(access)
-  if (payload) {
-    return {
-      id: payload.sub,
-      nome: payload.nome,
-      email: payload.email,
-      perfil: payload.perfil,
-      provisoria: payload.provisoria,
-      tokenVersion: payload.tokenVersion
-    }
+  if (!payload) return null
+  return {
+    id: payload.sub,
+    nome: payload.nome,
+    email: payload.email,
+    perfil: payload.perfil,
+    provisoria: payload.provisoria,
+    tokenVersion: payload.tokenVersion
   }
+}
+
+export async function getSessionUser(event: any): Promise<UsuarioSessao | null> {
+  const sessao = await obterSessaoDoAccess(event)
+  if (sessao) return sessao
   return await renovarSessao(event)
 }
 
@@ -303,7 +350,8 @@ export async function buscarUsuarioPorEmail(email: string): Promise<UsuarioLogin
       WHERE u.email_corporativo = ? LIMIT 1`,
     [email]
   )
-  return linhas.length ? montarLoginRow(linhas[0]) : null
+  const linha = linhas[0]
+  return linha ? montarLoginRow(linha) : null
 }
 
 /** Conta por id (sessão, troca de senha). */
@@ -315,7 +363,8 @@ export async function buscarUsuarioPorId(id: string): Promise<UsuarioLoginRow | 
       WHERE u.id = ? LIMIT 1`,
     [id]
   )
-  return linhas.length ? montarLoginRow(linhas[0]) : null
+  const linha = linhas[0]
+  return linha ? montarLoginRow(linha) : null
 }
 
 /**
@@ -327,13 +376,19 @@ export async function sessaoAtivaNoServidor(sessao: {
   id: string
   tokenVersion: number
 }): Promise<boolean> {
-  const linhas = await query<Array<{ situacao: string; token_version: number }>>(
-    'SELECT situacao, token_version FROM usuarios WHERE id = ? LIMIT 1',
+  // A conta E o PERFIL precisam estar ativos (change endurecer-revogacao-e-autorizacao, D2):
+  // inativar o perfil derruba as sessões vigentes, não apenas o login.
+  const linhas = await query<Array<{ situacao: string; perfil_situacao: string; token_version: number }>>(
+    `SELECT u.situacao, p.situacao AS perfil_situacao, u.token_version
+       FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
+      WHERE u.id = ? LIMIT 1`,
     [sessao.id]
   )
-  if (linhas.length === 0) return false
-  if (String(linhas[0].situacao) !== 'Ativo') return false
-  return Number(linhas[0].token_version) === sessao.tokenVersion
+  const linha = linhas[0]
+  if (!linha) return false
+  if (String(linha.situacao) !== 'Ativo') return false
+  if (String(linha.perfil_situacao) !== 'Ativo') return false
+  return Number(linha.token_version) === sessao.tokenVersion
 }
 
 /**
@@ -352,9 +407,46 @@ export async function obterSessaoValida(event: any): Promise<UsuarioSessao | nul
   return sessao
 }
 
-/** Incrementa a versão da sessão da conta — revoga todos os access vigentes (logout/desativação). */
-export async function revogarAccessVigente(usuarioId: string): Promise<void> {
-  await query('UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?', [usuarioId])
+/** Executor de query — o pool (`query`) ou a transação (`tx.query`). */
+type ExecutorQuery = (sql: string, values?: any[]) => Promise<any>
+
+/** Incrementa a versão da sessão da conta — invalida todos os access vigentes (logout/desativação). */
+export async function revogarAccessVigente(usuarioId: string, exec: ExecutorQuery = query): Promise<void> {
+  await exec('UPDATE usuarios SET token_version = token_version + 1 WHERE id = ?', [usuarioId])
+}
+
+/**
+ * Revoga TODAS as sessões do usuário (change endurecer-revogacao-e-autorizacao, D1):
+ * incrementa a versão da sessão (invalida os access vigentes) e marca `revogado_em`
+ * nas linhas de `sessoes` abertas (invalida também os refresh tokens). Aceita o
+ * executor para rodar dentro de transação (desativação de usuário / inativação de perfil).
+ */
+export async function revogarSessoesDoUsuario(
+  usuarioId: string,
+  exec: ExecutorQuery = query
+): Promise<void> {
+  await revogarAccessVigente(usuarioId, exec)
+  await exec('UPDATE sessoes SET revogado_em = ? WHERE usuario_id = ? AND revogado_em IS NULL', [
+    new Date(),
+    usuarioId
+  ])
+}
+
+/**
+ * Revoga as sessões de TODOS os usuários de um perfil (inativação de perfil —
+ * change endurecer-revogacao-e-autorizacao, D2.3). Mesma lógica do D1, aplicada
+ * em lote; aceita o executor para rodar na transação da atualização do perfil.
+ */
+export async function revogarSessoesDoPerfil(
+  perfilId: string,
+  exec: ExecutorQuery = query
+): Promise<void> {
+  await exec('UPDATE usuarios SET token_version = token_version + 1 WHERE perfil_id = ?', [perfilId])
+  await exec(
+    `UPDATE sessoes s JOIN usuarios u ON u.id = s.usuario_id
+        SET s.revogado_em = ? WHERE u.perfil_id = ? AND s.revogado_em IS NULL`,
+    [new Date(), perfilId]
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -387,17 +479,18 @@ export async function registrarFalhaLogin(
       'SELECT tentativas_falhas, bloqueado_ate FROM usuarios WHERE id = ? FOR UPDATE',
       [usuarioId]
     )
-    if (linhas.length === 0) {
+    const linha = linhas[0]
+    if (!linha) {
       await tx.commit()
       return { bloqueou: false, tentativas: 0 }
     }
-    const vigente = bloqueioVigente(linhas[0].bloqueado_ate)
+    const vigente = bloqueioVigente(linha.bloqueado_ate)
     if (vigente) {
       await tx.commit()
-      return { bloqueou: false, tentativas: Number(linhas[0].tentativas_falhas) } // já bloqueado: não incrementa além da janela
+      return { bloqueou: false, tentativas: Number(linha.tentativas_falhas) } // já bloqueado: não incrementa além da janela
     }
 
-    const novas = Number(linhas[0].tentativas_falhas) + 1
+    const novas = Number(linha.tentativas_falhas) + 1
     if (novas >= TENTATIVAS_MAX) {
       const ate = new Date(Date.now() + JANELA_BLOQUEIO_MIN * 60000)
       await tx.query('UPDATE usuarios SET tentativas_falhas = 0, bloqueado_ate = ? WHERE id = ?', [

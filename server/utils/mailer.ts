@@ -35,6 +35,8 @@ export async function enviarEmail(email: EmailEnviar): Promise<string> {
 
   const resposta = await $fetch<RespostaResend>('https://api.resend.com/emails', {
     method: 'POST',
+    // Timeout (RL04 B-26): evita requisição pendurada no provedor.
+    signal: AbortSignal.timeout(Number(process.env.MAIL_TIMEOUT_MS) || 10000),
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json'

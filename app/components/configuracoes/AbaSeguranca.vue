@@ -249,7 +249,7 @@ const linhasEventos = computed(() =>
             <span class="text-xs text-slate-500">por minuto · por IP</span>
           </div>
           <p class="mt-1 text-[11px] font-semibold uppercase tracking-wider"
-             :class="estado?.constantes.rate_limit_ativo ? 'text-emerald-700' : 'text-slate-400'">
+             :class="estado?.constantes.rate_limit_ativo ? 'text-emerald-700' : 'text-slate-500'">
             {{ estado?.constantes.rate_limit_ativo ? 'Ativo' : 'Inativo' }}
           </p>
         </div>
@@ -261,7 +261,7 @@ const linhasEventos = computed(() =>
           <p class="mt-2 text-sm font-bold text-slate-900">
             Bloqueio: conta (e-mail) · Rate limit: IP
           </p>
-          <p class="mt-1 text-xs italic text-slate-400">
+          <p class="mt-1 text-xs italic text-slate-500">
             Proteção contra ataques de força bruta
           </p>
         </div>
@@ -309,7 +309,7 @@ const linhasEventos = computed(() =>
           </UiTooltip>
         </template>
       </UiDataTable>
-      <p v-else class="mt-3 text-xs italic text-slate-400">
+      <p v-else class="mt-3 text-xs italic text-slate-500">
         Nenhuma conta em estado de segurança.
       </p>
 
@@ -345,12 +345,12 @@ const linhasEventos = computed(() =>
           {{ value ?? '—' }}
         </template>
       </UiDataTable>
-      <p v-else class="mt-3 text-xs italic text-slate-400">Nenhum evento registrado.</p>
+      <p v-else class="mt-3 text-xs italic text-slate-500">Nenhum evento registrado.</p>
 
       <!-- 4. Rate limit editável (rascunho → Salvar global) -->
       <div class="mt-6 flex items-center gap-2">
         <Gauge class="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
-        <h3 class="text-xs font-bold text-slate-800">RATE LIMIT DA API</h3>
+        <h3 class="text-xs font-bold text-slate-800">LIMITE DE REQUISIÇÕES</h3>
       </div>
       <div class="mt-3 grid gap-4 sm:grid-cols-[220px_1fr] sm:items-end">
         <UiInput

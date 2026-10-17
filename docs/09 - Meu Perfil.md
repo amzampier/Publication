@@ -297,5 +297,5 @@ o acesso é exclusivamente pelo menu da conta (`docs/03` §3).
   `GET /api/usuarios/eu` e gravado via `PATCH /api/usuarios/eu` (dados, endereço, SMTP e
   foto como arquivo em `avatares`); a troca de senha já era real (`POST /api/auth/trocar-senha`).
 - **RBAC no cliente:** `usePermissions` (docs/02 §5.3) — hoje qualquer sessão acessa a tela.
-- **Nome de usuário:** não existe no modelo (`UsuarioDemo`); se virar campo de login, esta
+- **Nome de usuário:** não existe no modelo (`UsuarioModelo`); se virar campo de login, esta
   tela ganha o rótulo e a validação de unicidade correspondentes.

@@ -105,7 +105,7 @@ watch(sessoesAbertas, () => emit('change'), { deep: true })
             checkbox-position="start"
             :model-value="sidebarExpandida"
             :class="sidebarExpandida ? '' : 'opacity-60'"
-            @change="(v: boolean) => { if (v) { sidebarExpandida = true; marcarPreferenciaManual() } }"
+            @change="(v: boolean | any[]) => { if (v) { sidebarExpandida = true; marcarPreferenciaManual() } }"
           />
           <UiCheckCard
             title="Recolhida / Compacta por padrão"
@@ -116,7 +116,7 @@ watch(sessoesAbertas, () => emit('change'), { deep: true })
             checkbox-position="start"
             :model-value="!sidebarExpandida"
             :class="sidebarExpandida ? 'opacity-60' : ''"
-            @change="(v: boolean) => { if (v) { sidebarExpandida = false; marcarPreferenciaManual() } }"
+            @change="(v: boolean | any[]) => { if (v) { sidebarExpandida = false; marcarPreferenciaManual() } }"
           />
         </div>
       </section>
@@ -147,7 +147,7 @@ watch(sessoesAbertas, () => emit('change'), { deep: true })
               checkbox-position="start"
               :model-value="todasAbertas"
               :class="todasAbertas ? '' : 'opacity-60'"
-              @change="(v: boolean) => { if (v) definirTodas(true) }"
+              @change="(v: boolean | any[]) => { if (v) definirTodas(true) }"
             />
             <UiCheckCard
               title="Todas as Sessões Recolhidas / Acordeão"
@@ -158,7 +158,7 @@ watch(sessoesAbertas, () => emit('change'), { deep: true })
               checkbox-position="start"
               :model-value="todasRecolhidas"
               :class="todasRecolhidas ? '' : 'opacity-60'"
-              @change="(v: boolean) => { if (v) definirTodas(false) }"
+              @change="(v: boolean | any[]) => { if (v) definirTodas(false) }"
             />
           </div>
 
@@ -171,12 +171,12 @@ watch(sessoesAbertas, () => emit('change'), { deep: true })
                 :title="sessao.label"
                 :description="itensDaSessao(sessao.label)"
                 :badge="estaAberta(sessao.label) ? 'Aberta' : 'Recolhida'"
-                :badge-variant="estaAberta(sessao.label) ? 'done' : 'neutral'"
+                :badge-variant="estaAberta(sessao.label) ? 'emerald' : 'neutral'"
                 :icon="iconeDaSessao[sessao.label] ?? Folder"
                 checkbox-position="start"
                 :model-value="estaAberta(sessao.label)"
                 :class="estaAberta(sessao.label) ? '' : 'opacity-60'"
-                @change="(v: boolean) => definirSessao(sessao.label, v)"
+                @change="(v: boolean | any[]) => definirSessao(sessao.label, Boolean(v))"
               />
             </div>
           </div>

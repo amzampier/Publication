@@ -56,7 +56,7 @@ const aoSelecionar = async (arquivos: File[] | null) => {
   processando.value = true
   try {
     const emailsBase = await buscarEmailsBase()
-    const resultado = await lerPlanilhaUsuarios(arquivos[0], emailsBase, opcoes.value.perfis)
+    const resultado = await lerPlanilhaUsuarios(arquivos[0]!, emailsBase, opcoes.value.perfis)
     if (resultado.erro) {
       erro.value = resultado.erro
       return
@@ -264,6 +264,7 @@ const colunas: ColumnDef[] = [
           <template #cell(selecao)="{ row }">
             <UiCheckbox
               size="sm"
+              :aria-label="`Selecionar ${row.nome || row.email}`"
               :model-value="row.selecionada"
               :disabled="row.situacao !== 'pronto'"
               @update:model-value="definirSelecao(row, Boolean($event))"
@@ -277,15 +278,15 @@ const colunas: ColumnDef[] = [
           </template>
 
           <template #cell(status)="{ value }">
-            <UiBadge :variant="VARIANTE_POR_STATUS[value]" size="sm">
+            <UiBadge :variant="VARIANTE_POR_STATUS[value as StatusUsuario]" size="sm">
               {{ value }}
             </UiBadge>
           </template>
 
           <template #cell(situacao)="{ row }">
             <div class="flex flex-col items-start gap-0.5">
-              <UiBadge :variant="VARIANTE_SITUACAO[row.situacao]" size="sm">
-                {{ ROTULO_SITUACAO[row.situacao] }}
+              <UiBadge :variant="VARIANTE_SITUACAO[row.situacao as SituacaoImportacao]" size="sm">
+                {{ ROTULO_SITUACAO[row.situacao as SituacaoImportacao] }}
               </UiBadge>
               <span v-if="row.motivo" class="text-[10px] font-medium text-rose-700">
                 {{ row.motivo }}

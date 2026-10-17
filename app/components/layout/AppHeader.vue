@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import {
   Bell,
   Building2,
@@ -53,16 +53,51 @@ const alternarSidebar = () => emit('update:sidebarOpen', !props.sidebarOpen)
 const alternarConta = () => {
   contaAberto.value = !contaAberto.value
   if (contaAberto.value) notificacoesAberto.value = false
+  if (contaAberto.value) {
+    nextTick(() => contaRef.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus())
+  }
 }
 
 const alternarNotificacoes = () => {
   notificacoesAberto.value = !notificacoesAberto.value
   if (notificacoesAberto.value) contaAberto.value = false
+  if (notificacoesAberto.value) {
+    nextTick(() => notificacoesRef.value?.querySelector<HTMLElement>('[role="menuitem"]')?.focus())
+  }
 }
 
 const fecharMenus = () => {
   contaAberto.value = false
   notificacoesAberto.value = false
+}
+
+// Navegação por teclado nos menus do header (RL04 B-06): setas/Home/End e
+// fechamento ao perder o foco.
+const navegarMenu = (evento: KeyboardEvent) => {
+  const painel = evento.currentTarget as HTMLElement
+  const itens = Array.from(painel.querySelectorAll<HTMLElement>('[role="menuitem"]'))
+  if (itens.length === 0) return
+  const atual = document.activeElement as HTMLElement | null
+  const idx = atual ? itens.indexOf(atual) : -1
+  if (evento.key === 'ArrowDown') {
+    evento.preventDefault()
+    itens[(idx + 1 + itens.length) % itens.length]?.focus()
+  } else if (evento.key === 'ArrowUp') {
+    evento.preventDefault()
+    itens[(idx - 1 + itens.length) % itens.length]?.focus()
+  } else if (evento.key === 'Home') {
+    evento.preventDefault()
+    itens[0]?.focus()
+  } else if (evento.key === 'End') {
+    evento.preventDefault()
+    itens[itens.length - 1]?.focus()
+  }
+}
+
+const menuFocusout = (evento: FocusEvent, fechar: () => void) => {
+  const painel = evento.currentTarget as HTMLElement
+  const destino = evento.relatedTarget as Node | null
+  if (!destino || !painel.contains(destino)) fechar()
 }
 
 // Item do menu Account com rota navega e fecha os menus
@@ -165,7 +200,7 @@ onUnmounted(() => {
           <Bell class="h-4 w-4" aria-hidden="true" />
           <span
             v-if="notificacoes.length > 0"
-            class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500"
+            class="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-600"
             aria-hidden="true"
           ></span>
         </button>
@@ -173,6 +208,8 @@ onUnmounted(() => {
         <div
           v-if="notificacoesAberto"
           role="menu"
+          @keydown="navegarMenu"
+          @focusout="menuFocusout($event, fecharMenus)"
           aria-label="Notificações"
           class="absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-lg shadow-lg z-30 overflow-hidden"
         >
@@ -250,6 +287,8 @@ onUnmounted(() => {
         <div
           v-if="contaAberto"
           role="menu"
+          @keydown="navegarMenu"
+          @focusout="menuFocusout($event, fecharMenus)"
           aria-label="Menu da conta"
           class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-30"
         >

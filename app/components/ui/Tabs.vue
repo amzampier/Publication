@@ -76,8 +76,10 @@ const onKeydown = (event: KeyboardEvent) => {
   }
 
   event.preventDefault()
-  selecionar(ids.value[proximo])
-  focarTab(ids.value[proximo])
+  const alvo = ids.value[proximo]
+  if (alvo === undefined) return
+  selecionar(alvo)
+  focarTab(alvo)
 }
 </script>
 

@@ -4,7 +4,7 @@
 **Escopo:** estrutura e comportamento do shell da Área Administrativa (Header + Sidebar retrátil)
 **Arquivos-fonte:** [`app/components/layout/AppHeader.vue`](../app/components/layout/AppHeader.vue) ·
 [`app/components/layout/AppSidebar.vue`](../app/components/layout/AppSidebar.vue) ·
-[`app/layouts/default.vue`](../app/layouts/default.vue) ·
+[`app/layouts/admin.vue`](../app/layouts/admin.vue) ·
 [`app/config/navigation.ts`](../app/config/navigation.ts)
 **Vitrine:** [`/design`](../app/pages/design.vue) — seção **14. Arquitetura de Layout Bimodal**
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md) §3 · **Autoridade de comportamento:**
@@ -344,7 +344,7 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
 |---|---|
 | `app/components/layout/AppHeader.vue` | header claro (`bg-white border-b border-slate-200 text-slate-900`), badge do logo `brand-primary/10`, menu Account branco e sino/painel (cabeçalho navy com escrita branca, lista `bg-[#f9feee]`, "Limpar tudo" verde `#0f7a06`) |
 | `app/components/layout/AppSidebar.vue` | sidebar navy (`bg-brand-primary border-r border-white/10`), ativo `bg-white/10 text-lime-300`, inativo `slate-300`, tintas D9 via `tinta()` |
-| `app/composables/shellTintas.ts` (novo) | mapa das 8 tintas D9 + `tinta(hex)` (compartilhado com a demo §14) |
+| `app/composables/shellTintas.ts` (novo) | mapa das 10 tintas D9 + `tinta(hex)` (compartilhado com a demo §14) |
 | `app/assets/css/main.css` | semântica de hover invertida: base = modelo novo, `.ds-shell-antigo` só na demo |
 | `app/pages/design.vue` §14 | default = modelo atual, toggle "Atual \| Antigo (comparação)", sino/painel na demo |
 | `docs/01 - design_system.md` §3 | §3.1/§3.2/§3.3 no modelo novo, tintas em §3.3, §3.5 = modelo legado |
@@ -375,9 +375,10 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
 1. ~~`/` ainda renderiza o shell administrativo~~ — **resolvida** por `separate-public-admin-areas`:
    a raiz `/` usa `app/layouts/default.vue` (Área Pública, sem shell) e o shell vive em
    `app/layouts/admin.vue`, aplicado sob `/admin/**`.
-2. Sem middleware de auth ou RBAC; itens com o campo opcional `to` já navegam (sidebar e menu
-   Account — na Administração, os quatro itens apontam para `/admin/configuracoes-globais`,
-   `/admin/gestao-usuarios`, `/admin/auditoria` e `/admin/perfis-acesso`), e o item
-   ativo da sidebar deriva da rota quando a URL casa com um `to`. Os demais itens seguem apenas
-   estado visual — existe apenas a home `/admin`.
+2. Middleware de auth e RBAC **presentes** (`app/middleware/auth.global.ts` + `server/middleware/auth-api.ts`
+   + `requirePermission`); itens com o campo opcional `to` já navegam (sidebar e menu Account — na
+   Administração, os quatro itens apontam para `/admin/configuracoes-globais`,
+   `/admin/gestao-usuarios`, `/admin/auditoria` e `/admin/perfis-acesso`), e o item ativo da sidebar
+   deriva da rota quando a URL casa com um `to`. Os demais itens seguem apenas estado visual — existe
+   apenas a home `/admin`.
 3. `Parceiros` e `Softwares` não têm spec de domínio (módulos ainda não construídos).

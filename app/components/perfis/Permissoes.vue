@@ -35,6 +35,12 @@ const emit = defineEmits<{
 const { toast } = useToast()
 const { perfis } = usePerfisModelo()
 
+/** Mensagem do servidor (ex.: 409 de anti-lockout); fallback quando ausente. */
+const mensagemErro = (erro: unknown, fallback: string): string => {
+  const e = erro as { statusMessage?: string; data?: { statusMessage?: string } } | null
+  return e?.data?.statusMessage ?? e?.statusMessage ?? fallback
+}
+
 // Ações fixas (4) editáveis por interruptor; as 5 extras são editadas por `UiCheckChip`.
 const acoesFixas: Acao[] = [...ACOES]
 
@@ -61,7 +67,7 @@ const TABS = SESSOES.map((sessao) => ({ id: sessao.id, label: sessao.label }))
 const aba = ref(SESSOES[0]?.id ?? '')
 
 // Rascunho: cópia da matriz do perfil — nada altera a base antes de Salvar.
-const rascunho = ref<Record<ModuloId, Permissao[]>>({})
+const rascunho = ref<Record<ModuloId, Permissao[]>>({} as Record<ModuloId, Permissao[]>)
 
 watch(
   () => props.modelValue,
@@ -116,10 +122,10 @@ const salvar = async () => {
     perfis.value = base
     toast.success('Perfis de Acesso (RBAC)', 'Permissões do perfil atualizadas com sucesso.')
     emit('update:modelValue', false)
-  } catch {
+  } catch (erro) {
     toast.danger(
       'Perfis de Acesso (RBAC)',
-      'Não foi possível salvar as permissões. Verifique a conexão com o banco e tente novamente.'
+      mensagemErro(erro, 'Não foi possível salvar as permissões. Tente novamente.')
     )
   }
 }
@@ -169,10 +175,10 @@ const confirmarCopia = async () => {
       'Perfis de Acesso (RBAC)',
       `Matriz de ${origem.nome} copiada para ${alvo.nome} (substituiu ${antes}/${PERMISSOES_POR_PERFIL}).`
     )
-  } catch {
+  } catch (erro) {
     toast.danger(
       'Perfis de Acesso (RBAC)',
-      'Não foi possível copiar a matriz. Verifique a conexão com o banco e tente novamente.'
+      mensagemErro(erro, 'Não foi possível copiar a matriz. Tente novamente.')
     )
   }
   cancelarCopia()

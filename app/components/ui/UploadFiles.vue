@@ -22,7 +22,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   rotulo: 'Arraste os arquivos aqui ou clique para adicionar',
-  dica: 'PNG, JPG ou SVG',
+  dica: 'PNG, JPG, WebP ou GIF',
   sugestao: '',
   aceitar: '*',
   multiple: false,

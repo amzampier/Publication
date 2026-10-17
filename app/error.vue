@@ -49,8 +49,8 @@ const irParaAdmin = () => navigateTo('/admin')
         </UiButton>
       </div>
 
-      <p class="mt-6 text-[11px] text-slate-400">
-        Publications Design System · Nuxt 4 + Tailwind CSS
+      <p class="mt-6 text-[11px] text-slate-500">
+        Publications · Dicas Teorema
       </p>
     </div>
   </main>

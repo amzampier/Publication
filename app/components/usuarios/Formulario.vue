@@ -171,6 +171,7 @@ const aoEnter = (e: KeyboardEvent) => {
 
   e.preventDefault()
   const proximo = lista[i + 1]
+  if (!proximo) return
   proximo.focus()
   if (proximo.tagName === 'INPUT') {
     const input = proximo as HTMLInputElement
@@ -290,7 +291,7 @@ const aoTrocarAvatar = (arquivos: File[] | null) => {
     return
   }
   const imagem = arquivos[0]
-  if (!imagem.type.startsWith('image/')) return
+  if (!imagem || !imagem.type.startsWith('image/')) return
   const leitor = new FileReader()
   leitor.onload = () => {
     rascunho.value.avatar = String(leitor.result)

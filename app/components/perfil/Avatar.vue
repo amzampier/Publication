@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 interface Props {
   nome: string
-  /** dataURL da foto; '' = sem foto (exibe iniciais) */
+  /** URL do arquivo da foto (avatar_url); no rascunho ainda não salvo pode ser uma dataURL; '' = sem foto (exibe iniciais) */
   preview?: string
 }
 
@@ -19,8 +19,8 @@ const emit = defineEmits<{
 const iniciais = computed(() => {
   const partes = (props.nome || '').trim().split(/\s+/).filter(Boolean)
   if (!partes.length) return '?'
-  const primeira = partes[0][0]
-  const ultima = partes.length > 1 ? partes[partes.length - 1][0] : ''
+  const primeira = partes[0]?.[0] ?? ''
+  const ultima = partes.length > 1 ? (partes[partes.length - 1]?.[0] ?? '') : ''
   return (primeira + ultima).toUpperCase()
 })
 </script>

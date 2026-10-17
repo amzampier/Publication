@@ -287,20 +287,21 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 - **Tentativas de credencial inválida ficam fora da trilha:** vão exclusivamente ao log
   `seguranca_eventos_login` (aba Segurança de Configurações Globais) — os dois logs têm
   papéis distintos (segurança operacional × governança).
-- `Homologação` permanece no enum/seed — não há rota de esteira ainda; o RBAC por módulo
-  (`requirePermission`) ainda **não** exige permissão nas rotas
-  (`docs/02` §3.2, roadmap).
+- `Homologação` permanece no enum/seed — não há rota de esteira ainda. O RBAC por módulo
+  (`requirePermission`) já exige a permissão nas rotas administrativas (ver `docs/02` §3.5).
 
 ### 6.3 `GET /api/auditoria` — `server/api/auditoria/index.get.ts`
 
 - Protegido pelo middleware global `auth-api.ts`: **sem sessão → 401**.
 - Query params opcionais: `dataInicial`, `dataFinal` (`yyyy-mm-dd`, janela inclusiva do dia),
-  `usuario` (nome exato), `acao`, `recurso` — vazio/ausente = todos; `acao` fora dos 4 tipos
-  resulta em conjunto vazio (sem erro).
-- Resposta `{ registros, opcoes }`: `registros` com `{ id, registradoEm, usuario: { id, nome },
-  acao, recurso, detalhes, ip }` ordenados por `data_hora DESC, id DESC`; `opcoes` com
-  usuários e recursos distintos do conjunto **não** filtrado.
-- Validação de formato: data fora de `yyyy-mm-dd` é ignorada (tratada como sem filtro).
+  `usuario` (nome exato), `acao`, `recurso`, `busca` (texto), `ordenar`/`direcao`, `pagina`,
+  `porPagina`, `exportar` — vazio/ausente = todos; `acao` fora dos 4 tipos resulta em conjunto
+  vazio (sem erro).
+- Resposta `{ registros, total, kpis, opcoes, pagina, porPagina }`: `registros` com
+  `{ id, registradoEm, usuario: { id, nome }, acao, recurso, detalhes, ip, entidadeId }`
+  ordenados por `data_hora DESC, id DESC`; `kpis` do conjunto filtrado; `opcoes` com usuários
+  e recursos distintos do conjunto **não** filtrado.
+- Validação de data: uma data presente porém inválida (formato ou data inexistente) responde `400`.
 
 ## 7. Dados iniciais (seed)
 
@@ -361,7 +362,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   `relatorio-pdf-auditoria` (CDP 8/8).
 - **Fase 2 (change `auditoria-backend-integracao`):**
   - Seed: `SELECT COUNT(*) = 25` com `log-seed-%` após o boot (migration 07 aplicada).
-  - `GET /api/auditoria`: 401 sem sessão; 200 com `{ registros, opcoes }`; ordenação
+  - `GET /api/auditoria`: 401 sem sessão; 200 com `{ registros, total, kpis, opcoes, pagina, porPagina }`; ordenação
     decrescente; filtro `acao` → só o tipo pedido com `opcoes` intactas; ação desconhecida →
     200 vazio.
   - Escritas: 15 pontos de `registrarAuditoria` exercícados (perfis CRUD/matriz/cópia,
@@ -380,16 +381,16 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 
 ## 13. Pendências e próximos passos
 
-- **RBAC nas rotas:** `requirePermission(event, modulo, acao)` continua fora (escopo
-  deliberado da change `perfis-acesso-backend` — ver `docs/02` §3.2, roadmap).
+- **RBAC nas rotas:** `requirePermission(event, modulo, acao)` **já é aplicado** nas rotas
+  administrativas (ver `docs/02` §3.5).
 - **Filtros avançados:** o modal foi desenhado para crescer (IP, recurso com busca, faixa de
   datas) — novas opções entram nele sem tocar na toolbar.
-- **Paginação server-side:** o `UiDataTable` pagina no cliente sobre o conjunto filtrado; se o
-  volume crescer além da janela de retenção, migrar a paginação para o servidor.
+- **Paginação server-side:** a listagem de auditoria **já é paginada no servidor** — `GET /api/auditoria`
+  devolve `pagina`/`porPagina`/`total` e o `UiDataTable` opera em modo servidor.
 - **`UiMenu` no kit:** o mini-menu do Exportar duplica a mecânica Esc/clique-fora do menu da
   conta; extrair para o kit é candidato a próxima evolução.
 - **Gotcha do badge `Exclusão`:** a variante `blocked` força o dot pulsante; se poluir em uso
   real, trocar por variante neutra é ajuste de uma linha.
-- **Expurgo automático:** a rotina diária citada na aba Retenção de Configurações ainda não
-  existe como job (a query exibida é o modelo).
+- **Expurgo automático:** a rotina diária é um **EVENT** do MariaDB (`ev_expurgo_auditoria`, migrations
+  10/11), com catch-up no boot; a política segue `dias_retencao_auditoria`.
 - Itens de navegação sem rota restantes (MEL-03 do `RL01`).

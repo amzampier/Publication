@@ -42,6 +42,13 @@ const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
           <dt class="font-medium text-slate-500">Recurso</dt>
           <dd class="text-right text-slate-900">{{ registro.recurso }}</dd>
         </div>
+        <div
+          v-if="registro.entidadeId"
+          class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2"
+        >
+          <dt class="font-medium text-slate-500">Entidade</dt>
+          <dd class="text-right font-mono tabular-nums text-slate-900">{{ registro.entidadeId }}</dd>
+        </div>
         <div class="flex items-start justify-between gap-3 border-b border-slate-100 pb-2">
           <dt class="font-medium text-slate-500">IP de Origem</dt>
           <dd class="text-right font-mono tabular-nums text-slate-900">{{ registro.ip }}</dd>

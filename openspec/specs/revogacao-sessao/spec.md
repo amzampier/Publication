@@ -16,9 +16,12 @@ A validação SHALL abranger **todas** as requisições que operam sob uma sess�
 **inclusive** as rotas autenticadas do portal de autenticação — notadamente `GET /api/auth/seguro`
 (hidratação da sessão) e `POST /api/auth/trocar-senha` (troca da própria senha). Somente as portas
 que **estabelecem ou renovam** a sessão (`POST /api/auth/login`, `POST /api/auth/refresh` e
-`POST /api/auth/esqueci-senha`) SHALL ficar isentas dessa validação, por não operarem sob sessão
-prévia. Uma requisição a uma rota autenticada com token revogado (ex.: após logout) SHALL ser
-tratada como não autenticada, sem executar a operação.
+`POST /api/auth/esqueci-senha`) SHALL ficar isentas da validação por requisição, por não operarem
+sob sessão prévia. Ainda assim, `POST /api/auth/refresh` SHALL confirmar, antes de emitir novos
+tokens, que a sessão de refresh continua válida no servidor (não revogada) e que a conta — e o seu
+perfil — permanecem **ativos**, respondendo `401` quando qualquer condição falhar. Uma requisição a
+uma rota autenticada com token revogado (ex.: após logout) SHALL ser tratada como não autenticada,
+sem executar a operação.
 
 #### Scenario: Sessão válida segue
 - **WHEN** um usuário ativo com token não revogado chama uma rota autenticada
@@ -36,6 +39,10 @@ tratada como não autenticada, sem executar a operação.
 - **WHEN** o cookie de acesso foi revogado por logout (ainda dentro do prazo) e é reutilizado em `POST /api/auth/trocar-senha` com senha atual correta
 - **THEN** a resposta é `401`, a senha não é alterada e nenhuma operação é executada
 
+#### Scenario: Refresh não renova sessão revogada
+- **WHEN** o refresh token de uma sessão cujo acesso foi revogado (por logout, desativação do usuário ou inativação do perfil) é utilizado em `POST /api/auth/refresh`
+- **THEN** a resposta é `401` e nenhum novo token é emitido
+
 ### Requirement: O logout revoga a sessão de acesso no servidor
 O logout SHALL invalidar a sessão de acesso no servidor, de modo que o token de acesso em uso (ou
 copiado) deixe de autenticar imediatamente após o encerramento, além de revogar o refresh e limpar
@@ -45,14 +52,34 @@ os cookies.
 - **WHEN** o cookie de acesso é capturado antes do logout e reutilizado depois em uma rota autenticada
 - **THEN** a resposta é `401` e nenhum dado é acessado
 
+### Requirement: Alterar ou redefinir a senha revoga as sessões vigentes
+Ao alterar a própria senha (`POST /api/auth/trocar-senha`), ao redefinir a senha de um usuário pela
+edição geral (`PUT /api/usuarios/:id`) ou pelo convite de conta existente (`POST /api/convite`), o
+sistema SHALL encerrar a validade das sessões anteriores (access **e** refresh) e, no caso da troca
+da própria senha, SHALL emitir uma nova sessão apenas para o solicitante.
+
+#### Scenario: Sessão capturada deixa de valer após a troca de senha
+- **WHEN** um access ou refresh capturado antes da troca de senha é reutilizado depois dela
+- **THEN** a resposta é `401` e nenhum novo token é emitido a partir do refresh antigo
 ### Requirement: Desativar ou excluir um usuário derruba as sessões abertas
-Ao marcar um usuário como **Inativo** ou **excluí-lo**, o sistema SHALL encerrar a validade das
-sessões abertas daquele usuário, de modo que as requisições seguintes com os tokens vigentes sejam
-tratadas como não autenticadas (`401`), sem esperar a expiração do token de acesso.
+Ao marcar um usuário como **Inativo** ou **excluí-lo**, por **qualquer** caminho de escrita da
+situação — inclusive a edição geral do usuário (`PUT /api/usuarios/:id`) e a rota dedicada de
+situação —, o sistema SHALL encerrar a validade das sessões abertas daquele usuário (access **e**
+refresh), de modo que as requisições seguintes com os tokens vigentes sejam tratadas como não
+autenticadas (`401`), sem esperar a expiração do token de acesso. Reativar o usuário **não** SHALL
+revalidar tokens emitidos antes da desativação.
 
 #### Scenario: Usuário desativado perde acesso imediato
 - **WHEN** um usuário é marcado como Inativo enquanto possui sessão aberta
 - **THEN** a próxima requisição autenticada dele responde `401`
+
+#### Scenario: Desativação pela edição geral também revoga
+- **WHEN** a situação do usuário é alterada para Inativo pela edição geral (`PUT /api/usuarios/:id`) enquanto ele possui sessão aberta
+- **THEN** a próxima requisição autenticada dele responde `401` e o refresh deixa de renovar a sessão
+
+#### Scenario: Reativar não reaviva o token anterior
+- **WHEN** um usuário é desativado e depois reativado dentro da janela do token de acesso, reutilizando-se o cookie capturado antes da desativação
+- **THEN** a requisição continua respondendo `401` (o token anterior permanece revogado)
 
 #### Scenario: Usuário excluído perde acesso imediato
 - **WHEN** um usuário é excluído e seu token de acesso ainda está dentro do prazo

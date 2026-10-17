@@ -692,7 +692,7 @@ interface ColumnDef<T = any> {
 - **Emits:** `open-filters` (somente com `showFilters` ativo — a página responde, ex.: abrindo seu modal de filtros); o demais estado é interno.
 - **Slots:** `cell(<col.id>)` com escopo `{ row, value }` (fallback: `col.format(value, row)` ou valor cru) — nome dinâmico por coluna; `actions` com escopo `{ row }` (cria a coluna "Ações"); `filtersLeft` **sem escopo**, renderizado imediatamente à esquerda do botão Filtros na toolbar (opt-in — só aparece se o consumidor passar o slot; ex.: botão de ícone "Importar" com tooltip).
 - **Cabeçalho corporativo:** linha `bg-brand-primary` (**`#112051`**, token `brand.primary` de `tailwind.config.js`) com textos e ícones em **`#f8fafc`**, hover de coluna `bg-white/10`, divisórias `divide-slate-700` (`#334155`); colunas redimensionáveis por handle à direita (hover/ativo `brand-accent`); coluna com cursor `pointer` (**sem tooltip na header** — nem `title` nativo nem balão; as dicas vivem na faixa de agrupamento) e seta de ordenação padrão sempre visível (`h-3`, `stroke-[2.5]`, `white/85`, hover `brand-accent`).
-- **Agrupamento ("Group By Box"):** arrastar `th` (`draggable`) para a faixa `Agrupamento:`; **até 3 níveis** com chips `bg-brand-primary` + badge verde `1º NÍVEL`/`2º`/`3º`; estado drag-over `bg-lime-50/80 ring-lime-500/30`; nó de nível 1 expandido por padrão, níveis 2/3 recolhidos; barra lateral da linha de grupo muda por nível (`border-l-lime-500` → `sky` → `slate-200`); cada nó exibe contagem de registros.
+- **Agrupamento ("Group By Box"):** arrastar `th` (`draggable`) para a faixa `Agrupamento:`; **até 3 níveis** com chips `bg-brand-primary` + badge verde `1º NÍVEL`/`2º`/`3º`; estado drag-over `bg-brand-accent/10 ring-brand-accent/30`; nó de nível 1 expandido por padrão, níveis 2/3 recolhidos; barra lateral da linha de grupo muda por nível (`border-l-brand-accent` → `sky` → `slate-200`); cada nó exibe contagem de registros.
 - **Ordenação multi-coluna:** clique alterna `asc`/`desc` (setas `brand-accent`); **Shift+clique** encadeia regras com badge numérico `bg-brand-accent text-slate-950` (`sortMultiColumn` em `dataGrid.ts`, `localeCompare('pt-BR')` e parsing numérico para `isNumeric`).
 - **Totalizadores sob demanda:** **clique direito** em célula do rodapé de coluna `isNumeric` abre menu `<Teleport to="body">` estilo cxGrid: **Soma (SUM) · Média (AVG) · Contagem (COUNT) · Mínimo (MIN) · Máximo (MAX) · Nenhum (Limpar)** — `calculateAggregate` formata `R$ ...` em pt-BR; sem operação mostra `-`.
 - **Paginação:** indicador "Mostrando X a Y de Z entradas exibidas" (+ sufixo verde com nº de níveis de agrupamento quando agrupado), seletor de linhas, "Página X de Y" e botões `« ‹ › »` (`title` acessível); no modo agrupado pagina sobre as linhas efetivamente renderizadas.
@@ -1054,8 +1054,9 @@ kit; espelhado em `docs/09`)
   oculto (`opacity-0`) e aparece só quando o mouse passa sobre o Avatar
   (`group-hover:opacity-100`, com `group-focus-within` para teclado) — o wrapper do Avatar carrega
   a classe `group`.
-- **Foto:** dataURL no registro do usuário (mesmo trade-off do modal de Gestão de Usuários);
-  só persiste ao **Salvar alterações** da página (faz parte do rascunho).
+- **Foto:** o rascunho usa dataURL; ao **Salvar alterações**, a imagem é enviada como arquivo
+  (upload em `avatares`) e o registro guarda a URL (`avatar_url`) — mesmo fluxo do modal de
+  Gestão de Usuários.
 - **Resumo lateral (`perfil/Resumo.vue`):** card `rounded-xl border border-slate-200 shadow-xs`
   com **fundo em degradê vertical `bg-gradient-to-b from-brand-structure/15 to-white`** (azul
   bem clarinho no topo esmaecendo até o branco — ver §2.1, único degradê sobre superfície clara

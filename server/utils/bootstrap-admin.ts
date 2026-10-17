@@ -47,7 +47,7 @@ export async function ensureAdminUser(): Promise<void> {
       'Ana Carolina Ribeiro',
       ADMIN_EMAIL,
       senhaHash,
-      perfis[0].id,
+      String(perfis[0]?.id ?? ''),
       'Tecnologia',
       'Administradora de Sistemas',
       '(11) 98888-1001'

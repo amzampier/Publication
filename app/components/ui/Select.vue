@@ -22,6 +22,8 @@ interface Props {
   leftIcon?: any
   helperText?: string
   error?: string
+  /** Nome acessível quando não há label visível (ex.: filtros). */
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -35,7 +37,8 @@ const props = withDefaults(defineProps<Props>(), {
   clearable: true,
   leftIcon: null,
   helperText: '',
-  error: ''
+  error: '',
+  ariaLabel: ''
 })
 
 const emit = defineEmits<{
@@ -248,7 +251,7 @@ watch(filteredOptions, () => {
       v-if="label"
       :id="labelId"
       :for="triggerId"
-      :class="['text-xs font-medium text-slate-700 select-none flex items-center justify-between cursor-pointer', labelClass]"
+      :class="['text-xs font-medium select-none flex items-center justify-between cursor-pointer', error ? 'text-rose-700' : 'text-slate-700', labelClass]"
       @click.prevent="focusFromLabel"
     >
       <span>{{ label }}</span>
@@ -264,7 +267,8 @@ watch(filteredOptions, () => {
         :aria-expanded="isOpen"
         :aria-controls="listboxId"
         :aria-activedescendant="activeDescendant"
-        :aria-labelledby="labelId"
+        :aria-labelledby="label ? labelId : undefined"
+        :aria-label="label ? undefined : (ariaLabel || placeholder)"
         :aria-describedby="error ? erroId : undefined"
         :aria-disabled="disabled"
         :tabindex="disabled ? -1 : 0"
@@ -312,7 +316,7 @@ watch(filteredOptions, () => {
             v-if="clearable && selectedOption && !disabled"
             type="button"
             aria-label="Limpar seleção"
-            class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none"
+            class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
             @click="clearSelection"
           >
             <X class="h-3.5 w-3.5" />
@@ -395,7 +399,7 @@ watch(filteredOptions, () => {
         <div
           :id="listboxId"
           role="listbox"
-          :aria-labelledby="labelId"
+          :aria-labelledby="label ? labelId : undefined"
           class="max-h-60 overflow-y-auto divide-y divide-slate-50"
         >
           <div

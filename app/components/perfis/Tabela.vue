@@ -33,7 +33,7 @@ const colunas: ColumnDef[] = [
     <UiDataTable
       ref="tabelaRef"
       title="Perfis de Acesso"
-      subtitle="Dados persistidos via API (MariaDB) · Permissões: ações concedidas de 99 (11 módulos × 9 ações)"
+      subtitle="Perfis de acesso cadastrados · Permissões: ações concedidas de 99 (11 módulos × 9 ações)"
       :data="linhas"
       :columns="colunas"
       :default-page-size="5"
@@ -51,7 +51,7 @@ const colunas: ColumnDef[] = [
       </template>
 
       <template #cell(situacao)="{ value }">
-        <UiBadge :variant="VARIANTE_POR_STATUS[value]" size="sm">
+        <UiBadge :variant="VARIANTE_POR_STATUS[value as LinhaPerfil['situacao']]" size="sm">
           {{ value }}
         </UiBadge>
       </template>

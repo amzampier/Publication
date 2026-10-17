@@ -33,10 +33,11 @@ async function limitePorMinuto(): Promise<{ ativo: boolean; valor: number }> {
     const linhas = await query<Array<{ ativo: number; limite_requisicoes_minuto: number }>>(
       "SELECT ativo, limite_requisicoes_minuto FROM configuracoes_limite_requisicao WHERE id = 'rate_limit_default' LIMIT 1"
     )
-    if (linhas.length > 0) {
-      ativo = Number(linhas[0].ativo) === 1
-      if (Number(linhas[0].limite_requisicoes_minuto) > 0) {
-        valor = Number(linhas[0].limite_requisicoes_minuto)
+    const linha = linhas[0]
+    if (linha) {
+      ativo = Number(linha.ativo) === 1
+      if (Number(linha.limite_requisicoes_minuto) > 0) {
+        valor = Number(linha.limite_requisicoes_minuto)
       }
     }
   } catch {

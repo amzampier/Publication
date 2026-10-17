@@ -6,6 +6,10 @@ import { createError } from 'h3'
 import { hash } from 'bcrypt'
 import { query, getTransaction } from './db'
 import { cifrar } from './crypto'
+import { revogarSessoesDoUsuario } from './auth'
+import { garantirAdministracaoApos } from './perfis'
+import { cacheado, invalidarCache } from './cache'
+import { escaparLike } from './sql'
 
 export type SituacaoEscrita = 'Ativo' | 'Inativo'
 export type SituacaoLida = 'Ativo' | 'Inativo' | 'Bloqueado'
@@ -61,13 +65,13 @@ const PROVEDORES = ['gmail', 'outlook', 'yahoo', 'personalizado', '']
 const SEGURANCAS = ['nenhuma', 'starttls', 'ssl', '']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-const erro400 = (mensagem: string): never => {
+function erro400(mensagem: string): never {
   throw createError({ statusCode: 400, statusMessage: mensagem })
 }
-const erro404 = (mensagem = 'Usuário não encontrado.'): never => {
+function erro404(mensagem = 'Usuário não encontrado.'): never {
   throw createError({ statusCode: 404, statusMessage: mensagem })
 }
-const erro409 = (mensagem: string): never => {
+function erro409(mensagem: string): never {
   throw createError({ statusCode: 409, statusMessage: mensagem })
 }
 
@@ -127,6 +131,9 @@ const COLUNAS_LISTA = `u.id, u.nome_completo, u.email_corporativo, u.situacao, u
   (u.senha_smtp IS NOT NULL AND u.senha_smtp <> '') AS tem_senha, u.metodo_seguranca,
   u.avatar_url, u.criado_em, u.atualizado_em, p.nome_perfil`
 
+/** Projeção enxuta da LISTAGEM (RL04 B-23): só as colunas exibidas na tabela. */
+const COLUNAS_LISTA_ENXUTA = `u.id, u.nome_completo, u.email_corporativo, u.situacao, u.ultimo_login, p.nome_perfil`
+
 // ---------------------------------------------------------------------------
 // Validações
 // ---------------------------------------------------------------------------
@@ -170,12 +177,13 @@ async function resolverPerfilId(perfil: unknown): Promise<string> {
     'SELECT id, situacao FROM perfis_acesso WHERE nome_perfil = ? LIMIT 1',
     [perfil.trim()]
   )
-  if (linhas.length === 0) erro400(`Perfil inválido: ${perfil}.`)
+  const linha = linhas[0]
+  if (!linha) erro400(`Perfil inválido: ${perfil}.`)
   // Só perfis ativos podem ser atribuídos (RL02 M-05).
-  if (String(linhas[0].situacao) !== 'Ativo') {
+  if (String(linha.situacao) !== 'Ativo') {
     erro400(`O perfil "${perfil}" não está ativo e não pode ser atribuído.`)
   }
-  return String(linhas[0].id)
+  return String(linha.id)
 }
 
 async function emailJaCadastrado(email: string, excetoId?: string): Promise<void> {
@@ -183,7 +191,8 @@ async function emailJaCadastrado(email: string, excetoId?: string): Promise<void
     'SELECT id FROM usuarios WHERE email_corporativo = ? LIMIT 1',
     [email]
   )
-  if (linhas.length > 0 && String(linhas[0].id) !== excetoId) {
+  const linha = linhas[0]
+  if (linha && String(linha.id) !== excetoId) {
     erro409('Este e-mail já está cadastrado no sistema.')
   }
 }
@@ -247,6 +256,9 @@ export interface FiltrosUsuariosApi {
   pagina?: number
   porPagina?: number
   exportar?: boolean
+  /** ordenação server-side (RL04-M-02): id da coluna + direção */
+  ordenar?: string
+  direcao?: string
 }
 
 export interface KpisUsuarios {
@@ -271,6 +283,28 @@ const POR_PAGINA_PADRAO = 20
 const POR_PAGINA_MAX = 200
 const TETO_EXPORTACAO = 10_000
 
+/** Colunas ordenáveis da Gestão de Usuários (whitelist — RL04-M-02). */
+const ORDEM_USUARIOS: Record<string, string> = {
+  nome: 'u.nome_completo',
+  email: 'u.email_corporativo',
+  perfil: 'p.nome_perfil',
+  status: 'u.situacao',
+  ultimoAcesso: 'u.ultimo_login'
+}
+
+/** Monta o ORDER BY a partir da whitelist; id desconhecido cai no padrão. */
+function montarOrdem(
+  ordenar: string | undefined,
+  direcao: string | undefined,
+  whitelist: Record<string, string>,
+  padrao: string
+): string {
+  const coluna = whitelist[(ordenar ?? '').trim()]
+  if (!coluna) return padrao
+  const dir = (direcao ?? '').trim().toLowerCase() === 'desc' ? 'DESC' : 'ASC'
+  return `${coluna} ${dir}`
+}
+
 /** Lista paginada no servidor (GET /api/usuarios): página + total + KPIs do conjunto filtrado. */
 export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<RespostaUsuarios> {
   const clausulas: string[] = []
@@ -292,7 +326,7 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const like = `%${busca}%`
+    const like = `%${escaparLike(busca)}%`
     clausulas.push('(u.nome_completo LIKE ? OR u.email_corporativo LIKE ?)')
     params.push(like, like)
   }
@@ -301,20 +335,21 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
   const pagina = Math.max(1, Math.trunc(filtros.pagina ?? 1))
   const porPagina = Math.min(POR_PAGINA_MAX, Math.max(1, Math.trunc(filtros.porPagina ?? POR_PAGINA_PADRAO)))
   const exportar = filtros.exportar === true
+  const ordem = montarOrdem(filtros.ordenar, filtros.direcao, ORDEM_USUARIOS, 'u.nome_completo ASC')
 
   const consultaPagina = exportar
     ? query<Record<string, unknown>[]>(
-        `SELECT ${COLUNAS_LISTA} FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
-          ${clausula} ORDER BY u.nome_completo ASC LIMIT ${TETO_EXPORTACAO}`,
+        `SELECT ${COLUNAS_LISTA_ENXUTA} FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
+          ${clausula} ORDER BY ${ordem} LIMIT ${TETO_EXPORTACAO}`,
         params
       )
     : query<Record<string, unknown>[]>(
-        `SELECT ${COLUNAS_LISTA} FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
-          ${clausula} ORDER BY u.nome_completo ASC LIMIT ? OFFSET ?`,
+        `SELECT ${COLUNAS_LISTA_ENXUTA} FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
+          ${clausula} ORDER BY ${ordem} LIMIT ? OFFSET ?`,
         [...params, porPagina, (pagina - 1) * porPagina]
       )
 
-  const [linhas, agregadoRows, nomesRows, perfisRows] = await Promise.all([
+  const [linhas, agregadoRows] = await Promise.all([
     consultaPagina,
     query<Array<{ total: number; ativos: number; perfis: number }>>(
       `SELECT COUNT(*) AS total,
@@ -322,14 +357,19 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
               COUNT(DISTINCT u.perfil_id) AS perfis
          FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id ${clausula}`,
       params
-    ),
-    query<Array<{ nome_completo: string }>>(
-      'SELECT DISTINCT nome_completo FROM usuarios ORDER BY nome_completo ASC'
-    ),
-    query<Array<{ nome_perfil: string }>>(
-      'SELECT DISTINCT nome_perfil FROM perfis_acesso ORDER BY nome_perfil ASC'
     )
   ])
+  // Opções dos selects — cache de TTL curto (RL04 M-10).
+  const opcoes = await cacheado('usuarios-opcoes', 30_000, async () => {
+    const [nomesRows, perfisRows] = await Promise.all([
+      query<Array<{ nome_completo: string }>>('SELECT DISTINCT nome_completo FROM usuarios ORDER BY nome_completo ASC'),
+      query<Array<{ nome_perfil: string }>>("SELECT DISTINCT nome_perfil FROM perfis_acesso WHERE situacao = 'Ativo' ORDER BY nome_perfil ASC")
+    ])
+    return {
+      usuarios: nomesRows.map((r) => String(r.nome_completo)),
+      perfis: perfisRows.map((r) => String(r.nome_perfil))
+    }
+  })
   const a = agregadoRows[0]
   const total = Number(a?.total ?? 0)
   const ativos = Number(a?.ativos ?? 0)
@@ -338,10 +378,7 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
     usuarios: linhas.map(montarUsuario),
     total,
     kpis: { total, ativos, inativos: total - ativos, perfisDistintos: Number(a?.perfis ?? 0) },
-    opcoes: {
-      usuarios: nomesRows.map((r) => String(r.nome_completo)),
-      perfis: perfisRows.map((r) => String(r.nome_perfil))
-    },
+    opcoes,
     pagina: exportar ? 1 : pagina,
     porPagina: exportar ? total : porPagina
   }
@@ -354,7 +391,8 @@ export async function buscarUsuarioTelaPorId(id: string): Promise<UsuarioApi | n
       WHERE u.id = ? LIMIT 1`,
     [id]
   )
-  return linhas.length ? montarUsuario(linhas[0]) : null
+  const linha = linhas[0]
+  return linha ? montarUsuario(linha) : null
 }
 
 /** Todos os e-mails da base (importação: pré-classificação "já cadastrado" completa). */
@@ -401,22 +439,31 @@ export async function criarUsuario(dados: {
       ? dados.departamento.trim().slice(0, 100)
       : 'Geral'
 
-  const [u] = await query<{ id: string }[]>('SELECT UUID() AS id')
-  const id = String(u.id)
-  await query(
-    `INSERT INTO usuarios (id, nome_completo, email_corporativo, hash_senha, perfil_id,
-        situacao, telefone, funcao, departamento_setor,
-        cep, endereco, numero, complemento, bairro, cidade, estado, regiao,
-        provedor, smtp, porta, email_smtp, senha_smtp, metodo_seguranca, avatar_url,
-        senha_provisoria, tentativas_falhas)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)`,
-    [
-      id, nome, email, hashSenha, perfilId, situacao, telefone, funcao, departamento,
-      end.cep, end.logradouro, end.numero, end.complemento, end.bairro, end.cidade, end.estado, end.regiao,
-      smtp.provedor || null, smtp.servidor || null, smtp.portaInt, smtp.email || null,
-      smtp.senha ? cifrar(smtp.senha) : null, smtp.seguranca || null, avatarUrl
-    ]
-  )
+  const idRows = await query<{ id: string }[]>('SELECT UUID() AS id')
+  const id = String(idRows[0]?.id ?? '')
+  try {
+    await query(
+      `INSERT INTO usuarios (id, nome_completo, email_corporativo, hash_senha, perfil_id,
+          situacao, telefone, funcao, departamento_setor,
+          cep, endereco, numero, complemento, bairro, cidade, estado, regiao,
+          provedor, smtp, porta, email_smtp, senha_smtp, metodo_seguranca, avatar_url,
+          senha_provisoria, tentativas_falhas)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0)`,
+      [
+        id, nome, email, hashSenha, perfilId, situacao, telefone, funcao, departamento,
+        end.cep, end.logradouro, end.numero, end.complemento, end.bairro, end.cidade, end.estado, end.regiao,
+        smtp.provedor || null, smtp.servidor || null, smtp.portaInt, smtp.email || null,
+        smtp.senha ? cifrar(smtp.senha) : null, smtp.seguranca || null, avatarUrl
+      ]
+    )
+  } catch (erro: unknown) {
+    // Corrida de unicidade: mapeia 1062 do banco para 409 (RL04 B-21).
+    if ((erro as { errno?: number } | null)?.errno === 1062) {
+      erro409('Este e-mail já está cadastrado no sistema.')
+    }
+    throw erro
+  }
+  invalidarCache('usuarios-opcoes')
   const perfil = await buscarUsuarioTelaPorId(id)
   if (!perfil) erro404('Falha ao criar o usuário.')
   return perfil
@@ -466,7 +513,9 @@ export async function atualizarUsuario(
   // ausente/vazia preserva a atual (change endurecer-sessao-segredos-e-uploads).
   const senhaSmtpNova = dados.smtp !== undefined && smtpBase.senha ? cifrar(smtpBase.senha) : null
 
-  await query(
+  const tx = await getTransaction()
+  try {
+    await tx.query(
     `UPDATE usuarios SET nome_completo = ?, email_corporativo = ?, situacao = ?,
         telefone = ?, funcao = ?, departamento_setor = ?,
         cep = ?, endereco = ?, numero = ?, complemento = ?, bairro = ?, cidade = ?, estado = ?, regiao = ?,
@@ -487,7 +536,20 @@ export async function atualizarUsuario(
       ...(hashSenha ? [hashSenha] : []),
       id
     ]
-  )
+    )
+    // Transição para Inativo OU troca de senha revoga todas as sessões (D5 / RL05-A-01).
+    const senhaAlterada = Boolean(hashSenha)
+    if (senhaAlterada || (situacao === 'Inativo' && existente.status !== 'Inativo')) {
+      await revogarSessoesDoUsuario(id, (sql, values) => tx.query(sql, values))
+    }
+    // Não deixar o sistema sem administração essencial (D4).
+    await garantirAdministracaoApos(tx)
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
+  invalidarCache('usuarios-opcoes')
   const atualizado = await buscarUsuarioTelaPorId(id)
   if (!atualizado) erro404()
   return atualizado
@@ -497,7 +559,17 @@ export async function atualizarUsuario(
 export async function excluirUsuario(id: string): Promise<void> {
   const existente = await buscarUsuarioTelaPorId(id)
   if (!existente) erro404()
-  await query('DELETE FROM usuarios WHERE id = ?', [id])
+  const tx = await getTransaction()
+  try {
+    await tx.query('DELETE FROM usuarios WHERE id = ?', [id])
+    // Não deixar o sistema sem administração essencial (D4).
+    await garantirAdministracaoApos(tx)
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
+  invalidarCache('usuarios-opcoes')
 }
 
 /**
@@ -527,13 +599,21 @@ export async function alterarSituacaoUsuario(
   const existente = await buscarUsuarioTelaPorId(id)
   if (!existente) erro404()
   const valor = validarSituacao(situacao)
-  // Desativar revoga o acesso vigente (capability revogacao-sessao): incrementa
-  // a versão da sessão; reativar não precisa (novo login emite versão atual).
-  if (valor === 'Inativo') {
-    await query('UPDATE usuarios SET situacao = ?, token_version = token_version + 1 WHERE id = ?', [valor, id])
-  } else {
-    await query('UPDATE usuarios SET situacao = ? WHERE id = ?', [valor, id])
+  const tx = await getTransaction()
+  try {
+    await tx.query('UPDATE usuarios SET situacao = ? WHERE id = ?', [valor, id])
+    // Desativar revoga TODAS as sessões (access + refresh) — D1/D5.
+    if (valor === 'Inativo') {
+      await revogarSessoesDoUsuario(id, (sql, values) => tx.query(sql, values))
+    }
+    // Não deixar o sistema sem administração essencial (D4).
+    await garantirAdministracaoApos(tx)
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
   }
+  invalidarCache('usuarios-opcoes')
   const atualizado = await buscarUsuarioTelaPorId(id)
   if (!atualizado) erro404()
   return atualizado
@@ -690,7 +770,22 @@ export async function importarUsuarios(linhas: unknown): Promise<{ importados: n
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
+    // RL05-B-11: corrida de unicidade durante a gravação (outro request inseriu
+    // o mesmo e-mail) — devolve conflito, nunca 500.
+    if ((erro as { errno?: number } | null)?.errno === 1062) {
+      const conflitos = await query<Array<{ email_corporativo: string }>>(
+        `SELECT email_corporativo FROM usuarios WHERE email_corporativo IN (${placeholders})`,
+        emails
+      ).catch(() => [])
+      throw createError({
+        statusCode: 409,
+        statusMessage:
+          'A importação encontrou e-mails cadastrados durante a gravação — nada foi gravado.',
+        data: { conflitos: conflitos.map((e) => String(e.email_corporativo)) }
+      })
+    }
     throw erro
   }
+  invalidarCache('usuarios-opcoes')
   return { importados: preparados.length }
 }

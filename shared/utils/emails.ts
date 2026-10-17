@@ -183,7 +183,7 @@ export function gerarSenhaProvisoria(tamanho = 12): string {
   const sorteio = (conjunto: string) => {
     const array = new Uint32Array(1)
     globalThis.crypto.getRandomValues(array)
-    return conjunto[array[0] % conjunto.length]
+    return conjunto[(array[0] ?? 0) % conjunto.length] ?? ''
   }
 
   const chars = [sorteio(maiusculas), sorteio(minusculas), sorteio(numeros), sorteio(simbolos)]
@@ -192,8 +192,13 @@ export function gerarSenhaProvisoria(tamanho = 12): string {
   for (let i = chars.length - 1; i > 0; i--) {
     const array = new Uint32Array(1)
     globalThis.crypto.getRandomValues(array)
-    const j = array[0] % (i + 1)
-      ;[chars[i], chars[j]] = [chars[j], chars[i]]
+    const j = (array[0] ?? 0) % (i + 1)
+    const a = chars[i]
+    const b = chars[j]
+    if (a !== undefined && b !== undefined) {
+      chars[i] = b
+      chars[j] = a
+    }
   }
   return chars.join('')
 }

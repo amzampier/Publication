@@ -2,29 +2,31 @@
 
 ## What this repo is
 
-Fresh Nuxt 4.5.2 + Vue 3 starter named `Publications` (single package, not a monorepo).
+`Publications` (Dicas Teorema) — Nuxt 4.5.2 + Vue 3 (single package, not a monorepo). Single-tenant app with an anonymous Public Area and an authenticated Administrative Area (RBAC).
 The README is stock Nuxt boilerplate: it lists pnpm/yarn/bun, but the repo uses **npm**
 (`package-lock.json`, lockfileVersion 3). Ignore the README's package-manager variants.
 
-Dependencies beyond Nuxt/Vue/router: `@nuxtjs/tailwindcss` (styling) and `@lucide/vue` (icons,
-imported as named components, e.g. `import { Bell } from '@lucide/vue'`). No test, lint, format,
-state-management, auth, or DB tooling exists yet — don't assume any of it.
+Dependencies beyond Nuxt/Vue/router: `@nuxtjs/tailwindcss` (styling), `@lucide/vue` (icons,
+imported as named components, e.g. `import { Bell } from '@lucide/vue'`), `mysql2/promise` (MariaDB,
+raw SQL — no ORM), `bcrypt` + `jose` (auth) and `resend` (e-mail). Lint/test/typecheck gates exist
+(`eslint.config.mjs`, `tests/`, `vitest.config.ts`) — see Commands.
 
 ## Commands
 
 - `npm install` — `postinstall` runs `nuxt prepare`, which generates `.nuxt/`
 - `npm run dev` — dev server at `http://localhost:3000`
-- `npm run build` — the **only** real verification step; there is no lint/test/typecheck script
+- `npm run build` — build gate (empacota o app; a verificação estrutural)
+- `npm run lint` — ESLint (flat config em `eslint.config.mjs`) — **gate**
+- `npm run test` — Vitest (`tests/`, ambiente node) — **gate**
+- `npm run typecheck` — `nuxt typecheck` (vue-tsc, estrito) — **gate**.
 - `npm run generate` / `npm run preview`
-- Type check (optional): `npx nuxt typecheck`. No checker is installed, so it exits 1 with
-  install instructions until you `npm i -D vue-tsc typescript`
 - Node must match nuxt's `engines`: `^22.19.0 || ^24.11.0 || >=26.0.0`. No `.nvmrc`.
 
 ## Directory layout (Nuxt 4 rules — differs from Nuxt 3)
 
 - `app/` is the srcDir: `app.vue` lives there, and so must `app/pages/`, `app/components/`,
   `app/composables/`, `app/layouts/`, `app/plugins/` (Nuxt 3 root-level `pages/` style is wrong here)
-- `server/` (API routes) and `shared/` (shared types/utils) go at the **repo root** — neither exists yet
+- `server/` (API routes, utils, migrations, plugins, middleware) and `shared/` (shared types/utils) live at the **repo root**
 - `public/` (static assets) and config files (`nuxt.config.ts`, `tailwind.config.js`,
   `tsconfig.json`) stay at the root
 - Aliases: `~` and `@` → `app/`, `~~` and `@@` → repo root, plus `#server`, `#shared`, `#app`
@@ -38,7 +40,7 @@ state-management, auth, or DB tooling exists yet — don't assume any of it.
   `form-control-states`) — valide com `openspec validate --specs`. Mudança de comportamento
   passa pelo fluxo OpenSpec (`/opsx-propose` → apply → `/opsx-sync` → `/opsx-archive`).
 - **Componentes:** use sempre `app/components/ui/*` (auto-import `Ui*`) e
-  `app/components/layout/*` (`AppHeader`, `AppSidebar` — shell de `app/layouts/default.vue`).
+  `app/components/layout/*` (`AppHeader`, `AppSidebar` — shell de `app/layouts/admin.vue`; `app/layouts/default.vue` é o layout da Área Pública).
   Nunca crie botão/campo/tooltip paralelos. A vitrine `app/pages/design.vue` (seções 1-15,
   `layout: false`) deve espelhar os componentes reais.
 - **Cores (tokens `brand.*` em `tailwind.config.js`):**
@@ -53,8 +55,7 @@ state-management, auth, or DB tooling exists yet — don't assume any of it.
   `tailwindcss.cssPath` em `nuxt.config.ts` — não remova essa linha; sem ela o CSS some em silêncio).
 - **Tipografia:** valores de `Input`/`Select`/`DatePicker` em `font-normal` (campo `mono` em
   `font-medium`); menu da conta em `font-light`; rótulos/legendas em `font-medium`.
-- **Verificação:** `npm run build` + conferência visual em `http://localhost:3000/design`
-  (não existe lint/test — a build e o olho são o gate).
+- **Verificação:** `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build` (gates) + conferência visual em `http://localhost:3000/design`.
 
 ## Gotchas worth knowing before you edit
 
@@ -69,7 +70,7 @@ state-management, auth, or DB tooling exists yet — don't assume any of it.
   content globs itself. The empty `content: []` in root `tailwind.config.js` is normal — don't
   "fix" it by hardcoding paths.
 - `nuxt.config.ts` has grown past "minimal": `runtimeConfig` (DB_*), `nitro.publicAssets` and
-  `nitro.hooks.compiled` live there — see comments in the file before touching it.
+  `nitro.hooks.compiled` and `routeRules` live there — see comments in the file before touching it.
 - Uploads go to `uploads/<pasta>/` at the project root (gitignored; `.gitkeep` keeps the
   structure), served at runtime via `nitro.publicAssets` (`/uploads/**`) in both dev and
   production. Do NOT put runtime uploads in `public/uploads/` — `public/` is copied only at

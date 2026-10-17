@@ -40,6 +40,8 @@ interface Props {
   showFilters?: boolean
   /** Quantidade de filtros ativos exibida no badge do botao Filtros */
   filtersCount?: number
+  /** Termo de busca inicial (hidrata o campo; nao dispara busca). */
+  initialSearch?: string
   /** Modo servidor: renderiza a página recebida e emite eventos (change paginacao-server-side-e-performance) */
   serverMode?: boolean
   /** Total de registros do conjunto (modo servidor) — deriva as páginas */
@@ -61,6 +63,7 @@ const props = withDefaults(defineProps<Props>(), {
   showHeaderTop: false,
   showFilters: false,
   filtersCount: 0,
+  initialSearch: '',
   serverMode: false,
   total: 0,
   page: 1,
@@ -79,7 +82,7 @@ const emit = defineEmits<{
 const serverMode = computed(() => props.serverMode === true)
 
 // Estado de Busca Global
-const searchQuery = ref('')
+const searchQuery = ref(props.initialSearch ?? '')
 // Wrapper do campo de busca - alvo do foco devolvido por focarBusca()
 const buscaRef = ref<HTMLElement | null>(null)
 
@@ -344,7 +347,7 @@ const filteredData = computed(() => {
 })
 
 const aplicarSort = (col: ColumnDef, isMulti: boolean) => {
-  if (col.sortable === false) return
+  if (col.sortable === false || !col.header) return
 
   const existingIdx = sortRules.value.findIndex((r) => r.columnId === col.id)
 
@@ -714,9 +717,9 @@ onUnmounted(() => {
               :key="col.id"
               draggable="true"
               :style="getColumnStyle(col)"
-              :tabindex="col.sortable === false ? undefined : 0"
-              :aria-sort="ariaSortFor(col.id)"
-              :aria-label="col.sortable === false ? undefined : `Ordenar por ${col.header}`"
+              :tabindex="(col.sortable === false || !col.header) ? undefined : 0"
+              :aria-sort="(col.sortable === false || !col.header) ? undefined : ariaSortFor(col.id)"
+              :aria-label="(col.sortable === false || !col.header) ? undefined : `Ordenar por ${col.header}`"
               :class="[
                 'py-1.5 px-2.5 tracking-tight select-none transition-colors group relative cursor-pointer hover:bg-white/10',
                 col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left'
@@ -950,7 +953,7 @@ onUnmounted(() => {
                 :colspan="columns.length + ($slots.actions ? 1 : 0)"
                 class="py-12 text-center text-slate-400"
               >
-                Nenhum dado encontrado com o filtro aplicado.
+                {{ (filtersCount > 0 || searchQuery.trim() !== '') ? 'Nenhum resultado encontrado para o filtro.' : 'Nenhum registro encontrado.' }}
               </td>
             </tr>
           </template>

@@ -4,7 +4,7 @@ import { join } from 'node:path'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV !== 'production' },
   modules: ['@nuxtjs/tailwindcss'],
   // Configuração do banco MariaDB (docs/02 §3.1) — lida de DB_* no .env.
   runtimeConfig: {
@@ -43,7 +43,12 @@ export default defineNuxtConfig({
     // o tipo do arquivo — defesa extra contra conteúdo interpretado (HTML/SVG).
     routeRules: {
       '/uploads/**': {
-        headers: { 'X-Content-Type-Options': 'nosniff' }
+        headers: {
+          'X-Content-Type-Options': 'nosniff',
+          // RL04-C-01 (defesa em profundidade): mesmo que um arquivo executável
+          // escape, o navegador não executa script na origem da aplicação.
+          'Content-Security-Policy': "default-src 'none'; sandbox"
+        }
       }
     },
     publicAssets: [
@@ -69,6 +74,7 @@ export default defineNuxtConfig({
   app: {
     // Indicador de navegação lenta (MEL-04 do RL01) nas cores da marca — só aparece
     // quando a rota demorar (hoje raro: páginas em memória; preparação p/ listagens assíncronas).
+    // @ts-expect-error — Nuxt aceita `loadingIndicator` no runtime; o tipo desta versão o omite.
     loadingIndicator: {
       name: 'circle',
       color: '#4ed813',

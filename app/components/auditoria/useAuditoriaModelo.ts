@@ -22,6 +22,8 @@ export interface RegistroAuditoria {
   recurso: string
   detalhes: string
   ip: string
+  /** UUID da entidade afetada (null quando não aplicável). */
+  entidadeId: string | null
 }
 
 export interface FiltrosAuditoria {
@@ -119,6 +121,10 @@ export const useAuditoriaModelo = () => {
     ultimaAtividade: null
   }))
   const busca = useState<string>('auditoria-busca', () => '')
+  // Ordenação server-side (RL04-M-02): coluna + direção vigentes.
+  const ordem = useState<{ coluna: string; direcao: 'asc' | 'desc' } | null>('auditoria-ordem', () => null)
+  // Recarga pedida durante uma carga em voo (RL04 B-20).
+  const recargaPendente = useState<boolean>('auditoria-recarga-pendente', () => false)
 
   /**
    * Busca a página com os filtros/busca/paginação VIGENTES no servidor.
@@ -126,7 +132,10 @@ export const useAuditoriaModelo = () => {
    * a lista permanece vazia.
    */
   const carregarAuditoria = async (): Promise<boolean> => {
-    if (carregando.value) return false
+    if (carregando.value) {
+      recargaPendente.value = true
+      return false
+    }
     carregando.value = true
     try {
       const f = filtros.value
@@ -139,7 +148,9 @@ export const useAuditoriaModelo = () => {
           recurso: f.recurso || undefined,
           busca: busca.value || undefined,
           pagina: pagina.value,
-          porPagina: porPagina.value
+          porPagina: porPagina.value,
+          ordenar: ordem.value?.coluna || undefined,
+          direcao: ordem.value?.direcao || undefined
         }
       })
       registros.value = Array.isArray(resposta?.registros) ? resposta.registros : []
@@ -153,9 +164,16 @@ export const useAuditoriaModelo = () => {
       return true
     } catch {
       registros.value = []
+      total.value = 0
+      kpis.value = { registros: 0, usuariosDistintos: 0, ultimaAtividade: null }
+      opcoes.value = { usuarios: [], recursos: [] }
       return false
     } finally {
       carregando.value = false
+      if (recargaPendente.value) {
+        recargaPendente.value = false
+        void carregarAuditoria()
+      }
     }
   }
 
@@ -182,6 +200,14 @@ export const useAuditoriaModelo = () => {
     await carregarAuditoria()
   }
 
+  /** Ordenação server-side (RL04-M-02): usa a 1ª regra da tabela e volta à 1ª página. */
+  const ordenarPor = async (regras: Array<{ columnId: string; direction: 'asc' | 'desc' }>): Promise<void> => {
+    const primeira = regras[0]
+    ordem.value = primeira ? { coluna: primeira.columnId, direcao: primeira.direction } : null
+    pagina.value = 1
+    await carregarAuditoria()
+  }
+
   /** Conjunto filtrado COMPLETO (todas as páginas) para CSV/PDF. */
   const buscarParaExportacao = async (): Promise<RegistroAuditoria[]> => {
     const f = filtros.value
@@ -193,7 +219,9 @@ export const useAuditoriaModelo = () => {
         acao: f.acao || undefined,
         recurso: f.recurso || undefined,
         busca: busca.value || undefined,
-        exportar: '1'
+        exportar: '1',
+        ordenar: ordem.value?.coluna || undefined,
+        direcao: ordem.value?.direcao || undefined
       }
     })
     return Array.isArray(resposta?.registros) ? resposta.registros : []
@@ -230,6 +258,7 @@ export const useAuditoriaModelo = () => {
     irParaPagina,
     mudarPorPagina,
     buscar,
+    ordenarPor,
     buscarParaExportacao,
     pagina,
     porPagina,

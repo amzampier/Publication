@@ -23,7 +23,9 @@ export type RascunhoUsuario = UsuarioModelo & { confirmarSenha?: string }
  * PATCH/POST — o registro guarda só o caminho (avatar_url).
  */
 export async function enviarAvatar(dataUrl: string): Promise<string> {
-  const [meta, dados] = dataUrl.split(',')
+  const partes = dataUrl.split(',')
+  const meta = partes[0] ?? ''
+  const dados = partes[1] ?? ''
   const mime = meta.match(/data:(.*?);/)?.[1] ?? 'image/png'
   const extensao = mime.includes('jpeg') ? 'jpg' : mime.includes('webp') ? 'webp' : 'png'
   const binario = atob(dados)
@@ -139,6 +141,11 @@ export const buscarEmailsBase = async (): Promise<string[]> => {
   return Array.isArray(resp?.emails) ? resp.emails : []
 }
 
+/** Detalhe completo do usuário (a listagem traz só as colunas exibidas — RL04 B-23). */
+export const buscarUsuario = async (id: string): Promise<UsuarioModelo> => {
+  return await useApiFetch<UsuarioModelo>(`/api/usuarios/${id}`)
+}
+
 export interface KpisUsuarios {
   total: number
   ativos: number
@@ -182,10 +189,17 @@ export const useUsuarios = () => {
     perfis: []
   }))
   const busca = useState<string>('usuarios-busca', () => '')
+  // Ordenação server-side (RL04-M-02): coluna + direção vigentes.
+  const ordem = useState<{ coluna: string; direcao: 'asc' | 'desc' } | null>('usuarios-ordem', () => null)
+  // Recarga pedida durante uma carga em voo (RL04 B-20).
+  const recargaPendente = useState<boolean>('usuarios-recarga-pendente', () => false)
 
   /** Carrega a página/filtros vigentes do servidor. Devolve false em falha. */
   const carregarUsuarios = async (_forcar = false): Promise<boolean> => {
-    if (carregando.value) return false
+    if (carregando.value) {
+      recargaPendente.value = true
+      return false
+    }
     carregando.value = true
     try {
       const f = filtros.value
@@ -196,7 +210,9 @@ export const useUsuarios = () => {
           status: f.status || undefined,
           busca: busca.value || undefined,
           pagina: pagina.value,
-          porPagina: porPagina.value
+          porPagina: porPagina.value,
+          ordenar: ordem.value?.coluna || undefined,
+          direcao: ordem.value?.direcao || undefined
         }
       })
       usuarios.value = Array.isArray(resposta?.usuarios) ? resposta.usuarios : []
@@ -210,9 +226,16 @@ export const useUsuarios = () => {
       return true
     } catch {
       usuarios.value = []
+      total.value = 0
+      kpis.value = { total: 0, ativos: 0, inativos: 0, perfisDistintos: 0 }
+      opcoes.value = { usuarios: [], perfis: [] }
       return false
     } finally {
       carregando.value = false
+      if (recargaPendente.value) {
+        recargaPendente.value = false
+        void carregarUsuarios(true)
+      }
     }
   }
 
@@ -235,6 +258,14 @@ export const useUsuarios = () => {
     await carregarUsuarios(true)
   }
 
+  /** Ordenação server-side (RL04-M-02): usa a 1ª regra da tabela e volta à 1ª página. */
+  const ordenarPor = async (regras: Array<{ columnId: string; direction: 'asc' | 'desc' }>): Promise<void> => {
+    const primeira = regras[0]
+    ordem.value = primeira ? { coluna: primeira.columnId, direcao: primeira.direction } : null
+    pagina.value = 1
+    await carregarUsuarios(true)
+  }
+
   /** Conjunto filtrado COMPLETO (todas as páginas) para CSV/PDF. */
   const buscarParaExportacao = async (): Promise<UsuarioModelo[]> => {
     const f = filtros.value
@@ -244,7 +275,9 @@ export const useUsuarios = () => {
         perfil: f.perfil || undefined,
         status: f.status || undefined,
         busca: busca.value || undefined,
-        exportar: '1'
+        exportar: '1',
+        ordenar: ordem.value?.coluna || undefined,
+        direcao: ordem.value?.direcao || undefined
       }
     })
     return Array.isArray(resposta?.usuarios) ? resposta.usuarios : []
@@ -283,6 +316,7 @@ export const useUsuarios = () => {
     irParaPagina,
     mudarPorPagina,
     buscar,
+    ordenarPor,
     buscarParaExportacao
   }
 }

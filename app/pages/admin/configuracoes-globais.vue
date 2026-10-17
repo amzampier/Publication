@@ -4,6 +4,7 @@ import { useToast } from '../../composables/useToast'
 import { useApiFetch } from '../../composables/useApiFetch'
 import {
   carregarConfiguracoesGlobais,
+  atualizarCachesAposSalvar,
   type ConfiguracoesGlobaisApi
 } from '../../composables/useConfiguracoesGlobais'
 import { useLogomarcaHeader } from '../../composables/useLogomarcaHeader'
@@ -77,12 +78,14 @@ const salvar = async () => {
     // Sincroniza com a resposta (URLs finais do servidor, ex.: sufixo de colisão)
     caminhoHeader.value = atualizada.logo_header_url ?? ''
     caminhoLogin.value = atualizada.logo_login_url ?? ''
+    // RL04-M-04: atualiza os caches (completo + shell) para refletir o que foi salvo.
+    atualizarCachesAposSalvar(atualizada)
     toast.success('Configurações Globais', 'As alterações foram salvas com sucesso.')
     alterado.value = false
   } catch {
     toast.danger(
       'Configurações Globais',
-      'Não foi possível salvar as alterações. Verifique a conexão com o banco e tente novamente.'
+      'Não foi possível salvar as alterações. Tente novamente.'
     )
   }
 }

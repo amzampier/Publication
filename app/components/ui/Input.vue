@@ -76,10 +76,10 @@ const aplicarMascara = (valor: string, mascara: string): string => {
   for (const c of mascara) {
     if (i >= conteudo.length) break
     if (c === '9') {
-      if (/[0-9]/.test(conteudo[i])) saida += conteudo[i]
+      if (/[0-9]/.test(conteudo[i] ?? '')) saida += conteudo[i]
       i++
     } else if (c === 'A') {
-      if (/[0-9A-Za-z]/.test(conteudo[i])) saida += conteudo[i]
+      if (/[0-9A-Za-z]/.test(conteudo[i] ?? '')) saida += conteudo[i]
       i++
     } else {
       saida += c

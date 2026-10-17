@@ -8,7 +8,10 @@
 // Mapeamento com a tela /admin/auditoria: `entidade` = "recurso" da UI,
 // `entidade_id` = id da entidade afetada ('' quando não aplicável), `acao` =
 // tipo da operação (um dos 4 — o que mantém o badge da tabela íntegro).
+import { createError } from 'h3'
 import { query } from './db'
+import { cacheado } from './cache'
+import { escaparLike } from './sql'
 import { getSessionUser } from './auth'
 import { ipDoCliente } from './rateLimit'
 
@@ -25,6 +28,8 @@ export interface RegistroAuditoriaApi {
   recurso: string
   detalhes: string
   ip: string
+  /** UUID da entidade afetada (null quando não aplicável). */
+  entidadeId: string | null
 }
 
 export interface FiltrosAuditoriaApi {
@@ -42,6 +47,27 @@ export interface FiltrosAuditoriaApi {
   porPagina?: number
   /** devolve o conjunto filtrado completo (bounded) para exportação */
   exportar?: boolean
+  /** ordenação server-side (RL04-M-02): id da coluna + direção */
+  ordenar?: string
+  direcao?: string
+}
+
+/** Colunas ordenáveis da Gestão de Auditoria (whitelist — RL04-M-02). */
+const ORDEM_AUDITORIA: Record<string, string> = {
+  dataHora: 'data_hora',
+  usuario: 'usuario_nome',
+  acao: 'acao',
+  recurso: 'entidade',
+  detalhes: 'detalhes',
+  ip: 'endereco_ip'
+}
+
+/** ORDER BY da auditoria (padrão = mais recente primeiro, com desempate por id). */
+function montarOrdemAuditoria(ordenar?: string, direcao?: string): string {
+  const coluna = ORDEM_AUDITORIA[(ordenar ?? '').trim()]
+  if (!coluna) return 'data_hora DESC, id DESC'
+  const dir = (direcao ?? '').trim().toLowerCase() === 'desc' ? 'DESC' : 'ASC'
+  return `${coluna} ${dir}, id DESC`
 }
 
 export interface KpisAuditoria {
@@ -65,8 +91,15 @@ const POR_PAGINA_PADRAO = 20
 const POR_PAGINA_MAX = 200
 const TETO_EXPORTACAO = 10_000
 
-/** Formato de data aceito nos filtros; qualquer outra coisa é ignorada. */
-const DATA_ISO = /^\d{4}-\d{2}-\d{2}$/
+/** Valida uma data ISO real (AAAA-MM-DD, mês 1–12 e dia válido para o mês). */
+function dataIsoValida(valor: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor)
+  if (!m) return false
+  const ano = Number(m[1]); const mes = Number(m[2]); const dia = Number(m[3])
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return false
+  const d = new Date(ano, mes - 1, dia)
+  return d.getFullYear() === ano && d.getMonth() === mes - 1 && d.getDate() === dia
+}
 
 interface AuditoriaRow {
   id: string
@@ -75,6 +108,7 @@ interface AuditoriaRow {
   usuario_nome: string
   acao: string
   entidade: string
+  entidade_id: string | null
   endereco_ip: string
   detalhes: string
 }
@@ -99,6 +133,7 @@ export async function registrarAuditoria(
     sessao?: { id?: string | null; nome: string; perfil?: string }
   }
 ): Promise<void> {
+  const tarefa = async (): Promise<void> => {
   try {
     if (!ACOES.includes(registro.acao)) {
       console.error('[auditoria] Ação desconhecida ignorada:', registro.acao)
@@ -123,6 +158,14 @@ export async function registrarAuditoria(
   } catch (erro) {
     console.error('[auditoria] Falha ao registrar evento de auditoria:', erro)
   }
+  }
+  // Fora do caminho da resposta quando o runtime suporta (RL04 M-15).
+  const waitUntil = (event as { waitUntil?: (p: Promise<unknown>) => void }).waitUntil
+  if (typeof waitUntil === 'function') {
+    waitUntil.call(event, tarefa())
+  } else {
+    await tarefa()
+  }
 }
 
 /**
@@ -137,12 +180,18 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
   const params: unknown[] = []
 
   const dataInicial = (filtros.dataInicial ?? '').trim()
-  if (DATA_ISO.test(dataInicial)) {
+  if (dataInicial) {
+    if (!dataIsoValida(dataInicial)) {
+      throw createError({ statusCode: 400, statusMessage: 'Data inicial inválida (use AAAA-MM-DD).' })
+    }
     clausulas.push('data_hora >= ?')
     params.push(`${dataInicial} 00:00:00`)
   }
   const dataFinal = (filtros.dataFinal ?? '').trim()
-  if (DATA_ISO.test(dataFinal)) {
+  if (dataFinal) {
+    if (!dataIsoValida(dataFinal)) {
+      throw createError({ statusCode: 400, statusMessage: 'Data final inválida (use AAAA-MM-DD).' })
+    }
     // Janela inclusiva do dia inteiro: `< início do dia seguinte` captura
     // também os microssegundos de 23:59:59 (RL02 M-06).
     clausulas.push('data_hora < DATE_ADD(?, INTERVAL 1 DAY)')
@@ -165,7 +214,7 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const like = `%${busca}%`
+    const like = `%${escaparLike(busca)}%`
     clausulas.push('(detalhes LIKE ? OR usuario_nome LIKE ? OR entidade LIKE ? OR acao LIKE ?)')
     params.push(like, like, like, like)
   }
@@ -175,37 +224,46 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
   const pagina = Math.max(1, Math.trunc(filtros.pagina ?? 1))
   const porPagina = Math.min(POR_PAGINA_MAX, Math.max(1, Math.trunc(filtros.porPagina ?? POR_PAGINA_PADRAO)))
   const exportar = filtros.exportar === true
+  const ordem = montarOrdemAuditoria(filtros.ordenar, filtros.direcao)
 
   const consultaPagina = exportar
     ? query<AuditoriaRow[]>(
-        `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, endereco_ip, detalhes
+        `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, entidade_id, endereco_ip, detalhes
            FROM auditoria ${clausula}
-          ORDER BY data_hora DESC, id DESC
+          ORDER BY ${ordem}
           LIMIT ${TETO_EXPORTACAO}`,
         params
       )
     : query<AuditoriaRow[]>(
-        `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, endereco_ip, detalhes
+        `SELECT id, data_hora, usuario_id, usuario_nome, acao, entidade, entidade_id, endereco_ip, detalhes
            FROM auditoria ${clausula}
-          ORDER BY data_hora DESC, id DESC
+          ORDER BY ${ordem}
           LIMIT ? OFFSET ?`,
         [...params, porPagina, (pagina - 1) * porPagina]
       )
 
-  const [linhas, agregadoRows, usuariosRows, recursosRows] = await Promise.all([
+  const [linhas, agregadoRows, distintosRows] = await Promise.all([
     consultaPagina,
-    query<Array<{ registros: number; usuarios_distintos: number; ultima: Date | null }>>(
-      `SELECT COUNT(*) AS registros, COUNT(DISTINCT usuario_nome) AS usuarios_distintos, MAX(data_hora) AS ultima
-         FROM auditoria ${clausula}`,
+    query<Array<{ registros: number; ultima: Date | null }>>(
+      `SELECT COUNT(*) AS registros, MAX(data_hora) AS ultima FROM auditoria ${clausula}`,
       params
     ),
-    query<Array<{ usuario_nome: string }>>(
-      'SELECT DISTINCT usuario_nome FROM auditoria ORDER BY usuario_nome ASC'
-    ),
-    query<Array<{ entidade: string }>>(
-      'SELECT DISTINCT entidade FROM auditoria ORDER BY entidade ASC'
+    query<Array<{ usuarios_distintos: number }>>(
+      `SELECT COUNT(DISTINCT usuario_nome) AS usuarios_distintos FROM auditoria ${clausula}`,
+      params
     )
   ])
+  // Opções do conjunto NÃO filtrado — cache de TTL curto (RL04 M-10).
+  const opcoes = await cacheado('auditoria-opcoes', 30_000, async () => {
+    const [usuariosRows, recursosRows] = await Promise.all([
+      query<Array<{ usuario_nome: string }>>('SELECT DISTINCT usuario_nome FROM auditoria ORDER BY usuario_nome ASC'),
+      query<Array<{ entidade: string }>>('SELECT DISTINCT entidade FROM auditoria ORDER BY entidade ASC')
+    ])
+    return {
+      usuarios: usuariosRows.map((r) => String(r.usuario_nome)),
+      recursos: recursosRows.map((r) => String(r.entidade))
+    }
+  })
 
   const agregado = agregadoRows[0]
   const total = Number(agregado?.registros ?? 0)
@@ -217,7 +275,8 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
     acao: row.acao as AcaoAuditoria,
     recurso: String(row.entidade),
     detalhes: String(row.detalhes),
-    ip: String(row.endereco_ip)
+    ip: String(row.endereco_ip),
+    entidadeId: row.entidade_id ? String(row.entidade_id) : null
   }))
 
   return {
@@ -225,13 +284,10 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
     total,
     kpis: {
       registros: total,
-      usuariosDistintos: Number(agregado?.usuarios_distintos ?? 0),
+      usuariosDistintos: Number(distintosRows[0]?.usuarios_distintos ?? 0),
       ultimaAtividade: agregado?.ultima ? new Date(agregado.ultima).toISOString() : null
     },
-    opcoes: {
-      usuarios: usuariosRows.map((r) => String(r.usuario_nome)),
-      recursos: recursosRows.map((r) => String(r.entidade))
-    },
+    opcoes,
     pagina: exportar ? 1 : pagina,
     porPagina: exportar ? total : porPagina
   }

@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import { useCookie, useState } from '#app'
 import { COOKIE_EMAIL_LEMBRADO } from '../utils/cookies'
 import { useToast } from './useToast'
+import { limparEstadoSessao } from './sessaoEstado'
 
 export interface UsuarioLogado {
   id: string
@@ -69,7 +70,7 @@ export const useAuth = () => {
 
   // POSTs de auth usam $fetch direto (credentials include) — FORA do
   // interceptor de refresh do useApiFetch (evita loop refresh→401→refresh).
-  const postAuth = (rota: string, body?: unknown) =>
+  const postAuth = (rota: string, body?: Record<string, any>) =>
     $fetch<{ ok?: boolean; usuario?: UsuarioLogado }>(rota, {
       method: 'POST',
       body,
@@ -115,6 +116,7 @@ export const useAuth = () => {
     }
     usuario.value = null
     sessaoVerificada.value = true
+    limparEstadoSessao()
   }
 
   /**
@@ -132,9 +134,9 @@ export const useAuth = () => {
       const fetchSessao = import.meta.server
         ? useRequestFetch()
         : $fetch as unknown as typeof useRequestFetch
-      const resp = await fetchSessao<{ usuario: UsuarioLogado }>('/api/auth/seguro', {
+      const resp = (await fetchSessao('/api/auth/seguro', {
         credentials: 'include'
-      })
+      })) as { usuario: UsuarioLogado }
       usuario.value = resp.usuario
       sessaoVerificada.value = true
       return true
@@ -152,6 +154,7 @@ export const useAuth = () => {
   const sessaoInvalidada = (): void => {
     usuario.value = null
     sessaoVerificada.value = true
+    limparEstadoSessao()
   }
 
   return { usuario, loggedIn, entrar, sair, ensureSessao, sessaoInvalidada }

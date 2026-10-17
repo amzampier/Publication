@@ -37,6 +37,8 @@ O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da 
 `auditoria`, `configuracoes-globais`):
 
 - `GET /api/usuarios` → `gestao-usuarios` / `visualizar`
+- `GET /api/usuarios/emails` → `gestao-usuarios` / `visualizar`
+- `GET /api/usuarios/:id` → `gestao-usuarios` / `visualizar`
 - `POST /api/usuarios`, `POST /api/convite` → `gestao-usuarios` / `criar`
 - `PUT /api/usuarios/:id`, `PUT /api/usuarios/:id/situacao` → `gestao-usuarios` / `alterar`
 - `DELETE /api/usuarios/:id` → `gestao-usuarios` / `excluir`
@@ -62,11 +64,15 @@ O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da 
 - **WHEN** um perfil que concede `criar` mas não concede a ação extra `importar` chama `POST /api/usuarios/importar`
 - **THEN** a API responde `403`
 
+#### Scenario: Rota de e-mails exige visualizar de usuários
+- **WHEN** um perfil sem `gestao-usuarios`/`visualizar` chama `GET /api/usuarios/emails`
+- **THEN** a API responde `403`
+
 ### Requirement: Portas públicas e autoatendimento exigem apenas sessão
 O sistema SHALL manter sem exigência de permissão de módulo as portas públicas e as rotas de
 autoatendimento, que continuam exigindo apenas sessão válida (quando administrativas) ou sendo
 abertas: `/api/auth/*`, `GET /api/configuracoes/identidade`, `GET /api/usuarios/eu`,
-`PATCH /api/usuarios/eu`, `GET /api/usuarios/eu/permissoes` (a matriz do próprio usuário, que
+`PATCH /api/usuarios/eu`, `GET /api/usuarios/eu/permissoes`, `GET /api/configuracoes/shell` (a matriz do próprio usuário, que
 alimenta o `.can()`) e `POST /api/uploads` com destino `avatares` (retrato do próprio perfil).
 
 #### Scenario: Meu Perfil acessível a qualquer perfil

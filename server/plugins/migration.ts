@@ -11,6 +11,7 @@ export default defineNitroPlugin(async () => {
     await ensureAdminUser()
     await migrarSenhasSmtp()
     await garantirEventScheduler()
+    await executarExpurgo()
   } catch (erro: any) {
     process.exitCode = 1
     // Escrita ÚNICA (uma operação de I/O) + espera curta antes de encerrar:

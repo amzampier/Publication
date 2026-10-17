@@ -23,6 +23,8 @@ const { toast } = useToast()
 // continua autônoma (POST /api/auth/trocar-senha, change de auth).
 const registro = ref<UsuarioModelo | null>(null)
 const carregando = ref(true)
+// Falha de carga (RL04 M-17): estado de erro com ação de tentar novamente.
+const erroCarga = ref(false)
 
 const carregarEu = async (): Promise<boolean> => {
   try {
@@ -31,8 +33,17 @@ const carregarEu = async (): Promise<boolean> => {
     return true
   } catch {
     registro.value = null
+    erroCarga.value = true
     return false
   }
+}
+
+const recarregar = async () => {
+  carregando.value = true
+  erroCarga.value = false
+  const ok = await carregarEu()
+  if (ok && registro.value) rascunho.value = clonar(registro.value)
+  carregando.value = false
 }
 
 onMounted(async () => {
@@ -146,7 +157,7 @@ const aoTrocarAvatar = (arquivos: File[] | null) => {
     return
   }
   const imagem = arquivos[0]
-  if (!imagem.type.startsWith('image/')) return
+  if (!imagem || !imagem.type.startsWith('image/')) return
   const leitor = new FileReader()
   leitor.onload = () => {
     rascunho.value.avatar = String(leitor.result)
@@ -167,6 +178,14 @@ const aoFotoCapturada = (dataUrl: string) => {
   <div class="p-4 sm:p-6 lg:p-8">
     <!-- Carregamento do registro: overlay do kit enquanto GET /api/usuarios/eu está em voo -->
     <UiLoading v-if="carregando" message="Carregando seu perfil…" />
+
+    <div v-if="!carregando && !registro && erroCarga" class="mx-auto max-w-2xl">
+      <div class="rounded-xl border border-rose-200 bg-rose-50/60 p-6 text-center">
+        <p class="text-sm font-semibold text-rose-700">Não foi possível carregar seu perfil.</p>
+        <p class="mt-1 text-xs text-rose-700/80">Verifique sua conexão e tente novamente.</p>
+        <UiButton class="mt-4" variant="primary" @click="recarregar">Tentar novamente</UiButton>
+      </div>
+    </div>
 
     <div v-if="registro" class="mx-auto max-w-6xl">
       <PerfilCabecalho class="mb-6" />

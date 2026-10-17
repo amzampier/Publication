@@ -3,7 +3,7 @@
 // e-mail (bcrypt da provisória; perfil resolvido por nome_perfil nos seeds);
 // canal "email" dispara o Resend (falha → 502 com a conta já gravada — o
 // admin repete e regrava/reenvia); canal "whatsapp" só grava (o cliente abre
-// o app). A listagem de /admin/gestao-usuarios continua a base demo.
+// o app).
 import { hash } from 'bcrypt'
 import {
   gerarSenhaProvisoria,
@@ -11,12 +11,13 @@ import {
   renderTextoConvite,
   ASSUNTO_CONVITE
 } from '#shared/utils/emails'
-import { getSessionUser } from '../../utils/auth'
+import { getSessionUser, revogarSessoesDoUsuario } from '../../utils/auth'
 import { query, getTransaction } from '../../utils/db'
 import { enviarEmail } from '../../utils/mailer'
 import { exigirRateLimit } from '../../utils/rateLimit'
 import { registrarAuditoria } from '../../utils/audit'
 import { requirePermission } from '../../utils/permission'
+import { invalidarCache } from '../../utils/cache'
 
 interface BodyConvite {
   email?: unknown
@@ -73,13 +74,41 @@ export default defineEventHandler(async (event) => {
     'SELECT id, situacao FROM perfis_acesso WHERE nome_perfil = ? LIMIT 1',
     [perfil]
   )
-  if (perfis.length === 0) {
+  const perfilRow = perfis[0]
+  if (!perfilRow) {
     throw createError({ statusCode: 400, statusMessage: `Perfil desconhecido: ${perfil}.` })
   }
-  if (String(perfis[0].situacao) !== 'Ativo') {
+  if (String(perfilRow.situacao) !== 'Ativo') {
     throw createError({ statusCode: 400, statusMessage: `O perfil "${perfil}" não está ativo e não pode ser atribuído.` })
   }
-  const perfilId = String(perfis[0].id)
+  const perfilId = String(perfilRow.id)
+  // Convite entrega credenciais: exige usuário Ativo (RL04 B-18) — um usuário
+  // Inativo/Bloqueado não conseguiria autenticar com elas.
+  if (situacao !== 'Ativo') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Só é possível convidar um usuário Ativo — um usuário Inativo/Bloqueado não conseguiria autenticar.'
+    })
+  }
+
+  // RL05-M-01: reenviar convite a uma conta existente REDEFINE a credencial dela.
+  // Exige `alterar` (não basta `criar`) e recusa conta não-Ativa, validando a
+  // situação real no banco — não apenas o payload.
+  const existentesPre = await query<Array<{ id: string; situacao: string }>>(
+    'SELECT id, situacao FROM usuarios WHERE email_corporativo = ? LIMIT 1',
+    [email]
+  )
+  const existentePre = existentesPre[0]
+  if (existentePre) {
+    await requirePermission(event, 'gestao-usuarios', 'alterar')
+    if (String(existentePre.situacao) !== 'Ativo') {
+      throw createError({
+        statusCode: 400,
+        statusMessage:
+          'A conta já existe e não está Ativa — reative-a antes de reenviar o convite.'
+      })
+    }
+  }
 
   const hashSenha = await hash(senha, 12)
   const telefone = typeof body.telefone === 'string' ? body.telefone : ''
@@ -95,11 +124,14 @@ export default defineEventHandler(async (event) => {
       'SELECT id FROM usuarios WHERE email_corporativo = ? LIMIT 1',
       [email]
     )
-    if (existentes.length > 0) {
+    const existente = existentes[0]
+    if (existente) {
       await tx.query(
         'UPDATE usuarios SET hash_senha = ?, senha_provisoria = 1, tentativas_falhas = 0, bloqueado_ate = NULL WHERE id = ?',
-        [hashSenha, String(existentes[0].id)]
+        [hashSenha, String(existente.id)]
       )
+      // A credencial mudou: derruba as sessões antigas da conta-alvo (RL05-A-01).
+      await revogarSessoesDoUsuario(String(existente.id), (sql, values) => tx.query(sql, values))
     } else {
       await tx.query(
         `INSERT INTO usuarios (id, nome_completo, email_corporativo, hash_senha, perfil_id,
@@ -113,8 +145,15 @@ export default defineEventHandler(async (event) => {
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
+    if ((erro as { errno?: number } | null)?.errno === 1062) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Este e-mail foi cadastrado por outra operação. Tente novamente.'
+      })
+    }
     throw erro
   }
+  invalidarCache('usuarios-opcoes')
 
   // Conta gravada (mesmo se o e-mail abaixo falhar) — a trilha registra a gravação.
   await registrarAuditoria(event, {

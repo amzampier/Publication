@@ -207,7 +207,7 @@ onUnmounted(() => {
     <label
       v-if="label"
       :for="inputId"
-      class="text-xs font-medium text-slate-700 select-none flex items-center justify-between"
+      :class="['text-xs font-medium select-none flex items-center justify-between', error ? 'text-rose-700' : 'text-slate-700']"
     >
       <span>{{ label }}</span>
     </label>
@@ -266,7 +266,7 @@ onUnmounted(() => {
         <button
           v-if="inputStr && !disabled"
           type="button"
-          class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none"
+          class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
           aria-label="Limpar data"
           @click="clearDate"
         >

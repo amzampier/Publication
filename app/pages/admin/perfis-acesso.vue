@@ -28,7 +28,7 @@ onMounted(async () => {
   if (!ok) {
     toast.danger(
       'Perfis de Acesso (RBAC)',
-      'Não foi possível carregar os perfis. Verifique a conexão com o banco e recarregue a página.'
+      'Não foi possível carregar os perfis. Recarregue a página e tente novamente.'
     )
   }
 })
@@ -112,7 +112,7 @@ const confirmarExclusao = async () => {
     }
     toast.danger(
       'Perfis de Acesso (RBAC)',
-      'Não foi possível excluir o perfil. Verifique a conexão com o banco e tente novamente.'
+      'Não foi possível excluir o perfil. Tente novamente.'
     )
   }
 }

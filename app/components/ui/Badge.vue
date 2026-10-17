@@ -35,35 +35,35 @@ const variantConfig = computed(() => {
     case 'done':
       return {
         bg: 'bg-emerald-50 border-emerald-200 text-emerald-800',
-        dot: 'bg-emerald-500',
+        dot: 'bg-emerald-700',
         icon: CheckCircle2,
         label: 'Concluído'
       }
     case 'reconciled':
       return {
         bg: 'bg-indigo-50 border-indigo-200 text-indigo-800',
-        dot: 'bg-indigo-500',
+        dot: 'bg-indigo-700',
         icon: ShieldCheck,
         label: 'Reconciliado'
       }
     case 'pending':
       return {
         bg: 'bg-orange-50 border-orange-200 text-orange-800',
-        dot: 'bg-orange-500',
+        dot: 'bg-orange-600',
         icon: Clock,
         label: 'Pendente'
       }
     case 'inReview':
       return {
         bg: 'bg-blue-50 border-blue-200 text-blue-800',
-        dot: 'bg-blue-500',
+        dot: 'bg-blue-700',
         icon: Search,
         label: 'Em Análise'
       }
     case 'blocked':
       return {
         bg: 'bg-rose-50 border-rose-200 text-rose-700',
-        dot: 'bg-rose-500',
+        dot: 'bg-rose-700',
         icon: AlertTriangle,
         label: 'Bloqueado'
       }
@@ -71,7 +71,7 @@ const variantConfig = computed(() => {
     default:
       return {
         bg: 'bg-slate-100 border-slate-200 text-slate-700',
-        dot: 'bg-slate-500',
+        dot: 'bg-slate-600',
         icon: null,
         label: 'Neutro'
       }

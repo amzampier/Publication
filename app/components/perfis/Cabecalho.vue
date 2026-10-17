@@ -15,6 +15,7 @@ import {
 } from './usePerfisModelo'
 import { gerarPdfPerfis } from './gerarPdfPerfis'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
+import { useToast } from '../../composables/useToast'
 
 // Abre o modal de cadastro em modo de criação (coordenação na página)
 const emit = defineEmits<{
@@ -44,35 +45,48 @@ onUnmounted(() => {
 // apenas o conjunto filtrado — spec perfis-acesso; filtros/exportações seguem
 // client-side, sem requisição por geração de arquivo)
 const { perfisFiltrados, usuariosPorPerfil } = usePerfisModelo()
+const { toast } = useToast()
+const exportando = ref(false)
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
 const exportarCsv = () => {
   menuAberto.value = false
-  const escapar = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
-  const cabecalho = ['Nome', 'Descrição', 'Status', 'Usuários', 'Permissões']
-  const linhas = perfisFiltrados.value.map((p) =>
-    [
-      p.nome,
-      p.descricao,
-      p.situacao,
-      usuariosPorPerfil.value[p.nome] ?? 0,
-      `${contarPermissoes(p)}/${PERMISSOES_POR_PERFIL}`
-    ]
-      .map(escapar)
-      .join(';')
-  )
-  const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'perfis.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+  try {
+    // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
+    const escapar = (v: string | number) => {
+      let texto = String(v)
+      if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
+      return `"${texto.replace(/"/g, '""')}"`
+    }
+    const cabecalho = ['Nome', 'Descrição', 'Status', 'Usuários', 'Permissões']
+    const linhas = perfisFiltrados.value.map((p) =>
+      [
+        p.nome,
+        p.descricao,
+        p.situacao,
+        usuariosPorPerfil.value[p.nome] ?? 0,
+        `${contarPermissoes(p)}/${PERMISSOES_POR_PERFIL}`
+      ]
+        .map(escapar)
+        .join(';')
+    )
+    const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'perfis.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (erro) {
+    console.error('[csv] falha ao exportar perfis:', erro)
+    toast.danger('Exportação', 'Não foi possível exportar os perfis. Tente novamente.')
+  }
 }
 
 const relacaoPerfisPdf = async () => {
   menuAberto.value = false
+  exportando.value = true
   try {
     await gerarPdfPerfis({
       perfis: perfisFiltrados.value,
@@ -81,6 +95,9 @@ const relacaoPerfisPdf = async () => {
     })
   } catch (erro) {
     console.error('[pdf] falha ao gerar o relatorio de perfis:', erro)
+    toast.danger('Exportação', 'Não foi possível gerar a relação de perfis. Tente novamente.')
+  } finally {
+    exportando.value = false
   }
 }
 </script>
@@ -108,6 +125,7 @@ const relacaoPerfisPdf = async () => {
           variant="outline"
           size="md"
           class="w-full sm:w-auto"
+          :loading="exportando"
           aria-haspopup="menu"
           :aria-expanded="menuAberto"
           @click="menuAberto = !menuAberto"

@@ -89,7 +89,7 @@ export const gerarPdfFichaCadastral = async (opcoes: OpcoesFicha): Promise<void>
       doc.text(quebras[0] ?? String(valor), xValor, y + 6)
 
       y += alturaLinha
-      if (rotulo !== campos[campos.length - 1][0]) {
+      if (rotulo !== campos[campos.length - 1]?.[0]) {
         doc.setDrawColor(226, 232, 240)
         doc.setLineWidth(0.1)
         doc.line(MARGEM, y, largura - MARGEM, y)

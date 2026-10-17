@@ -3,12 +3,12 @@
 // refresh, com rotação) ou 401 — o cliente não tem como ler o cookie sozinho.
 // A sessão é validada também no servidor (change endurecer-revogacao-sessao,
 // design D1): token revogado por logout não hidrata (401).
-import { obterSessaoValida } from '../../../utils/auth'
+import { obterSessaoValida, sessaoPublica } from '../../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const sessao = await obterSessaoValida(event)
   if (!sessao) {
     throw createError({ statusCode: 401, statusMessage: 'Sessão expirada ou revogada.' })
   }
-  return { usuario: sessao }
+  return { usuario: sessaoPublica(sessao) }
 })

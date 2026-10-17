@@ -39,7 +39,7 @@ export interface PatchConfiguracoes {
 const RATE_PADRAO = { ativo: true, limite_requisicoes_minuto: 120 }
 
 // Fallback quando a linha do banco está ausente — espelha o seed de 02_seed.sql.
-const CONFIG_PADRAO: Omit<ConfiguracoesGlobais, 'criado_em' | 'atualizado_em'> = {
+const CONFIG_PADRAO: Omit<ConfiguracoesGlobais, 'criado_em' | 'atualizado_em' | 'rate_limit'> = {
   id: 'config_default',
   nome_empresa: 'Publication Enterprise Suite',
   banner_publico_ativo: 1,
@@ -90,13 +90,15 @@ export async function getConfiguracoes(): Promise<ConfiguracoesGlobais> {
       "SELECT ativo, limite_requisicoes_minuto FROM configuracoes_limite_requisicao WHERE id = 'rate_limit_default' LIMIT 1"
     )
   ])
-  const base = rows.length === 0
-    ? { ...CONFIG_PADRAO, sidebar_grupos: { ...CONFIG_PADRAO.sidebar_grupos } }
-    : normalizarRow(rows[0])
-  const rate = rateRows.length > 0
+  const linhaBase = rows[0]
+  const base = linhaBase
+    ? normalizarRow(linhaBase)
+    : { ...CONFIG_PADRAO, sidebar_grupos: { ...CONFIG_PADRAO.sidebar_grupos } }
+  const linhaRate = rateRows[0]
+  const rate = linhaRate
     ? {
-        ativo: Number(rateRows[0].ativo) === 1,
-        limite_requisicoes_minuto: Number(rateRows[0].limite_requisicoes_minuto) || RATE_PADRAO.limite_requisicoes_minuto
+        ativo: Number(linhaRate.ativo) === 1,
+        limite_requisicoes_minuto: Number(linhaRate.limite_requisicoes_minuto) || RATE_PADRAO.limite_requisicoes_minuto
       }
     : { ...RATE_PADRAO }
   return { ...base, rate_limit: rate }

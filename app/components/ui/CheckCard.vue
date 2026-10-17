@@ -138,6 +138,7 @@ const badgeStyle = computed(() => {
         >
           <Checkbox
             :id="id"
+            :aria-label="title"
             :model-value="modelValue"
             :value="value"
             :variant="variant"
@@ -159,6 +160,7 @@ const badgeStyle = computed(() => {
       <div v-if="checkboxPosition === 'end'" class="shrink-0 ml-auto" @click.stop>
         <Checkbox
           :id="id"
+          :aria-label="title"
           :model-value="modelValue"
           :value="value"
           :variant="variant"

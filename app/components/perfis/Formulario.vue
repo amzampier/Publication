@@ -86,6 +86,7 @@ const aoEnter = (e: KeyboardEvent) => {
 
   e.preventDefault()
   const proximo = lista[i + 1]
+  if (!proximo) return
   proximo.focus()
   if (proximo.tagName === 'INPUT') {
     const input = proximo as HTMLInputElement
@@ -137,7 +138,7 @@ const salvar = async () => {
     }
     toast.danger(
       'Perfis de Acesso (RBAC)',
-      'Não foi possível salvar o perfil. Verifique a conexão com o banco e tente novamente.'
+      'Não foi possível salvar o perfil. Tente novamente.'
     )
   }
 }

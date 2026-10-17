@@ -84,7 +84,7 @@ Toda tela nova ou alterada é construída por componentes reutilizáveis; **nunc
 - `app/components/<modulo>/` — componentes de domínio (ex.: `usuarios/`, `perfis/`, `auditoria/`, `configuracoes/`, `perfil/`).
 - `app/components/layout/` — estrutura base (header, sidebar, menu de conta).
 
-A **página é apenas orquestração** (estado de tela, handlers e composição dos componentes). Estado de servidor e chamadas de API ficam em `app/composables/use<Modulo>.ts`; contratos e tipos em `app/types/<modulo>.ts`. Antes de concluir uma tela, confirme que ela está quebrada em componentes, que a página está enxuta e que a API está no composable.
+A **página é apenas orquestração** (estado de tela, handlers e composição dos componentes). Estado de servidor e chamadas de API ficam em `app/composables/use<Modulo>.ts`; contratos e tipos em `app/components/<modulo>/use<Modulo>Modelo.ts`. Antes de concluir uma tela, confirme que ela está quebrada em componentes, que a página está enxuta e que a API está no composable.
 
 ---
 
@@ -114,6 +114,7 @@ export function getDbPool() {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 50,
+      timezone: process.env.DB_TIMEZONE || 'local', // fuso explicito do pool (RL04 OBS-05)
       ...(process.env.DB_SSL === 'true' ? {
         ssl: {
           rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
@@ -179,7 +180,7 @@ marcados como *roadmap* ainda não existem como helper):
 4. **Auditoria**: após o sucesso da gravação, `registrarAuditoria(event, …)`
    (`server/utils/audit.ts` — ver §3.6) registra a ação na tabela `auditoria`.
 5. **Erros**: lançados com `createError({ statusCode, statusMessage })` direto na rota ou no
-   utilitário (400 validação, 404 inexistente, 409 conflito, 403 permissão — *roadmap*);
+   utilitário (400 validação, 404 inexistente, 409 conflito, 403 permissão);
    o próprio Nitro serializa a resposta (`server/utils/safeError.ts`/`handleApiError` é *roadmap*).
 
 **Exemplo real de endpoint POST (`server/api/usuarios/index.post.ts`):**
@@ -290,7 +291,7 @@ CREATE TABLE IF NOT EXISTS perfis_acesso (
 - **Colunas futuras fora do UI atual:** `padrao_sistema` (perfil nativo bloqueado para
   exclusão — flag de integridade do banco, não editável no modal) e `cor_identificacao`
   (badge colorido no painel — componente de cor ainda não existe no kit). O modal de
-  cadastro/edição (demo) cobre `nome_perfil`, `descricao`, `situacao` e
+  cadastro/edição cobre `nome_perfil`, `descricao`, `situacao` e
   os timestamps (`docs/07` §3.6).
 
 ---
@@ -314,7 +315,7 @@ await registrarAuditoria(event, {
 ```
 
 - **Sessão:** ID, nome e perfil do usuário logado vêm de `getSessionUser(event)`.
-- **IP real do cliente:** `ipDoCliente(event)` (`getRequestIP(event, { xForwardedFor: true })`).
+- **IP real do cliente:** `ipDoCliente(event)` (`getRequestIP`; o `X-Forwarded-For` só é considerado quando `TRUSTED_PROXIES` está configurado).
 - **Gravação:** INSERT com `UUID()` e `data_hora` pelo DEFAULT da coluna na tabela `auditoria`
   (migration 01 §18 — mapeamento: `recurso` da tela ↔ coluna `entidade`).
 - **Resiliência:** o helper envolve tudo em `try/catch` e só loga no console — a falha na
@@ -372,7 +373,7 @@ O Sistema utiliza uma estratégia de migração **100% automatizada e declarativ
        ▼                                                       ▼
 1. Cria a tabela de controle                            2. Descobre diretório
    `_migrations` se não existir                            de migrations
-   (id, nome, executado_em)                                (dev vs produção)
+   (nome PK, aplicado_em)                                (dev vs produção)
        │                                                       │
        └───────────────────────────┬───────────────────────────┘
                                    ▼
@@ -635,6 +636,8 @@ DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=sua_senha_forte
 DB_NAME=publications
+# Fuso do pool (opcional; default 'local'). Ex.: DB_TIMEZONE=-03:00
+# DB_TIMEZONE=
 
 # Autenticação (segredo HS256 do access JWT — obrigatório no boot)
 AUTH_JWT_SECRET=defina_um_segredo_longo_e_aleatorio

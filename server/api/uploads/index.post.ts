@@ -3,15 +3,26 @@ import {
   UPLOAD_DESTINOS,
   UPLOAD_LIMITE_BYTES,
   UPLOAD_MIMES,
-  ehImagemReal,
+  detectarTipoImagem,
   gravarUpload,
   sanitizarNomeArquivo,
   type UploadDestino
 } from '../../utils/uploads'
 import { registrarAuditoria } from '../../utils/audit'
 import { requirePermission } from '../../utils/permission'
+import { exigirRateLimit } from '../../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
+  await exigirRateLimit(event)
+  // RL05-M-02: recusa antes de bufferizar o multipart. O limite de 5 MB é do
+  // arquivo; a folga abaixo cobre o overhead do envelope multipart.
+  const tamanhoDeclarado = Number(getRequestHeader(event, 'content-length') || 0)
+  if (tamanhoDeclarado > UPLOAD_LIMITE_BYTES + 1024 * 1024) {
+    throw createError({
+      statusCode: 413,
+      statusMessage: 'Requisição acima do limite de upload (5 MB).'
+    })
+  }
   const partes = await readMultipartFormData(event)
   if (!partes || partes.length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Requisição sem dados multipart.' })
@@ -37,7 +48,7 @@ export default defineEventHandler(async (event) => {
     await requirePermission(event, 'configuracoes-globais', 'alterar')
   }
 
-  if (!UPLOAD_MIMES.includes(campoArquivo.type)) {
+  if (!UPLOAD_MIMES.includes(campoArquivo.type ?? '')) {
     throw createError({
       statusCode: 400,
       statusMessage: `Tipo de arquivo não permitido (${campoArquivo.type}). Aceitos: ${UPLOAD_MIMES.join(', ')}.`
@@ -48,9 +59,11 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Arquivo acima do limite de 5 MB.' })
   }
 
-  // Conteúdo real (magic bytes) — RL02 A-02: impede armazenar HTML/SVG
-  // disfarçados de imagem e servidos na mesma origem.
-  if (!ehImagemReal(campoArquivo.data)) {
+  // Conteúdo real (magic bytes) — RL04-C-01: o tipo canônico detectado governa a
+  // extensão final do arquivo (nunca a extensão enviada pelo cliente), de modo que
+  // HTML/JS disfarçados de imagem nunca sejam gravados/servidos como documento.
+  const tipo = detectarTipoImagem(campoArquivo.data)
+  if (!tipo) {
     throw createError({
       statusCode: 400,
       statusMessage: 'O conteúdo do arquivo não é uma imagem válida (PNG, JPEG, WebP ou GIF).'
@@ -58,7 +71,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const nome = sanitizarNomeArquivo(campoArquivo.filename ?? 'arquivo')
-  const url = await gravarUpload(destinoTexto as UploadDestino, nome, campoArquivo.data)
+  const url = await gravarUpload(destinoTexto as UploadDestino, nome, campoArquivo.data, tipo)
   await registrarAuditoria(event, {
     acao: 'Inclusão',
     recurso: destinoTexto === 'logomarcas' ? 'Logomarcas' : 'Avatares',

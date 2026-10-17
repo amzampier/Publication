@@ -9,6 +9,7 @@ import {
   registrarFalhaLogin,
   limparFalhasLogin,
   emitirSessao,
+  sessaoPublica,
   TENTATIVAS_MAX,
   type UsuarioSessao
 } from '../../../utils/auth'
@@ -136,5 +137,5 @@ export default defineEventHandler(async (event) => {
     detalhes: `Realizou login no sistema (perfil ${sessao.perfil})`,
     sessao: { id: sessao.id, nome: sessao.nome, perfil: sessao.perfil }
   })
-  return { usuario: sessao }
+  return { usuario: sessaoPublica(sessao) }
 })

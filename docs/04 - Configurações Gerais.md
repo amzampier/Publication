@@ -46,7 +46,7 @@ A Configurações Globais é a tela de parâmetros transversais da Área Adminis
   `definePageMeta({ layout: 'admin' })` — herda automaticamente o shell (header + sidebar) por
   `/admin/**` (ver [`03 - Header e Sidebar.md`](03%20-%20Header%20e%20Sidebar.md) §1).
 - **Aba padrão:** "Logomarcas & Identidade" (`id: 'logomarcas'`) ao carregar (pedido do usuário);
-  as outras 3 abas têm painel de conteúdo (mockups enviados pelo usuário).
+  as outras 3 abas têm painel de conteúdo próprio.
 - **Backend real (desde a change `integrar-configuracoes-globais-api`):** a página carrega e
   grava via `GET/PUT /api/configuracoes`; a aba Segurança consulta
   `GET /api/seguranca/estado` (estado real + log de eventos) e libera contas via

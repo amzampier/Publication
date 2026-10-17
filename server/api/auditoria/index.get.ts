@@ -23,6 +23,8 @@ export default defineEventHandler(async (event) => {
     busca: texto(q.busca),
     pagina: inteiro(q.pagina),
     porPagina: inteiro(q.porPagina),
-    exportar: texto(q.exportar) === '1' || texto(q.exportar) === 'true'
+    exportar: texto(q.exportar) === '1' || texto(q.exportar) === 'true',
+    ordenar: texto(q.ordenar),
+    direcao: texto(q.direcao)
   })
 })

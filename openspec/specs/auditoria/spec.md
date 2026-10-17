@@ -75,11 +75,15 @@ O sistema SHALL oferecer o botão "Filtros" na toolbar da tabela de auditoria (�
 - **THEN** apenas o popup fecha, o modal permanece aberto e o rascunho em edição é preservado; um segundo `Escape`, com nenhum popup aberto, fecha o modal
 
 ### Requirement: A tabela lista os registros da trilha de auditoria com paginação, ordenação e busca
-O sistema SHALL exibir os registros em `UiDataTable` com colunas de data/hora, usuário, ação (badge), recurso, detalhes e IP, ordenados do registro mais recente para o mais antigo, com paginação e busca textual do componente, e badge de ação distinguível por tipo de operação (Inclusão, Alteração, Exclusão, Homologação e **Acesso** — este último em variante neutra) — cabendo as sete colunas (seis de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
+O sistema SHALL exibir os registros em `UiDataTable` com colunas de data/hora, usuário, ação (badge), recurso, detalhes e IP, ordenados do registro mais recente para o mais antigo, com paginação e busca textual do componente, e badge de ação distinguível por tipo de operação (Inclusão, Alteração, Exclusão, Homologação e **Acesso** — este último em variante neutra) — cabendo as sete colunas (seis de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página. Em modo servidor, a **ordenação SHALL ser aplicada pelo servidor**: acionar uma coluna ordenável SHALL enviar a ordenação (coluna + direção) à API, que reordena o conjunto antes de paginar, sobre um conjunto **whitelisted** de colunas; uma coluna sem ordenação suportada SHALL ser ignorada, mantendo a ordenação padrão (mais recente primeiro).
 
 #### Scenario: Colunas e ordenação
 - **WHEN** a página é aberta
 - **THEN** a tabela mostra as colunas data/hora, usuário, ação, recurso, detalhes e IP, com o registro mais recente no topo e paginação funcionando
+
+#### Scenario: Ordenar consulta o servidor
+- **WHEN** o usuário aciona o cabeçalho de uma coluna ordenável (ex.: Usuário)
+- **THEN** a tabela consulta a API com a coluna e a direção escolhidas e exibe o conjunto reordenado pelo servidor (a paginação acompanha o novo critério), sem reordenar apenas as linhas da página corrente no cliente
 
 #### Scenario: Badge distinto por ação
 - **WHEN** os registros de Inclusão, Alteração, Exclusão, Homologação e Acesso são exibidos
@@ -135,7 +139,7 @@ O sistema SHALL exibir abaixo da tabela uma nota de que os registros estão suje
 - **THEN** a nota sobre a política de retenção aparece sob a tabela e seu controle leva o usuário a `/admin/configuracoes-globais`
 
 ### Requirement: A página carrega os registros pela API com carregamento no F5 e toast de erro
-O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria` na montagem da página `/admin/auditoria`, exibindo um overlay `UiLoading` (mensagem "Carregando auditoria…") enquanto a requisição estiver em voo — no mesmo padrão de Meu Perfil e Configurações Globais, sem renderizar conteúdo parcial — e um toast de erro caso a carga falhe, mantendo a tabela em estado vazio e **nunca** exibindo a base de demonstração antiga como se fosse persistida. A listagem SHALL ser **paginada no servidor**: a tabela opera em modo servidor, cada mudança de página/tamanho/ordenação/busca (com debounce) SHALL consultar a API, e a recarga da página SHALL rebuscar pela API. Os filtros estruturais SHALL permanecer em estado de sessão (preservados na navegação interna, descartados no F5).
+O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria` na montagem da página `/admin/auditoria`, exibindo um overlay `UiLoading` (mensagem "Carregando auditoria…") enquanto a requisição estiver em voo — no mesmo padrão de Meu Perfil e Configurações Globais, sem renderizar conteúdo parcial — e um toast de erro caso a carga falhe, mantendo a tabela em estado vazio, **zerando também os KPIs, o total e as opções de filtro** (nenhum dado da carga anterior permanece) e **nunca** exibindo a base de demonstração antiga como se fosse persistida. A listagem SHALL ser **paginada no servidor**: a tabela opera em modo servidor, cada mudança de página/tamanho/ordenação/busca (com debounce) SHALL consultar a API, e a recarga da página SHALL rebuscar pela API. Os filtros estruturais SHALL permanecer em estado de sessão (preservados na navegação interna, descartados no F5).
 
 #### Scenario: Carga inicial mostra os registros do banco
 - **WHEN** o navegador abre `/admin/auditoria` com sessão válida
@@ -147,7 +151,7 @@ O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria`
 
 #### Scenario: Falha na carga exibe erro sem simular dados
 - **WHEN** a requisição `GET /api/auditoria` falha (rede ou banco indisponível)
-- **THEN** um toast de erro informa a falha de carregamento e a tabela permanece em estado vazio/erro, sem exibir a base de demonstração como se fosse persistida
+- **THEN** um toast de erro informa a falha de carregamento, a tabela fica vazia e os KPIs, o total e as opções de filtro são zerados, sem exibir dados da carga anterior nem a base de demonstração como se fosse persistida
 
 #### Scenario: Paginar consulta o servidor
 - **WHEN** o usuário muda de página, tamanho, ordenação ou digita na busca (com debounce)
@@ -235,3 +239,31 @@ cliente arbitrário.
 #### Scenario: IP da conexão é o registrado sem proxy confiável
 - **WHEN** uma operação de escrita é registrada sem proxies confiáveis configurados e a requisição traz um `X-Forwarded-For` forjado
 - **THEN** a trilha registra o IP da conexão, não o valor do cabeçalho
+
+### Requirement: A exportação de auditoria informa falha ao usuário
+Ao exportar a trilha (CSV ou PDF), se a consulta ou a geração do arquivo falhar, o sistema SHALL exibir um toast de erro, nunca falhando em silêncio.
+
+#### Scenario: Falha na exportação exibe erro
+- **WHEN** o usuário aciona uma opção de "Exportar" e a consulta/geração falha
+- **THEN** um toast de erro é exibido informando que a exportação não foi concluída
+
+### Requirement: As mensagens de erro não expõem detalhe de infraestrutura
+As mensagens de falha exibidas ao usuário na Gestão de Auditoria SHALL ser genéricas, sem revelar detalhe de infraestrutura (ex.: "Verifique a conexão com o banco").
+
+#### Scenario: Falha de carga sem detalhe interno
+- **WHEN** a carga dos registros falha
+- **THEN** o toast informa apenas que não foi possível carregar os dados, sem citar banco
+
+### Requirement: Filtro de data inválida é recusado com 400
+O filtro de data da auditoria SHALL aceitar apenas datas reais (`yyyy-mm-dd` com mês 1–12 e dia válido); uma data presente porém inválida SHALL ser recusada com `400`, sem atingir o banco.
+
+#### Scenario: Data inexistente é recusada
+- **WHEN** a consulta traz uma data como `2026-13-99` (formato correto, data inexistente)
+- **THEN** a API responde `400` e nenhuma consulta é executada
+
+### Requirement: O detalhe do registro exibe o identificador da entidade
+A API da auditoria SHALL expor o identificador da entidade afetada (`entidade_id`) e o detalhe do registro SHALL exibi-lo quando presente, ampliando a rastreabilidade.
+
+#### Scenario: Detalhe mostra a entidade afetada
+- **WHEN** um registro com `entidade_id` preenchido tem seu detalhe aberto
+- **THEN** o identificador da entidade é exibido no detalhe

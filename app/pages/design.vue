@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { type ChoiceCardOption } from '../components/ui/ChoiceCard.vue'
 definePageMeta({ layout: false })
 
 import { ref, computed, onMounted, onUnmounted } from 'vue'
@@ -566,7 +567,7 @@ const sliderDemoMarks = [
 const choiceCardVazio = ref('')
 const choiceCardSky = ref('email')
 const choiceCardEmerald = ref('whatsapp')
-const choiceCardCanais = [
+const choiceCardCanais: ChoiceCardOption[] = [
   {
     value: 'email',
     title: 'E-mail',
@@ -582,7 +583,7 @@ const choiceCardCanais = [
     tone: 'emerald'
   }
 ]
-const choiceCardCanaisComSms = [
+const choiceCardCanaisComSms: ChoiceCardOption[] = [
   ...choiceCardCanais,
   {
     value: 'sms',
@@ -862,7 +863,7 @@ const secoes = [
                 <button
                   type="button"
                   :class="[
-                    'text-[11px] font-semibold hover:underline cursor-pointer focus:outline-none transition-colors',
+                    'text-[11px] font-semibold hover:underline cursor-pointer focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus transition-colors',
                     color.buttonClass
                   ]"
                   @click="copyToClipboard(color.hex, color.title)"
@@ -1192,7 +1193,7 @@ const secoes = [
               <UiUploadFiles
                 class="mt-2"
                 rotulo="Logotipo da empresa"
-                dica="SVG ou PNG transparente"
+                dica="PNG, JPG, WebP ou GIF"
                 sugestao="Dimensão sugerida: 400 × 160 px"
                 forma="retangular"
                 aceitar="image/*"
@@ -1279,7 +1280,7 @@ const secoes = [
               </div>
               <div>
                 <h2 class="text-base font-bold text-slate-900 tracking-tight">
-                  8. Sistema Oficial de Toasts (Sucess, Warning, Danger e Info)
+                  8. Sistema Oficial de Toasts (Success, Warning, Danger e Info)
                 </h2>
                 <p class="text-xs text-slate-500 mt-0.5">
                   Notificações estruturadas com <strong class="text-slate-700">Header</strong> (ícone à esquerda + título), <strong class="text-slate-700">Body</strong> (mensagem clara ao usuário),
@@ -1302,11 +1303,11 @@ const secoes = [
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <!-- Sucess -->
+              <!-- Success -->
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-1.5 text-[11px]">
                   <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                  <span class="font-semibold text-slate-700">Sucess</span>
+                  <span class="font-semibold text-slate-700">Success</span>
                   <span class="ml-auto font-mono text-slate-400">type="success"</span>
                 </div>
                 <div class="relative rounded-xl border border-emerald-200 border-b-emerald-400 bg-emerald-50 p-3.5 shadow-sm">
@@ -1330,23 +1331,23 @@ const secoes = [
               <!-- Warning -->
               <div class="flex flex-col gap-1.5">
                 <div class="flex items-center gap-1.5 text-[11px]">
-                  <span class="w-2 h-2 rounded-full bg-brand-accent shrink-0"></span>
-                  <span class="font-semibold text-lime-700">Warning</span>
+                  <span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                  <span class="font-semibold text-orange-700">Warning</span>
                   <span class="ml-auto font-mono text-slate-400">type="warning"</span>
                 </div>
-                <div class="relative rounded-xl border border-lime-200 border-b-brand-accent bg-lime-50 p-3.5 shadow-sm">
+                <div class="relative rounded-xl border border-orange-200 border-b-orange-500 bg-orange-50 p-3.5 shadow-sm">
                   <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2">
-                      <div class="p-1 rounded-md bg-lime-100 shrink-0">
-                        <AlertTriangle class="h-4 w-4 text-lime-700" />
+                      <div class="p-1 rounded-md bg-orange-100 shrink-0">
+                        <AlertTriangle class="h-4 w-4 text-orange-700" />
                       </div>
                       <div>
-                        <p class="text-[11px] font-bold text-lime-950 leading-tight">Atenção aos Prazos de Publicação</p>
-                        <span class="text-[10px] font-mono text-lime-700">14:30</span>
+                        <p class="text-[11px] font-bold text-orange-950 leading-tight">Atenção aos Prazos de Publicação</p>
+                        <span class="text-[10px] font-mono text-orange-700">14:30</span>
                       </div>
                     </div>
                   </div>
-                  <p class="mt-2 ml-7 text-[10px] text-lime-800 leading-relaxed">
+                  <p class="mt-2 ml-7 text-[10px] text-orange-800 leading-relaxed">
                     O prazo da Releases Week encerra em 48 horas. Revise as pendências de conteúdo.
                   </p>
                 </div>
@@ -1359,7 +1360,7 @@ const secoes = [
                   <span class="font-semibold text-rose-700">Danger</span>
                   <span class="ml-auto font-mono text-slate-400">type="danger"</span>
                 </div>
-                <div class="relative rounded-xl border border-rose-200 border-b-rose-400 bg-rose-50 p-3.5 shadow-sm">
+                <div class="relative rounded-xl border border-rose-200 border-b-rose-500 bg-rose-50 p-3.5 shadow-sm">
                   <div class="flex items-start justify-between gap-2">
                     <div class="flex items-center gap-2">
                       <div class="p-1 rounded-md bg-rose-100 shrink-0">
@@ -1421,14 +1422,14 @@ const secoes = [
                 @click="toast.success('Operação Concluída com Sucesso', 'A Release Week #39 foi publicada e distribuída para a Área Pública.')"
               >
                 <template #leftIcon><CheckCircle2 class="h-3.5 w-3.5 text-emerald-600" /></template>
-                Disparar Sucess
+                Disparar Success
               </UiButton>
 
               <UiButton
                 variant="outline"
                 @click="toast.warning('Atenção aos Prazos de Publicação', 'O prazo da Releases Week encerra em 48 horas. Revise as pendências de conteúdo.')"
               >
-                <template #leftIcon><AlertTriangle class="h-3.5 w-3.5 text-lime-700" /></template>
+                <template #leftIcon><AlertTriangle class="h-3.5 w-3.5 text-orange-700" /></template>
                 Disparar Warning
               </UiButton>
 
@@ -1472,7 +1473,7 @@ const secoes = [
                   v-model="toastCustomType"
                   label="Tipo"
                   :options="[
-                    { value: 'success', label: 'Sucess' },
+                    { value: 'success', label: 'Success' },
                     { value: 'warning', label: 'Warning' },
                     { value: 'danger', label: 'Danger' },
                     { value: 'info', label: 'Info' }

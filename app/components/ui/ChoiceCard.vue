@@ -96,6 +96,7 @@ const navegar = (passo: number | 'inicio' | 'fim') => {
   else destino = ((atual + passo) % irmaos.length + irmaos.length) % irmaos.length
 
   const alvo = irmaos[destino]
+  if (!alvo) return
   const valor = alvo.dataset.valor
   if (valor !== undefined && valor !== props.modelValue) {
     emit('update:modelValue', valor)

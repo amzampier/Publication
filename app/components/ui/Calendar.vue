@@ -204,7 +204,7 @@ const dayRows = computed(() => {
         <button
           type="button"
           aria-label="Mês anterior"
-          class="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none"
+          class="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
           @click="prevMonth"
         >
           <ChevronLeft class="h-4 w-4" />
@@ -212,7 +212,7 @@ const dayRows = computed(() => {
         <button
           type="button"
           aria-label="Próximo mês"
-          class="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none"
+          class="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
           @click="nextMonth"
         >
           <ChevronRight class="h-4 w-4" />
@@ -286,7 +286,7 @@ const dayRows = computed(() => {
       </span>
       <button
         type="button"
-        class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 px-2 py-0.5 rounded hover:bg-emerald-50 transition-colors focus:outline-none"
+        class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 px-2 py-0.5 rounded hover:bg-emerald-50 transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
         @click="goToToday"
       >
         Hoje

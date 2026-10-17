@@ -10,26 +10,45 @@ export type UploadDestino = (typeof UPLOAD_DESTINOS)[number]
 export const UPLOAD_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
 export const UPLOAD_LIMITE_BYTES = 5 * 1024 * 1024 // 5 MB (spec uploads)
 
+/** Tipos de imagem aceitos (canônicos) e a extensão segura correspondente. */
+export type TipoImagem = 'png' | 'jpeg' | 'webp' | 'gif'
+
+export const EXTENSAO_POR_TIPO: Record<TipoImagem, string> = {
+  png: '.png',
+  jpeg: '.jpg',
+  webp: '.webp',
+  gif: '.gif'
+}
+
 /**
- * Valida o CONTEÚDO real (magic bytes) — RL02 A-02: recusa HTML/SVG e afins
- * que apenas se declarem imagem. Aceita PNG, JPEG, GIF e WebP.
+ * Detecta o tipo real da imagem pelos magic bytes e devolve o tipo canônico
+ * (ou `null`). RL04-C-01: a extensão final do arquivo passa a ser derivada
+ * DESTE tipo — nunca da extensão enviada pelo cliente.
  */
-export function ehImagemReal(buffer: Buffer): boolean {
-  if (buffer.length < 12) return false
+export function detectarTipoImagem(buffer: Buffer): TipoImagem | null {
+  if (buffer.length < 12) return null
   // PNG: 89 50 4E 47
-  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return true
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return 'png'
   // JPEG: FF D8 FF
-  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return true
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return 'jpeg'
   // GIF: 47 49 46 38 ("GIF8")
-  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) return true
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) return 'gif'
   // WebP: RIFF....WEBP
   if (
     buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
     buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
   ) {
-    return true
+    return 'webp'
   }
-  return false
+  return null
+}
+
+/**
+ * O conteúdo é uma imagem real? (compatibilidade: wrapper de `detectarTipoImagem`).
+ * Recusa HTML/SVG e afins que apenas se declarem imagem.
+ */
+export function ehImagemReal(buffer: Buffer): boolean {
+  return detectarTipoImagem(buffer) !== null
 }
 
 export function uploadsDir(): string {
@@ -50,16 +69,31 @@ export function sanitizarNomeArquivo(nome: string): string {
   return limpo
 }
 
-/** Grava com colisão resolvida por sufixo -1, -2, ... (sem sobrescrever). I/O assíncrono. */
-export async function gravarUpload(destino: UploadDestino, nome: string, dados: Buffer): Promise<string> {
+/** Remove a extensão final do nome (ex.: "evil.html" → "evil"; "foto.v2" → "foto"). */
+function baseSemExtensao(nome: string): string {
+  const ponto = nome.lastIndexOf('.')
+  const base = ponto > 0 ? nome.slice(0, ponto) : nome
+  return base || 'arquivo'
+}
+
+/**
+ * Grava com a extensão canônica derivada do tipo real (RL04-C-01) e resolve
+ * colisões por sufixo -1, -2, ... (sem sobrescrever). A extensão enviada pelo
+ * cliente é descartada: nenhum arquivo é gravado com extensão executável.
+ */
+export async function gravarUpload(
+  destino: UploadDestino,
+  nome: string,
+  dados: Buffer,
+  tipo: TipoImagem
+): Promise<string> {
   const dir = join(uploadsDir(), destino)
   await mkdir(dir, { recursive: true })
 
-  const ponto = nome.lastIndexOf('.')
-  const base = ponto > 0 ? nome.slice(0, ponto) : nome
-  const ext = ponto > 0 ? nome.slice(ponto) : ''
+  const ext = EXTENSAO_POR_TIPO[tipo]
+  const base = baseSemExtensao(sanitizarNomeArquivo(nome))
 
-  let final = nome
+  let final = `${base}${ext}`
   let contador = 1
   for (;;) {
     try {

@@ -5,7 +5,9 @@
 // cenário "Matriz com módulo ou ação desconhecida é recusada").
 import { createError } from 'h3'
 import { query, getTransaction } from './db'
+import { revogarSessoesDoPerfil } from './auth'
 import type { Transaction } from './db'
+import { invalidarCache } from './cache'
 
 export type SituacaoPerfil = 'Ativo' | 'Inativo' | 'Bloqueado'
 
@@ -70,13 +72,13 @@ const MODULOS_ESSENCIAIS = ['gestao-usuarios', 'perfis-acesso', 'configuracoes-g
 const SITUACOES: SituacaoPerfil[] = ['Ativo', 'Inativo', 'Bloqueado']
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-const erro400 = (mensagem: string): never => {
+function erro400(mensagem: string): never {
   throw createError({ statusCode: 400, statusMessage: mensagem })
 }
-const erro404 = (mensagem = 'Perfil não encontrado.'): never => {
+function erro404(mensagem = 'Perfil não encontrado.'): never {
   throw createError({ statusCode: 404, statusMessage: mensagem })
 }
-const erro409 = (mensagem: string): never => {
+function erro409(mensagem: string): never {
   throw createError({ statusCode: 409, statusMessage: mensagem })
 }
 
@@ -240,9 +242,10 @@ export async function buscarPerfil(id: string): Promise<PerfilApi | null> {
     'SELECT id, nome_perfil, descricao, situacao, criado_em, atualizado_em FROM perfis_acesso WHERE id = ? LIMIT 1',
     [id]
   )
-  if (linhas.length === 0) return null
+  const linha = linhas[0]
+  if (!linha) return null
   const [matrizes, vinculos] = await Promise.all([carregarMatrizes([id]), contarVinculos(id)])
-  return montarPerfil(linhas[0], matrizes.get(id) ?? matrizVazia(), vinculos)
+  return montarPerfil(linha, matrizes.get(id) ?? matrizVazia(), vinculos)
 }
 
 /** Contagem de usuários vinculados (guarda da exclusão — spec 409). */
@@ -268,8 +271,8 @@ export async function criarPerfil(dados: {
   const descricao = validarDescricao(dados.descricao)
   const situacao = validarSituacao(dados.situacao)
 
-  const [u] = await query<{ id: string }[]>('SELECT UUID() AS id')
-  const id = String(u.id)
+  const idRows = await query<{ id: string }[]>('SELECT UUID() AS id')
+  const id = String(idRows[0]?.id ?? '')
   try {
     await query(
       'INSERT INTO perfis_acesso (id, nome_perfil, descricao, situacao) VALUES (?, ?, ?, ?)',
@@ -281,6 +284,7 @@ export async function criarPerfil(dados: {
     }
     throw erro
   }
+  invalidarCache('usuarios-opcoes')
   const perfil = await buscarPerfil(id)
   if (!perfil) erro404('Falha ao criar o perfil.')
   return perfil
@@ -298,17 +302,29 @@ export async function atualizarPerfil(
   const descricao = 'descricao' in dados ? validarDescricao(dados.descricao) : existente.descricao
   const situacao = 'situacao' in dados ? validarSituacao(dados.situacao) : existente.situacao
 
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       'UPDATE perfis_acesso SET nome_perfil = ?, descricao = ?, situacao = ? WHERE id = ?',
       [nome, descricao, situacao, id]
     )
+    // Inativar/bloquear o perfil derruba as sessões dos usuários vinculados
+    // (change endurecer-revogacao-e-autorizacao, D2.3) — defesa em profundidade
+    // sobre a checagem de sessão por requisição.
+    if (situacao !== 'Ativo' && existente.situacao === 'Ativo') {
+      await revogarSessoesDoPerfil(id, (sql, values) => tx.query(sql, values))
+    }
+    // RL05-A-02: inativar/bloquear o perfil não pode zerar a administração essencial.
+    await garantirAdministracaoApos(tx)
+    await tx.commit()
   } catch (erro: unknown) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409(`Já existe um perfil com o nome "${nome}".`)
     }
     throw erro
   }
+  invalidarCache('usuarios-opcoes')
   const perfil = await buscarPerfil(id)
   if (!perfil) erro404()
   return perfil
@@ -340,6 +356,7 @@ export async function excluirPerfil(id: string): Promise<void> {
     }
     throw erro
   }
+  invalidarCache('usuarios-opcoes')
 }
 
 /**
@@ -355,6 +372,7 @@ async function contarAdministradoresEssenciais(tx: Transaction): Promise<number>
   const linhas = await tx.query<Array<{ total: number }>>(
     `SELECT COUNT(*) AS total
        FROM usuarios u
+       JOIN perfis_acesso pa ON pa.id = u.perfil_id AND pa.situacao = 'Ativo'
        ${joins}
       WHERE u.situacao = 'Ativo'`,
     [...MODULOS_ESSENCIAIS]
@@ -362,8 +380,12 @@ async function contarAdministradoresEssenciais(tx: Transaction): Promise<number>
   return Number(linhas[0]?.total ?? 0)
 }
 
-/** 409 quando a gravação deixaria o sistema sem administração essencial. */
-async function garantirAdministracao(tx: Transaction): Promise<void> {
+/**
+ * 409 quando a alteração deixaria o sistema sem administração essencial.
+ * Exportada para reuso na gestão de usuários (desativar/excluir o último
+ * administrador — change endurecer-revogacao-e-autorizacao, D4).
+ */
+export async function garantirAdministracaoApos(tx: Transaction): Promise<void> {
   if ((await contarAdministradoresEssenciais(tx)) === 0) {
     erro409(
       'Esta alteração deixaria o sistema sem nenhum usuário ativo com permissão de alterar em Gestão de Usuários, Perfis de Acesso e Configurações Globais.'
@@ -406,13 +428,14 @@ export async function salvarMatriz(
        VALUES ${grupos}`,
       linhas.flat()
     )
-    await garantirAdministracao(tx)
+    await garantirAdministracaoApos(tx)
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
     throw erro
   }
 
+  invalidarCache('usuarios-opcoes')
   const perfil = await buscarPerfil(id)
   if (!perfil) erro404()
   return perfil
@@ -451,13 +474,14 @@ export async function copiarMatriz(origemId: string, destinoId: string): Promise
        VALUES ${grupos}`,
       linhas.flat()
     )
-    await garantirAdministracao(tx)
+    await garantirAdministracaoApos(tx)
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
     throw erro
   }
 
+  invalidarCache('usuarios-opcoes')
   const atualizado = await buscarPerfil(destinoId)
   if (!atualizado) erro404()
   return atualizado

@@ -330,7 +330,7 @@ const enviar = async () => {
           v-if="canal === 'email'"
           :srcdoc="htmlConvite"
           title="Pré-visualização do convite"
-          sandbox
+          sandbox=""
           class="w-full h-full min-h-[280px] border border-slate-200 rounded-lg bg-white"
         />
         <pre

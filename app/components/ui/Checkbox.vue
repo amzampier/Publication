@@ -22,6 +22,8 @@ interface Props {
   id?: string
   name?: string
   required?: boolean
+  /** Nome acessível quando não há rótulo visível (ex.: CheckCard). */
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,7 +40,8 @@ const props = withDefaults(defineProps<Props>(), {
   labelClass: '',
   id: undefined,
   name: undefined,
-  required: false
+  required: false,
+  ariaLabel: undefined
 })
 
 // Id estável (SSR/hidratação) — usado quando o consumidor não fornece `id`
@@ -180,6 +183,7 @@ const variantClasses = computed(() => {
           :value="value"
           :disabled="disabled"
           :required="required"
+          :aria-label="ariaLabel"
           class="peer sr-only"
           @change="handleChange"
         />

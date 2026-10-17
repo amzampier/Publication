@@ -6,9 +6,10 @@ import { hash, compare } from 'bcrypt'
 import {
   obterSessaoValida,
   buscarUsuarioPorId,
-  reemitirAccesso
+  emitirSessao,
+  revogarSessoesDoUsuario
 } from '../../../utils/auth'
-import { query } from '../../../utils/db'
+import { getTransaction } from '../../../utils/db'
 import { exigirRateLimit } from '../../../utils/rateLimit'
 import { registrarAuditoria } from '../../../utils/audit'
 
@@ -50,13 +51,28 @@ export default defineEventHandler(async (event) => {
   }
 
   const hashNova = await hash(nova, 12)
-  await query(
-    'UPDATE usuarios SET hash_senha = ?, senha_provisoria = 0 WHERE id = ?',
-    [hashNova, usuario.id]
-  )
-  // Reemite o access já sem a marca de provisória — sem isso o token em uso
-  // continuaria bloqueado pelo middleware (change endurecer-banco-e-bootstrap).
-  await reemitirAccesso(event, { ...sessao, provisoria: false })
+  // RL05-A-01: trocar a senha revoga TODAS as sessões (access + refresh) e emite
+  // um novo par para ESTA sessão — um token roubado deixa de valer na hora.
+  const tx = await getTransaction()
+  let tokenVersion = sessao.tokenVersion
+  try {
+    await tx.query(
+      'UPDATE usuarios SET hash_senha = ?, senha_provisoria = 0 WHERE id = ?',
+      [hashNova, usuario.id]
+    )
+    await revogarSessoesDoUsuario(usuario.id, (sql, values) => tx.query(sql, values))
+    const versao = await tx.query<Array<{ token_version: number }>>(
+      'SELECT token_version FROM usuarios WHERE id = ? LIMIT 1',
+      [usuario.id]
+    )
+    tokenVersion = Number(versao[0]?.token_version ?? tokenVersion + 1)
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
+  // Novo access + refresh (rotação limpa) já sem a marca de provisória.
+  await emitirSessao(event, { ...sessao, provisoria: false, tokenVersion })
   await registrarAuditoria(event, {
     acao: 'Acesso',
     recurso: 'Autenticação',

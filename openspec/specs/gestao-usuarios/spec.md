@@ -69,11 +69,15 @@ O sistema SHALL exibir no topo da página os KPIs "Total de usuários", "Ativos"
 - **THEN** os quatro KPIs refletem imediatamente o conjunto resultante (a listagem é rebuscada pela API)
 
 ### Requirement: A tabela lista os usuários com paginação, ordenação, busca e badges
-O sistema SHALL exibir os usuários em `UiDataTable` com colunas Nome, E-mail, Perfil (badge), Status (badge) e Último acesso (do `ultimo_login` real quando houver), com paginação, ordenação e busca textual do componente, badge de Status distinguível entre "Ativo" e "Inativo" e badge de Perfil distinguível por perfil — cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página.
+O sistema SHALL exibir os usuários em `UiDataTable` com colunas Nome, E-mail, Perfil (badge), Status (badge) e Último acesso (do `ultimo_login` real quando houver), com paginação, ordenação e busca textual do componente, badge de Status distinguível entre "Ativo" e "Inativo" e badge de Perfil distinguível por perfil — cabendo as seis colunas (cinco de dados + Ações) **sem rolagem horizontal** na área da tabela nas larguras usuais de desktop (janela ≥ ~1280px com a sidebar expandida), inclusive após trocar a quantidade de registros exibidos por página. Em modo servidor, a **ordenação SHALL ser aplicada pelo servidor**: acionar uma coluna ordenável SHALL enviar a ordenação (coluna + direção) à API, que reordena o conjunto antes de paginar, sobre um conjunto **whitelisted** de colunas; uma coluna sem ordenação suportada SHALL ser ignorada, mantendo a ordenação padrão.
 
 #### Scenario: Colunas e ordenação
 - **WHEN** a página é aberta
 - **THEN** a tabela mostra as colunas Nome, E-mail, Perfil, Status e Último acesso, com paginação funcionando
+
+#### Scenario: Ordenar consulta o servidor
+- **WHEN** o usuário aciona o cabeçalho de uma coluna ordenável (ex.: Nome)
+- **THEN** a tabela consulta a API com a coluna e a direção escolhidas e exibe o conjunto reordenado pelo servidor (a paginação acompanha o novo critério), sem reordenar apenas as linhas da página corrente no cliente
 
 #### Scenario: Badges de perfil e status
 - **WHEN** usuários com perfis e status diferentes são exibidos
@@ -164,7 +168,7 @@ O sistema SHALL oferecer no cabeçalho o menu "Relatórios" (posicionado à esqu
 - **THEN** `window.print()` não é chamado e o arquivo é salvo diretamente no dispositivo
 
 ### Requirement: O modal de filtros refina o conjunto vigente de usuários
-O sistema SHALL abrir um modal de filtros ao acionar o botão "Filtros" da toolbar da tabela (`UiModal` de largura `sm`, com ícone no cabeçalho, título "Filtros de Usuários"), cujo corpo é organizado em duas sessões `UiModalSection`: **"Usuário"**, contendo um controle de seleção única `UiSelect` cujas opções são os nomes dos usuários da base (ordenados em pt-BR) e **"Perfil e Status"**, contendo dois `UiSelect` — um para **perfil** (os perfis cadastrados em Perfis de Acesso, Ativos) e um para **status** (Ativo, Inativo) —, em todos o estado vazio equivalendo a "todos" (placeholder "Todos os usuários"/"Todos os perfis"/"Todos os status") e a limpeza pelo `X` do select devolvendo o critério a "todos". O modal SHALL editar um rascunho sincronizado com o estado aplicado ao abrir: **"Aplicar"** grava o rascunho e fecha; **"Cancelar"**, `Escape` ou o `X` do cabeçalho fecham descartando o rascunho sem alterar o estado aplicado; **"Limpar Filtros"** (à esquerda do rodapé) zera rascunho e estado aplicado mantendo o modal aberto, com "Cancelar" e "Aplicar" à direita do rodapé. Aplicado o filtro, a tabela, os KPIs e as exportações (CSV e PDFs) SHALL refletir somente o conjunto filtrado, e o badge do botão "Filtros" SHALL indicar a quantidade de critérios ativos (0 a 3), alterada somente por "Aplicar" e "Limpar Filtros". Os filtros SHALL operar inteiramente em memória, sem nenhuma requisição HTTP, e serem descartados na recarga da página.
+O sistema SHALL abrir um modal de filtros ao acionar o botão "Filtros" da toolbar da tabela (`UiModal` de largura `sm`, com ícone no cabeçalho, título "Filtros de Usuários"), cujo corpo é organizado em duas sessões `UiModalSection`: **"Usuário"**, contendo um controle de seleção única `UiSelect` cujas opções são os nomes dos usuários da base (ordenados em pt-BR) e **"Perfil e Status"**, contendo dois `UiSelect` — um para **perfil** (os perfis cadastrados em Perfis de Acesso, Ativos) e um para **status** (Ativo, Inativo) —, em todos o estado vazio equivalendo a "todos" (placeholder "Todos os usuários"/"Todos os perfis"/"Todos os status") e a limpeza pelo `X` do select devolvendo o critério a "todos". O modal SHALL editar um rascunho sincronizado com o estado aplicado ao abrir: **"Aplicar"** grava o rascunho e fecha; **"Cancelar"**, `Escape` ou o `X` do cabeçalho fecham descartando o rascunho sem alterar o estado aplicado; **"Limpar Filtros"** (à esquerda do rodapé) zera rascunho e estado aplicado mantendo o modal aberto, com "Cancelar" e "Aplicar" à direita do rodapé. Aplicado o filtro, a tabela, os KPIs e as exportações (CSV e PDFs) SHALL refletir somente o conjunto filtrado, e o badge do botão "Filtros" SHALL indicar a quantidade de critérios ativos (0 a 3), alterada somente por "Aplicar" e "Limpar Filtros". Os filtros SHALL ser aplicados **no servidor** — enviados como parâmetros de consulta a `GET /api/usuarios`, que devolve o conjunto filtrado paginado — e descartados na recarga da página.
 
 #### Scenario: Abertura pelo botão Filtros
 - **WHEN** o usuário clica no botão "Filtros" da tabela
@@ -196,7 +200,7 @@ O sistema SHALL abrir um modal de filtros ao acionar o botão "Filtros" da toolb
 
 #### Scenario: Conjunto filtrado vazio
 - **WHEN** a combinação de filtros aplicados não corresponde a nenhum usuário
-- **THEN** a tabela exibe seu estado vazio ("Nenhum dado encontrado com o filtro aplicado.") e os KPIs refletem o conjunto vazio, sem erro
+- **THEN** a tabela exibe seu estado vazio ("Nenhum resultado encontrado para o filtro.") e os KPIs refletem o conjunto vazio, sem erro
 
 #### Scenario: Recarga descarta os filtros
 - **WHEN** a página é recarregada com filtros aplicados
@@ -219,7 +223,9 @@ avaliação das situações SHALL considerar a **base completa (todas as página
 conjunto de usuários atualmente carregado na tabela (que pode estar paginado ou filtrado);
 "Pronto para importar" exige, portanto, que o e-mail não exista em nenhuma página da base. As
 linhas "Pronto para importar" SHALL chegar pré-selecionadas, e o rodapé SHALL exibir a
-contagem de selecionados no botão "Importar (n)", desabilitado quando n for zero.
+contagem de selecionados no botão "Importar (n)", desabilitado quando n for zero. Cada checkbox
+de linha SHALL ter um **nome acessível** que identifique o registro (o e-mail/nome da linha),
+de modo que a seleção seja operável sem depender da visão da tabela.
 Confirmar SHALL enviar as linhas selecionadas à API de importação, que as revalida contra o
 banco (unicidade de e-mail, perfil existente) e grava em transação os registros selecionados
 — nascendo **sem senha autenticável** (a ser atribuída pelo envio manual de convite), com a
@@ -242,6 +248,10 @@ Os registros importados SHALL persistir na recarga.
 #### Scenario: Arquivo válido monta a pré-visualização com linhas prontas selecionadas
 - **WHEN** o usuário seleciona um `.xlsx` cujo cabeçalho corresponde ao modelo e cujas linhas são válidas com e-mails fora da base
 - **THEN** a tabela temporária é montada exibindo Nome, E-mail, Perfil, Status e a Situação "Pronto para importar" em cada linha, com seus checkboxes já marcados
+
+#### Scenario: Checkbox de linha tem nome acessível
+- **WHEN** a pré-visualização é percorrida por tecnologia assistiva
+- **THEN** cada checkbox de linha é anunciado com um nome que identifica o registro (nome/e-mail), e não como um controle sem nome
 
 #### Scenario: Linhas com problemas ganham Situação própria e ficam não selecionáveis
 - **WHEN** o arquivo contém um e-mail já existente na base, um e-mail repetido no arquivo e uma linha com Perfil fora dos valores permitidos
@@ -308,8 +318,8 @@ Enquanto o envio das linhas selecionadas à API estiver em voo, o modal de impor
 - **WHEN** a API responde com a contagem de importados
 - **THEN** o painel é encerrado, o modal fecha, os KPIs e a tabela refletem os registros gravados e um toast de sucesso exibe a contagem
 
-### Requirement: A tela opera sobre a API de usuários; filtros e exportações permanecem locais
-O sistema SHALL carregar a listagem de usuários de `GET /api/usuarios` na montagem da página e a cada mudança de página/tamanho/ordenação/busca (com debounce), exibindo estado de carregamento e toast de erro na falha (sem simular dados). CRUD, importação, exclusão, bloqueio e convite SHALL operar via API, com as mutações refletidas imediatamente (a listagem é rebuscada). Filtros, busca, paginação e KPIs SHALL ser processados **no servidor** sobre o conjunto filtrado; a exportação SHALL buscar o conjunto filtrado completo pela API. Os filtros SHALL continuar sendo descartados na recarga.
+### Requirement: A tela opera sobre a API de usuários; filtros e exportações via API
+O sistema SHALL carregar a listagem de usuários de `GET /api/usuarios` na montagem da página e a cada mudança de página/tamanho/ordenação/busca (com debounce), exibindo estado de carregamento e toast de erro na falha (sem simular dados). CRUD, importação, exclusão, bloqueio e convite SHALL operar via API, com as mutações refletidas imediatamente (a listagem é rebuscada). Em caso de falha da carga, além da tabela vazia, o sistema SHALL zerar também os **KPIs, o total e as opções de filtro**, de modo que nenhum dado da carga anterior permaneça visível. Filtros, busca, paginação e KPIs SHALL ser processados **no servidor** sobre o conjunto filtrado; a exportação SHALL buscar o conjunto filtrado completo pela API. Os filtros SHALL continuar sendo descartados na recarga.
 
 #### Scenario: Carga inicial mostra os usuários do banco
 - **WHEN** o navegador abre `/admin/gestao-usuarios` com sessão ativa
@@ -317,7 +327,7 @@ O sistema SHALL carregar a listagem de usuários de `GET /api/usuarios` na monta
 
 #### Scenario: Falha na carga exibe erro sem simular dados
 - **WHEN** a requisição de listagem falha (rede, banco ou sessão expirada sem refresh)
-- **THEN** um toast de erro informa a falha e a tabela permanece em estado vazio/erro, sem exibir a base de demonstração antiga
+- **THEN** um toast de erro informa a falha, a tabela fica vazia e os KPIs, o total e as opções de filtro são zerados, sem exibir dados da carga anterior nem a base de demonstração antiga
 
 #### Scenario: Recarga rebusca o banco
 - **WHEN** a página é recarregada após criar, editar, importar, excluir, bloquear ou convidar
@@ -464,8 +474,8 @@ O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao a
 confirmar, o sistema SHALL remover o registro via API — a linha sai da tabela, os KPIs
 recalculam e um toast de sucesso é exibido — e devolver o foco ao campo de busca da tabela,
 pois o botão que abriu o modal deixa de existir com a linha. "Cancelar", `Escape` ou o `X`
-do cabeçalho SHALL fechar o modal sem nenhuma requisição. A exclusão SHALL ser irrestrita
-(qualquer perfil, sem bloqueio por papel) e SHALL persistir: a recarga não restaura o
+do cabeçalho SHALL fechar o modal sem nenhuma requisição. A exclusão SHALL ser irrestrita quanto ao perfil do alvo
+(não há bloqueio por papel), ressalvada a guarda anti-lockout que responde `409` quando removeria a última administração essencial ativa (`perfis-acesso`) e SHALL persistir: a recarga não restaura o
 usuário excluído. Sessões abertas do usuário excluído deixam de autenticar.
 
 #### Scenario: Abertura pelo ícone da linha
@@ -490,7 +500,7 @@ usuário excluído. Sessões abertas do usuário excluído deixam de autenticar.
 
 #### Scenario: Exclusão é irrestrita
 - **WHEN** o usuário confirma a exclusão de um registro de qualquer perfil (inclusive Administrador)
-- **THEN** o registro é removido normalmente pela API, sem bloqueio nem aviso de restrição
+- **THEN** o registro é removido normalmente pela API, sem bloqueio por papel nem aviso de restrição (exceto o último administrador essencial ativo, cuja remoção responde `409` e preserva o registro)
 
 #### Scenario: Recarga mantém a exclusão
 - **WHEN** a página é recarregada após uma exclusão
@@ -519,7 +529,7 @@ Convite" SHALL permanecer desabilitado enquanto a senha provisória estiver vazi
 
 Acionar "Enviar Convite" SHALL chamar a API de convite com **find-or-create por e-mail**: se
 a conta não existir no banco, ela SHALL ser criada com os dados do destinatário e o hash da
-senha provisória; se existir, a senha provisória SHALL substituir o hash vigente. Para o canal
+senha provisória; se existir, a senha provisória SHALL substituir o hash vigente somente quando a conta-alvo estiver **Ativa** e o solicitante detiver também a ação `alterar` de `gestao-usuarios` (reenviar convite redefine uma credencial existente); conta Inativa/Bloqueada SHALL ser recusada com `400`. Para o canal
 **E-mail**, o servidor SHALL enviar a mensagem real via **Resend** (toast de sucesso de envio
 real; falha do provedor → toast de erro, modal permanece aberto). Para **WhatsApp**, a senha
 SHALL ser gravada no banco (mesmo find-or-create) e o aplicativo SHALL ser aberto pelo
@@ -583,6 +593,9 @@ listagem da tela — que vem do banco — reflete a conta real na sua linha.
 - **THEN** o modal fecha, a senha gerada não é gravada em nenhum registro e a base permanece
   idêntica ao estado anterior
 
+#### Scenario: Convite a conta existente exige Ativo e a ação alterar
+- **WHEN** o convite é acionado para um e-mail que já possui conta não-Ativa, ou por um perfil com `criar` mas sem `alterar`
+- **THEN** a API responde `400` (conta não-Ativa) ou `403` (sem `alterar`), nenhuma senha é redefinida e nenhuma sessão é emitida
 #### Scenario: Recarga mantém a conta criada pelo convite
 - **WHEN** a página é recarregada após um envio de convite
 - **THEN** a listagem da API exibe o usuário normalmente e a conta (e a sua senha) seguem no
@@ -607,11 +620,14 @@ armazenada SHALL ser preservada.
 - **THEN** o valor é gravado de forma cifrada, sem que a leitura da API o devolva em claro
 
 ### Requirement: Perfis customizados são atribuíveis e importáveis na Gestão de Usuários
-O sistema SHALL derivar as opções de **Perfil** do modal de usuário (criação e edição) e a
-validação de Perfil da planilha de importação do cadastro de perfis de acesso (`perfis_acesso`), e
-não de uma lista fixa: perfis customizados (Ativos) SHALL poder ser selecionados como perfil de um
-usuário no modal e SHALL ser aceitos como valor de Perfil nas linhas da planilha de importação.
-Perfis sem badge mapeado SHALL exibir um badge genérico do design system, sem quebrar a
+O sistema SHALL derivar as opções de **Perfil** do modal de usuário (criação e edição), as opções
+do filtro de Perfil e a validação de Perfil da planilha de importação do cadastro de perfis de
+acesso (`perfis_acesso`), e não de uma lista fixa: perfis customizados **Ativos** SHALL poder ser
+selecionados como perfil de um usuário no modal, oferecidos no filtro e aceitos como valor de Perfil
+nas linhas da planilha de importação. Somente perfis **Ativos** SHALL ser oferecidos ou aceitos —
+perfis Inativos ou Bloqueados não SHALL aparecer como opção (no modal ou no filtro) nem constar da
+lista de perfis válidos da importação, de modo que a UI não ofereça um caminho que o servidor
+rejeitaria. Perfis sem badge mapeado SHALL exibir um badge genérico do design system, sem quebrar a
 renderização.
 
 #### Scenario: Perfil customizado é oferecido no modal de usuário
@@ -622,3 +638,49 @@ renderização.
 - **WHEN** a planilha traz uma linha com um Perfil customizado Ativo cadastrado no sistema
 - **THEN** a linha não é marcada como "Linha inválida" por esse motivo e permanece válida para importação
 
+#### Scenario: Perfil Inativo não é oferecido nem aceito
+- **WHEN** existe um perfil Inativo (ou Bloqueado) e um usuário abre o modal de usuário, o filtro de Perfil ou carrega uma planilha que o utilize
+- **THEN** o perfil inativo não aparece como opção no modal nem no filtro, e a linha da planilha que o utiliza é classificada como "Linha inválida"
+
+### Requirement: A exportação informa falha ao usuário
+Ao gerar um relatório (CSV ou PDF), se a busca do conjunto ou a geração do arquivo falhar, o sistema SHALL exibir um toast de erro informando a falha — nunca falhar em silêncio (sem apenas registrar no console) — e SHALL indicar carregamento na ação enquanto a exportação estiver em andamento.
+
+#### Scenario: Falha na exportação exibe erro
+- **WHEN** o usuário aciona um item de "Relatórios" e a busca do conjunto ou a geração do arquivo falha
+- **THEN** um toast de erro é exibido e o usuário sabe que a exportação não foi concluída
+
+#### Scenario: Exportação em andamento indica carregamento
+- **WHEN** o usuário aciona uma exportação
+- **THEN** a ação exibe estado de carregamento até concluir
+
+### Requirement: As mensagens de erro não expõem detalhe de infraestrutura
+As mensagens de falha exibidas ao usuário na Gestão de Usuários SHALL ser genéricas e acionáveis, sem revelar detalhe de infraestrutura (ex.: "Verifique a conexão com o banco").
+
+#### Scenario: Falha de carga sem detalhe interno
+- **WHEN** a carga dos usuários falha
+- **THEN** o toast informa apenas que não foi possível carregar os dados, sem citar banco ou detalhes internos
+
+### Requirement: A listagem trata recarga concorrente e reflete o termo de busca
+A listagem SHALL aplicar uma recarga solicitada mesmo que haja uma carga em andamento (a recarga pendente SHALL ser executada após a atual concluir, sem ser descartada), e o termo de busca vigente SHALL aparecer no campo de busca da tabela — de modo que o filtro efetivo e o campo exibido nunca divirjam.
+
+#### Scenario: Recarga durante carga em voo é aplicada
+- **WHEN** o usuário salva/importa e a listagem é rebuscada enquanto uma carga anterior ainda está em andamento
+- **THEN** a recarga pendente é executada após a primeira concluir, refletindo o estado atual (nenhuma atualização é perdida)
+
+#### Scenario: Campo de busca reflete o termo vigente
+- **WHEN** o usuário navega de volta à listagem com um termo de busca vigente no estado
+- **THEN** o campo de busca da tabela exibe aquele termo, coerente com o conjunto filtrado
+
+### Requirement: A criação concorrente de e-mail duplicado responde 409
+Quando a criação de um usuário colidir com um e-mail já existente por uma condição de corrida (violação de unicidade no banco, `errno 1062`), a API SHALL responder `409` com a mensagem de e-mail já cadastrado, e não `500`.
+
+#### Scenario: Corrida de unicidade vira 409
+- **WHEN** duas criações com o mesmo e-mail concorrem e a segunda viola a unicidade no banco
+- **THEN** a segunda responde `409` ("e-mail já cadastrado"), sem erro genérico `500`
+
+### Requirement: O convite só atribui credenciais a usuário Ativo
+O convite SHALL recusar (`400`) a geração/envio de credenciais para um usuário cuja situação não seja **Ativo**, de modo que não sejam entregues credenciais que o login bloquearia.
+
+#### Scenario: Convite a Inativo é recusado
+- **WHEN** um convite é solicitado com situação Inativo (ou Bloqueado)
+- **THEN** a API responde `400` e nenhuma credencial é gerada/entregue

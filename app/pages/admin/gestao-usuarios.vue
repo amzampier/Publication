@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import {
   excluirUsuario,
   alterarSituacaoUsuario,
+  buscarUsuario,
   useUsuarios
 } from '../../components/usuarios/useUsuarios'
 import type { UsuarioModelo, ModoUsuario } from '../../components/usuarios/useUsuariosModelo'
@@ -26,7 +27,7 @@ onMounted(async () => {
   if (!ok) {
     toast.danger(
       'Gestão de Usuários',
-      'Não foi possível carregar os usuários. Verifique a conexão com o banco e recarregue a página.'
+      'Não foi possível carregar os usuários. Recarregue a página e tente novamente.'
     )
   }
 })
@@ -65,9 +66,10 @@ const abrirNovo = () => {
   modalAberto.value = true
 }
 
-const abrirEdicao = (usuario: UsuarioModelo) => {
+const abrirEdicao = async (usuario: UsuarioModelo) => {
   modo.value = 'editar'
-  usuarioAlvo.value = usuario
+  // RL04 B-23: a listagem traz só as colunas exibidas — busca o detalhe por id.
+  usuarioAlvo.value = await buscarUsuario(usuario.id).catch(() => usuario)
   modalAberto.value = true
 }
 

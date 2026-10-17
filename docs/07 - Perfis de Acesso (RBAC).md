@@ -194,7 +194,7 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 
 ### 3.4 `usePerfisModelo.ts` — composable de estado sobre a API (matriz e contagens)
 
-- **Tipos:** `PerfilDemo` (`id` UUID, `nome`, `descricao`, `situacao`, `criado_em`,
+- **Tipos:** `PerfilModelo` (`id` UUID, `nome`, `descricao`, `situacao`, `criado_em`,
   `atualizado_em`, `usuarios`, `permissoes`), `SituacaoPerfil`
   (`'Ativo' | 'Inativo' | 'Bloqueado'`), `ModoPerfis` (`'novo' | 'editar'`), `ModuloId` (11),
   `Acao` (4), `Extra` (5), `Permissao = Acao | Extra`.
@@ -244,7 +244,7 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
 
 - **Modal completo** no molde de `usuarios/Formulario.vue` (página dona da coordenação):
   props `modelValue: boolean`, `modo: ModoPerfis` (`'novo' | 'editar'`) e
-  `perfil: PerfilDemo | null`; emite `update:modelValue`; grava via `salvarPerfil()` +
+  `perfil: PerfilModelo | null`; emite `update:modelValue`; grava via `salvarPerfil()` +
   `toast.success` ("Perfil criado com sucesso." / "Perfil atualizado com sucesso.").
 - `UiModal` `size="md"`, `title="Novo Perfil"`/`"Editar Perfil"`, `subtitle="Dados
   cadastrais do perfil de acesso"` e ícone `ShieldCheck` (comportamento do kit: backdrop não
@@ -268,13 +268,13 @@ módulos × 9 ações)"` (legenda do `n/99` — UX-B2), `default-page-size="5"`.
   foco (modal aberto), demais erros → `toast.danger`. Perfil novo nasce com matriz vazia
   (**0/99**) e 0 usuários.
 - **Aceite documentado:** a coluna "Usuários" conta do banco (`usuarios.perfil_id`), enquanto
-  o dropdown de perfis de `/admin/gestao-usuarios` continua fixo na demo — o casamento por
-  construção vem quando o dropdown passar a derivar da base de perfis (§13).
+  o dropdown de perfis de `/admin/gestao-usuarios` **já deriva da base de perfis** (`opcoes.perfis`,
+  apenas perfis Ativos), casando o nome com a contagem do banco.
 
 ### 3.7 `Permissoes.vue` → `<PerfisPermissoes>` (modal da matriz de permissões)
 
 - **Modal completo** (página dona da coordenação, mesmo padrão do `Formulario`): props
-  `modelValue: boolean` e `perfil: PerfilDemo | null`; emite `update:modelValue`; grava via
+  `modelValue: boolean` e `perfil: PerfilModelo | null`; emite `update:modelValue`; grava via
   `salvarPermissoes()` + `toast.success` ("Permissões do perfil atualizadas com sucesso.").
 - `UiModal` `size="xl"`, `title="Permissões"`, `subtitle="<nome> · matriz de 11 módulos
   (99 permissões)"` e ícone `KeyRound` (comportamento do kit: backdrop não fecha,
@@ -404,7 +404,7 @@ controle de linha exibe mais toast de transição.
 ## 6. Base semeada (banco) e KPIs
 
 - A carga inicial (`GET /api/perfis`) devolve os **4 perfis canônicos** semeados em
-  `server/migration/02_seed.sql`, **todos Ativo**, com **matriz 99/45/21/99** idêntica ao §7:
+  `server/migration/02_seed.sql`, **todos Ativo**, com **matriz 99/45/21/6** idêntica ao §7:
 
 | Perfil | Descrição | Usuários (banco) | Permissões |
 | :--- | :--- | ---: | ---: |
@@ -672,8 +672,7 @@ exportação:
 - **Colunas futuras do banco:** **`padrao_sistema`** (flag de perfil nativo bloqueado para
   exclusão + guarda correspondente no modal de exclusão) e **`cor_identificacao`** (badge
   colorido — componente de cor novo no kit) continuam fora do UI atual.
-- **Dropdown de perfis de `/admin/gestao-usuarios`:** ainda fixo na demo (2/5/4/5);
-  derivar da base de perfis elimina a divergência nome × contagem (§3.6) e faz a coluna
-  "Usuários" crescer com o cadastro de usuários.
-- **Situação do perfil:** modelar no backend a regra de bloqueio (perfil Inativo/Bloqueado
-  não atribuível a novos usuários).
+- **Dropdown de perfis de `/admin/gestao-usuarios`:** deriva da base de perfis (`opcoes.perfis`,
+  apenas Ativos) — o nome casa com a contagem do banco e a coluna "Usuários" cresce com o cadastro.
+- **Situação do perfil:** implementada — perfil Inativo/Bloqueado não autentica nem é atribuível
+  (ver spec `perfis-acesso` e `docs/02`).

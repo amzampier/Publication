@@ -38,3 +38,10 @@ INSERT INTO auditoria (id, usuario_id, data_hora, usuario_nome, usuario_perfil, 
     ('log-seed-023', NULL, DATE_ADD(DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 22 DAY), INTERVAL 15 HOUR), INTERVAL 31 MINUTE), 'Carlos Mendes', 'Administrador', 'Inclusão', 'Rate Limits', '', '10.0.0.5', 'Registrou nova regra de bloqueio para a rota /api/login'),
     ('log-seed-024', NULL, DATE_ADD(DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 25 DAY), INTERVAL 9 HOUR), INTERVAL 5 MINUTE), 'Mariana Lopes', 'Revisor', 'Alteração', 'Perfis de Acesso', '', '177.92.10.44', 'Renomeou o perfil ''Operador'' para ''Operador de Publicação'''),
     ('log-seed-025', NULL, DATE_ADD(DATE_ADD(DATE_SUB(CURDATE(), INTERVAL 28 DAY), INTERVAL 17 HOUR), INTERVAL 49 MINUTE), 'Ana Carolina Ribeiro', 'Administrador', 'Inclusão', 'Usuários', '', '200.189.45.12', 'Criou o usuário ''carlos.mendes@empresa.com.br'' com perfil Administrador');
+
+-- =========================================================================
+-- REVERTER (ROLLBACK) - executar MANUALMENTE; remova os "-- ".
+-- Apos reverter, apague o registro:
+-- DELETE FROM _migrations WHERE nome = '07_seed_auditoria.sql';
+-- =========================================================================
+-- DELETE FROM auditoria WHERE id LIKE 'log-seed-%';

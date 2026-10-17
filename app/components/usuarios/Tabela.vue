@@ -10,7 +10,7 @@ import {
   type UsuarioModelo
 } from './useUsuariosModelo'
 
-const { usuariosFiltrados, filtrosAtivosCount, pagina, porPagina, total, irParaPagina, mudarPorPagina, buscar } =
+const { usuariosFiltrados, filtrosAtivosCount, pagina, porPagina, total, irParaPagina, mudarPorPagina, buscar, ordenarPor, busca } =
   useUsuarios()
 
 // Abre modais na página (coordenação dela): filtros, edição, exclusão, importação, convite e bloqueio
@@ -47,8 +47,9 @@ const colunas: ColumnDef[] = [
     <UiDataTable
       ref="tabelaRef"
       title="Usuários"
-      subtitle="Dados persistidos via API (MariaDB)"
+      subtitle="Usuários cadastrados no sistema"
       :data="usuariosFiltrados"
+      :initial-search="busca"
       :columns="colunas"
       :default-page-size="20"
       server-mode
@@ -62,6 +63,7 @@ const colunas: ColumnDef[] = [
       @page-change="irParaPagina"
       @per-page-change="mudarPorPagina"
       @search="buscar"
+      @sort-change="ordenarPor"
     >
       <template #filtersLeft>
         <UiTooltip content="Importar Novos Usuários" position="top">
@@ -83,7 +85,7 @@ const colunas: ColumnDef[] = [
       </template>
 
       <template #cell(status)="{ value }">
-        <UiBadge :variant="VARIANTE_POR_STATUS[value]" size="sm">
+        <UiBadge :variant="VARIANTE_POR_STATUS[value as UsuarioModelo['status']]" size="sm">
           {{ value }}
         </UiBadge>
       </template>

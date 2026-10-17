@@ -6,6 +6,7 @@ import { useUsuarios } from './useUsuarios'
 import { gerarPdfUsuarios } from './gerarPdfUsuarios'
 import { gerarPdfFichaCadastral } from './gerarPdfFichaCadastral'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
+import { useToast } from '../../composables/useToast'
 
 // Abre o modal de usuário em modo de criação (coordenação na página da fase 2)
 const emit = defineEmits<{
@@ -35,44 +36,67 @@ onUnmounted(() => {
 // listagem é paginada — change paginacao-server-side-e-performance)
 const { buscarParaExportacao } = useUsuarios()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
+const { toast } = useToast()
+const exportando = ref(false)
 
 const exportarCsv = async () => {
   menuAberto.value = false
-  const usuarios = await buscarParaExportacao()
-  const escapar = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
-  const cabecalho = ['Nome', 'E-mail', 'Perfil', 'Status', 'Último acesso']
-  const linhas = usuarios.map((u) =>
-    [u.nome, u.email, u.perfil, u.status, formatarUltimoAcesso(u.ultimoAcesso)]
-      .map(escapar)
-      .join(';')
-  )
-  const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'usuarios.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+  exportando.value = true
+  try {
+    const usuarios = await buscarParaExportacao()
+    // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
+    const escapar = (v: string | number) => {
+      let texto = String(v)
+      if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
+      return `"${texto.replace(/"/g, '""')}"`
+    }
+    const cabecalho = ['Nome', 'E-mail', 'Perfil', 'Status', 'Último acesso']
+    const linhas = usuarios.map((u) =>
+      [u.nome, u.email, u.perfil, u.status, formatarUltimoAcesso(u.ultimoAcesso)]
+        .map(escapar)
+        .join(';')
+    )
+    const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'usuarios.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (erro) {
+    console.error('[csv] falha ao exportar usuarios:', erro)
+    toast.danger('Exportação', 'Não foi possível exportar os usuários. Tente novamente.')
+  } finally {
+    exportando.value = false
+  }
 }
 
 const fichaCadastralPdf = async () => {
   menuAberto.value = false
+  exportando.value = true
   try {
     const usuarios = await buscarParaExportacao()
     await gerarPdfFichaCadastral({ usuarios, logoPreview: previewLoginGlobal.value })
   } catch (erro) {
     console.error('[pdf] falha ao gerar a ficha cadastral:', erro)
+    toast.danger('Exportação', 'Não foi possível gerar a ficha cadastral. Tente novamente.')
+  } finally {
+    exportando.value = false
   }
 }
 
 const relacaoCompletaPdf = async () => {
   menuAberto.value = false
+  exportando.value = true
   try {
     const usuarios = await buscarParaExportacao()
     await gerarPdfUsuarios({ usuarios, logoPreview: previewLoginGlobal.value })
   } catch (erro) {
     console.error('[pdf] falha ao gerar o relatorio:', erro)
+    toast.danger('Exportação', 'Não foi possível gerar a relação completa. Tente novamente.')
+  } finally {
+    exportando.value = false
   }
 }
 </script>
@@ -100,6 +124,7 @@ const relacaoCompletaPdf = async () => {
           variant="outline"
           size="md"
           class="w-full sm:w-auto"
+          :loading="exportando"
           aria-haspopup="menu"
           :aria-expanded="menuAberto"
           @click="menuAberto = !menuAberto"

@@ -160,15 +160,18 @@ esse cabeçalho.
 O sistema SHALL manter a sessão em cookie HttpOnly de acesso (JWT de curta duração, ~15
 minutos) em conjunto com cookie de refresh cujo token opaco (hash) é gravado na tabela de
 sessões; a renovação SHALL rotacionar o refresh (invalidando o anterior) e o logout SHALL
-revogar a sessão e limpar os cookies. A rotação SHALL ser **atômica no servidor**: requisições de
-renovação concorrentes com o mesmo refresh token SHALL ser serializadas, de modo que apenas uma
-rotação seja aceita e as demais falhem; o **reuso** de um refresh token já rotacionado (ou
-revogado) SHALL ser recusado com `401`. Em recarga de página (F5), a sessão SHALL ser restaurada
-via API — renovando o accesso expirado pelo refresh, sem exibir o login. Token inválido,
-expirado, adulterado ou de sessão revogada SHALL ser tratado como sem sessão. O cliente SHALL
-renovar automaticamente quando uma requisição receber `401` e refazer a requisição original,
-sem interromper a experiência. O item **Encerrar Sessão** do menu do Account SHALL chamar o
-logout na API e navegar para `/admin/login`.
+revogar a sessão e limpar os cookies. O prazo de validade da sessão de refresh SHALL corresponder
+ao período configurado do sistema (por padrão, **7 dias**) e o registro de sessão no servidor
+(`expira_em`) SHALL expirar no **mesmo** prazo anunciado no `Max-Age` do cookie de refresh, de
+modo que a sessão sobreviva além da janela do token de acesso. A rotação SHALL ser **atômica no
+servidor**: requisições de renovação concorrentes com o mesmo refresh token SHALL ser
+serializadas, de modo que apenas uma rotação seja aceita e as demais falhem; o **reuso** de um
+refresh token já rotacionado (ou revogado) SHALL ser recusado com `401`. Em recarga de página
+(F5), a sessão SHALL ser restaurada via API — renovando o accesso expirado pelo refresh, sem
+exibir o login. Token inválido, expirado, adulterado ou de sessão revogada SHALL ser tratado como
+sem sessão. O cliente SHALL renovar automaticamente quando uma requisição receber `401` e refazer
+a requisição original, sem interromper a experiência. O item **Encerrar Sessão** do menu do
+Account SHALL chamar o logout na API e navegar para `/admin/login`.
 
 #### Scenario: F5 em página administrativa mantém o acesso
 - **WHEN** o usuário com sessão ativa recarrega qualquer página `/admin/**`
@@ -185,6 +188,10 @@ logout na API e navegar para `/admin/login`.
   uma ação (ou recarrega a página)
 - **THEN** o refresh renova os cookies silenciosamente e a ação completa normalmente, sem
   redirecionamento ao login
+
+#### Scenario: Sessão sobrevive além da janela do access
+- **WHEN** o accesso (~15 minutos) expira e o usuário volta a agir dentro do prazo de refresh configurado (padrão 7 dias)
+- **THEN** a sessão é renovada silenciosamente sem exigir novo login, e o registro de sessão no servidor expira no mesmo prazo anunciado pelo cookie de refresh
 
 #### Scenario: Token inválido ou revogado não autentica
 - **WHEN** o cookie de acesso for inexistente, inválido ou apontar para sessão revogada
@@ -311,7 +318,10 @@ demais documentos de tela.
 ### Requirement: A recuperação de senha só altera a senha após a entrega do e-mail
 O sistema SHALL somente substituir a senha vigente do usuário pela senha provisória **após** o
 e-mail de recuperação ser efetivamente entregue; se o envio falhar, a senha anterior SHALL
-permanecer válida, de modo que o usuário nunca fique sem uma senha conhecida.
+permanecer válida, de modo que o usuário nunca fique sem uma senha conhecida. A entrega do e-mail e
+a subsequente gravação da nova senha SHALL ocorrer **fora do caminho da resposta HTTP** (após a
+resposta genérica ter sido emitida), preservando a ordem "entrega antes da troca" sem atrasar a
+resposta ao solicitante.
 
 #### Scenario: Falha no envio preserva a senha anterior
 - **WHEN** a recuperação é solicitada para uma conta ativa e o provedor de e-mail falha ao enviar
@@ -321,14 +331,25 @@ permanecer válida, de modo que o usuário nunca fique sem uma senha conhecida.
 - **WHEN** o e-mail de recuperação é entregue com sucesso
 - **THEN** a senha provisória passa a autenticar e a anterior deixa de valer
 
+#### Scenario: A senha só muda depois da entrega, mesmo com a resposta imediata
+- **WHEN** a recuperação é solicitada e a resposta genérica é emitida antes da conclusão do envio
+- **THEN** a troca da senha só é efetivada depois que o envio conclui com sucesso (falha do envio mantém a senha anterior)
+
 ### Requirement: O login e a recuperação não revelam existência da conta por tempo de resposta
 O sistema SHALL responder às solicitações de login e de recuperação sem diferença de tempo
 observável entre uma conta existente e uma inexistente (mesma forma e duração aproximada da
-resposta), de modo que a existência de um cadastro não seja inferível pela latência.
+resposta), de modo que a existência de um cadastro não seja inferível pela latência. Em particular,
+a resposta de `POST /api/auth/esqueci-senha` SHALL ser produzida **sem aguardar o envio do e-mail**:
+a geração da senha provisória, o envio e a gravação ocorrem fora do caminho da resposta, de modo
+que o tempo de resposta seja equivalente para e-mail cadastrado e não cadastrado.
 
 #### Scenario: Latências equivalentes
 - **WHEN** a mesma operação é executada para um e-mail cadastrado e para um e-mail inexistente
 - **THEN** o tempo de resposta é equivalente nos dois casos, sem diferença observável
+
+#### Scenario: Recuperação responde antes de enviar o e-mail
+- **WHEN** `POST /api/auth/esqueci-senha` é chamado para um e-mail cadastrado
+- **THEN** a resposta genérica é emitida sem esperar o envio pelo provedor (o envio e a gravação ocorrem após a resposta), com o mesmo tempo de um e-mail não cadastrado
 
 ### Requirement: Os links dos e-mails usam a origem configurada
 Os links de acesso presentes nos e-mails (convite e recuperação) SHALL ser construídos a partir da
@@ -347,3 +368,29 @@ da situação do próprio usuário.
 #### Scenario: Perfil inativo bloqueia o login
 - **WHEN** o usuário informa credenciais corretas de um cadastro cujo perfil está Inativo (ou Bloqueado)
 - **THEN** o login é recusado com aviso de perfil não ativo e a sessão não é criada
+
+### Requirement: O logout descarta o estado de sessão mantido no cliente
+Ao encerrar a sessão, o cliente SHALL descartar **todo** o estado derivado da sessão mantido em
+memória compartilhada — em particular as listas e contadores administrativos (perfis, usuários,
+auditoria), a matriz de permissões e o cache de configurações globais. Um novo login na mesma
+instância do navegador SHALL recarregar esse estado a partir do servidor, de modo que nenhum dado
+do usuário anterior seja exibido.
+
+#### Scenario: Novo login na mesma aba não vê dados do usuário anterior
+- **WHEN** um usuário encerra a sessão e outro usuário faz login na mesma aba, sem recarregar o navegador
+- **THEN** as telas administrativas não exibem listas, contadores, matriz de permissões ou preferências pertencentes ao usuário anterior, e recarregam os dados do usuário atual a partir do servidor
+
+#### Scenario: Estado de sessão é recarregado após novo login
+- **WHEN** o novo usuário abre um módulo administrativo após o login na mesma aba
+- **THEN** a carga é refeita no servidor (não servida de cache da sessão anterior) e reflete as permissões e dados do usuário atual
+
+### Requirement: O evento de recuperação reflete o resultado do envio
+O evento registrado na trilha para a solicitação de recuperação de senha SHALL refletir o resultado real do envio: quando o e-mail de recuperação for entregue, o detalhe informa que a senha provisória foi enviada; quando o envio falhar, o detalhe SHALL indicar a falha — nunca afirmar "enviada" em um envio malsucedido.
+
+#### Scenario: Detalhe reflete o envio bem-sucedido
+- **WHEN** a recuperação é solicitada e o e-mail de recuperação é entregue
+- **THEN** o evento da trilha descreve que a senha provisória foi enviada
+
+#### Scenario: Detalhe reflete a falha de envio
+- **WHEN** a recuperação é solicitada e o provedor de e-mail falha
+- **THEN** o evento da trilha indica que o envio falhou (sem afirmar que a senha provisória foi enviada)

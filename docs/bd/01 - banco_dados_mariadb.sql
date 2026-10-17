@@ -645,5 +645,8 @@ CREATE OR REPLACE VIEW manuais AS
 --     `auditoria(acao)` e `seguranca_eventos_login(email_alvo, tipo, ocorrido_em)`
 --   - 09: `usuarios.token_version INT NOT NULL DEFAULT 0`
 --   - 10: EVENT `ev_expurgo_auditoria` (expurgo diário da trilha às 03:00)
+--   - 11: índices `auditoria(data_hora, id)`, `seguranca_eventos_login(ocorrido_em, id)` e
+--     `usuarios(nome_completo)` + EVENTs `ev_expurgo_sessoes`/`ev_expurgo_token_blacklist`/`ev_expurgo_seguranca_login`
+--   - 12: índices `usuarios(bloqueado_ate)` e `auditoria(usuario_nome)`
 -- A fonte da verdade do schema é `server/migration/*.sql` (aplicado no boot).
 -- =========================================================================

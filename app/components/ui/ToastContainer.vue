@@ -129,7 +129,7 @@ onUnmounted(() => {
 
           <button
             type="button"
-            class="text-slate-400 hover:text-slate-700 p-0.5 rounded transition-colors focus:outline-none"
+            class="text-slate-400 hover:text-slate-700 p-0.5 rounded transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
             aria-label="Fechar"
             @click="remove(item.id)"
           >

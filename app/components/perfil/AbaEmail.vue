@@ -48,8 +48,8 @@ const smtp = computed({
       <div class="mt-4 flex gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
         <Info class="mt-0.5 h-4 w-4 shrink-0 text-blue-700" aria-hidden="true" />
         <p class="text-xs leading-snug text-blue-900">
-          "Testar conexão" e "Enviar teste" são simulados nesta fase — nenhuma
-          requisição é feita e as credenciais ficam apenas em memória.
+          A verificação de conexão confere a configuração informada e não envia
+          mensagens.
         </p>
       </div>
     </section>

@@ -21,7 +21,9 @@ const {
   total,
   irParaPagina,
   mudarPorPagina,
-  buscar
+  buscar,
+  ordenarPor,
+  busca
 } = useAuditoriaModelo()
 
 const colunas: ColumnDef[] = [
@@ -38,8 +40,9 @@ const colunas: ColumnDef[] = [
   <section aria-label="Registros de auditoria">
     <UiDataTable
       title="Registros de Auditoria"
-      subtitle="Ordenados do mais recente para o mais antigo — registros persistidos no banco"
+      subtitle="Ordenados do mais recente para o mais antigo"
       :data="registrosFiltrados"
+      :initial-search="busca"
       :columns="colunas"
       :default-page-size="20"
       server-mode
@@ -53,9 +56,10 @@ const colunas: ColumnDef[] = [
       @page-change="irParaPagina"
       @per-page-change="mudarPorPagina"
       @search="buscar"
+      @sort-change="ordenarPor"
     >
       <template #cell(acao)="{ value }">
-        <UiBadge :variant="VARIANTE_POR_ACAO[value]" size="sm">
+        <UiBadge :variant="VARIANTE_POR_ACAO[value as RegistroAuditoria['acao']]" size="sm">
           {{ value }}
         </UiBadge>
       </template>

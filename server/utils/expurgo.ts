@@ -4,6 +4,30 @@
 // Scheduler está ligado, sem derrubar o boot quando faltar privilégio.
 import { query } from './db'
 
+/**
+ * Expurgo catch-up (RL04 M-16): roda uma vez no boot, aplicando os mesmos
+ * DELETE dos eventos diários da migration 11 — cobre o caso em que o horário
+ * agendado passou enquanto o servidor estava fora. Best-effort.
+ */
+export async function executarExpurgo(): Promise<void> {
+  try {
+    await query(
+      `DELETE FROM sessoes
+        WHERE (revogado_em IS NULL AND expira_em < NOW(6))
+           OR (revogado_em IS NOT NULL AND revogado_em < DATE_SUB(NOW(6), INTERVAL 1 DAY))`
+    )
+    await query('DELETE FROM token_blacklist WHERE expira_em < NOW(6)')
+    await query(
+      'DELETE FROM seguranca_eventos_login WHERE ocorrido_em < DATE_SUB(NOW(6), INTERVAL 90 DAY)'
+    )
+  } catch (erro) {
+    console.warn(
+      '[expurgo] catch-up no boot falhou (segue sem derrubar o boot):',
+      erro instanceof Error ? erro.message : erro
+    )
+  }
+}
+
 export async function garantirEventScheduler(): Promise<void> {
   try {
     const linhas = await query<Array<{ valor: string }>>(
