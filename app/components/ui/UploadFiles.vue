@@ -18,6 +18,8 @@ interface Props {
   listaSeparada?: boolean
   /** Rótulo da lista de arquivos no modo listaSeparada */
   rotuloLista?: string
+  /** Ações (incluir/câmera) reaparecem no foco de teclado; `false` = só no hover do mouse */
+  acoesNoFoco?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,7 +34,8 @@ const props = withDefaults(defineProps<Props>(), {
   compacto: false,
   alt: 'Pré-visualização do arquivo',
   listaSeparada: false,
-  rotuloLista: 'Novos arquivos (serão enviados ao salvar)'
+  rotuloLista: 'Novos arquivos (serão enviados ao salvar)',
+  acoesNoFoco: true
 })
 
 const emit = defineEmits<{
@@ -224,8 +227,11 @@ function aoSoltar(ev: DragEvent) {
 
       <!-- Ícones no canto inferior direito: sempre no mobile; no desktop, no hover/foco -->
       <div
-        class="absolute z-10 flex opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
-        :class="props.compacto ? 'bottom-1 right-1 gap-1' : 'bottom-2 right-2 gap-1.5'"
+        class="absolute z-10 flex opacity-100 transition-opacity duration-200 sm:opacity-0 sm:group-hover:opacity-100"
+        :class="[
+          props.acoesNoFoco ? 'group-focus-within:opacity-100' : '',
+          props.compacto ? 'bottom-1 right-1 gap-1' : 'bottom-2 right-2 gap-1.5'
+        ]"
       >
         <Tooltip content="Incluir arquivo" position="top">
           <button

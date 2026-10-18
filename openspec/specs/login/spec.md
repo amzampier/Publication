@@ -68,7 +68,7 @@ o "Lembrar-me" (apenas o e-mail) e navegar para `/admin` ou para a rota original
 solicitada (`?redirect=`).
 
 #### Scenario: Credenciais corretas logam e atualizam o último acesso
-- **WHEN** o usuário informa `ana.carolina@empresa.com.br` e `Public@2026` e envia
+- **WHEN** o usuário informa `admin@empresa.com.br` e `Public@2026` e envia
 - **THEN** a sessão é estabelecida, o último acesso do registro no banco passa a refletir o
   instante do login e o navegador vai para `/admin`
 

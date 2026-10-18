@@ -4,7 +4,7 @@ import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 /** Destinos permitidos — whitelist fechada (spec uploads: destino fora → 400). */
-export const UPLOAD_DESTINOS = ['logomarcas', 'avatares'] as const
+export const UPLOAD_DESTINOS = ['logomarcas', 'avatares', 'logos'] as const
 export type UploadDestino = (typeof UPLOAD_DESTINOS)[number]
 
 export const UPLOAD_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']

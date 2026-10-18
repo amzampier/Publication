@@ -84,7 +84,7 @@ INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir,
 -- 3. USUÁRIO ADMINISTRADOR INICIAL — NÃO É SEMEADO POR SQL
 -- O administrador é provisionado em TypeScript pelo bootstrap do Nitro
 -- (`server/utils/bootstrap-admin.ts`, chamado por `server/plugins/migration.ts`)
--- após as migrations: cria `ana.carolina@empresa.com.br` com bcrypt cost 12 de
+-- após as migrations: cria `admin@empresa.com.br` com bcrypt cost 12 de
 -- 'Public@2026' e `senha_provisoria = 1`, SOMENTE fora de produção
 -- (NODE_ENV !== 'production'). Por isso este arquivo de referência NÃO contém o
 -- INSERT do admin (um hash placeholder aqui produziria lockout silencioso).
@@ -122,18 +122,6 @@ INSERT INTO configuracoes_limite_requisicao (
     0,
     NULL
 );
-
--- =========================================================================
--- 6. CATÁLOGO INICIAL DE SOFTWARES (códigos SFT-XXX)
--- Espelho da migration 15_seed_softwares.sql (INSERT IGNORE — idempotente).
--- =========================================================================
-INSERT IGNORE INTO softwares (codigo, descricao, categoria, situacao) VALUES
-    ('SFT-001', 'Teorema ERP', 'Delphi e Web', 'Ativo'),
-    ('SFT-002', 'Teorema WMS', 'Delphi', 'Ativo'),
-    ('SFT-003', 'Teorema Fiscal', 'Delphi e Web', 'Ativo'),
-    ('SFT-004', 'Teorema Frente de Caixa', 'Delphi', 'Ativo'),
-    ('SFT-005', 'Teorema Estoque', 'Delphi e Web', 'Inativo'),
-    ('SFT-006', 'Portal Web Teorema', 'Web', 'Ativo');
 
 -- =========================================================================
 -- FIM DOS SEEDS

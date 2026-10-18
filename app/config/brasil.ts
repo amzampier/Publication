@@ -47,6 +47,20 @@ export const REGIOES: OpcaoSelect[] = [
   { value: 'Sul', label: 'Sul' }
 ]
 
+/** Mapa UF → região do Brasil (derivação automática de Região a partir do Estado). */
+export const REGIAO_POR_UF: Record<string, string> = {
+  AC: 'Norte', AP: 'Norte', AM: 'Norte', PA: 'Norte', RO: 'Norte', RR: 'Norte', TO: 'Norte',
+  AL: 'Nordeste', BA: 'Nordeste', CE: 'Nordeste', MA: 'Nordeste', PB: 'Nordeste',
+  PE: 'Nordeste', PI: 'Nordeste', RN: 'Nordeste', SE: 'Nordeste',
+  DF: 'Centro-Oeste', GO: 'Centro-Oeste', MT: 'Centro-Oeste', MS: 'Centro-Oeste',
+  ES: 'Sudeste', MG: 'Sudeste', RJ: 'Sudeste', SP: 'Sudeste',
+  PR: 'Sul', RS: 'Sul', SC: 'Sul'
+}
+
+/** Região esperada para uma UF ('' quando a UF é vazia/desconhecida). */
+export const regiaoDaUf = (uf: string): string =>
+  REGIAO_POR_UF[(uf ?? '').trim().toUpperCase()] ?? ''
+
 /** Provedores do select de Provedor SMTP. */
 export const PROVEDORES_SMTP: OpcaoSelect[] = [
   { value: 'gmail', label: 'Gmail' },

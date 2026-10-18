@@ -43,9 +43,13 @@ export default defineEventHandler(async (event) => {
   }
 
   // Logomarcas alimentam as Configurações Globais (RBAC); avatares são o
-  // retrato do próprio perfil (autoatendimento, só sessão — D3 do design).
+  // retrato do próprio perfil (autoatendimento, só sessão — D3 do design);
+  // logos são a marca do parceiro (exige a permissão de escrita em Parceiros).
   if (destinoTexto === 'logomarcas') {
     await requirePermission(event, 'configuracoes-globais', 'alterar')
+  }
+  if (destinoTexto === 'logos') {
+    await requirePermission(event, 'parceiros', 'alterar')
   }
 
   if (!UPLOAD_MIMES.includes(campoArquivo.type ?? '')) {

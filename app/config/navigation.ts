@@ -84,7 +84,7 @@ export const sessoes: SidebarSession[] = [
     label: 'Cadastros',
     aberto: true,
     items: [
-      { id: 'parceiros', label: 'Parceiros', icon: Handshake, cor: '#047857' },
+      { id: 'parceiros', label: 'Parceiros', icon: Handshake, cor: '#047857', to: '/admin/parceiros' },
       { id: 'softwares', label: 'Softwares', icon: Boxes, cor: '#0364f7', to: '/admin/softwares' }
     ]
   },

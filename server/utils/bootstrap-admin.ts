@@ -9,7 +9,7 @@
 import { hash } from 'bcrypt'
 import { query } from './db'
 
-const ADMIN_EMAIL = 'ana.carolina@empresa.com.br'
+const ADMIN_EMAIL = 'admin@empresa.com.br'
 const ADMIN_SENHA_DEMO = 'Public@2026' // senha demo documentada (docs/08/qa)
 const BCRYPT_COST = 12
 

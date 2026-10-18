@@ -246,11 +246,11 @@ sessão (`ensureSessao`) com redirect para `/admin/login?redirect=`.
 > ou recuperadas) só liberam a Área Administrativa depois da troca em `/admin/primeiro-acesso`;
 > contas com senha definitiva já vigente entram direto.
 >
-> **`ana.carolina@empresa.com.br`** / **`Public@2026`**
+> **`admin@empresa.com.br`** / **`Public@2026`**
 
 | Exercício | Credencial | Resultado esperado |
 | :--- | :--- | :--- |
-| Login completo (Administrador, senha definitiva) | `ana.carolina@empresa.com.br` / senha vigente | entra em `/admin`; header mostra "Ana Carolina Ribeiro / Administrador" |
+| Login completo (Administrador, senha definitiva) | `admin@empresa.com.br` / senha vigente | entra em `/admin`; header mostra "Ana Carolina Ribeiro / Administrador" |
 | Primeiro acesso (senha provisória) | conta recém-provisionada/convite/recuperação | login aceito, porém o acesso fica bloqueado (`403`) até a troca em `/admin/primeiro-acesso` |
 | Conta inexistente no banco | qualquer e-mail sem cadastro | toast genérico "E-mail ou senha inválidos." |
 | Senha errada | admin + senha errada | mesmo toast genérico |

@@ -88,7 +88,7 @@ INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir,
 -- 3. (REMOVIDO) USUÁRIO ADMINISTRADOR INICIAL
 -- O INSERT do admin foi removido desta migration: o hash bcrypt é gerado
 -- em TypeScript no boot (server/plugins/migration.ts + bcrypt cost 12),
--- idempotente por e-mail (ana.carolina@empresa.com.br) — design.md decisão 3.
+-- idempotente por e-mail (admin@empresa.com.br) — design.md decisão 3.
 -- =========================================================================
 
 -- =========================================================================

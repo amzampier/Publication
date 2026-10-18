@@ -41,6 +41,8 @@
    - [5.18 UiTextarea](#518-uitextarea--seção-19-do-design) (seção 19)
 - [5.19 UiSwitch](#519-uiswitch--seção-20-do-design) (seção 20)
 - [5.20 Avatar de Perfil (domínio)](#520-avatar-de-perfil-domínio--tela-meu-perfil)
+- [5.21 UiEntityCard](#521-uientitycard--seção-21-do-design) (seção 21)
+- [5.22 UiPagination](#522-uipagination--seção-22-do-design) (seção 22)
 
 ## 1. Princípios & Tipografia
 
@@ -389,13 +391,14 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `alt` | `string` | `'Pré-visualização do arquivo'` | Texto alternativo da imagem |
 | `listaSeparada` | `boolean` | `false` | **Modo lista separada:** os arquivos aparecem em cards **acima** e a caixa tracejada (prompt) fica **abaixo**, sumindo no single-file enquanto houver arquivo selecionado |
 | `rotuloLista` | `string` | `'Novos arquivos (serão enviados ao salvar)'` | Rótulo da lista de arquivos no modo `listaSeparada` |
+| `acoesNoFoco` | `boolean` | `true` | Ações de canto reaparecem no **foco de teclado** (`group-focus-within`); `false` = aparecem **só no hover do mouse** (ex.: logo do parceiro) |
 
 - **Emits:** `change(arquivos: File[] | null)` — lista selecionada, ou `null` ao excluir · `camera()` (sem payload, para abrir o `CameraWeb`).
 - **Slots:** nenhum.
 - **Estados visuais** (borda `rounded-xl border-2`): **vazio** = tracejada `slate-300` + fundo `slate-50/50`, círculo com ícone `Cloud`, rótulo verde, dica e sugestão; **arrastando** = tracejada verde `border-brand-accent bg-brand-accent/10`; **preenchido** = sólida `border-slate-200 bg-white`, altura equivalente (`min-h-28`).
 - **Modo `listaSeparada`:** a raiz fica **sem borda** (`grid gap-3`) e renderiza — quando há arquivo — o rótulo `rotuloLista` + um **card `emerald` por arquivo** (`border-emerald-200 bg-emerald-50`, ícone `FileText`, nome truncado e tamanho em pt-BR, remover à direita em `rose-600` no hover). A caixa tracejada abaixo usa ícone `Upload` (não `Cloud`) com `rotulo`/`dica` e **some enquanto houver arquivo no single-file** (fica só o card), **voltando** quando o arquivo é removido; no `multiple` ela permanece para acrescentar mais. Sem nome por dentro da caixa e **sem ações de canto** (remover é só do card).
 - **Preview por `forma`:** `circular` 96px `object-cover` (preenche o círculo, corte centralizado — fotos horizontais da câmera não ficam "achadas") · `retrato` 96×72 `object-cover` · `retangular` `max-h-20 contain` (logo integral, sem corte).
-- **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`). Excluir desabilitado sem arquivo. No modo `compacto` as ações viram `size-6` com ícones `h-3.5` e recuo `bottom-1 right-1 gap-1` (cabe em colunas de ~88px sem vazar/ser cortado pelo `overflow-hidden`).
+- **Ações no canto inferior direito**, ordem **Incluir → Câmera → Excluir**, todas com `<UiTooltip>` do sistema (sem `title` nativo): `size-11` no toque e `sm:size-8` — sempre visíveis em telas pequenas, no desktop aparecem em hover/foco (`sm:opacity-0 group-hover:opacity-100`) — o reveal por foco é controlado por `acoesNoFoco` (default `true`; `false` = só no hover). Excluir desabilitado sem arquivo. No modo `compacto` as ações viram `size-6` com ícones `h-3.5` e recuo `bottom-1 right-1 gap-1` (cabe em colunas de ~88px sem vazar/ser cortado pelo `overflow-hidden`).
 - **Gotchas:** aceita clique e drag & drop (`dragover/dragleave/drop`); no single-file a prévia usa o 1º arquivo `image/*`; `URL.createObjectURL` é liberada com `revokeObjectURL` ao trocar/remover; no modo múltiplo lista os nomes + contagem; no modo `listaSeparada` a prévia de imagem não é montada (o arquivo vira card) e o drop funciona sobre a área da lista.
 
 ```vue
@@ -1066,4 +1069,64 @@ kit; espelhado em `docs/09`)
 
 ```vue
 <PerfilAvatar :nome="rascunho.nome" :preview="rascunho.avatar" @alterar-foto="abrirFoto" />
+```
+
+### 5.21 UiEntityCard — seção 21 do `/design`
+
+**Arquivo:** `app/components/ui/EntityCard.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `codigo` | `string` | `''` | Identificador secundário no topo, em `font-mono` (ex.: `PAR-001`) |
+| `badge` | `{ label: string; variant?: BadgeVariant }` | — | Badge de status no topo (`UiBadge`) |
+| `icone` | `Component` | — | Ícone da entidade, à esquerda do título (ex.: `Handshake`) |
+| `titulo` | `string` | — | Título do card (ex.: razão social) |
+| `subtitulo` | `string` | `''` | Subtítulo do card (ex.: nome fantasia) |
+| `linhas` | `{ rotulo: string; valor: string; icone?: Component }[]` | `[]` | Linhas rótulo → valor, cada uma com ícone opcional à esquerda |
+
+- **Visual:** card `rounded-xl border border-slate-200 bg-white p-4 shadow-xs` (mesma família de
+  `UiKpi`/`perfil/Resumo.vue`); topo com código (`font-mono text-[11px] font-semibold text-slate-500`)
+  + badge de status; à esquerda do título, o tile do ícone (`h-7 w-7 rounded-lg bg-emerald-50
+  text-emerald-700`); título `text-sm font-bold text-slate-900` e subtítulo `text-xs text-slate-500`;
+  bloco de linhas separado do título por **`border-t border-brand-focus`** (divisória verde de 1px,
+  com `pt-3`) e, abaixo dela, um **container recuado** (`rounded-lg border border-slate-200 bg-slate-50
+  p-3` — cinza claro simulando profundidade) com rótulo `text-[11px] font-medium text-slate-500`
+  (ícone opcional `h-3.5 w-3.5 text-slate-400` à esquerda) e valor `text-xs font-semibold
+  text-slate-900` à direita.
+- **Ações:** slot nomeado `acoes`, no topo à direita; ficam **ocultas** (`opacity-0`) e aparecem no
+  hover do card (`group-hover:opacity-100`) e no foco de teclado (`group-focus-within:opacity-100`),
+  permanecendo focáveis — mesmo padrão do lápis do Avatar (§5.20).
+- **Espelhamento:** seção 21 do `/design` — três cards de exemplo (Ativo/Inativo/Bloqueado).
+
+```vue
+<UiEntityCard codigo="PAR-001" :badge="{ label: 'Ativo', variant: 'done' }" :icone="Handshake"
+  titulo="Nexus Corp" subtitulo="Nexus Paulista"
+  :linhas="[{ rotulo: 'Localização', valor: 'São Paulo - SP', icone: MapPin }, { rotulo: 'Região', valor: 'Sudeste', icone: Map }]">
+  <template #acoes>…</template>
+</UiEntityCard>
+```
+
+### 5.22 UiPagination — seção 22 do `/design`
+
+**Arquivo:** `app/components/ui/Pagination.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `number` | — | Página corrente (1-based, `v-model`) |
+| `total` | `number` | — | Total de registros do conjunto |
+| `perPage` | `number` | — | Registros por página (`v-model:per-page`) |
+| `pageSizeOptions` | `number[]` | `[5, 10, 20, 50]` | Opções do seletor "Linhas por página" |
+| `rotulo` | `string` | `'entradas'` | Rótulo do conjunto no resumo (ex.: `parceiros`) |
+
+- **Visual:** barra `rounded-lg border border-slate-200 bg-white px-3.5 py-2 shadow-xs`; resumo
+  "Mostrando X a Y de N … exibidas" à esquerda; à direita o seletor de linhas por página, o
+  indicador "Página X de Y" e os quatro botões `h-6 w-6` (`« ‹ › »`) — mesmo padrão de paginação do
+  `UiDataTable` (§5.11).
+- **Estados:** na primeira página, `«` e `‹` ficam `disabled` (`opacity-40 cursor-not-allowed`); na
+  última, `›` e `»`. Trocar o tamanho da página volta para a página 1; quando o total encolhe, a
+  página é reajustada ao novo limite.
+- **Espelhamento:** seção 22 do `/design` — barra interativa com 23 registros.
+
+```vue
+<UiPagination v-model="pagina" v-model:per-page="porPagina" :total="linhas.length" rotulo="parceiros" />
 ```

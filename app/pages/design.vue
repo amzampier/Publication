@@ -48,7 +48,11 @@ import {
   MessageCircle,
   Smartphone,
   LoaderCircle,
-  AlignLeft
+  AlignLeft,
+  Pencil,
+  Handshake,
+  Map,
+  MapPin
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -645,6 +649,11 @@ const textareaDemo = ref('')
 const textareaErroDemo = 'Informe a descrição.'
 const switchDemo = ref(true)
 
+// Demonstração das seções 21/22 — UiEntityCard e UiPagination
+const entityCardPaginaDemo = ref(1)
+const entityCardPorPaginaDemo = ref(5)
+const entityCardTotalDemo = 23
+
 // Navegação rápida de âncoras
 const secoes = [
   { id: 'principios', label: '1. Princípios & Tipografia' },
@@ -666,7 +675,9 @@ const secoes = [
   { id: 'choice-card', label: '17. Cards de Escolha (UiChoiceCard)' },
   { id: 'loading', label: '18. Loading (UiLoading)' },
   { id: 'textarea', label: '19. Textarea (UiTextarea)' },
-  { id: 'switch', label: '20. Switch (UiSwitch)' }
+  { id: 'switch', label: '20. Switch (UiSwitch)' },
+  { id: 'entity-card', label: '21. Cards de Entidade (UiEntityCard)' },
+  { id: 'pagination', label: '22. Paginação (UiPagination)' }
 ]
 </script>
 
@@ -2945,6 +2956,138 @@ variant="lime"
             <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiSwitch v-model="ativo" label="Notificações" /&gt;
 &lt;UiSwitch :model-value="false" aria-label="Manuais: visualizar" /&gt;
 &lt;UiSwitch v-model="x" label="Bloqueado" disabled /&gt;</pre>
+          </div>
+        </section>
+        <section id="entity-card" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <LayoutGrid class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  21. Cards de Entidade (UiEntityCard)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Card de entidade do kit: código em mono + badge de status no topo, título/subtítulo e
+                  linhas rótulo → valor. As ações (slot <code class="font-mono text-slate-700">acoes</code>)
+                  aparecem no hover do card e no foco de teclado, permanecendo focáveis.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Demonstração -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <UiEntityCard
+                codigo="PAR-001"
+                :badge="{ label: 'Ativo', variant: 'done' }"
+                :icone="Handshake"
+                titulo="Nexus Corp — Matriz São Paulo"
+                subtitulo="Nexus Paulista Corporate"
+                :linhas="[
+                  { rotulo: 'Localização', valor: 'São Paulo - SP', icone: MapPin },
+                  { rotulo: 'Região', valor: 'Sudeste', icone: Map }
+                ]"
+              >
+                <template #acoes>
+                  <button
+                    type="button"
+                    aria-label="Editar"
+                    class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-lime-50 hover:text-brand-focus"
+                  >
+                    <Pencil class="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Excluir"
+                    class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700"
+                  >
+                    <Trash2 class="h-3.5 w-3.5" />
+                  </button>
+                </template>
+              </UiEntityCard>
+
+              <UiEntityCard
+                codigo="PAR-002"
+                :badge="{ label: 'Inativo', variant: 'neutral' }"
+                :icone="Handshake"
+                titulo="Distribuidora Sul Ltda"
+                subtitulo="Sul Distribuição"
+                :linhas="[
+                  { rotulo: 'Localização', valor: 'Porto Alegre - RS', icone: MapPin },
+                  { rotulo: 'Região', valor: 'Sul', icone: Map }
+                ]"
+              />
+
+              <UiEntityCard
+                codigo="PAR-003"
+                :badge="{ label: 'Bloqueado', variant: 'blocked' }"
+                :icone="Handshake"
+                titulo="Amazon Redes S.A."
+                subtitulo="Amazon Tech Retail"
+                :linhas="[
+                  { rotulo: 'Localização', valor: 'Manaus - AM', icone: MapPin },
+                  { rotulo: 'Região', valor: 'Norte', icone: Map }
+                ]"
+              />
+            </div>
+          </div>
+
+          <!-- Uso -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiEntityCard codigo="PAR-001" :badge="{ label: 'Ativo', variant: 'done' }" :icone="Handshake"
+  titulo="Nexus Corp" subtitulo="Nexus Paulista"
+  :linhas="[{ rotulo: 'Localização', valor: 'São Paulo - SP', icone: MapPin }, { rotulo: 'Região', valor: 'Sudeste', icone: Map }]"&gt;
+  &lt;template #acoes&gt;…&lt;/template&gt;
+&lt;/UiEntityCard&gt;</pre>
+          </div>
+        </section>
+
+        <section id="pagination" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <!-- Header da Seção -->
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <TableProperties class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  22. Paginação (UiPagination)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Barra de paginação client-side reutilizável: resumo de entradas, seletor de linhas por
+                  página, indicador de página e navegação <code class="font-mono text-slate-700">« ‹ › »</code>
+                  com estados desabilitado na primeira/última página.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Demonstração -->
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <UiPagination
+              v-model="entityCardPaginaDemo"
+              v-model:per-page="entityCardPorPaginaDemo"
+              :total="entityCardTotalDemo"
+              rotulo="entradas"
+            />
+            <p class="mt-3 text-xs text-slate-500">
+              Estado da demo (v-model):
+              <span class="font-mono text-slate-700">
+                página {{ entityCardPaginaDemo }} · {{ entityCardPorPaginaDemo }} por página
+              </span>
+              · o primeiro/último botão desabilitam nos extremos.
+            </p>
+          </div>
+
+          <!-- Uso -->
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiPagination v-model="pagina" v-model:per-page="porPagina" :total="linhas.length" rotulo="parceiros" /&gt;</pre>
           </div>
         </section>
       </main>

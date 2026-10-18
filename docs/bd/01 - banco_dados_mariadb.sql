@@ -135,14 +135,18 @@ CREATE TABLE usuarios (
 -- =========================================================================
 CREATE TABLE parceiros (
     id VARCHAR(64) NOT NULL COMMENT 'Identificador único do parceiro',
+    codigo VARCHAR(20) NOT NULL COMMENT 'Codigo unico do parceiro (PAR-XXX), identificador secundario',
     razao_social VARCHAR(255) NOT NULL COMMENT 'Razão social oficial',
     nome_fantasia VARCHAR(150) NOT NULL COMMENT 'Nome fantasia / marca comercial',
     cidade VARCHAR(120) NOT NULL COMMENT 'Cidade sede',
     estado CHAR(2) NOT NULL COMMENT 'Sigla do Estado (UF)',
+    regiao VARCHAR(20) NOT NULL DEFAULT '' COMMENT 'Regiao do Brasil (Norte, Nordeste, Centro-Oeste, Sudeste, Sul)',
+    logo_url VARCHAR(500) NULL COMMENT 'Caminho/URL da logo do parceiro (/uploads/logos/...)',
     situacao ENUM('Ativo', 'Inativo', 'Bloqueado') NOT NULL DEFAULT 'Ativo' COMMENT 'Situação cadastral',
     criado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     atualizado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
+    UNIQUE KEY uq_parceiros_codigo (codigo),
     KEY idx_parceiros_nome_fantasia (nome_fantasia),
     KEY idx_parceiros_situacao (situacao),
     KEY idx_parceiros_estado (estado),

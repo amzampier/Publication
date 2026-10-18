@@ -345,6 +345,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
             rotulo="Foto"
             dica="PNG ou JPG"
             aceitar="image/*"
+            :acoes-no-foco="false"
             :preview="rascunho.avatar"
             @change="aoTrocarAvatar"
             @camera="cameraAberta = true"

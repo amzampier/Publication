@@ -57,7 +57,8 @@ Administrativa:
   `softwares(codigo)`.
 - **Persistência:** a listagem é carregada de `GET /api/softwares` no `onMounted`; a tela exibe
   `UiLoading` no voo e, em falha, um toast de erro + lista **vazia** — nunca a demo fingindo ser
-  persistida (RL02 DIV-12/13). O catálogo é semeado por `server/migration/15_seed_softwares.sql`.
+  persistida (RL02 DIV-12/13). O catálogo **nasce vazio** (sem seed): o primeiro software cadastrado
+  recebe o código `SFT-001`, gerado pelo servidor na inclusão/importação.
 - **Componentização:** a página é fina e dona da coordenação; cada parte é um componente em
   `app/components/softwares/` (auto-import com prefixo `Softwares*`).
 

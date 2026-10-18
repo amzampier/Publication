@@ -69,7 +69,7 @@ Um erro não tolerado SHALL interromper a execução das migrations e ser claram
 - **THEN** a execução daquele arquivo para, o erro é logado com o nome do arquivo e do statement, e a inicialização sinaliza a falha
 
 ### Requirement: Seeds iniciais completos
-Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 4 perfis padrão (Administrador, Editor, Revisor, Leitor), a matriz de permissões (11 módulos × 4 perfis), a linha `config_default` de `configuracoes_globais`, a linha padrão de `configuracoes_limite_requisicao` e o **catálogo inicial de softwares** (códigos sequenciais `SFT-001`… com descrição, categoria e situação).
+Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 4 perfis padrão (Administrador, Editor, Revisor, Leitor), a matriz de permissões (11 módulos × 4 perfis), a linha `config_default` de `configuracoes_globais` e a linha padrão de `configuracoes_limite_requisicao`. O banco zerado **não** SHALL conter softwares pré-cadastrados — o catálogo de softwares inicia **vazio** e seus códigos sequenciais são gerados pelo servidor na inclusão/importação.
 
 #### Scenario: Perfis e matriz de permissões presentes
 - **WHEN** o provisionamento termina
@@ -80,15 +80,14 @@ Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 
 - **THEN** existe exatamente uma linha `config_default` com sidebar expandida e retenção de 180 dias
 
 #### Scenario: Catálogo de softwares inicializado
-- **WHEN** o provisionamento termina
-- **THEN** existem softwares com códigos sequenciais (a partir de `SFT-001`), cada um com descrição,
-  categoria e situação
+- **WHEN** o provisionamento termina em um banco zerado
+- **THEN** a tabela `softwares` está vazia (nenhum software de exemplo é inserido) e o catálogo nasce sem registros
 
 ### Requirement: Administrador inicial com hash bcrypt real
 O usuário administrador inicial SHALL existir no banco com hash bcrypt válido (cost 12) da senha provisória documentada (`Public@2026`), permitindo login real. O provisionamento automático SHALL ocorrer **somente quando o ambiente não for de produção** (`NODE_ENV !== 'production'`), SHALL marcar a senha como provisória (`senha_provisoria = 1`) para exigir a troca no primeiro acesso e SHALL ser idempotente: um admin já existente não é sobrescrito.
 
 #### Scenario: Bootstrap cria o admin na primeira execução
-- **WHEN** o provisionamento roda em ambiente não-produção sem o usuário `ana.carolina@empresa.com.br`
+- **WHEN** o provisionamento roda em ambiente não-produção sem o usuário `admin@empresa.com.br`
 - **THEN** o usuário é criado com perfil Administrador, situação Ativo, hash bcrypt verificável e marcado com senha provisória
 
 #### Scenario: Admin existente não é modificado
