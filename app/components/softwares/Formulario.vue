@@ -193,14 +193,19 @@ const atualizadoTexto = () => formatarDataHora(rascunho.value.atualizado_em) || 
         class="[&>div.grid]:gap-y-[11px]"
       >
         <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-6">
-          <UiInput
-            v-model="rascunho.descricao"
-            data-campo="descricao"
-            class="sm:col-span-6"
-            label="Descrição"
-            placeholder="Ex.: Teorema ERP"
-            :error="erros.descricao"
-          />
+          <div class="flex flex-col gap-[11px] sm:col-span-6 sm:flex-row sm:gap-4">
+            <div v-if="modo === 'editar'" class="sm:w-[calc(10ch+32px)] sm:shrink-0">
+              <UiInput label="Código" :model-value="rascunho.codigo" disabled mono />
+            </div>
+            <UiInput
+              v-model="rascunho.descricao"
+              data-campo="descricao"
+              class="flex-1"
+              label="Descrição"
+              placeholder="Ex.: Teorema ERP"
+              :error="erros.descricao"
+            />
+          </div>
           <div data-campo="categoria" class="sm:col-span-3">
             <UiSelect
               :model-value="rascunho.categoria"
@@ -231,7 +236,6 @@ const atualizadoTexto = () => formatarDataHora(rascunho.value.atualizado_em) || 
         class="[&>div.grid]:gap-y-[11px]"
       >
         <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-2">
-          <UiInput label="Código" :model-value="rascunho.codigo" disabled mono />
           <UiInput label="Criado em" :model-value="criadoTexto()" disabled />
           <UiInput label="Atualizado em" :model-value="atualizadoTexto()" disabled />
         </div>

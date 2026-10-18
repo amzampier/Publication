@@ -32,11 +32,8 @@ const cancelar = () => emit('update:modelValue', false)
     <UiModalSection title="Este software será excluído" :icon="Boxes">
       <div class="grid gap-0.5">
         <p class="text-sm font-semibold text-slate-900 break-words">
-          {{ software?.descricao }}
-        </p>
-        <p class="text-sm font-medium text-slate-900">
-          Código:
-          <span class="font-mono font-normal text-slate-700">{{ software?.codigo }}</span>
+          <span class="font-mono">{{ software?.codigo }}</span>
+          - {{ software?.descricao }}
         </p>
         <p class="text-sm font-medium text-slate-900">
           Categoria:
