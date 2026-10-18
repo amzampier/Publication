@@ -36,6 +36,9 @@ export const CHAVES_ESTADO_SESSAO = [
   'auditoria-kpis',
   'auditoria-busca',
   'permissoes-usuario',
+  'permissoes-carregado',
+  'usuario-avatar',
+  'usuario-avatar-carregado',
   'config-globais-cache',
   'config-shell-cache'
 ] as const
@@ -93,6 +96,9 @@ export function limparEstadoSessao(): void {
 
   // RBAC do próprio usuário e cache das Configurações Globais
   useState('permissoes-usuario', () => ({})).value = {}
+  useState<boolean>('permissoes-carregado', () => false).value = false
+  useState<string>('usuario-avatar', () => '').value = ''
+  useState<boolean>('usuario-avatar-carregado', () => false).value = false
   useState('config-globais-cache', () => null).value = null
   useState('config-shell-cache', () => null).value = null
 }

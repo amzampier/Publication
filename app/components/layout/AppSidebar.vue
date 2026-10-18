@@ -3,10 +3,20 @@ import { computed, ref, watch } from 'vue'
 import { ChevronDown as ChevronDownIcon } from '@lucide/vue'
 import type { SidebarItem, SidebarSession } from '../../config/navigation'
 import { itemRaiz, sessoes as sessoesDefinidas } from '../../config/navigation'
+import { FUNCIONALIDADES_POR_MODULO } from '../../config/perfis'
 import { useSessoesAbertas } from '../../composables/useSessoesAbertas'
+import { usePermissions } from '../../composables/usePermissions'
 import { useToast } from '../../composables/useToast'
 
 defineProps<{ sidebarOpen: boolean }>()
+
+// RBAC: item de módulo só aparece quando o perfil concede `visualizar` (o item
+// raiz e itens sem módulo — ex.: Painel Executivo — ficam sempre visíveis).
+const { podeVisualizar } = usePermissions()
+const itemVisivel = (item: SidebarItem) => {
+  const modulo = item.modulo ?? item.id
+  return !(modulo in FUNCIONALIDADES_POR_MODULO) || podeVisualizar(modulo)
+}
 
 // Estado compartilhado com Configurações > Sidebar: as sessões refletem a preferência
 // em tempo real (e os cliques aqui atualizam a preferência — fonte única em memória).
@@ -16,7 +26,7 @@ const sessoes = computed<SidebarSession[]>(() =>
   sessoesDefinidas.map((sessao) => ({
     ...sessao,
     aberto: sessoesAbertas.value[sessao.label] ?? sessao.aberto,
-    items: [...sessao.items]
+    items: sessao.items.filter((item) => itemVisivel(item))
   }))
 )
 

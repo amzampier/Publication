@@ -1,11 +1,11 @@
 // PUT /api/perfis/:id/permissoes — substitui a matriz inteira em transação
-// (200 | 400 módulo/ação desconhecido | 404 perfil inexistente)
+// (200 | 400 módulo/funcionalidade desconhecida | 404 perfil inexistente)
 import { buscarPerfil, salvarMatriz, validarId } from '../../../../utils/perfis'
 import { registrarAuditoria } from '../../../../utils/audit'
 import { requirePermission } from '../../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'perfis-acesso', 'alterar')
+  await requirePermission(event, 'perfis-acesso', 'permissoes')
   const id = validarId(getRouterParam(event, 'id'))
 
   const body = await readBody<Record<string, unknown>>(event)

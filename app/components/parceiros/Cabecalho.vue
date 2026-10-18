@@ -5,6 +5,10 @@ import { useParceirosModelo } from './useParceirosModelo'
 import { gerarPdfParceiros } from './gerarPdfParceiros'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
+import { useApiFetch } from '../../composables/useApiFetch'
+
+const { can } = usePermissions()
 
 // Abre o fluxo de cadastro (coordenação na página).
 const emit = defineEmits<{
@@ -36,9 +40,11 @@ const { toast } = useToast()
 const exportando = ref(false)
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
   try {
+    // Guarda server-side: exige parceiros/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/parceiros', { query: { exportar: '1' } })
     const escapar = (v: string | number) => {
       let texto = String(v)
       if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
@@ -68,6 +74,7 @@ const relacaoParceirosPdf = async () => {
   menuAberto.value = false
   exportando.value = true
   try {
+    await useApiFetch('/api/parceiros', { query: { exportar: '1' } })
     await gerarPdfParceiros({ parceiros: parceirosVisiveis.value, logoPreview: previewLoginGlobal.value })
   } catch (erro) {
     console.error('[pdf] falha ao gerar o relatorio de parceiros:', erro)
@@ -93,7 +100,7 @@ const relacaoParceirosPdf = async () => {
     </div>
 
     <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <div ref="relatoriosRef" class="relative w-full sm:w-auto">
+      <div v-if="can('parceiros', 'exportar')" ref="relatoriosRef" class="relative w-full sm:w-auto">
         <UiButton
           variant="outline"
           size="md"
@@ -140,7 +147,7 @@ const relacaoParceirosPdf = async () => {
         </div>
       </div>
 
-      <UiButton variant="primary" size="md" class="w-full sm:w-auto" @click="emit('novo')">
+      <UiButton v-if="can('parceiros', 'criar')" variant="primary" size="md" class="w-full sm:w-auto" @click="emit('novo')">
         <template #leftIcon><Plus class="h-4 w-4" /></template>
         Novo Parceiro
       </UiButton>

@@ -14,6 +14,11 @@ const { expandida: sidebarOpen, aplicarLarguraInicial, marcarPreferenciaManual }
 // Em falha do GET o loader devolve null e valem os defaults do seed.
 await carregarShell()
 
+// Matriz de permissões do usuário também no SSR: a sidebar e o menu da conta já
+// saem no primeiro paint com os itens permitidos (evita flash de itens negados).
+// `garantir` nunca lança (em erro mantém fail-open).
+await usePermissions().garantir()
+
 // Ajuste pela largura da viewport continua no cliente (o servidor não a
 // conhece); com preferência salva o marcarPreferenciaManual já veio true no
 // payload e o aplicarLarguraInicial respeita o banco sem sobrescrever.

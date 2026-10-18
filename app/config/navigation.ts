@@ -24,6 +24,8 @@ export interface SidebarItem {
   cor?: string
   /** Rota navegável; ausente = item sem rota (só muda o estado visual) */
   to?: string
+  /** Módulo RBAC cujo `visualizar` controla a visibilidade (ausente = usa o próprio `id`) */
+  modulo?: string
 }
 
 export interface SidebarSession {
@@ -39,6 +41,8 @@ export interface MenuItem {
   cor?: string
   /** Rota navegável; ausente = item sem rota */
   to?: string
+  /** Módulo RBAC cujo `visualizar` controla a visibilidade do item (ausente = sempre visível) */
+  modulo?: string
 }
 
 export interface Notificacao {
@@ -94,7 +98,7 @@ export const sessoes: SidebarSession[] = [
     // Mesmas cores do accountMenuItens (mesmo item => mesma cor)
     items: [
       { id: 'gestao-usuarios', label: 'Gestão de Usuários', icon: Users, cor: '#b070ef', to: '/admin/gestao-usuarios' },
-      { id: 'perfis-rbac', label: 'Perfis de Acesso (RBAC)', icon: ShieldCheck, cor: '#f5b302', to: '/admin/perfis-acesso' },
+      { id: 'perfis-rbac', label: 'Perfis de Acesso (RBAC)', icon: ShieldCheck, cor: '#f5b302', to: '/admin/perfis-acesso', modulo: 'perfis-acesso' },
       { id: 'auditoria', label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf', to: '/admin/auditoria' },
       { id: 'configuracoes-globais', label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais' }
     ]
@@ -117,10 +121,10 @@ export const accountMeuPerfil: MenuItem = {
 }
 
 export const accountMenuItens: MenuItem[] = [
-  { label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais' },
-  { label: 'Gestão de Usuários', icon: Users, cor: '#b070ef', to: '/admin/gestao-usuarios' },
-  { label: 'Perfis de Acesso (RBAC)', icon: ShieldCheck, cor: '#f5b302', to: '/admin/perfis-acesso' },
-  { label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf', to: '/admin/auditoria' }
+  { label: 'Configurações Globais', icon: Settings, cor: '#50a1ff', to: '/admin/configuracoes-globais', modulo: 'configuracoes-globais' },
+  { label: 'Gestão de Usuários', icon: Users, cor: '#b070ef', to: '/admin/gestao-usuarios', modulo: 'gestao-usuarios' },
+  { label: 'Perfis de Acesso (RBAC)', icon: ShieldCheck, cor: '#f5b302', to: '/admin/perfis-acesso', modulo: 'perfis-acesso' },
+  { label: 'Gestão de Auditoria', icon: ScrollText, cor: '#2dd4bf', to: '/admin/auditoria', modulo: 'auditoria' }
 ]
 
 export const accountEncerrarSessao: MenuItem = {

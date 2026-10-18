@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Import, MailCheck, Lock, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
+import { usePermissions } from '../../composables/usePermissions'
 import { useUsuarios } from './useUsuarios'
 import {
   formatarUltimoAcesso,
@@ -12,6 +13,8 @@ import {
 
 const { usuariosFiltrados, filtrosAtivosCount, pagina, porPagina, total, irParaPagina, mudarPorPagina, buscar, ordenarPor, busca } =
   useUsuarios()
+
+const { can } = usePermissions()
 
 // Abre modais na página (coordenação dela): filtros, edição, exclusão, importação, convite e bloqueio
 const emit = defineEmits<{
@@ -57,7 +60,8 @@ const colunas: ColumnDef[] = [
       :page="pagina"
       :per-page="porPagina"
       show-header-top
-      show-filters
+      :show-search="can('gestao-usuarios', 'buscar')"
+      :show-filters="can('gestao-usuarios', 'filtrar')"
       :filters-count="filtrosAtivosCount"
       @open-filters="emit('filtros')"
       @page-change="irParaPagina"
@@ -66,7 +70,7 @@ const colunas: ColumnDef[] = [
       @sort-change="ordenarPor"
     >
       <template #filtersLeft>
-        <UiTooltip content="Importar Novos Usuários" position="top">
+        <UiTooltip v-if="can('gestao-usuarios', 'importar')" content="Importar Novos Usuários" position="top">
           <button
             type="button"
             aria-label="Importar novos usuários"
@@ -92,7 +96,7 @@ const colunas: ColumnDef[] = [
 
       <template #actions="{ row }">
         <div class="flex items-center justify-center gap-[7px]">
-          <UiTooltip content="Enviar o Convite" position="top">
+          <UiTooltip v-if="can('gestao-usuarios', 'convite')" content="Enviar o Convite" position="top">
             <button
               type="button"
               aria-label="Enviar o Convite"
@@ -103,6 +107,7 @@ const colunas: ColumnDef[] = [
             </button>
           </UiTooltip>
           <UiTooltip
+            v-if="can('gestao-usuarios', 'alterar')"
             :content="row.status === 'Ativo' ? 'Bloquear usuário' : 'Desbloquear usuário'"
             position="top"
           >
@@ -115,7 +120,7 @@ const colunas: ColumnDef[] = [
               <Lock class="h-3.5 w-3.5" />
             </button>
           </UiTooltip>
-          <UiTooltip content="Editar usuário" position="top">
+          <UiTooltip v-if="can('gestao-usuarios', 'alterar')" content="Editar usuário" position="top">
             <button
               type="button"
               aria-label="Editar usuário"
@@ -125,7 +130,7 @@ const colunas: ColumnDef[] = [
               <Pencil class="h-3.5 w-3.5" />
             </button>
           </UiTooltip>
-          <UiTooltip content="Excluir usuário" position="top">
+          <UiTooltip v-if="can('gestao-usuarios', 'excluir')" content="Excluir usuário" position="top">
             <button
               type="button"
               aria-label="Excluir usuário"

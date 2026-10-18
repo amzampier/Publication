@@ -10,10 +10,11 @@ preservando as portas públicas e o autoatendimento.
 
 ### Requirement: Toda rota de módulo exige a permissão correspondente
 O sistema SHALL autorizar cada rota administrativa de módulo pela matriz do perfil do usuário da
-sessão (as 4 ações fixas `visualizar`, `criar`, `alterar`, `excluir` e as ações extras
-`publicar`, `arquivar`, `download`, `exportar`, `importar`), respondendo `403` e **sem efeito
-sobre os dados** quando a permissão exigida não estiver concedida. Requisições sem sessão válida
-SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente após a autenticação).
+sessão, segundo o **catálogo de funcionalidades de cada módulo** (as funcionalidades fixas
+`visualizar`, `criar`, `alterar`, `excluir` e as específicas do módulo — ex.: `importar`, `exportar`,
+`filtrar`, `buscar`, `permissoes`, `publicar`, `arquivar`, `download`), respondendo `403` e **sem
+efeito sobre os dados** quando a permissão exigida não estiver concedida. Requisições sem sessão
+válida SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente após a autenticação).
 
 #### Scenario: Permissão concedida prossegue
 - **WHEN** um usuário autenticado cujo perfil concede a ação exigida chama a rota de módulo
@@ -28,34 +29,44 @@ SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente após a
 - **THEN** a resposta é `401` e a verificação de permissão não é executada
 
 #### Scenario: Ação extra é exigida como as ações fixas
-- **WHEN** a rota corresponde a uma ação extra (ex.: importar, exportar) não concedida ao perfil
-- **THEN** a API responde `403`, tratando a ação extra como qualquer ação fixa
+- **WHEN** a rota corresponde a uma funcionalidade específica do módulo (ex.: importar, exportar,
+  filtrar, buscar, permissoes) não concedida ao perfil
+- **THEN** a API responde `403`, tratando a funcionalidade específica como qualquer ação fixa
 
 ### Requirement: O catálogo de rotas administrativas mapeia cada rota para módulo e ação
-O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da ação indicados
-(o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
-`auditoria`, `configuracoes-globais`, `softwares`):
+O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da funcionalidade
+indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
+`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`):
 
-- `GET /api/usuarios` → `gestao-usuarios` / `visualizar`
+- `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com o parâmetro de **filtro/paginação**
+  server-side → `gestao-usuarios` / `filtrar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
 - `GET /api/usuarios/emails` → `gestao-usuarios` / `visualizar`
 - `GET /api/usuarios/:id` → `gestao-usuarios` / `visualizar`
-- `POST /api/usuarios`, `POST /api/convite` → `gestao-usuarios` / `criar`
+- `POST /api/usuarios` → `gestao-usuarios` / `criar`; `POST /api/convite` → `gestao-usuarios` / `convite`
 - `PUT /api/usuarios/:id`, `PUT /api/usuarios/:id/situacao` → `gestao-usuarios` / `alterar`
 - `DELETE /api/usuarios/:id` → `gestao-usuarios` / `excluir`
 - `POST /api/usuarios/importar` → `gestao-usuarios` / `importar`
-- `GET /api/perfis` → `perfis-acesso` / `visualizar`
+- `GET /api/usuarios` com o parâmetro de **exportação** → `gestao-usuarios` / `exportar`
+- `GET /api/perfis` → `perfis-acesso` / `visualizar`; com o parâmetro de **exportação** → `perfis-acesso` / `exportar`
 - `POST /api/perfis` → `perfis-acesso` / `criar`
-- `PUT /api/perfis/:id`, `PUT /api/perfis/:id/permissoes`, `POST /api/perfis/:id/permissoes/copiar` → `perfis-acesso` / `alterar`
+- `PUT /api/perfis/:id` → `perfis-acesso` / `alterar`
+- `PUT /api/perfis/:id/permissoes`, `POST /api/perfis/:id/permissoes/copiar` → `perfis-acesso` / `permissoes`
 - `DELETE /api/perfis/:id` → `perfis-acesso` / `excluir`
-- `GET /api/softwares` → `softwares` / `visualizar`
+- `GET /api/softwares` → `softwares` / `visualizar`; com o parâmetro de **exportação** → `softwares` / `exportar`
 - `POST /api/softwares` → `softwares` / `criar`
 - `PUT /api/softwares/:codigo` → `softwares` / `alterar`
 - `DELETE /api/softwares/:codigo` → `softwares` / `excluir`
 - `POST /api/softwares/importar` → `softwares` / `importar`
-- `GET /api/auditoria` → `auditoria` / `visualizar`
+- `GET /api/parceiros` → `parceiros` / `visualizar`; com o parâmetro de **exportação** → `parceiros` / `exportar`
+- `POST /api/parceiros` → `parceiros` / `criar`
+- `PUT /api/parceiros/:id` → `parceiros` / `alterar`
+- `DELETE /api/parceiros/:id` → `parceiros` / `excluir`
+- `POST /api/parceiros/importar` → `parceiros` / `importar`
+- `GET /api/auditoria` → `auditoria` / `visualizar`; com o parâmetro de **filtro** → `auditoria` / `filtrar`;
+  com o parâmetro de **busca** → `auditoria` / `buscar`; com o parâmetro de **exportação** → `auditoria` / `exportar`
 - `GET /api/configuracoes`, `GET /api/seguranca/estado` → `configuracoes-globais` / `visualizar`
 - `PUT /api/configuracoes`, `POST /api/seguranca/liberar` → `configuracoes-globais` / `alterar`
-- `POST /api/uploads` com destino `logomarcas` → `configuracoes-globais` / `alterar`
+- `POST /api/uploads` com destino `logomarcas` → `configuracoes-globais` / `alterar`; com destino `logos` → `parceiros` / `alterar`
 
 #### Scenario: Leitor não executa escrita nem exclusão
 - **WHEN** um usuário com perfil Leitor (que não concede `criar`, `alterar` nem `excluir` em `gestao-usuarios`) chama `POST`, `PUT` ou `DELETE` de usuários
@@ -102,10 +113,19 @@ alimenta o `.can()`) e `POST /api/uploads` com destino `avatares` (retrato do pr
 
 ### Requirement: O cliente dispõe do helper `.can(modulo, acao)`
 O sistema SHALL disponibilizar no cliente um helper reativo `.can(modulo, acao)` que consulta as
-permissões do perfil do usuário da sessão, para uso incremental na interface. Nesta etapa o
-helper SHALL poder ser consumido quando necessário, **sem** exigir o ocultamento de itens de
-navegação ou botões (o controle de interface é tema de etapa posterior).
+permissões do perfil do usuário da sessão e SHALL usá-lo para **controlar a interface**: as
+funcionalidades que o perfil não possui SHALL ser escondidas ou desabilitadas — em particular os
+itens de navegação do módulo (sidebar e menu da conta), os botões de ação de linha (criar, editar,
+excluir, bloquear, enviar convite), o botão
+"Filtros" (`filtrar`), o campo de busca (`buscar`), as exportações (`exportar`/`download`), a
+importação (`importar`) e a ação "Permissões" (`permissoes`). Nos módulos cujo filtro/busca são
+server-side (Gestão de Usuários e Auditoria) a imposição é **também** no servidor; nos demais
+(Softwares, Parceiros, Perfis) o controle é de interface.
 
 #### Scenario: Helper responde pelas permissões do perfil
 - **WHEN** o cliente consulta `.can(modulo, acao)` para o usuário da sessão
 - **THEN** o retorno reflete se a ação está concedida ao perfil do usuário
+
+#### Scenario: Funcionalidade não concedida é ocultada
+- **WHEN** o perfil do usuário da sessão não concede `filtrar` em um módulo
+- **THEN** o botão "Filtros" daquele módulo não é exibido (e o campo de busca é ocultado sem `buscar`)

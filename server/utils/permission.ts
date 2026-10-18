@@ -83,3 +83,21 @@ export async function requirePermission(event: any, modulo: string, acao: string
     })
   }
 }
+
+/**
+ * Funcionalidades exigidas por uma consulta de listagem de módulo (change
+ * rbac-funcionalidades-por-modulo): exportação tem precedência e exige apenas
+ * `exportar`; a listagem base exige `visualizar`; busca e filtros acrescentam
+ * `buscar`/`filtrar`. O importador aplica cada uma via `requirePermission`.
+ */
+export function funcionalidadesDeConsulta(consulta: {
+  exportar?: boolean
+  busca?: boolean
+  filtros?: boolean
+}): string[] {
+  if (consulta.exportar) return ['exportar']
+  const acoes = ['visualizar']
+  if (consulta.busca) acoes.push('buscar')
+  if (consulta.filtros) acoes.push('filtrar')
+  return acoes
+}

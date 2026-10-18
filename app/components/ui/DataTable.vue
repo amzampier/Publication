@@ -36,6 +36,8 @@ interface Props {
   pageSizeOptions?: number[]
   defaultPageSize?: number
   showHeaderTop?: boolean
+  /** Exibe o campo de busca no topo (opt-out via `showSearch`; default true). */
+  showSearch?: boolean
   /** Exibe o botao 'Filtros' na toolbar (opt-in; emite open-filters) */
   showFilters?: boolean
   /** Quantidade de filtros ativos exibida no badge do botao Filtros */
@@ -61,6 +63,7 @@ const props = withDefaults(defineProps<Props>(), {
   pageSizeOptions: () => [5, 10, 20, 50],
   defaultPageSize: 5,
   showHeaderTop: false,
+  showSearch: true,
   showFilters: false,
   filtersCount: 0,
   initialSearch: '',
@@ -627,7 +630,7 @@ onUnmounted(() => {
         v-if="showHeaderTop || showFilters"
         class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end"
       >
-        <div v-if="showHeaderTop" ref="buscaRef" class="w-full min-w-0 sm:w-64 shrink-0">
+        <div v-if="showHeaderTop && showSearch" ref="buscaRef" class="w-full min-w-0 sm:w-64 shrink-0">
           <UiInput
             v-model="searchQuery"
             placeholder="Filtrar dados da tabela..."

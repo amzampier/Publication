@@ -262,13 +262,18 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 ### 3.5. Controle de Acesso Baseado em Papéis (RBAC Dinâmico)
 
 O sistema implementa controle de acesso granular na tabela `permissoes_perfil`:
-- Cada perfil possui permissões booleanas para as ações fixas: `visualizar`, `criar`, `alterar`, `excluir`.
-- Ações especiais são tratadas no campo `extras` (JSON), tais como: `publicar`, `arquivar`, `download`, `exportar`, `importar`.
+- Cada módulo oferece um **catálogo de funcionalidades** (`app/config/perfis.ts` ↔
+  `server/utils/perfis.ts`, change `rbac-funcionalidades-por-modulo`): as fixas (`visualizar`,
+  `criar`, `alterar`, `excluir`) viram colunas booleanas; as específicas do módulo (`publicar`,
+  `arquivar`, `download`, `exportar`, `importar`, `filtrar`, `buscar`, `permissoes`, `convite`) vão no campo
+  `extras` (JSON). Uma coluna só é 1 quando o módulo possui a funcionalidade; a validação
+  (`validarMatriz`) recusa funcionalidades fora do catálogo do módulo.
 - O helper `requirePermission(event, modulo, acao)` (`server/utils/permission.ts`) é o ponto
   único de autorização por módulo: carrega a matriz do perfil da sessão e nega com **HTTP 403
   Forbidden** quando a ação falta. **Já aplicado** nas rotas administrativas (change
   `rbac-require-permission`); a autenticação por sessão continua em `auth-api.ts` (§3.4). O
-  cliente dispõe de `.can(modulo, acao)` em `app/composables/usePermissions.ts`.
+  cliente dispõe de `.can(modulo, acao)` em `app/composables/usePermissions.ts` e o usa para
+  ocultar funcionalidades (filtros, busca, exportar, importar, permissões).
 - A **guarda anti-lockout** impede que a gravação da matriz deixe o sistema sem administração essencial.
 
 A tabela de perfis (`perfis_acesso`) existe na migration `01_create_tables.sql`

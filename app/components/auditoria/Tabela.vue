@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { Eye } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
+import { usePermissions } from '../../composables/usePermissions'
 import {
   useAuditoriaModelo,
   formatarDataHora,
   VARIANTE_POR_ACAO,
   type RegistroAuditoria
 } from './useAuditoriaModelo'
+
+const { can } = usePermissions()
 
 const emit = defineEmits<{
   (e: 'open-filters'): void
@@ -50,7 +53,8 @@ const colunas: ColumnDef[] = [
       :page="pagina"
       :per-page="porPagina"
       show-header-top
-      show-filters
+      :show-search="can('auditoria', 'buscar')"
+      :show-filters="can('auditoria', 'filtrar')"
       :filters-count="filtrosAtivosCount"
       @open-filters="emit('open-filters')"
       @page-change="irParaPagina"

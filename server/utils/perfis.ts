@@ -42,17 +42,32 @@ export const MODULOS_IDS = [
   'configuracoes-globais'
 ] as const
 
-/** As 9 ações (4 fixas + 5 extras) — mesmos ids de usePerfisModelo.ACOES/EXTRAS. */
-export const ACOES_IDS = [
-  'visualizar',
-  'criar',
-  'alterar',
-  'excluir',
-  'publicar',
-  'arquivar',
-  'download',
-  'exportar',
-  'importar'
+/** Funcionalidades fixas (colunas TINYINT de permissoes_perfil). */
+export const FUNCIONALIDADES_FIXAS = ['visualizar', 'criar', 'alterar', 'excluir'] as const
+
+/**
+ * Catálogo de funcionalidades POR MÓDULO (fonte única da matriz). Espelhado em
+ * app/components/perfis/usePerfisModelo.ts (barreira app/ × server/ — mantenha os
+ * dois lados em sincronia; teste tests/perfis-funcionalidades.test.ts).
+ * As fixas viram colunas; as específicas vão no `extras` JSON.
+ */
+export const FUNCIONALIDADES_POR_MODULO: Record<string, readonly string[]> = {
+  'manuais': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
+  'release-week': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
+  'escopo-projetos': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
+  'esteira-revisao': ['visualizar', 'alterar', 'publicar', 'arquivar', 'filtrar'],
+  'lancar-chamadas': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'filtrar', 'buscar'],
+  'parceiros': ['visualizar', 'criar', 'alterar', 'excluir', 'importar', 'exportar', 'filtrar', 'buscar'],
+  'softwares': ['visualizar', 'criar', 'alterar', 'excluir', 'importar', 'exportar', 'filtrar', 'buscar'],
+  'gestao-usuarios': ['visualizar', 'criar', 'alterar', 'excluir', 'importar', 'exportar', 'filtrar', 'buscar', 'convite'],
+  'perfis-acesso': ['visualizar', 'criar', 'alterar', 'excluir', 'permissoes', 'exportar', 'filtrar', 'buscar'],
+  'auditoria': ['visualizar', 'exportar', 'filtrar', 'buscar'],
+  'configuracoes-globais': ['visualizar', 'alterar']
+}
+
+/** Funcionalidades específicas (não-fixas) — persistidas no `extras` JSON. */
+export const FUNCIONALIDADES_EXTRAS = [
+  'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'permissoes', 'convite'
 ] as const
 
 /** Ações fixas -> colunas TINYINT do permissoes_perfil (docs/02 §3.5). */
@@ -63,7 +78,6 @@ export const COLUNA_POR_ACAO: Record<string, string> = {
   excluir: 'pode_excluir'
 }
 
-const EXTRAS_IDS = ['publicar', 'arquivar', 'download', 'exportar', 'importar'] as const
 /**
  * Módulos essenciais da administração (change rbac-require-permission, D5): o
  * sistema não pode ficar sem NENHUM usuário ativo com `alterar` nestes três.
@@ -120,13 +134,14 @@ export function validarMatriz(matriz: unknown): Record<string, string[]> {
   }
   const resultado: Record<string, string[]> = {}
   for (const [modulo, acoes] of Object.entries(matriz as Record<string, unknown>)) {
-    if (!(MODULOS_IDS as readonly string[]).includes(modulo)) {
+    const permitidas = FUNCIONALIDADES_POR_MODULO[modulo]
+    if (!permitidas) {
       erro400(`Módulo desconhecido: ${modulo}.`)
     }
     if (!Array.isArray(acoes)) erro400(`Ações de ${modulo} devem ser uma lista.`)
     for (const acao of acoes) {
-      if (typeof acao !== 'string' || !(ACOES_IDS as readonly string[]).includes(acao)) {
-        erro400(`Ação desconhecida em ${modulo}: ${String(acao)}.`)
+      if (typeof acao !== 'string' || !permitidas.includes(acao)) {
+        erro400(`Funcionalidade desconhecida em ${modulo}: ${String(acao)}.`)
       }
     }
     // dedupe preservando ordem
@@ -163,7 +178,7 @@ export const parseExtras = (extras: unknown): string[] => {
   }
   if (!Array.isArray(valor)) return []
   return valor.filter(
-    (a): a is string => typeof a === 'string' && (EXTRAS_IDS as readonly string[]).includes(a)
+    (a): a is string => typeof a === 'string' && (FUNCIONALIDADES_EXTRAS as readonly string[]).includes(a)
   )
 }
 
@@ -411,7 +426,7 @@ export async function salvarMatriz(
     await tx.query('DELETE FROM permissoes_perfil WHERE perfil_id = ?', [id])
     const linhas = MODULOS_IDS.map((modulo) => {
       const acoes = corpo[modulo] ?? []
-      const extras = acoes.filter((a) => (EXTRAS_IDS as readonly string[]).includes(a))
+      const extras = acoes.filter((a) => (FUNCIONALIDADES_EXTRAS as readonly string[]).includes(a))
       return [
         id,
         modulo,
@@ -457,7 +472,7 @@ export async function copiarMatriz(origemId: string, destinoId: string): Promise
     await tx.query('DELETE FROM permissoes_perfil WHERE perfil_id = ?', [destinoId])
     const linhas = MODULOS_IDS.map((modulo) => {
       const acoes = origem.permissoes[modulo] ?? []
-      const extras = acoes.filter((a) => (EXTRAS_IDS as readonly string[]).includes(a))
+      const extras = acoes.filter((a) => (FUNCIONALIDADES_EXTRAS as readonly string[]).includes(a))
       return [
         destinoId,
         modulo,

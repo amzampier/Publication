@@ -12,6 +12,10 @@ import { useSoftwaresModelo } from './useSoftwaresModelo'
 import { gerarPdfSoftwares } from './gerarPdfSoftwares'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
+import { useApiFetch } from '../../composables/useApiFetch'
+
+const { can } = usePermissions()
 
 // Abre o fluxo de cadastro (coordenação na página — modal ainda não existe nesta
 // fase; a página informa que a ação chega com o backend).
@@ -45,9 +49,11 @@ const { toast } = useToast()
 const exportando = ref(false)
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
   try {
+    // Guarda server-side: exige softwares/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/softwares', { query: { exportar: '1' } })
     // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
     const escapar = (v: string | number) => {
       let texto = String(v)
@@ -78,6 +84,7 @@ const relacaoSoftwaresPdf = async () => {
   menuAberto.value = false
   exportando.value = true
   try {
+    await useApiFetch('/api/softwares', { query: { exportar: '1' } })
     await gerarPdfSoftwares({
       softwares: linhas.value,
       logoPreview: previewLoginGlobal.value
@@ -107,7 +114,7 @@ const relacaoSoftwaresPdf = async () => {
     </div>
 
     <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <div ref="relatoriosRef" class="relative w-full sm:w-auto">
+      <div v-if="can('softwares', 'exportar')" ref="relatoriosRef" class="relative w-full sm:w-auto">
         <UiButton
           variant="outline"
           size="md"
@@ -155,6 +162,7 @@ const relacaoSoftwaresPdf = async () => {
       </div>
 
       <UiButton
+        v-if="can('softwares', 'criar')"
         variant="primary"
         size="md"
         class="w-full sm:w-auto"

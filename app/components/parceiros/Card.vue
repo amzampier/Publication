@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Map, MapPin, Handshake, Pencil, Trash2 } from '@lucide/vue'
+import { usePermissions } from '../../composables/usePermissions'
 import { VARIANTE_POR_SITUACAO, type ParceiroModelo } from './useParceirosModelo'
+
+const { can } = usePermissions()
 
 const props = defineProps<{ parceiro: ParceiroModelo }>()
 
@@ -30,7 +33,7 @@ const linhas = computed(() => [
     :linhas="linhas"
   >
     <template #acoes>
-      <UiTooltip content="Editar parceiro" position="top">
+      <UiTooltip v-if="can('parceiros', 'alterar')" content="Editar parceiro" position="top">
         <button
           type="button"
           :aria-label="`Editar ${parceiro.razao_social}`"
@@ -41,7 +44,7 @@ const linhas = computed(() => [
         </button>
       </UiTooltip>
 
-      <UiTooltip content="Excluir parceiro" position="top">
+      <UiTooltip v-if="can('parceiros', 'excluir')" content="Excluir parceiro" position="top">
         <button
           type="button"
           :aria-label="`Excluir ${parceiro.razao_social}`"

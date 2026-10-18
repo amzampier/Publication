@@ -16,6 +16,10 @@ import {
 import { gerarPdfPerfis } from './gerarPdfPerfis'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
+import { useApiFetch } from '../../composables/useApiFetch'
+
+const { can } = usePermissions()
 
 // Abre o modal de cadastro em modo de criação (coordenação na página)
 const emit = defineEmits<{
@@ -49,9 +53,11 @@ const { toast } = useToast()
 const exportando = ref(false)
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
   try {
+    // Guarda server-side: exige perfis-acesso/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/perfis', { query: { exportar: '1' } })
     // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
     const escapar = (v: string | number) => {
       let texto = String(v)
@@ -88,6 +94,7 @@ const relacaoPerfisPdf = async () => {
   menuAberto.value = false
   exportando.value = true
   try {
+    await useApiFetch('/api/perfis', { query: { exportar: '1' } })
     await gerarPdfPerfis({
       perfis: perfisFiltrados.value,
       usuariosPorPerfil: usuariosPorPerfil.value,
@@ -120,7 +127,7 @@ const relacaoPerfisPdf = async () => {
     </div>
 
     <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <div ref="relatoriosRef" class="relative w-full sm:w-auto">
+      <div v-if="can('perfis-acesso', 'exportar')" ref="relatoriosRef" class="relative w-full sm:w-auto">
         <UiButton
           variant="outline"
           size="md"
@@ -168,6 +175,7 @@ const relacaoPerfisPdf = async () => {
       </div>
 
       <UiButton
+        v-if="can('perfis-acesso', 'criar')"
         variant="primary"
         size="md"
         class="w-full sm:w-auto"

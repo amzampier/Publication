@@ -2,12 +2,15 @@
 import { ref } from 'vue'
 import { Import, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
+import { usePermissions } from '../../composables/usePermissions'
 import {
   useSoftwaresModelo,
   VARIANTE_POR_SITUACAO,
   type LinhaSoftware,
   type SituacaoSoftware
 } from './useSoftwaresModelo'
+
+const { can } = usePermissions()
 
 // A tabela só abre o modal de filtros; edição/exclusão são emitidas para a
 // página (dona da coordenação — molde PerfisTabela).
@@ -44,12 +47,13 @@ const colunas: ColumnDef[] = [
       :columns="colunas"
       :default-page-size="5"
       show-header-top
-      show-filters
+      :show-search="can('softwares', 'buscar')"
+      :show-filters="can('softwares', 'filtrar')"
       :filters-count="filtrosAtivosCount"
       @open-filters="emit('open-filters')"
     >
       <template #filtersLeft>
-        <UiTooltip content="Importar Softwares" position="top">
+        <UiTooltip v-if="can('softwares', 'importar')" content="Importar Softwares" position="top">
           <button
             type="button"
             aria-label="Importar softwares"
@@ -75,7 +79,7 @@ const colunas: ColumnDef[] = [
 
       <template #actions="{ row }">
         <div class="flex items-center justify-center gap-[7px]">
-          <UiTooltip content="Editar software" position="top">
+          <UiTooltip v-if="can('softwares', 'alterar')" content="Editar software" position="top">
             <button
               type="button"
               aria-label="Editar software"
@@ -86,7 +90,7 @@ const colunas: ColumnDef[] = [
             </button>
           </UiTooltip>
 
-          <UiTooltip content="Excluir software" position="top">
+          <UiTooltip v-if="can('softwares', 'excluir')" content="Excluir software" position="top">
             <button
               type="button"
               aria-label="Excluir software"

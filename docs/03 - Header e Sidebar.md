@@ -101,9 +101,11 @@ Fundo `bg-white` · `border-b border-slate-200` · textos herdados do container 
 
 **Gatilho**
 
-- Avatar `h-7 w-7 rounded-full overflow-hidden bg-slate-600` — foto ou iniciais
-  (2 primeiras letras do nome, `text-[10px] font-bold text-white`, maiúsculas; fundo neutro
-  desde a revisão do Meu Perfil — era `bg-brand-structure` com texto `text-slate-950`).
+- Avatar `h-7 w-7 rounded-full overflow-hidden bg-slate-600` — **foto** (`avatar_url` do usuário,
+  lido de `GET /api/usuarios/eu` via `useAvatarUsuario`; o Meu Perfil atualiza o mesmo estado ao
+  salvar) ou **iniciais** (2 primeiras letras do nome, `text-[10px] font-bold text-white`,
+  maiúsculas; fundo neutro desde a revisão do Meu Perfil — era `bg-brand-structure` com texto
+  `text-slate-950`) como fallback quando não há foto.
 - Nome e perfil em **duas linhas alinhadas à esquerda**: nome `text-xs font-normal`,
   perfil `text-[10px] font-normal`, ambos sem negrito.
 - Chevron `h-3.5 w-3.5` rotaciona 180° ao abrir (`transition-transform duration-200`).
@@ -260,7 +262,7 @@ Observações:
 ```ts
 interface SidebarItem   { id: string; label: string; icon: Component; cor?: string }
 interface SidebarSession { label: string; aberto: boolean; items: SidebarItem[] }
-interface MenuItem      { label: string; icon: Component; cor?: string }
+interface MenuItem      { label: string; icon: Component; cor?: string; to?: string; modulo?: string }
 interface Conta         { nome: string; perfil: string }
 ```
 
@@ -271,6 +273,13 @@ interface Conta         { nome: string; perfil: string }
 | `conta` | nome, perfil e iniciais do Account |
 | `accountMeuPerfil` / `accountMenuItens` / `accountEncerrarSessao` | ordem do menu suspenso |
 | `notificacoesIniciais` | carga inicial do sino |
+
+**Visibilidade por RBAC:** os itens de **módulo** (sidebar e menu Account) só aparecem quando o
+perfil do usuário concede `visualizar` naquele módulo — a sidebar filtra por `SidebarItem.id` e o
+menu Account por `MenuItem.modulo` (`app/components/layout/AppSidebar.vue`/`AppHeader.vue` via
+`usePermissions().podeVisualizar`). O item raiz (Painel Executivo), **Meu Perfil** e **Encerrar
+Sessão** não têm módulo e ficam sempre visíveis; sessões que ficam sem itens deixam de ser
+renderizadas. A matriz é carregada no SSR pelo `layouts/admin.vue` (sem flash de itens negados).
 
 `MenuItem.cor` e `SidebarItem.cor` existem porque o Tailwind não resolve cor dinâmica em classe —
 sempre via `:style`; no caso da sidebar, a mesma cor alimenta a variável `--item-cor` usada pelo

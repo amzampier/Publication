@@ -2,7 +2,10 @@
 import { ref } from 'vue'
 import { KeyRound, Pencil, Trash2 } from '@lucide/vue'
 import { type ColumnDef } from '../../utils/dataGrid'
+import { usePermissions } from '../../composables/usePermissions'
 import { usePerfisModelo, VARIANTE_POR_STATUS, type LinhaPerfil } from './usePerfisModelo'
+
+const { can } = usePermissions()
 
 // Abre modais na página (coordenação dela): cadastro/edição e exclusão têm modal;
 // permissões continua em transição por toast (spec perfis-acesso)
@@ -33,12 +36,13 @@ const colunas: ColumnDef[] = [
     <UiDataTable
       ref="tabelaRef"
       title="Perfis de Acesso"
-      subtitle="Perfis de acesso cadastrados · Permissões: ações concedidas de 99 (11 módulos × 9 ações)"
+      subtitle="Perfis de acesso cadastrados · Permissões: funcionalidades concedidas de 83 (catálogo por módulo)"
       :data="linhas"
       :columns="colunas"
       :default-page-size="5"
       show-header-top
-      show-filters
+      :show-search="can('perfis-acesso', 'buscar')"
+      :show-filters="can('perfis-acesso', 'filtrar')"
       :filters-count="filtrosAtivosCount"
       @open-filters="emit('open-filters')"
     >
@@ -58,7 +62,7 @@ const colunas: ColumnDef[] = [
 
       <template #actions="{ row }">
         <div class="flex items-center justify-center gap-[7px]">
-          <UiTooltip content="Configurar permissões" position="top">
+          <UiTooltip v-if="can('perfis-acesso', 'permissoes')" content="Configurar permissões" position="top">
             <button
               type="button"
               aria-label="Configurar permissões do perfil"
@@ -69,7 +73,7 @@ const colunas: ColumnDef[] = [
             </button>
           </UiTooltip>
 
-          <UiTooltip content="Editar perfil" position="top">
+          <UiTooltip v-if="can('perfis-acesso', 'alterar')" content="Editar perfil" position="top">
             <button
               type="button"
               aria-label="Editar perfil"
@@ -80,7 +84,7 @@ const colunas: ColumnDef[] = [
             </button>
           </UiTooltip>
 
-          <UiTooltip content="Excluir perfil" position="top">
+          <UiTooltip v-if="can('perfis-acesso', 'excluir')" content="Excluir perfil" position="top">
             <button
               type="button"
               aria-label="Excluir perfil"

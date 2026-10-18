@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import { Image } from '@lucide/vue'
 import { useToast } from '../../composables/useToast'
 import { useApiFetch } from '../../composables/useApiFetch'
+import { useAvatarUsuario } from '../../composables/useAvatarUsuario'
 import { enviarAvatar } from '../../components/usuarios/useUsuarios'
 import {
   formatarDataHora,
@@ -17,6 +18,8 @@ import {
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+// Mantém o avatar do bloco Account (header) em sincronia ao salvar o perfil.
+const { definir: definirAvatarHeader } = useAvatarUsuario()
 
 // Registro REAL do logado (change gestao-usuarios-backend, design D7): lido de
 // GET /api/usuarios/eu — sem espelho por e-mail na base demo; a aba Segurança
@@ -124,6 +127,7 @@ const salvar = async () => {
     })
     registro.value = atualizado
     rascunho.value = clonar(atualizado)
+    definirAvatarHeader(atualizado.avatar)
     toast.success('Meu Perfil', 'As alterações foram salvas com sucesso.')
     alterado.value = false
   } catch (erro) {

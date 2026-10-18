@@ -5,6 +5,9 @@ import { useAuditoriaModelo, formatarDataHora } from './useAuditoriaModelo'
 import { gerarPdfAuditoria } from './gerarPdfAuditoria'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
+
+const { can } = usePermissions()
 
 // Menu "Exportar" (mini-menu role=menu — padrão do menu da conta do AppHeader)
 const menuAberto = ref(false)
@@ -102,7 +105,7 @@ const baixarPdf = async () => {
       </div>
     </div>
 
-    <div ref="exportarRef" class="relative shrink-0 w-full sm:w-auto">
+    <div v-if="can('auditoria', 'exportar')" ref="exportarRef" class="relative shrink-0 w-full sm:w-auto">
       <UiButton
         variant="outline"
         size="md"

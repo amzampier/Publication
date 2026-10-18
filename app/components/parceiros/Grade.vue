@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Handshake, Import, Search, X, Funnel } from '@lucide/vue'
+import { usePermissions } from '../../composables/usePermissions'
 import { useParceirosModelo, type ParceiroModelo } from './useParceirosModelo'
+
+const { can } = usePermissions()
 
 // A grade abre o modal de filtros e emite edição/exclusão/importação para a
 // página (dona da coordenação — molde SoftwaresTabela).
@@ -56,7 +59,7 @@ watch(
         </div>
 
         <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          <div class="w-full min-w-0 shrink-0 sm:w-64">
+          <div v-if="can('parceiros', 'buscar')" class="w-full min-w-0 shrink-0 sm:w-64">
             <UiInput
               v-model="busca"
               placeholder="Buscar parceiros..."
@@ -66,7 +69,7 @@ watch(
             />
           </div>
 
-          <UiTooltip content="Importar Parceiros" position="top">
+          <UiTooltip v-if="can('parceiros', 'importar')" content="Importar Parceiros" position="top">
             <button
               type="button"
               aria-label="Importar parceiros"
@@ -77,7 +80,7 @@ watch(
             </button>
           </UiTooltip>
 
-          <UiButton variant="outline" size="sm" class="shrink-0" @click="emit('open-filters')">
+          <UiButton v-if="can('parceiros', 'filtrar')" variant="outline" size="sm" class="shrink-0" @click="emit('open-filters')">
             <template #leftIcon><Funnel class="h-3.5 w-3.5" /></template>
             Filtros
             <UiBadge v-if="filtrosAtivosCount > 0" variant="done" size="sm" class="ml-1.5">

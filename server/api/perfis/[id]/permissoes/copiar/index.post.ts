@@ -5,7 +5,7 @@ import { registrarAuditoria } from '../../../../../utils/audit'
 import { requirePermission } from '../../../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
-  await requirePermission(event, 'perfis-acesso', 'alterar')
+  await requirePermission(event, 'perfis-acesso', 'permissoes')
   const origemId = validarId(getRouterParam(event, 'id'))
 
   const body = await readBody<Record<string, unknown>>(event)

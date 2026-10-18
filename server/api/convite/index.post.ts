@@ -36,7 +36,7 @@ const SITUACOES = ['Ativo', 'Inativo', 'Bloqueado']
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
 
-  await requirePermission(event, 'gestao-usuarios', 'criar')
+  await requirePermission(event, 'gestao-usuarios', 'convite')
 
   const sessao = await getSessionUser(event)
   if (!sessao) {

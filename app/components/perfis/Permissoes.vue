@@ -7,8 +7,8 @@ import {
   usePerfisModelo,
   MODULOS,
   ACOES,
-  EXTRAS,
   PERMISSOES_POR_PERFIL,
+  FUNCIONALIDADES_POR_MODULO,
   clonarMatriz,
   contarPermissoes,
   salvarPermissoes,
@@ -41,8 +41,18 @@ const mensagemErro = (erro: unknown, fallback: string): string => {
   return e?.data?.statusMessage ?? e?.statusMessage ?? fallback
 }
 
-// Ações fixas (4) editáveis por interruptor; as 5 extras são editadas por `UiCheckChip`.
+// Ações fixas (4) editáveis por interruptor; as funcionalidades específicas do
+// módulo são editadas por `UiCheckChip`.
 const acoesFixas: Acao[] = [...ACOES]
+
+// Catálogo do módulo: só oferecemos as funcionalidades que ele possui. As fixas
+// aparecem como interruptores; as específicas, como chips.
+const suporta = (modulo: ModuloId, acao: Permissao) =>
+  (FUNCIONALIDADES_POR_MODULO[modulo] ?? []).includes(acao)
+const extrasDe = (modulo: ModuloId): Permissao[] =>
+  ((FUNCIONALIDADES_POR_MODULO[modulo] ?? []) as Permissao[]).filter(
+    (a) => !(ACOES as string[]).includes(a)
+  )
 
 // Identidade visual dos módulos: fonte única = config/navigation (rótulos idênticos
 // aos de MODULOS — ícone, cor da sidebar e sessão de agrupamento).
@@ -204,8 +214,8 @@ const confirmarCopia = async () => {
         <p class="flex items-start gap-1.5 text-[11px] text-slate-500">
           <Info class="h-3.5 w-3.5 shrink-0 mt-px" aria-hidden="true" />
           <span>
-            Interruptores nas 4 ações fixas; os chips de Funcionalidades ligam as ações
-            extras. Nada vale até "Salvar".
+            Interruptores nas funcionalidades fixas do módulo; os chips de Funcionalidades
+            ligam as funcionalidades específicas de cada módulo. Nada vale até "Salvar".
           </span>
         </p>
         <div class="flex items-center gap-2 shrink-0" aria-live="polite">
@@ -298,16 +308,18 @@ const confirmarCopia = async () => {
                 >
                   <div class="flex justify-center">
                     <UiSwitch
+                      v-if="suporta(modulo.id, acao)"
                       :model-value="tem(modulo.id, acao)"
                       :aria-label="`${modulo.label}: ${acao}`"
                       @update:model-value="alternar(modulo.id, acao)"
                     />
+                    <span v-else class="text-slate-300" aria-hidden="true">—</span>
                   </div>
                 </td>
                 <td class="px-3 py-2.5">
                   <div class="flex flex-wrap items-center gap-1.5">
                     <UiCheckChip
-                      v-for="extra in EXTRAS"
+                      v-for="extra in extrasDe(modulo.id)"
                       :key="extra"
                       size="sm"
                       :label="rotuloExtra(extra)"
@@ -315,6 +327,9 @@ const confirmarCopia = async () => {
                       :aria-label="`${modulo.label}: ${extra}`"
                       @update:model-value="alternar(modulo.id, extra)"
                     />
+                    <span v-if="!extrasDe(modulo.id).length" class="text-[11px] italic text-slate-400">
+                      Nenhuma
+                    </span>
                   </div>
                 </td>
               </tr>

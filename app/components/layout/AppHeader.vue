@@ -11,7 +11,9 @@ import {
 } from '@lucide/vue'
 import type { Notificacao } from '../../config/navigation'
 import { useAuth } from '../../composables/useAuth'
+import { useAvatarUsuario } from '../../composables/useAvatarUsuario'
 import { useLogomarcaHeader } from '../../composables/useLogomarcaHeader'
+import { usePermissions } from '../../composables/usePermissions'
 import {
   accountEncerrarSessao,
   accountMeuPerfil,
@@ -27,8 +29,18 @@ const { preview: logomarcaHeader } = useLogomarcaHeader()
 // com fallback no valor fixo de navigation.ts.
 const { usuario, sair } = useAuth()
 
+// Avatar do usuário no bloco Account (a sessão não carrega o avatar — lido de /api/usuarios/eu)
+const { avatar: avatarConta, carregar: carregarAvatar } = useAvatarUsuario()
+
 const nomeConta = computed(() => usuario.value?.nome ?? conta.nome)
 const perfilConta = computed(() => usuario.value?.perfil ?? conta.perfil)
+
+// Itens do menu da conta filtrados pelo `visualizar` do módulo (Meu Perfil e
+// Encerrar Sessão não têm módulo e ficam sempre visíveis).
+const { podeVisualizar } = usePermissions()
+const accountMenuVisiveis = computed(() =>
+  accountMenuItens.filter((item) => !item.modulo || podeVisualizar(item.modulo))
+)
 
 const props = withDefaults(defineProps<{ sidebarOpen: boolean }>(), { sidebarOpen: true })
 const emit = defineEmits<{ 'update:sidebarOpen': [value: boolean] }>()
@@ -141,6 +153,7 @@ const fecharMenuComEscape = (evento: KeyboardEvent) => {
 onMounted(() => {
   document.addEventListener('pointerdown', fecharMenuSeFora)
   document.addEventListener('keydown', fecharMenuComEscape)
+  void carregarAvatar()
 })
 
 onUnmounted(() => {
@@ -271,7 +284,13 @@ onUnmounted(() => {
           @click="alternarConta"
         >
           <span class="h-7 w-7 rounded-full overflow-hidden bg-slate-600 flex items-center justify-center shrink-0">
-            <span class="text-[10px] font-bold text-white">{{ iniciais }}</span>
+            <img
+              v-if="avatarConta"
+              :src="avatarConta"
+              :alt="`Avatar de ${nomeConta}`"
+              class="h-full w-full object-cover"
+            />
+            <span v-else class="text-[10px] font-bold text-white">{{ iniciais }}</span>
           </span>
           <span class="text-left leading-tight hidden sm:block">
             <span class="block text-xs font-normal">{{ nomeConta }}</span>
@@ -303,10 +322,10 @@ onUnmounted(() => {
             {{ accountMeuPerfil.label }}
           </button>
 
-          <div class="my-1 h-px bg-slate-200" role="separator"></div>
+          <div v-if="accountMenuVisiveis.length" class="my-1 h-px bg-slate-200" role="separator"></div>
 
           <button
-            v-for="item in accountMenuItens"
+            v-for="item in accountMenuVisiveis"
             :key="item.label"
             type="button"
             role="menuitem"

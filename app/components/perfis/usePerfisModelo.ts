@@ -10,6 +10,9 @@
 import { computed } from 'vue'
 import { useState } from '#app'
 import { useApiFetch } from '../../composables/useApiFetch'
+import { FUNCIONALIDADES_POR_MODULO } from '../../config/perfis'
+
+export { FUNCIONALIDADES_POR_MODULO }
 
 export type SituacaoPerfil = 'Ativo' | 'Inativo' | 'Bloqueado'
 
@@ -33,12 +36,29 @@ export type ModuloId =
 
 /** Ações fixas do `permissoes_perfil` (docs/02 §3.5). */
 export type Acao = 'visualizar' | 'criar' | 'alterar' | 'excluir'
-/** Ações especiais do `extras` JSON (docs/02 §3.5). */
-export type Extra = 'publicar' | 'arquivar' | 'download' | 'exportar' | 'importar'
+/** Funcionalidades específicas do `extras` JSON (docs/02 §3.5). */
+export type Extra =
+  | 'publicar'
+  | 'arquivar'
+  | 'download'
+  | 'exportar'
+  | 'importar'
+  | 'filtrar'
+  | 'buscar'
+  | 'permissoes'
 export type Permissao = Acao | Extra
 
 export const ACOES: Acao[] = ['visualizar', 'criar', 'alterar', 'excluir']
-export const EXTRAS: Extra[] = ['publicar', 'arquivar', 'download', 'exportar', 'importar']
+export const EXTRAS: Extra[] = [
+  'publicar',
+  'arquivar',
+  'download',
+  'exportar',
+  'importar',
+  'filtrar',
+  'buscar',
+  'permissoes'
+]
 
 export const MODULOS: { id: ModuloId; label: string; descricao: string }[] = [
   { id: 'manuais', label: 'Manuais', descricao: 'Manuais de produto e documentação técnica' },
@@ -54,8 +74,17 @@ export const MODULOS: { id: ModuloId; label: string; descricao: string }[] = [
   { id: 'configuracoes-globais', label: 'Configurações Globais', descricao: 'Ajustes globais do sistema' }
 ]
 
-/** 99 = 11 módulos × 9 ações (4 fixas + 5 extras). */
-export const PERMISSOES_POR_PERFIL = MODULOS.length * (ACOES.length + EXTRAS.length)
+/**
+ * Catálogo de funcionalidades POR MÓDULO (fonte única da matriz): definido em
+ * app/config/perfis.ts (parte pura, espelho de server/utils/perfis.ts — teste
+ * tests/perfis-funcionalidades.test.ts).
+ */
+
+/** Total de funcionalidades do catálogo (soma dos módulos) — 83 nos 11 módulos atuais. */
+export const PERMISSOES_POR_PERFIL = MODULOS.reduce(
+  (soma, m) => soma + (FUNCIONALIDADES_POR_MODULO[m.id]?.length ?? 0),
+  0
+)
 
 /** Registro do perfil no shape da API (espelho do PerfilModelo da fase 1). */
 export interface PerfilModelo {

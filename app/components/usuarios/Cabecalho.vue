@@ -7,6 +7,9 @@ import { gerarPdfUsuarios } from './gerarPdfUsuarios'
 import { gerarPdfFichaCadastral } from './gerarPdfFichaCadastral'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
+
+const { can } = usePermissions()
 
 // Abre o modal de usuário em modo de criação (coordenação na página da fase 2)
 const emit = defineEmits<{
@@ -119,7 +122,7 @@ const relacaoCompletaPdf = async () => {
     </div>
 
     <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <div ref="exportarRef" class="relative w-full sm:w-auto">
+      <div v-if="can('gestao-usuarios', 'exportar')" ref="exportarRef" class="relative w-full sm:w-auto">
         <UiButton
           variant="outline"
           size="md"
@@ -176,6 +179,7 @@ const relacaoCompletaPdf = async () => {
       </div>
 
       <UiButton
+        v-if="can('gestao-usuarios', 'criar')"
         variant="primary"
         size="md"
         class="w-full sm:w-auto"
