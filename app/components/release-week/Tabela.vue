@@ -7,7 +7,7 @@ import { usePermissions } from '../../composables/usePermissions'
 import { useReleaseWeekModelo, type LinhaReleaseWeek, type StatusRelease } from './useReleaseWeekModelo'
 
 const { can } = usePermissions()
-const { linhas, filtrosAtivosCount, itensDaRelease } = useReleaseWeekModelo()
+const { linhas, filtrosAtivosCount } = useReleaseWeekModelo()
 
 const emit = defineEmits<{
   (e: 'editar', linha: LinhaReleaseWeek): void
@@ -198,7 +198,7 @@ const acionar = (id: string, linha: LinhaReleaseWeek) => {
       </template>
 
       <template #expanded="{ row }">
-        <ReleaseWeekItens :itens="itensDaRelease(row.id)" :codigo="row.codigo" />
+        <ReleaseWeekItens :release-id="row.id" :codigo="row.codigo" />
       </template>
     </UiDataTable>
   </section>

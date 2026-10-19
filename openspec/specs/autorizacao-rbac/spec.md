@@ -36,7 +36,7 @@ válida SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente
 ### Requirement: O catálogo de rotas administrativas mapeia cada rota para módulo e ação
 O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da funcionalidade
 indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
-`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`):
+`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`):
 
 - `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com o parâmetro de **filtro/paginação**
   server-side → `gestao-usuarios` / `filtrar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
@@ -62,6 +62,14 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `PUT /api/parceiros/:id` → `parceiros` / `alterar`
 - `DELETE /api/parceiros/:id` → `parceiros` / `excluir`
 - `POST /api/parceiros/importar` → `parceiros` / `importar`
+- `GET /api/release-week` → `release-week` / `visualizar`; com o parâmetro de **exportação** → `release-week` / `exportar`
+- `GET /api/release-week/:id/itens` → `release-week` / `visualizar_itens`
+- `POST /api/release-week` → `release-week` / `criar`
+- `PUT /api/release-week/:id` → `release-week` / `alterar`
+- `PUT /api/release-week/:id/publicar` → `release-week` / `publicar`
+- `PUT /api/release-week/:id/arquivar` → `release-week` / `arquivar`
+- `DELETE /api/release-week/:id` → `release-week` / `excluir`
+- `POST /api/release-week/importar` → `release-week` / `importar`
 - `GET /api/auditoria` → `auditoria` / `visualizar`; com o parâmetro de **filtro** → `auditoria` / `filtrar`;
   com o parâmetro de **busca** → `auditoria` / `buscar`; com o parâmetro de **exportação** → `auditoria` / `exportar`
 - `GET /api/configuracoes`, `GET /api/seguranca/estado` → `configuracoes-globais` / `visualizar`
@@ -92,6 +100,14 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - **WHEN** um perfil sem `softwares`/`importar` chama `POST /api/softwares/importar`
 - **THEN** a API responde `403`
 
+#### Scenario: Rotas de Release Week usam o módulo release-week
+- **WHEN** um perfil concede `release-week`/`visualizar` mas não `release-week`/`arquivar` chama `PUT /api/release-week/:id/arquivar`
+- **THEN** a API responde `403` e nenhuma release é arquivada
+
+#### Scenario: Itens de Release Week exigem a ação extra
+- **WHEN** um perfil sem `release-week`/`visualizar_itens` chama `GET /api/release-week/:id/itens`
+- **THEN** a API responde `403` e nenhum item é retornado
+
 ### Requirement: Portas públicas e autoatendimento exigem apenas sessão
 O sistema SHALL manter sem exigência de permissão de módulo as portas públicas e as rotas de
 autoatendimento, que continuam exigindo apenas sessão válida (quando administrativas) ou sendo
@@ -116,11 +132,11 @@ O sistema SHALL disponibilizar no cliente um helper reativo `.can(modulo, acao)`
 permissões do perfil do usuário da sessão e SHALL usá-lo para **controlar a interface**: as
 funcionalidades que o perfil não possui SHALL ser escondidas ou desabilitadas — em particular os
 itens de navegação do módulo (sidebar e menu da conta), os botões de ação de linha (criar, editar,
-excluir, bloquear, enviar convite), o botão
+excluir, clonar, bloquear, enviar convite), a flag/expansão de itens (`visualizar_itens`), o botão
 "Filtros" (`filtrar`), o campo de busca (`buscar`), as exportações (`exportar`/`download`), a
 importação (`importar`) e a ação "Permissões" (`permissoes`). Nos módulos cujo filtro/busca são
 server-side (Gestão de Usuários e Auditoria) a imposição é **também** no servidor; nos demais
-(Softwares, Parceiros, Perfis) o controle é de interface.
+(Softwares, Parceiros, Perfis, Release Week) o controle é de interface.
 
 #### Scenario: Helper responde pelas permissões do perfil
 - **WHEN** o cliente consulta `.can(modulo, acao)` para o usuário da sessão
@@ -129,3 +145,7 @@ server-side (Gestão de Usuários e Auditoria) a imposição é **também** no s
 #### Scenario: Funcionalidade não concedida é ocultada
 - **WHEN** o perfil do usuário da sessão não concede `filtrar` em um módulo
 - **THEN** o botão "Filtros" daquele módulo não é exibido (e o campo de busca é ocultado sem `buscar`)
+
+#### Scenario: Clonagem e itens respeitam a matriz na interface
+- **WHEN** o perfil não concede `release-week`/`clonar` ou `release-week`/`visualizar_itens`
+- **THEN** a ação "Clonar" e a flag de itens não são exibidas na tela de Release Week

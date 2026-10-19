@@ -265,9 +265,11 @@ O sistema implementa controle de acesso granular na tabela `permissoes_perfil`:
 - Cada módulo oferece um **catálogo de funcionalidades** (`app/config/perfis.ts` ↔
   `server/utils/perfis.ts`, change `rbac-funcionalidades-por-modulo`): as fixas (`visualizar`,
   `criar`, `alterar`, `excluir`) viram colunas booleanas; as específicas do módulo (`publicar`,
-  `arquivar`, `download`, `exportar`, `importar`, `filtrar`, `buscar`, `permissoes`, `convite`) vão no campo
+  `arquivar`, `download`, `exportar`, `importar`, `filtrar`, `buscar`, `permissoes`, `convite`,
+  `clonar`, `visualizar_itens`) vão no campo
   `extras` (JSON). Uma coluna só é 1 quando o módulo possui a funcionalidade; a validação
-  (`validarMatriz`) recusa funcionalidades fora do catálogo do módulo.
+  (`validarMatriz`) recusa funcionalidades fora do catálogo do módulo e `clonar` sem `criar` no
+  Release Week.
 - O helper `requirePermission(event, modulo, acao)` (`server/utils/permission.ts`) é o ponto
   único de autorização por módulo: carrega a matriz do perfil da sessão e nega com **HTTP 403
   Forbidden** quando a ação falta. **Já aplicado** nas rotas administrativas (change
@@ -348,6 +350,7 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `GET /api/configuracoes/identidade` — **público**; devolve apenas `logo_login_url` para as telas de autenticação.
 - `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`); `logomarcas` exige `configuracoes-globais`/`alterar`, `avatares` é session-only.
 - `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
+- `GET/POST/PUT/DELETE /api/release-week`, `PUT /api/release-week/:id/publicar|arquivar`, `GET /api/release-week/:id/itens` e `POST /api/release-week/importar` — Release Week (código `RW-XX/AAAA` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `release-week`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 
 ---
 

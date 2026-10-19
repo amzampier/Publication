@@ -9,6 +9,7 @@ import { gerarPdfReleaseWeek } from './gerarPdfReleaseWeek'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
 import { usePermissions } from '../../composables/usePermissions'
+import { useApiFetch } from '../../composables/useApiFetch'
 
 const emit = defineEmits<{
   (e: 'novo'): void
@@ -44,10 +45,12 @@ const semDados = (): boolean => {
   return true
 }
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
   if (semDados()) return
   try {
+    // Guarda server-side: exige release-week/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/release-week', { query: { exportar: '1' } })
     const escapar = (v: string | number) => {
       let texto = String(v)
       if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
@@ -94,6 +97,8 @@ const relacaoPdf = async () => {
   if (semDados()) return
   exportando.value = true
   try {
+    // Guarda server-side: exige release-week/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/release-week', { query: { exportar: '1' } })
     await gerarPdfReleaseWeek({
       releases: linhas.value,
       logoPreview: previewLoginGlobal.value

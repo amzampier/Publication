@@ -1,17 +1,43 @@
 <script setup lang="ts">
-// Itens de uma Release Week (entregas_itens) em modo SOMENTE LEITURA, exibidos
-// na linha expandida da tabela. Nesta fase os itens vêm do dataset em memória.
-import { ListChecks } from '@lucide/vue'
-import { formatarData, type ItemRelease, type StatusItem } from './useReleaseWeekModelo'
+// Itens de uma Release Week (entregas_itens) em modo SOMENTE LEITURA, carregados
+// sob demanda de GET /api/release-week/:id/itens (cache por release no modelo).
+import { computed, onMounted, watch } from 'vue'
+import { ListChecks, LoaderCircle, AlertTriangle } from '@lucide/vue'
+import {
+  formatarData,
+  useReleaseWeekModelo,
+  type StatusItem
+} from './useReleaseWeekModelo'
 
 interface Props {
-  itens: ItemRelease[]
+  releaseId: string
   codigo?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   codigo: ''
 })
+
+const { itensDaRelease, itensCarregando, itensErro, carregarItens } = useReleaseWeekModelo()
+
+const itens = computed(() => itensDaRelease(props.releaseId))
+const carregando = computed(() => itensCarregando.value[props.releaseId] === true)
+const erro = computed(() => itensErro.value[props.releaseId] ?? null)
+
+const recarregar = () => {
+  void carregarItens(props.releaseId, true)
+}
+
+onMounted(() => {
+  void carregarItens(props.releaseId)
+})
+
+watch(
+  () => props.releaseId,
+  (id) => {
+    if (id) void carregarItens(id)
+  }
+)
 
 const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done'> = {
   Revisar: 'pending',
@@ -28,12 +54,25 @@ const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done'> = {
         <h3 class="text-xs font-semibold text-slate-800">Itens da release</h3>
         <span v-if="codigo" class="font-mono text-[10px] text-slate-500">{{ codigo }}</span>
       </div>
-      <span class="text-[10px] text-slate-500">
+      <span v-if="!carregando && !erro" class="text-[10px] text-slate-500">
         {{ itens.length }} {{ itens.length === 1 ? 'item' : 'itens' }}
       </span>
     </div>
 
-    <p v-if="itens.length === 0" class="px-3 py-6 text-center text-xs text-slate-500">
+    <div v-if="carregando" class="flex items-center justify-center gap-2 px-3 py-6 text-xs text-slate-500">
+      <LoaderCircle class="h-4 w-4 animate-spin" aria-hidden="true" />
+      Carregando itens…
+    </div>
+
+    <div v-else-if="erro" class="flex flex-col items-center gap-2 px-3 py-6 text-center text-xs text-rose-700">
+      <p class="flex items-center gap-1.5">
+        <AlertTriangle class="h-3.5 w-3.5" aria-hidden="true" />
+        {{ erro }}
+      </p>
+      <UiButton variant="outline" size="sm" @click="recarregar">Tentar novamente</UiButton>
+    </div>
+
+    <p v-else-if="itens.length === 0" class="px-3 py-6 text-center text-xs text-slate-500">
       Nenhum item vinculado a esta release.
     </p>
 

@@ -2,9 +2,10 @@
 
 ## Purpose
 
-Define a página administrativa da Release Week na fase frontend: o cabeçalho da semana, seus KPIs,
-a listagem com filtros e ações, a expansão dos itens de cada release, as exportações, o dataset em
-memória de rascunho e a navegação até a tela — fixando o contrato que o backend servirá depois.
+Define a página administrativa da Release Week e o seu backend (`/api/release-week/**`): o cabeçalho
+da semana persistido em `release_week`, os KPIs, a listagem com filtros e ações, a expansão dos itens
+de cada release, as exportações, a importação por planilha e a navegação — com RBAC e auditoria no
+servidor.
 
 ## Requirements
 
@@ -31,7 +32,7 @@ sessão das demais telas administrativas.
 Cada Release Week SHALL ser representada pelos campos do cabeçalho: `codigo`, `nome`, `versao`,
 `release`, `semana` (1 a 52), `ano`, `mes` (por extenso), `data_inicio`, `data_finaliza`,
 `data_publicacao`, `status` (`Aberta` | `Em Revisão` | `Aprovado` | `Publicado`), `descricao`,
-`destaque_semana`, `autor_nome`, `revisor_nome`, `criado_em` e `atualizado_em`. O status SHALL ser
+`destaque_semana`, `autor_nome`, `revisor_nome`, `arquivada`, `criado_em` e `atualizado_em`. O status SHALL ser
 exibido em `UiBadge` com variantes distintas para `Aberta`, `Em Revisão`, `Aprovado` e `Publicado`.
 O `codigo`, os carimbos e os nomes de autor/revisor SHALL ser gerados pelo sistema, nunca digitados
 na tela.
@@ -134,7 +135,9 @@ O sistema SHALL oferecer a ação de linha **Clonar**, que abre o modal de cadas
 apenas **Versão**, **Release** e **Destaque da semana** preenchidos a partir do registro de origem. Os
 demais campos — **Código**, **Nome**, **Semana**, **Ano**, **Mês**, datas, **Status** e **Descrição**
 — SHALL abrir em branco (status volta ao padrão `Aberta`). A clonagem NÃO SHALL copiar os itens da
-release nem gravar nada antes de o usuário salvar.
+release nem gravar nada antes de o usuário salvar. A ação SHALL ser exibida somente quando o perfil
+conceder **`clonar`**; a gravação SHALL usar `POST /api/release-week` (a mesma criação) e exigir
+**`criar`** no servidor.
 
 #### Scenario: Clonar abre o formulário parcialmente preenchido
 - **WHEN** o usuário aciona "Clonar" em uma Release Week
@@ -144,6 +147,14 @@ release nem gravar nada antes de o usuário salvar.
 #### Scenario: Clonar não copia itens
 - **WHEN** a Release Week de origem possui itens vinculados
 - **THEN** o formulário de clonagem não traz itens e o novo registro nasce sem itens
+
+#### Scenario: Sem a permissão de clonar a ação não aparece
+- **WHEN** o perfil do usuário não concede `release-week`/`clonar`
+- **THEN** a ação "Clonar" não é oferecida na linha
+
+#### Scenario: Clonar sem criar é recusado
+- **WHEN** um perfil concede `clonar` mas não `criar` e tenta gravar a clonagem
+- **THEN** a API responde `403` e nenhuma Release Week é criada
 
 ### Requirement: Publicar e arquivar Release Week
 O sistema SHALL oferecer as ações de linha **Publicar** e **Arquivar**, ambas com confirmação.
@@ -168,7 +179,8 @@ aparecer na listagem. Arquivar SHALL respeitar a permissão de `arquivar`; publi
 O sistema SHALL oferecer a ação **Excluir** somente quando a Release Week **não estiver arquivada** e
 **não possuir nenhum item/relacionamento** vinculado. Quando uma dessas condições falhar, a ação
 SHALL ficar indisponível com a indicação acessível do motivo (release arquivada ou release com itens),
-e nenhum dado SHALL ser removido. A confirmação de exclusão SHALL remover o registro do conjunto
+e nenhum dado SHALL ser removido. A API SHALL reaplicar a mesma guarda e responder `409` quando a
+release estiver arquivada ou possuir itens, mesmo que a chamada contorne a interface. A confirmação de exclusão SHALL remover o registro do conjunto
 vigente e fechar o modal com aviso de sucesso. A ação SHALL respeitar a permissão de `excluir`.
 
 #### Scenario: Excluir release sem vínculos
@@ -183,13 +195,19 @@ vigente e fechar o modal com aviso de sucesso. A ação SHALL respeitar a permis
 - **WHEN** a Release Week está arquivada
 - **THEN** a ação de exclusão fica indisponível com o motivo informado e nada é removido
 
+#### Scenario: A API recusa a exclusão bloqueada
+- **WHEN** `DELETE /api/release-week/:id` é chamado para uma release arquivada ou com itens
+- **THEN** a API responde `409` com o motivo e nenhum registro é removido
+
 ### Requirement: Flag de itens e expansão somente leitura
 A tabela SHALL oferecer um **controle no cabeçalho** que habilita a visualização dos itens. Enquanto
 habilitado, cada Release Week SHALL exibir um sinal **"+"**; ao acioná-lo, a linha SHALL expandir e
 revelar os **itens da release** (`entregas_itens` vinculados) em modo somente leitura, com Chamada,
-Título, Software, Módulo, Tipo, Impacto, Situação, Status e Data de liberação. Acionar novamente
-recolhe a linha. Release sem itens SHALL exibir um estado vazio próprio dentro da expansão. A coluna
-de expansão não SHALL afetar ordenação, busca ou paginação.
+Título, Software, Módulo, Tipo, Impacto, Situação, Status e Data de liberação, obtidos de
+`GET /api/release-week/:id/itens` sob demanda. Acionar novamente recolhe a linha. Release sem itens
+SHALL exibir um estado vazio próprio dentro da expansão. A coluna de expansão não SHALL afetar
+ordenação, busca ou paginação. A flag, a expansão e o endpoint de itens SHALL exigir a permissão
+**`release-week`/`visualizar_itens`**; sem ela, a flag não é exibida e a API responde `403`.
 
 #### Scenario: Habilitar a flag revela o sinal de "+"
 - **WHEN** o usuário marca a flag de itens no cabeçalho da tabela
@@ -207,6 +225,10 @@ de expansão não SHALL afetar ordenação, busca ou paginação.
 - **WHEN** o usuário aciona novamente o controle de uma linha expandida
 - **THEN** a linha recolhe e os itens deixam de ser exibidos
 
+#### Scenario: Itens exigem a permissão própria
+- **WHEN** um perfil sem `release-week`/`visualizar_itens` chama `GET /api/release-week/:id/itens`
+- **THEN** a API responde `403` e nenhum item é retornado
+
 ### Requirement: Exportações PDF e CSV
 A tela SHALL oferecer, no menu "Relatórios" do cabeçalho, a **listagem em PDF** e a **exportação em
 CSV** do conjunto filtrado vigente, com as colunas da listagem. O CSV SHALL usar `;` com BOM UTF-8 e
@@ -221,32 +243,88 @@ tela. Em caso de lista vazia, a exportação SHALL informar que não há dados.
 - **WHEN** a geração falha
 - **THEN** um aviso de erro é exibido e a tela permanece utilizável
 
-### Requirement: Dataset em memória de rascunho
-Nesta fase, a tela SHALL operar sobre um **dataset em memória** (`useState`) com Release Weeks e itens
-de exemplo, de modo que as ações possam ser exercitadas sem backend. O dataset NÃO SHALL ser
-persistido: recarregar a página restaura o conjunto inicial e nenhum registro SHALL ser gravado no
-banco. As inclusões, edições, clonagens, publicações, arquivamentos e exclusões SHALL atualizar apenas
-esse conjunto em memória. O contrato de leitura futura (`GET /api/release-week`) e o campo `arquivada`
-SHALL ser documentados como a substituição desse dataset na fase backend.
+### Requirement: A tela carrega e persiste Release Weeks pela API
+A tela SHALL carregar as Release Weeks de `GET /api/release-week` na montagem e exibir um overlay
+`UiLoading` ("Carregando Release Week…") enquanto a requisição estiver em voo, sem conteúdo parcial;
+em falha, SHALL exibir toast de erro e manter a tabela vazia. Toda mutação bem-sucedida (inclusão,
+edição, clonagem, publicação, arquivamento e exclusão) SHALL ser refletida na tabela e nos KPIs, e a
+recarga da página SHALL rebuscar pela API — o que foi gravado persiste, sem base de demonstração.
 
-#### Scenario: Ações operam sobre o conjunto em memória
-- **WHEN** o usuário inclui, edita, clona, publica, arquiva ou exclui uma Release Week
-- **THEN** a listagem e os KPIs refletem a mudança imediatamente, sem requisição ao servidor
+#### Scenario: Carga inicial pela API
+- **WHEN** o navegador abre `/admin/release-week`
+- **THEN** o overlay de carregamento é exibido enquanto `GET /api/release-week` responde e, em
+  seguida, a tabela exibe as Release Weeks persistidas (ou o estado vazio)
 
-#### Scenario: Recarregar descarta as mudanças
-- **WHEN** o usuário recarrega a página
-- **THEN** o dataset volta ao conjunto inicial em memória e nada foi persistido
+#### Scenario: Falha na carga não simula dados
+- **WHEN** `GET /api/release-week` falha
+- **THEN** um toast de erro é exibido e a tabela permanece vazia, sem dados de demonstração
 
-### Requirement: Affordância de importação
-A toolbar da tabela SHALL apresentar o ícone de **importação** imediatamente à **esquerda** do botão
-"Filtros". Nesta fase o ícone SHALL ser apenas uma affordância: acioná-lo NÃO SHALL abrir modal,
-executar leitura de planilha nem disparar requisição. A execução da importação SHALL permanecer como
-pendência para a fase backend.
+#### Scenario: Mutação persiste e a recarga a mantém
+- **WHEN** o usuário inclui, edita, clona, publica, arquiva ou exclui uma Release Week e recarrega
+- **THEN** a mudança persiste e volta da API com os valores gravados
 
-#### Scenario: Ícone de importação visível ao lado de Filtros
-- **WHEN** a toolbar da tabela é exibida
-- **THEN** o ícone de importação aparece imediatamente à esquerda do botão "Filtros"
+### Requirement: Backend da Release Week
+O sistema SHALL servir `/api/release-week/**` sob a permissão do módulo `release-week`:
+`GET /api/release-week` (visualizar) devolve as releases não arquivadas com `itensCount`;
+`GET /api/release-week/:id/itens` (visualizar_itens) devolve os itens; `POST /api/release-week`
+(criar) cria; `PUT /api/release-week/:id` (alterar) edita; `PUT /api/release-week/:id/publicar`
+(publicar) muda o status para `Publicado` e grava `data_aprovacao`; `PUT /api/release-week/:id/arquivar`
+(arquivar) marca `arquivada`; `DELETE /api/release-week/:id` (excluir) remove. O servidor SHALL gerar
+o `codigo` `RW-XX/AAAA` a partir de `semana`/`ano` (na criação e **regenerar** na edição quando
+`semana`/`ano` mudarem), recusando com `409` a duplicidade de `codigo`/`(ano, semana)`. O servidor
+SHALL validar os campos obrigatórios, exigir que **`data_publicacao`** caia em uma segunda-feira
+(`400` caso contrário; as demais datas não têm essa restrição), aplicar a guarda de exclusão
+(arquivada ou com itens → `409`) e registrar a operação na trilha de auditoria com recurso
+**"Release Week"**. A listagem e os itens SHALL refletir o banco, e a release arquivada SHALL deixar
+de aparecer na listagem.
 
-#### Scenario: Importação não executa nesta fase
-- **WHEN** o usuário aciona o ícone de importação
-- **THEN** nenhum modal é aberto e nenhuma requisição é disparada
+#### Scenario: Criar gera código e registra auditoria
+- **WHEN** um usuário com `release-week`/`criar` cria uma release válida
+- **THEN** o registro é gravado com `codigo` derivado de `semana`/`ano`, a resposta é `201` e a
+  trilha registra uma Inclusão do recurso "Release Week"
+
+#### Scenario: Semana duplicada responde 409
+- **WHEN** a criação ou edição tenta usar um `(ano, semana)` já existente
+- **THEN** a API responde `409` sem gravar
+
+#### Scenario: Data de publicação fora de segunda-feira é recusada
+- **WHEN** a criação ou edição envia `data_publicacao` que não é segunda-feira
+- **THEN** a API responde `400` e nada é gravado
+
+#### Scenario: Edição regenera o código
+- **WHEN** a edição altera `semana` ou `ano`
+- **THEN** o `codigo` é regenerado e a unicidade é validada
+
+#### Scenario: Publicar e arquivar
+- **WHEN** o usuário publica ou arquiva uma release
+- **THEN** o status/`arquivada` são gravados e a trilha registra a operação
+
+#### Scenario: Sem permissão a escrita é negada
+- **WHEN** um perfil sem a funcionalidade exigida chama a rota de escrita
+- **THEN** a API responde `403` e nenhum dado é alterado
+
+### Requirement: Importação de Release Weeks por planilha
+O sistema SHALL importar Release Weeks de uma planilha `.xlsx` com as colunas **Nome, Semana, Ano,
+Mês, Data Início, Data Finaliza, Data Publicação, Status, Versão, Release, Descrição e Destaque** por
+`POST /api/release-week/importar`, sob a permissão `release-week`/`importar`. O servidor SHALL
+revalidar cada linha (campos obrigatórios, semana 1–52, mês do domínio, datas `AAAA-MM-DD` e
+`data_publicacao` em segunda-feira), recusar a importação inteira (`400`, com os motivos) quando
+houver linha inválida, tratar `(ano, semana)` já cadastrado como conflito (sem gravar) e, quando tudo
+estiver válido, gravar em **transação** gerando os códigos. A importação bem-sucedida SHALL ser
+registrada na trilha de auditoria.
+
+#### Scenario: Importar linhas válidas
+- **WHEN** um usuário com `release-week`/`importar` envia linhas válidas
+- **THEN** cada Release Week é gravada com o código gerado e a resposta informa quantas foram importadas
+
+#### Scenario: Linha inválida recusa a importação inteira
+- **WHEN** alguma linha tem campo obrigatório vazio, semana fora de 1–52 ou data inválida
+- **THEN** a API responde `400` com os motivos e nada é gravado
+
+#### Scenario: Semana já cadastrada é conflito
+- **WHEN** a planilha traz um `(ano, semana)` já existente na base
+- **THEN** nenhuma release é gravada e a resposta identifica os conflitos
+
+#### Scenario: Importação exige a permissão de importar
+- **WHEN** um perfil sem `release-week`/`importar` chama a rota de importação
+- **THEN** a API responde `403` e nada é gravado

@@ -16,13 +16,15 @@ export const FUNCIONALIDADES_EXTRAS = [
   'filtrar',
   'buscar',
   'permissoes',
-  'convite'
+  'convite',
+  'clonar',
+  'visualizar_itens'
 ] as const
 
 /** Funcionalidades de cada módulo (mesmos ids de server/utils/perfis.ts). */
 export const FUNCIONALIDADES_POR_MODULO: Record<string, readonly string[]> = {
   'manuais': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
-  'release-week': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
+  'release-week': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'clonar', 'visualizar_itens'],
   'escopo-projetos': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
   'esteira-revisao': ['visualizar', 'alterar', 'publicar', 'arquivar', 'filtrar'],
   'lancar-chamadas': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'filtrar', 'buscar'],

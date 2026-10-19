@@ -9,25 +9,30 @@ import {
 
 definePageMeta({ layout: 'admin' })
 
-// Loading no F5 (padrão Softwares/Parceiros): o overlay cobre a hidratação
-// inicial. Nesta fase o dataset é síncrono, então mantemos um tempo mínimo
-// perceptível; na fase backend será o tempo do GET /api/release-week.
+// Loading no F5 (padrão Softwares/Parceiros): o overlay cobre o GET real de
+// /api/release-week; a tabela só monta depois da resposta.
 const carregando = ref(true)
-onMounted(() => {
-  window.setTimeout(() => {
-    carregando.value = false
-  }, 250)
-})
 
 const { toast } = useToast()
 const {
   semanas,
-  podeExcluirRelease,
+  carregarSemanas,
   clonarPreenchimento,
   publicar,
   arquivar,
   excluir
 } = useReleaseWeekModelo()
+
+onMounted(async () => {
+  const ok = await carregarSemanas()
+  carregando.value = false
+  if (!ok) {
+    toast.danger(
+      'Release Week',
+      'Não foi possível carregar as Release Weeks. Recarregue a página e tente novamente.'
+    )
+  }
+})
 
 // Coordenação da página (molde Softwares/Parceiros): a página é dona do estado
 // dos modais; cada componente de domínio só apresenta e emite.
@@ -75,13 +80,23 @@ const abrirPublicacao = (linha: LinhaReleaseWeek) => {
   publicarAberto.value = true
 }
 
-const confirmarPublicacao = () => {
+const mensagemErro = (erro: unknown): string =>
+  (erro as { data?: { statusMessage?: string }; statusMessage?: string } | null)?.data
+    ?.statusMessage ??
+  (erro as { statusMessage?: string } | null)?.statusMessage ??
+  'Não foi possível concluir a operação.'
+
+const confirmarPublicacao = async () => {
   const alvo = releasePublicar.value
   if (!alvo) return
   publicarAberto.value = false
   releasePublicar.value = null
-  if (publicar(alvo.id)) toast.success('Release Week', 'Release Week publicada com sucesso.')
-  else toast.danger('Release Week', 'Não foi possível publicar a Release Week.')
+  try {
+    await publicar(alvo.id)
+    toast.success('Release Week', 'Release Week publicada com sucesso.')
+  } catch (erro) {
+    toast.danger('Release Week', mensagemErro(erro))
+  }
 }
 
 const arquivarAberto = ref(false)
@@ -92,38 +107,37 @@ const abrirArquivamento = (linha: LinhaReleaseWeek) => {
   arquivarAberto.value = true
 }
 
-const confirmarArquivamento = () => {
+const confirmarArquivamento = async () => {
   const alvo = releaseArquivar.value
   if (!alvo) return
   arquivarAberto.value = false
   releaseArquivar.value = null
-  if (arquivar(alvo.id)) toast.success('Release Week', 'Release Week arquivada com sucesso.')
-  else toast.danger('Release Week', 'Não foi possível arquivar a Release Week.')
+  try {
+    await arquivar(alvo.id)
+    toast.success('Release Week', 'Release Week arquivada com sucesso.')
+  } catch (erro) {
+    toast.danger('Release Week', mensagemErro(erro))
+  }
 }
 
 const exclusaoAberta = ref(false)
 const releaseExcluir = ref<LinhaReleaseWeek | null>(null)
 
 const abrirExclusao = (linha: LinhaReleaseWeek) => {
-  const registro = resolver(linha)
-  if (!registro) return
-  if (!podeExcluirRelease(registro)) {
-    toast.danger(
-      'Release Week',
-      'Esta release não pode ser excluída (arquivada ou com itens vinculados).'
-    )
+  if (linha.itensCount > 0) {
+    toast.danger('Release Week', 'Release com itens vinculados não pode ser excluída.')
     return
   }
   releaseExcluir.value = linha
   exclusaoAberta.value = true
 }
 
-const confirmarExclusao = () => {
+const confirmarExclusao = async () => {
   const alvo = releaseExcluir.value
   if (!alvo) return
   exclusaoAberta.value = false
   releaseExcluir.value = null
-  const resultado = excluir(alvo.id)
+  const resultado = await excluir(alvo.id)
   if (resultado.ok) {
     toast.success('Release Week', 'Release Week excluída com sucesso.')
     // O gatilho (menu) saiu do DOM com a linha: devolve o foco à busca.
@@ -133,12 +147,7 @@ const confirmarExclusao = () => {
   }
 }
 
-const acionarImportacao = () => {
-  toast.info(
-    'Importação',
-    'A importação de Release Weeks estará disponível após a implementação do backend.'
-  )
-}
+const importarAberto = ref(false)
 </script>
 
 <template>
@@ -158,11 +167,13 @@ const acionarImportacao = () => {
         @publicar="abrirPublicacao"
         @arquivar="abrirArquivamento"
         @excluir="abrirExclusao"
-        @importar="acionarImportacao"
+        @importar="importarAberto = true"
         @open-filters="filtrosAbertos = true"
       />
 
       <ReleaseWeekFiltros v-model="filtrosAbertos" />
+
+      <ReleaseWeekImportar v-model="importarAberto" />
 
       <ReleaseWeekFormulario
         v-model="modalAberto"

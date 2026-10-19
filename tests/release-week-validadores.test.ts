@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   calcularKpis,
+  ehSegundaFeira,
   filtrarSemanas,
   formatarData,
   gerarCodigo,
@@ -10,7 +11,7 @@ import {
   validarReleaseWeek,
   type ItemRelease,
   type ReleaseWeekModelo
-} from '../app/components/release-week/validadores'
+} from '../shared/utils/release-week'
 
 const semanaBase = (over: Partial<ReleaseWeekModelo> = {}): ReleaseWeekModelo => ({
   id: 'rw-1',
@@ -91,6 +92,30 @@ describe('validarReleaseWeek', () => {
   it('aponta o primeiro erro na ordem dos campos', () => {
     const r = validarReleaseWeek({ nome: '', semana: 0, ano: 2026, mes: 'Outubro' })
     expect(r.primeiroErro).toBe('nome')
+  })
+
+  it('exige que a data de publicação caia em uma segunda-feira', () => {
+    const r = validarReleaseWeek({ ...entradaValida, dataPublicacao: '2026-10-06' })
+    expect(r.valido).toBe(false)
+    expect(r.erros.dataPublicacao).toMatch(/segunda-feira/i)
+  })
+
+  it('aceita segunda-feira na publicação e não exige segunda nas demais datas', () => {
+    const r = validarReleaseWeek({
+      ...entradaValida,
+      dataInicio: '2026-10-06',
+      dataFinaliza: '2026-10-08',
+      dataPublicacao: '2026-10-05'
+    })
+    expect(r.valido).toBe(true)
+  })
+})
+
+describe('ehSegundaFeira', () => {
+  it('identifica segunda-feira sem deslocamento de fuso', () => {
+    expect(ehSegundaFeira('2026-10-05')).toBe(true)
+    expect(ehSegundaFeira('2026-10-06')).toBe(false)
+    expect(ehSegundaFeira('data-invalida')).toBe(false)
   })
 })
 

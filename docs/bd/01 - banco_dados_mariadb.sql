@@ -288,6 +288,7 @@ CREATE TABLE release_week (
     descricao MEDIUMTEXT NULL COMMENT 'Texto descritivo consolidado das novidades',
     total_visualizacoes INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Contador de acessos públicos',
     destaque_semana TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Exibir em destaque no topo da home pública',
+    arquivada TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Release arquivada (soft): some da listagem sem apagar dados/itens',
 
     -- Metadados de Workflow e Auditoria com Foreign Keys
     autor_id UUID NULL COMMENT 'Chave estrangeira apontando para usuarios.id (criador da release)',

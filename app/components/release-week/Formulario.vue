@@ -63,7 +63,8 @@ const rascunhoVazio = (prefill?: PrefillClone | null): Rascunho => ({
   release: prefill?.release ?? '',
   semana: '',
   ano: String(new Date().getFullYear()),
-  mes: '',
+  // Nova release já abre no mês atual; a clonagem mantém o mês em branco.
+  mes: prefill ? '' : (MESES[new Date().getMonth()] ?? ''),
   dataInicio: '',
   dataFinaliza: '',
   dataPublicacao: '',
@@ -109,6 +110,17 @@ const definirData = (campo: 'dataInicio' | 'dataFinaliza' | 'dataPublicacao', da
   rascunho.value[campo] = paraIso(data)
 }
 
+/** Semana aceita somente 1–52: só dígitos e clamp imediato (nunca 0/53+). */
+const definirSemana = (valor: string) => {
+  const digitos = String(valor ?? '').replace(/\D/g, '').slice(0, 2)
+  if (!digitos) {
+    rascunho.value.semana = ''
+    return
+  }
+  const numero = Number(digitos)
+  rascunho.value.semana = String(Math.min(52, Math.max(1, numero)))
+}
+
 const formatarDataHora = (iso: string): string => {
   if (!iso) return '-'
   const data = new Date(iso)
@@ -137,7 +149,9 @@ const validar = (): boolean => {
   return true
 }
 
-const salvar = () => {
+const salvando = ref(false)
+
+const salvar = async () => {
   if (!validar()) return
 
   const dados = {
@@ -155,15 +169,43 @@ const salvar = () => {
     destaqueSemana: rascunho.value.destaqueSemana
   }
 
-  if (props.modo === 'editar' && props.release) {
-    atualizar(props.release.id, dados)
-    toast.success('Release Week', 'Release Week atualizada com sucesso.')
-  } else {
-    adicionar(dados)
-    toast.success('Release Week', 'Release Week incluída com sucesso.')
+  salvando.value = true
+  try {
+    if (props.modo === 'editar' && props.release) {
+      await atualizar(props.release.id, dados)
+      toast.success('Release Week', 'Release Week atualizada com sucesso.')
+    } else {
+      await adicionar(dados)
+      toast.success('Release Week', 'Release Week incluída com sucesso.')
+    }
+    emit('update:modelValue', false)
+  } catch (erro) {
+    const e = erro as {
+      statusCode?: number
+      statusMessage?: string
+      data?: { statusMessage?: string; erros?: Partial<Record<CampoReleaseWeek, string>> }
+    }
+    const mensagem =
+      e.data?.statusMessage ?? e.statusMessage ?? 'Não foi possível salvar a Release Week.'
+    if (e.statusCode === 400 && e.data?.erros) {
+      erros.value = { ...erros.value, ...e.data.erros }
+      const ordem: CampoReleaseWeek[] = [
+        'nome',
+        'semana',
+        'ano',
+        'mes',
+        'dataInicio',
+        'dataFinaliza',
+        'dataPublicacao'
+      ]
+      const primeiro = ordem.find((campo) => erros.value[campo])
+      if (primeiro) focarCampo(primeiro)
+    } else {
+      toast.danger('Release Week', mensagem)
+    }
+  } finally {
+    salvando.value = false
   }
-
-  emit('update:modelValue', false)
 }
 
 const cancelar = () => emit('update:modelValue', false)
@@ -241,13 +283,14 @@ watch(
           />
 
           <UiInput
-            v-model="rascunho.semana"
+            :model-value="rascunho.semana"
             data-campo="semana"
             class="sm:col-span-2"
             type="number"
             label="Semana"
             placeholder="1 a 52"
             :error="erros.semana"
+            @update:model-value="definirSemana"
           />
           <UiInput
             v-model="rascunho.ano"
@@ -347,7 +390,7 @@ watch(
 
     <template #footer>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" :disabled="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 </template>

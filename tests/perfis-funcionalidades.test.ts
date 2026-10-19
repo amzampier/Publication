@@ -40,9 +40,9 @@ describe('catálogo de funcionalidades por módulo (sincronia app × server)', (
     expect([...SRV_EXTRAS].sort()).toEqual([...APP_EXTRAS].sort())
   })
 
-  it('total do catálogo é 86', () => {
+  it('total do catálogo é 88', () => {
     const total = Object.values(SRV).reduce((soma, acoes) => soma + acoes.length, 0)
-    expect(total).toBe(86)
+    expect(total).toBe(88)
   })
 })
 
@@ -60,5 +60,17 @@ describe('validarMatriz por catálogo', () => {
 
   it('recusa módulo desconhecido', () => {
     expect(capturar(() => validarMatriz({ desconhecido: ['visualizar'] })).statusCode).toBe(400)
+  })
+
+  it('recusa clonar sem criar no release-week', () => {
+    expect(
+      capturar(() => validarMatriz({ 'release-week': ['visualizar', 'clonar'] })).statusCode
+    ).toBe(400)
+  })
+
+  it('aceita clonar junto com criar no release-week', () => {
+    expect(
+      validarMatriz({ 'release-week': ['visualizar', 'criar', 'clonar', 'visualizar_itens'] })
+    ).toEqual({ 'release-week': ['visualizar', 'criar', 'clonar', 'visualizar_itens'] })
   })
 })

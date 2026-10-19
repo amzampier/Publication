@@ -53,7 +53,7 @@ export const FUNCIONALIDADES_FIXAS = ['visualizar', 'criar', 'alterar', 'excluir
  */
 export const FUNCIONALIDADES_POR_MODULO: Record<string, readonly string[]> = {
   'manuais': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
-  'release-week': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
+  'release-week': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'clonar', 'visualizar_itens'],
   'escopo-projetos': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
   'esteira-revisao': ['visualizar', 'alterar', 'publicar', 'arquivar', 'filtrar'],
   'lancar-chamadas': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'filtrar', 'buscar'],
@@ -67,7 +67,7 @@ export const FUNCIONALIDADES_POR_MODULO: Record<string, readonly string[]> = {
 
 /** Funcionalidades específicas (não-fixas) — persistidas no `extras` JSON. */
 export const FUNCIONALIDADES_EXTRAS = [
-  'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'permissoes', 'convite'
+  'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'permissoes', 'convite', 'clonar', 'visualizar_itens'
 ] as const
 
 /** Ações fixas -> colunas TINYINT do permissoes_perfil (docs/02 §3.5). */
@@ -147,6 +147,13 @@ export function validarMatriz(matriz: unknown): Record<string, string[]> {
     // dedupe preservando ordem
     resultado[modulo] = [...new Set(acoes as string[])]
   }
+
+  // `clonar` só faz sentido com `criar`: a clonagem grava via POST (criar).
+  const releaseWeek = resultado['release-week'] ?? []
+  if (releaseWeek.includes('clonar') && !releaseWeek.includes('criar')) {
+    erro400('A funcionalidade clonar exige criar no módulo release-week.')
+  }
+
   return resultado
 }
 

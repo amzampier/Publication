@@ -4,7 +4,7 @@
 // gravações são assíncronas e nada é semeado em memória: sem resposta, a lista
 // fica vazia com erro — nunca a demo fingindo ser real.
 // Núcleo do modelo conforme docs/02 §3.5 (perfis_acesso/permissoes_perfil):
-// 4 ações booleanas fixas por módulo + 5 `extras` (JSON) = 99 permissões.
+// 4 ações booleanas fixas por módulo + extras (JSON) — total do catálogo (88).
 // Os ids de módulo/ações estão duplicados em server/utils/perfis.ts (barreira
 // app/ × server/) — mantenha os dois lados em sincronia.
 import { computed } from 'vue'
@@ -46,6 +46,9 @@ export type Extra =
   | 'filtrar'
   | 'buscar'
   | 'permissoes'
+  | 'convite'
+  | 'clonar'
+  | 'visualizar_itens'
 export type Permissao = Acao | Extra
 
 export const ACOES: Acao[] = ['visualizar', 'criar', 'alterar', 'excluir']
@@ -57,7 +60,10 @@ export const EXTRAS: Extra[] = [
   'importar',
   'filtrar',
   'buscar',
-  'permissoes'
+  'permissoes',
+  'convite',
+  'clonar',
+  'visualizar_itens'
 ]
 
 export const MODULOS: { id: ModuloId; label: string; descricao: string }[] = [

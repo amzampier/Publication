@@ -1,26 +1,29 @@
 # 12 - Módulo das Releases Week — Área Administrativa
 
-**Versão:** 1.0.0 — **Data:** 2026-10-19 — **Idioma:** Português do Brasil (pt-BR)
-**Escopo (fase frontend):** tela principal do módulo **Release Week** — o cabeçalho das semanas de
-entrega (`codigo`, `nome`, `versao`, `release`, `semana`, `ano`, `mes`, `data_inicio`,
-`data_finaliza`, `data_publicacao`, `status`, `descricao`, `destaque_semana`, `autor_nome`,
-`revisor_nome`, `arquivada`, timestamps), os **quatro KPIs** (Abertas, Em Revisão, Aprovadas,
-Publicadas), busca/filtros/ordenação/paginação, as **ações de linha** (Clonar, Editar, Publicar,
-Arquivar e Excluir condicionada), a **flag de itens** no cabeçalho da tabela com expansão somente
-leitura dos itens de cada release, as **exportações PDF/CSV** e a affordância de importação (apenas
-o ícone nesta fase). **Sem backend e sem seed:** a tela opera sobre um **dataset em memória**.
+**Versão:** 2.0.0 — **Data:** 2026-10-19 — **Idioma:** Português do Brasil (pt-BR)
+**Escopo:** tela principal do módulo **Release Week** — o cabeçalho das semanas de entrega
+(`codigo`, `nome`, `versao`, `release`, `semana`, `ano`, `mes`, `data_inicio`, `data_finaliza`,
+`data_publicacao`, `status`, `descricao`, `destaque_semana`, `autor_nome`, `revisor_nome`,
+`arquivada`, timestamps), os **quatro KPIs** (Abertas, Em Revisão, Aprovadas, Publicadas),
+busca/filtros/ordenação/paginação, as **ações de linha** (Clonar, Editar, Publicar, Arquivar e
+Excluir condicionada), a **flag de itens** no cabeçalho da tabela com expansão somente leitura dos
+itens de cada release, as **exportações PDF/CSV** e a **importação por planilha**. O **backend está
+implementado** (`server/api/release-week/**`): persistência em `release_week`, código `RW-XX/AAAA`
+gerado pelo servidor, `arquivada` soft, guarda de exclusão por itens e RBAC/auditoria no servidor.
 **Arquivos-fonte:** [`app/pages/admin/release-week.vue`](../app/pages/admin/release-week.vue) ·
 [`app/components/release-week/`](../app/components/release-week) ·
+[`server/api/release-week/`](../server/api/release-week) ·
+[`server/utils/release-week.ts`](../server/utils/release-week.ts) ·
+[`shared/utils/release-week.ts`](../shared/utils/release-week.ts) ·
 [`app/config/navigation.ts`](../app/config/navigation.ts)
-**Design system:** [`/design`](../app/pages/design.vue) — `UiActionMenu` (nova seção 23), variantes
+**Design system:** [`/design`](../app/pages/design.vue) — `UiActionMenu` (seção 23), variantes
 `aberta`/`publicado`/`arquivado` do `UiBadge` e expansão de linha do `UiDataTable`.
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md) (§5.2, §5.11, §5.23)
-**Autoridade de comportamento:** `openspec/specs/release-week` (delta desta change em
-`openspec/changes/construir-release-week-frontend/specs/release-week`)
+**Autoridade de comportamento:** `openspec/specs/release-week` (deltas das changes
+`construir-release-week-frontend` e `release-week-backend-e-importacao`)
 
-> Este documento é a referência da tela `/admin/release-week` e de tudo o que foi criado para ela.
-> Em caso de divergência com a spec, a spec prevalece. A fase backend (API, migration/seed e
-> importação funcional) é uma etapa seguinte, registrada em §10.
+> Este documento é a referência da tela `/admin/release-week`, da API e da importação. Em caso de
+> divergência com a spec, a spec prevalece.
 
 ---
 
@@ -29,10 +32,10 @@ o ícone nesta fase). **Sem backend e sem seed:** a tela opera sobre um **datase
 1. [Visão geral e rota](#1-visão-geral-e-rota)
 2. [Estrutura da página (componentização)](#2-estrutura-da-página-componentização)
 3. [Componentes de domínio](#3-componentes-de-domínio)
-4. [Contrato de dados](#4-contrato-de-dados)
+4. [Contrato de dados (API)](#4-contrato-de-dados-api)
 5. [Fluxos](#5-fluxos)
-6. [Navegação até a tela](#6-navegação-até-a-tela)
-7. [Dataset em memória e importação](#7-dataset-em-memória-e-importação)
+6. [Navegação e RBAC](#6-navegação-e-rbac)
+7. [Importação por planilha](#7-importação-por-planilha)
 8. [Documentação relacionada](#8-documentação-relacionada)
 9. [Verificação](#9-verificação)
 10. [Pendências e próximos passos](#10-pendências-e-próximos-passos)
@@ -45,17 +48,15 @@ A tela de Release Week é o **cabeçalho do ciclo semanal** da Área Administrat
 
 - **Rota:** `/admin/release-week` → `app/pages/admin/release-week.vue` com
   `definePageMeta({ layout: 'admin' })` — herda o shell (header + sidebar) por `/admin/**`.
-- **Modelo de dados:** conforme `docs/bd/01` §13 (tabela `release_week`) — `id` (PK),
-  `codigo` (`RW-01/2026`), `nome`, `versao`, `release`, `semana` (1–52), `ano`, `mes`, datas
+- **Modelo de dados:** conforme `docs/bd/01` §13 (tabela `release_week`) — `id` (PK), `codigo`
+  (`RW-01/2026`), `nome`, `versao`, `release`, `semana` (1–52), `ano`, `mes`, datas
   (`data_inicio`, `data_finaliza`, `data_publicacao`), `status`
-  (`Aberta` | `Em Revisão` | `Aprovado` | `Publicado`), `descricao`, `destaque_semana`,
-  `autor_nome`/`revisor_nome` e timestamps. Os itens relacionados vivem em `entregas_itens`
-  (`release_id`).
+  (`Aberta` | `Em Revisão` | `Aprovado` | `Publicado`), `descricao`, `destaque_semana`, `arquivada`,
+  `autor_nome`/`revisor_nome` e timestamps. Os itens vivem em `entregas_itens` (`release_id`).
 - **Status x arquivamento:** `status` é o fluxo editorial (4 valores). **`arquivada` é um booleano
-  separado** — arquivar é soft, remove a release da listagem/KPIs e **não** apaga dados. A coluna
-  física correspondente entra no banco na fase backend.
-- **Persistência (fase 1):** dataset em memória (`useState`) — ver §7. Nenhuma requisição de
-  leitura/gravação nesta fase; recarregar a página restaura o conjunto inicial.
+  separado** — arquivar é soft, remove a release da listagem/KPIs e **não** apaga dados/itens.
+- **Persistência:** `GET /api/release-week` carrega as releases não arquivadas (com `itensCount`);
+  inclusão/edição/clonagem/publicação/arquivamento/exclusão gravam no banco via API.
 - **Componentização:** a página é fina e dona da coordenação; cada parte é um componente em
   `app/components/release-week/` (auto-import com prefixo `ReleaseWeek*`).
 
@@ -71,18 +72,18 @@ admin/release-week.vue                              (page - definePageMeta + com
 │       @excluir @importar @open-filters />         → busca + Import + Filtros + tabela + UiActionMenu + flag de itens
 ├── <ReleaseWeekFiltros v-model="filtrosAbertos" /> → modal (Status, Ano, Mês, Autor)
 ├── <ReleaseWeekFormulario v-model :modo :release :prefill /> → cadastro/edição/clonagem
+├── <ReleaseWeekImportar v-model="importarAberto" /> → importação .xlsx (parser + pré-visualização + commit)
 ├── <ReleaseWeekPublicar v-model :release @confirmar /> → confirmação de publicação
 ├── <ReleaseWeekArquivar v-model :release @confirmar /> → confirmação de arquivamento
 └── <ReleaseWeekExclusao v-model :release @confirmar /> → confirmação de exclusão (condicionada)
 ```
 
 - **Estado de coordenação:** `filtrosAbertos`, `modalAberto`/`modo`/`releaseEditar`/`prefill`
-  (cadastro, edição e clonagem), `publicarAberto`, `arquivarAberto` e `exclusaoAberta`, cada um com
-  a linha-alvo. `abrirEdicao`/`abrirClonagem`/`abrirExclusao` resolvem o registro **completo** por
-  `id` na base em memória.
-- **Loading:** no F5 a tela exibe `UiLoading` ("Carregando Release Week…") no padrão de
-  Softwares/Parceiros. Como o dataset é síncrono/local, o overlay cobre a hidratação com um tempo
-  mínimo perceptível; na fase backend ele passa a cobrir o `GET /api/release-week` real.
+  (cadastro, edição e clonagem), `importarAberto`, `publicarAberto`, `arquivarAberto` e
+  `exclusaoAberta`, cada um com a linha-alvo. `abrirEdicao`/`abrirClonagem`/`abrirExclusao` resolvem
+  o registro **completo** por `id` na base carregada.
+- **Loading:** no F5 a tela exibe `UiLoading` ("Carregando Release Week…") enquanto
+  `GET /api/release-week` responde; em falha, toast de erro e tabela vazia.
 - **Largura:** container `mx-auto max-w-7xl` dentro do padding `p-4 sm:p-6 lg:p-8`.
 
 ## 3. Componentes de domínio
@@ -94,8 +95,8 @@ admin/release-week.vue                              (page - definePageMeta + com
 - **Botão "Nova Release Week"** (`UiButton` primary + `Plus`): emite `@novo`.
 - **Menu "Relatórios"** (`UiButton` outline + `NotebookText` + `ChevronDown`, `role="menu"`):
   "Listagem em PDF" (`gerarPdfReleaseWeek`) e "Exportar em CSV" (Código, Nome, Semana/Ano, Período,
-  Status, Autor, Data de publicação). O menu fecha no clique fora e no `Escape`; lista vazia →
-  aviso "Não há Release Weeks para exportar…".
+  Status, Autor, Data de publicação). Antes de gerar, chama `GET /api/release-week?exportar=1` como
+  guarda da permissão `exportar`. Lista vazia → aviso.
 - Gated por `release-week`/`exportar` (menu) e `release-week`/`criar` (botão).
 
 ### 3.2 `Kpis.vue` → `<ReleaseWeekKpis>`
@@ -107,56 +108,60 @@ admin/release-week.vue                              (page - definePageMeta + com
 ### 3.3 `Tabela.vue` → `<ReleaseWeekTabela>`
 
 - `UiDataTable` com **Código, Nome, Semana/Ano, Período, Status, Autor e Publicação** + coluna de
-  ações (`UiActionMenu`). Busca/ordenação/paginação no cliente (`default-page-size` 5).
-- **Filtros** (`showFilters`) e **Import** à esquerda do botão Filtros (`slot filtersLeft`, ícone
-  `Import`; ver §5.7). Gated por `filtrar`/`buscar`/`importar`.
+  ações. Busca/ordenação/paginação no cliente (`default-page-size` 5) sobre a lista da API.
+- **Filtros** (`showFilters`) e **Import** à esquerda do botão Filtros (`slot filtersLeft`), gated
+  por `filtrar`/`buscar`/`importar`.
 - **Status** em `UiBadge`: `Aberta`→`aberta`, `Em Revisão`→`inReview`, `Aprovado`→`reconciled`,
   `Publicado`→`publicado`.
 - **Flag de itens no cabeçalho** (`slot expandHeader`): um checkbox liga `expandable`; ao marcar,
   cada linha ganha um **`+`** que expande a linha (`slot expanded`) exibindo `<ReleaseWeekItens>`.
-  Desmarcar recolhe todas as linhas.
+  A flag só aparece com `release-week`/`visualizar_itens`; desmarcar recolhe todas.
 - **Ações** (por linha): **Editar** (`alterar`) e **Excluir** (`excluir`) ficam como ícones inline à
-  esquerda dos três pontinhos; o `UiActionMenu` agrupa **Clonar** (`criar`), **Publicar**
+  esquerda dos três pontinhos; o `UiActionMenu` agrupa **Clonar** (`clonar`), **Publicar**
   (`publicar`) e **Arquivar** (`arquivar`). "Publicar" fica desabilitado quando o status já é
   `Publicado`; "Excluir" fica desabilitado (com motivo) quando a release tem itens.
 
 ### 3.4 `Itens.vue` → `<ReleaseWeekItens>`
 
-- Tabela **somente leitura** dos itens da release: Chamada, Título, Software, Módulo, Tipo,
-  Impacto, Situação, Status (`UiBadge`) e Data de liberação. Release sem itens mostra
-  "Nenhum item vinculado a esta release." dentro da própria expansão.
+- Recebe `releaseId`/`codigo` e busca `GET /api/release-week/:id/itens` **sob demanda** (cache por
+  release). Exibe loading/erro (com "Tentar novamente") e estado vazio ("Nenhum item vinculado a
+  esta release."). Colunas: Chamada, Título, Software, Módulo, Tipo, Impacto, Situação, Status
+  (`UiBadge`) e Data de liberação — somente leitura.
 
 ### 3.5 `Filtros.vue` → `<ReleaseWeekFiltros>`
 
 - `UiModal size="md"` com **Status, Ano, Mês e Autor** (`UiSelect`; vazio = todos) dispostos em
-  **duas colunas** e os botões "Limpar Filtros", "Cancelar" e "Aplicar". Rascunho isolado que
-  espelha o estado vigente ao abrir; "Limpar Filtros" zera rascunho e estado (o badge da toolbar cai
-  a 0).
+  **duas colunas** e os botões "Limpar Filtros", "Cancelar" e "Aplicar". Rascunho isolado que espelha
+  o estado vigente ao abrir; "Limpar Filtros" zera rascunho e estado.
 
 ### 3.6 `Formulario.vue` → `<ReleaseWeekFormulario>` (cadastro/edição/clonagem)
 
 - `UiModal size="lg"`, um componente para os três modos:
-  - **Nova:** abre vazio, status `Aberta`, destaque desligado.
+  - **Nova:** abre com status `Aberta`, **mês atual** pré-selecionado, ano atual e destaque desligado.
   - **Editar:** preenchido, com **Código** somente leitura e a seção **Informações de Cadastro**
     (Criado em/Atualizado em/Publicação desabilitados).
-  - **Clonar:** modo criação com `versao`, `release` e `destaque_semana` copiados; `codigo`,
-    `nome`, `semana`, `ano`, `mes`, datas, `status` e `descricao` em branco (status `Aberta`).
-- Seções: **Dados da Semana** (Nome obrigatório, Versão, Release, Semana 1–52, Ano, Mês, três
-  datas), **Conteúdo e Status** (Descrição, Status em `UiSegmented`, Destaque em `UiSwitch`) e
+  - **Clonar:** modo criação com `versao`, `release` e `destaque_semana` copiados; `codigo`, `nome`,
+    `semana`, `ano`, `mes`, datas, `status` e `descricao` em branco (status `Aberta`).
+- Seções: **Dados da Semana** (Nome obrigatório, Versão, Release, Semana, Ano, Mês, três datas),
+  **Conteúdo e Status** (Descrição, Status em `UiSegmented`, Destaque em `UiSwitch`) e
   **Informações de Cadastro** (só na edição).
-- **Validação no cliente** (`validarReleaseWeek`): campos obrigatórios, semana 1–52, mês do domínio
-  e datas `AAAA-MM-DD`; erro persistente no campo e foco no primeiro problema. Salvar chama
-  `adicionar`/`atualizar` do modelo em memória e fecha com `toast.success`.
+- **Semana 1–52:** o campo só aceita dígitos e faz **clamp imediato** (nunca 0/53+); a API reforça a
+  regra e recusa valores fora do intervalo.
+- **Validação** (cliente + servidor, `validarReleaseWeek`): nome, semana 1–52, ano, mês do domínio,
+  datas `AAAA-MM-DD` e **`data_publicacao` em segunda-feira**. Erro persistente no campo e foco no
+  primeiro problema; a API responde `400` com `data.erros`.
+- Salvar chama `adicionar`/`atualizar` (API) e fecha com `toast.success`; `409` (semana/ano
+  duplicado) é exibido no toast.
 - **Datas:** `UiDatePicker` ⇄ conversão local `Date` ↔ `AAAA-MM-DD` (sem deslocamento de fuso).
 
 ### 3.7 `Publicar.vue` / `Arquivar.vue` / `Exclusao.vue`
 
-- `UiModal size="sm"` de apresentação pura; emitem `confirmar` e a página fecha/grava.
-- **Publicar:** confirma a mudança de status para `Publicado`.
+- `UiModal size="sm"` de apresentação pura; emitem `confirmar` e a página fecha/grava via API.
+- **Publicar:** confirma a mudança de status para `Publicado` (a API grava `data_aprovacao`).
 - **Arquivar:** avisa que a release sai da listagem/KPIs, que os dados/itens permanecem e que uma
   release arquivada não pode ser excluída.
 - **Exclusao:** mostra código, nome, período e a contagem de itens; avisa que é irreversível. Só é
-  aberta quando `podeExcluirRelease` permite (não arquivada e sem itens).
+  aberta quando a release não tem itens (a API reaplica a guarda e responde `409`).
 
 ### 3.8 `gerarPdfReleaseWeek.ts`
 
@@ -164,14 +169,25 @@ admin/release-week.vue                              (page - definePageMeta + com
   (quando houver), título "Relatório de Release Week", data de geração, contagem, colunas da
   listagem e rodapé "Página X de Y" · "Publications · Release Week".
 
-## 4. Contrato de dados
+### 3.9 `Importar.vue` + `lerPlanilhaReleaseWeek.ts`
 
-O modelo em memória (`app/components/release-week/useReleaseWeekModelo.ts`) expõe:
+- `UiModal size="lg"` aberto pelo ícone de importação da toolbar: upload `.xlsx`, pré-visualização em
+  `UiDataTable` (Semana/Ano, Nome, Período, Status e **Resultado**: `Pronto para importar` /
+  `Já cadastrado` / `Repetido no arquivo` / `Linha inválida`), seleção das linhas prontas e commit em
+  `POST /api/release-week/importar`.
+- `lerPlanilhaReleaseWeek.ts`: parser puro do modelo (colunas **Nome, Semana, Ano, Mês, Data Início,
+  Data Finaliza, Data Publicação, Status, Versão, Release, Descrição, Destaque**), sem imports de
+  Nuxt — `classificarLinhasReleaseWeek` é coberto por testes. A chave de duplicidade é `(ano, semana)`
+  e a publicação fora de segunda-feira marca a linha como inválida.
+
+## 4. Contrato de dados (API)
+
+O frontend consome a API; o shape é o mesmo `ReleaseWeekModelo` usado na tela:
 
 ```ts
 interface ReleaseWeekModelo {
   id: string
-  codigo: string            // RW-43/2026 (gerado pelo sistema)
+  codigo: string            // RW-43/2026 (gerado pelo servidor)
   nome: string
   versao: string
   release: string
@@ -180,88 +196,85 @@ interface ReleaseWeekModelo {
   mes: string               // por extenso
   dataInicio: string        // AAAA-MM-DD
   dataFinaliza: string
-  dataPublicacao: string
+  dataPublicacao: string    // sempre segunda-feira
   status: 'Aberta' | 'Em Revisão' | 'Aprovado' | 'Publicado'
   descricao: string
   destaqueSemana: boolean
-  arquivada: boolean        // fase backend: coluna (ou arquivado_em)
+  arquivada: boolean
   autorNome: string
   revisorNome: string
   criadoEm: string          // ISO 8601
   atualizadoEm: string
-}
-
-interface ItemRelease {
-  id: string
-  releaseId: string
-  chamada: string
-  titulo: string
-  software: string
-  modulo: string
-  tipo: 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
-  impacto: 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-  situacao: 'Desenvolvimento' | 'Homologação' | 'Implantado'
-  status: 'Revisar' | 'Aprovado' | 'Publicar'
-  dataLiberacao: string     // AAAA-MM-DD
+  itensCount?: number       // contagem de entregas_itens
 }
 ```
 
-- Repositório do frontend: `semanas` e `itens` (`useState`, chaves `release-week-base`/
-  `release-week-itens`); filtros em `release-week-filtros`.
-- Derivados: `linhas` (datas formatadas + `itensCount`), `kpis`, `filtrosAtivosCount`, `opcoes`
-  (status/anos/meses/autores) e `itensDaRelease(id)`.
-- Ações: `adicionar`, `atualizar`, `publicar`, `arquivar`, `excluir` (com guarda), `clonarPreenchimento`
-  e os helpers `podeExcluirRelease`/`motivoBloqueioExclusao`.
-- **Contrato futuro (fase backend):** `GET /api/release-week` devolve as semanas (com `arquivada` e,
-  opcionalmente, os itens); escritas em `POST`/`PUT`/`DELETE` e ações `publicar`/`arquivar`. O
-  dataset em memória é substituído pela resposta da API sem mudar os componentes.
+**Rotas e permissões** (`requirePermission` em todas):
+
+| Ação | Método e rota | Permissão |
+|---|---|---|
+| Listar | `GET /api/release-week` | `release-week`/`visualizar` (ativas + `itensCount`) |
+| Guarda de exportação | `GET /api/release-week?exportar=1` | `release-week`/`exportar` |
+| Itens | `GET /api/release-week/:id/itens` | `release-week`/`visualizar_itens` |
+| Incluir/clonar | `POST /api/release-week` | `release-week`/`criar` |
+| Editar | `PUT /api/release-week/:id` | `release-week`/`alterar` |
+| Publicar | `PUT /api/release-week/:id/publicar` | `release-week`/`publicar` |
+| Arquivar | `PUT /api/release-week/:id/arquivar` | `release-week`/`arquivar` |
+| Excluir | `DELETE /api/release-week/:id` | `release-week`/`excluir` |
+| Importar | `POST /api/release-week/importar` | `release-week`/`importar` |
+
+- **Código:** derivado de `semana`/`ano` (`RW-XX/AAAA`) na criação e **regenerado na edição** quando
+  semana/ano mudam; duplicidade de `codigo`/`(ano, semana)` → `409`.
+- **Validação:** campos obrigatórios, semana 1–52, mês do domínio, datas `AAAA-MM-DD` e
+  `data_publicacao` em segunda-feira (UTC) → `400` com `data.erros`.
+- **Arquivamento:** `PUT /:id/arquivar` marca `arquivada = 1`; a listagem filtra as arquivadas.
+- **Exclusão:** `409` quando arquivada ou com itens em `entregas_itens`.
+- **Auditoria:** recurso **"Release Week"** (Inclusão/Alteração/Homologação/Exclusão).
+- **Frontend:** `useReleaseWeekModelo` mantém `semanas` (API), `itensPorRelease` (lazy/cache),
+  `filtros` (sessão) e os derivados `linhas`/`kpis`/`opcoes`; as escritas chamam a API e atualizam a
+  lista local.
 
 ## 5. Fluxos
 
-- **Listagem:** renderização direta do conjunto em memória (sem `GET`); busca, ordenação e
-  paginação no cliente; a tabela distingue base vazia de filtro sem resultado.
+- **Listagem:** `GET /api/release-week` no `onMounted`; loading no voo; falha → toast + lista vazia;
+  busca/ordenação/paginação no cliente.
 - **Filtros:** o modal refina o conjunto vigente (Status, Ano, Mês, Autor); "Aplicar" recalcula
   tabela e KPIs; "Limpar Filtros" restaura; o badge conta os filtros ativos.
-- **Nova:** "Nova Release Week" abre o formulário vazio (status `Aberta`); salvar inclui no topo da
-  listagem e confirma.
-- **Editar:** resolve o registro por `id`, abre preenchido (com Código somente leitura) e atualiza.
+- **Nova:** abre com mês atual, status `Aberta`; salvar grava via `POST` e inclui no topo.
+- **Editar:** resolve o registro por `id`, abre preenchido (com Código somente leitura) e grava `PUT`.
 - **Clonar:** abre o formulário em modo criação com `versao`/`release`/`destaque` copiados; nada é
-  gravado até salvar e os itens **não** são copiados.
-- **Publicar:** confirmação → status `Publicado`; a linha e o KPI correspondente são atualizados.
-- **Arquivar:** confirmação → `arquivada = true`; some da listagem/KPIs sem apagar dados ou itens.
-- **Excluir:** habilitado só quando `!arquivada && sem itens`; confirmação → remove do conjunto.
-  Caso contrário, o item do menu fica desabilitado com o motivo acessível.
-- **Itens:** marcar a flag no cabeçalho mostra o `+` por linha; o clique expande o `<ReleaseWeekItens>`
-  (somente leitura) e recolhe ao clicar de novo.
-- **Exportações:** menu "Relatórios" gera CSV (`;`, BOM UTF-8, neutralização de fórmula) e PDF do
-  conjunto filtrado; lista vazia → aviso; falha → `toast.danger`.
-- **Importação:** o ícone da toolbar existe, mas **não** abre modal nem dispara requisição nesta fase
-  (ver §7).
+  gravado até salvar; os itens **não** são copiados; a gravação usa `POST` (`criar`).
+- **Publicar:** confirmação → `PUT /publicar` (status `Publicado` + `data_aprovacao`).
+- **Arquivar:** confirmação → `PUT /arquivar`; some da listagem/KPIs sem apagar dados ou itens.
+- **Excluir:** habilitado só sem itens; `DELETE`; `409` quando arquivada/com itens.
+- **Itens:** a flag (quando permitida) mostra o `+`; o clique busca `GET /:id/itens` e expande o
+  `<ReleaseWeekItens>` (somente leitura).
+- **Exportações:** menu "Relatórios" valida `exportar` na API e gera CSV (`;`, BOM UTF-8,
+  neutralização de fórmula) e PDF do conjunto filtrado.
+- **Importação:** ver §7.
 
-## 6. Navegação até a tela
+## 6. Navegação e RBAC
 
 - O item **Release Week** da sessão **Publicações** da sidebar (`app/config/navigation.ts`, ícone
-  `Rocket` `#1a9e07`) passa a declarar `to: '/admin/release-week'` e navega ao clique; na rota ele é
-  exibido como ativo (`aria-current="page"`).
-- A rota fica sujeita à mesma guarda de sessão das demais telas administrativas
-  (`app/middleware/auth.global.ts`); sem sessão → `/admin/login?redirect=`.
-- Ações e exportações respeitam a matriz RBAC do módulo `release-week`
-  (`visualizar/criar/alterar/excluir/publicar/arquivar/importar/filtrar/buscar/exportar`). A
-  clonagem usa a permissão `criar` (não há ação `clonar` no catálogo).
+  `Rocket` `#1a9e07`) declara `to: '/admin/release-week'` e fica ativo na rota (`aria-current`).
+- A rota fica sujeita à guarda de sessão (`app/middleware/auth.global.ts`); sem sessão →
+  `/admin/login?redirect=`.
+- A matriz do módulo `release-week` controla a tela e a API: `visualizar`, `criar`, `alterar`,
+  `excluir`, `clonar`, `publicar`, `arquivar`, `visualizar_itens`, `importar`, `exportar`, `filtrar`,
+  `buscar`. A clonagem exige `clonar` na UI e `criar` na gravação; a matriz recusa `clonar` sem
+  `criar`.
 
-## 7. Dataset em memória e importação
+## 7. Importação por planilha
 
-- **Dataset em memória:** `useReleaseWeekModelo` semeia semanas e itens de exemplo no primeiro
-  acesso (inclui uma release arquivada para demonstrar que ela não aparece). As ações mutam apenas
-  esses arrays; **recarregar a página (F5) restaura o conjunto inicial**. Não há seed de banco nem
-  persistência.
-- **Por que:** decisão da fase frontend — permite exercitar todas as ações e a expansão de itens
-  antes do backend. Na fase backend, o array dá lugar a `GET /api/release-week` e `arquivada` vira
-  coluna no banco.
-- **Importação:** nesta fase existe **apenas o ícone** de importação na toolbar (à esquerda de
-  "Filtros"). Acioná-lo mostra um aviso de que a funcionalidade chega com o backend; **não** há
-  modal, parser, modelo `.xlsx` nem gravação. A importação trará as **próprias Release Weeks** na
-  fase seguinte.
+- **Modelo oficial:** [`docs/modelos/modelo-importacao-release-week.xlsx`](modelos/modelo-importacao-release-week.xlsx)
+  com **Nome, Semana, Ano, Mês, Data Início, Data Finaliza, Data Publicação, Status, Versão,
+  Release, Descrição, Destaque** (sem Código — o servidor gera).
+- **Fluxo:** o ícone da toolbar abre `ReleaseWeekImportar`; o parser local classifica as linhas; o
+  commit vai a `POST /api/release-week/importar`, que revalida (incluindo segunda-feira), recusa tudo
+  se houver linha inválida/duplicada (`400` com motivos/conflitos), grava em **transação** (códigos
+  gerados) e registra auditoria.
+- **Unicidade:** `(ano, semana)` no arquivo e contra o banco; limite de 500 linhas.
+- **Permissão:** `release-week`/`importar` (default: Administrador).
 
 ## 8. Documentação relacionada
 
@@ -269,30 +282,30 @@ interface ItemRelease {
   §5.23 (ActionMenu); vitrine `/design` seção 23.
 - Arquitetura/base: [`docs/02`](02%20-%20Guia%20de%20Arquitetura%20e%20Migrations.md);
   Header/Sidebar: [`docs/03`](03%20-%20Header%20e%20Sidebar.md);
-  Auditoria (trilha das escritas futuras): [`docs/05`](05%20-%20Gestão%20de%20Auditoria.md).
+  Auditoria: [`docs/05`](05%20-%20Gestão%20de%20Auditoria.md);
+  RBAC: [`docs/07`](07%20-%20Perfis%20de%20Acesso%20(RBAC).md).
 - Módulos-molde: [`docs/10`](10%20-%20Módulo%20dos%20Softwares.md) e
   [`docs/11`](11%20-%20Módulo%20de%20Parceiros.md).
 
 ## 9. Verificação
 
 - Gates: `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`.
-- Testes unitários: `tests/release-week-validadores.test.ts` — validação do cabeçalho (obrigatórios,
-  semana 1–52, mês e datas), `prefill` da clonagem, guarda de exclusão, filtros/KPIs e formatação.
-- Conferência manual: `http://localhost:3000/admin/release-week` — listar, filtrar, buscar, paginar,
-  incluir, clonar (prefill correto), editar, publicar, arquivar (some da lista), excluir (só sem
-  itens e não arquivada), flag de itens + expansão e exportações; recarregar confirma o reset do
-  dataset. Vitrine: `http://localhost:3000/design` (seção 23 e demos de Badge/DataTable).
+- Testes unitários: `tests/release-week-validadores.test.ts` (obrigatórios, semana 1–52,
+  segunda-feira, código, guarda e clone), `tests/release-week-import-parser.test.ts` (classificação e
+  duplicidade) e `tests/perfis-funcionalidades.test.ts` (catálogo 88 + `clonar`⇒`criar`).
+- E2E/API: `GET` 200; `POST` válido 201 com código; publicação/arquivamento; arquivada some da lista;
+  `DELETE` de arquivada 409; `data_publicacao` fora de segunda 400; guarda de permissão 403.
+- Conferência manual: `http://localhost:3000/admin/release-week` — incluir (mês atual, semana
+  clampada), clonar, editar, publicar, arquivar, excluir, itens sob `visualizar_itens`, importar e
+  exportar; recarregar confirma a persistência. Vitrine: `http://localhost:3000/design` (seção 23).
 
 ## 10. Pendências e próximos passos
 
-- **Backend/API:** `server/api/release-week/**` (`GET`/`POST`/`PUT`/`DELETE`, publicar/arquivar),
-  com `requirePermission` no módulo `release-week` e `registrarAuditoria` (recurso "Release Week").
-- **Banco:** coluna de arquivamento (`arquivada` booleano ou `arquivado_em`), migration própria e
-  expurgo/retenção aplicável; carga real de `entregas_itens` por release.
-- **Exclusão real:** validar a ausência de relacionamentos no servidor (FKs), não só no dataset.
-- **Importação:** ícone já presente; implementar modal, parser `.xlsx` (colunas do cabeçalho),
-  pré-visualização e `POST` de importação das Release Weeks.
-- **Regra de datas:** o schema assume datas de segunda-feira; a validação de dia da semana fica
-  para a API (a UI valida presença/formato).
-- **Loading:** substituir a renderização síncrona por `UiLoading` no padrão dos demais módulos
-  quando a leitura passar a ser assíncrona.
+- **Itens:** CRUD de `entregas_itens` pertence ao módulo "Lançar as Chamadas" (aqui é somente
+  leitura e a relação que bloqueia a exclusão).
+- **Área Pública:** exposição das releases publicadas/destaque na home pública (fora deste módulo).
+- **Exportação server-side:** o CSV/PDF continua no cliente, sob a guarda `exportar` da API.
+- **Revisão:** campos `revisor_id`/`revisor_feedback`/`data_aprovacao` existem no schema; o fluxo de
+  revisão/homologação pode ganhar UI própria (hoje a publicação grava `data_aprovacao`).
+- **Expurgo/retenção:** a trilha de auditoria já tem expurgo; a Release Week não tem retenção
+  específica definida.

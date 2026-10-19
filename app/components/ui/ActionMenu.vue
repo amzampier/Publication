@@ -38,7 +38,7 @@ const emit = defineEmits<{
   (e: 'select', id: string): void
 }>()
 
-const LARGURA_MENU = 208
+const LARGURA_MENU = 120
 const MARGEM = 8
 
 const aberto = ref(false)
