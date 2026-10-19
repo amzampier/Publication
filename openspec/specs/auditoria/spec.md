@@ -143,7 +143,7 @@ O sistema SHALL carregar os registros da trilha a partir de `GET /api/auditoria`
 
 #### Scenario: Carga inicial mostra os registros do banco
 - **WHEN** o navegador abre `/admin/auditoria` com sessão válida
-- **THEN** o overlay de carregamento é exibido enquanto `GET /api/auditoria` responde e, em seguida, a tabela exibe a primeira página de registros persistidos (seed da migration + operações reais registradas), ordenados do mais recente para o mais antigo
+- **THEN** o overlay de carregamento é exibido enquanto `GET /api/auditoria` responde e, em seguida, a tabela exibe a primeira página dos registros **reais** persistidos (operações de escrita e eventos de autenticação registrados), ordenados do mais recente para o mais antigo; sem operações registradas, a tabela exibe o estado vazio
 
 #### Scenario: Loading no F5 sem conteúdo parcial
 - **WHEN** o usuário recarrega a página (F5) com o `GET /api/auditoria` em voo
@@ -267,3 +267,18 @@ A API da auditoria SHALL expor o identificador da entidade afetada (`entidade_id
 #### Scenario: Detalhe mostra a entidade afetada
 - **WHEN** um registro com `entidade_id` preenchido tem seu detalhe aberto
 - **THEN** o identificador da entidade é exibido no detalhe
+
+### Requirement: A trilha de auditoria nasce vazia em um banco recém-provisionado
+O provisionamento do banco SHALL NOT inserir qualquer registro de demonstração na tabela `auditoria`: um banco recém-criado SHALL conter zero registros na trilha até que operações reais as gravem. Registros com identificadores de seed (`log-seed-%`) SHALL NOT existir, e uma migração de provisionamento SHALL remover esses resquícios de bancos já existentes sem excluir nenhum registro real (operações de escrita ou eventos de autenticação).
+
+#### Scenario: Banco novo nasce sem registros de seed
+- **WHEN** o servidor sobe contra um banco sem tabelas e todas as migrations são aplicadas
+- **THEN** `SELECT COUNT(*) FROM auditoria` retorna `0` e nenhum registro `log-seed-%` existe; a primeira operação autenticada (o login, gravado como `Acesso`) é o único conteúdo da trilha
+
+#### Scenario: Bancos existentes com seed são reconciliados
+- **WHEN** um banco já provisionado contém registros `log-seed-%` e recebe as migrations pendentes
+- **THEN** apenas esses registros de seed são removidos, e todos os registros reais da trilha permanecem intactos
+
+#### Scenario: Operações reais continuam registrando
+- **WHEN** uma rota administrativa de escrita ou um evento de autenticação é concluído com sucesso após a limpeza
+- **THEN** a trilha recebe o registro correspondente, agora o único conteúdo da tabela

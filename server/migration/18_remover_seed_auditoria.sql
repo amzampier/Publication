@@ -1,0 +1,20 @@
+-- =========================================================================
+-- PUBLICATION ENTERPRISE PLATFORM - MIGRATION 18_remover_seed_auditoria.sql
+-- (change zerar-seed-auditoria) A trilha de auditoria deve iniciar VAZIA: é
+-- registro corporativo real, preenchido apenas pelas operações (escritas
+-- administrativas e eventos de autenticação via registrarAuditoria).
+-- As migrations 07 e 13 inseriram 25 registros de demonstração com ids fixos
+-- (`log-seed-001`…`log-seed-025`); não são editadas (convenção docs/qa/03:
+-- nunca editar migration já executada). Esta migration remove esses resquícios
+-- em bancos novos (roda depois das 07/13) e em bancos já provisionados.
+-- DELETE escopado por prefixo: ids reais são UUID() (36 chars) — nenhuma
+-- operação real é tocada. Idempotente (reexecução apaga 0 linhas).
+-- Não usa DROP TABLE/VIEW/DATABASE. SEM `USE` (o pool já conecta em DB_NAME).
+-- =========================================================================
+DELETE FROM auditoria WHERE id LIKE 'log-seed-%';
+-- =========================================================================
+-- REVERTER (ROLLBACK) - executar MANUALMENTE; remova os "-- ".
+-- A limpeza não deve ser revertida (o seed não retorna). Apenas permita uma
+-- futura reaplicação apagando o registro da migration:
+-- DELETE FROM _migrations WHERE nome = '18_remover_seed_auditoria.sql';
+-- =========================================================================

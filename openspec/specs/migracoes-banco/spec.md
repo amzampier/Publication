@@ -29,7 +29,7 @@ Reexecutar migrations já aplicadas ou reexecutar o boot SHALL ser seguro: erros
 - **THEN** as chaves únicas impedem duplicidade e os registros originais permanecem intactos
 
 ### Requirement: Migrations não destrutivas
-Os arquivos de migration SHALL NOT remover dados ou objetos existentes de forma implícita: nenhuma migration pode conter `DROP TABLE`, `DROP VIEW` ou `DROP DATABASE` de objetos da aplicação, de modo que aplicar uma migration pendente nunca cause perda de dados. Objetos já existentes SHALL ser tratados de forma idempotente (`CREATE ... IF NOT EXISTS`).
+Os arquivos de migration SHALL NOT remover dados ou objetos existentes de forma implícita: nenhuma migration pode conter `DROP TABLE`, `DROP VIEW` ou `DROP DATABASE` de objetos da aplicação, de modo que aplicar uma migration pendente nunca cause perda de dados. Objetos já existentes SHALL ser tratados de forma idempotente (`CREATE ... IF NOT EXISTS`). Uma migration de correção PODE remover registros de seed conhecidos por meio de `DELETE` escopado a identificadores fixos (ex.: `id LIKE 'log-seed-%'`), desde que não atinja dados operacionais.
 
 #### Scenario: Migration aplicada sobre banco existente não apaga dados
 - **WHEN** uma migration pendente é aplicada sobre um banco que já contém tabelas com dados
@@ -38,6 +38,10 @@ Os arquivos de migration SHALL NOT remover dados ou objetos existentes de forma 
 #### Scenario: Base vazia é provisionada pelos CREATEs
 - **WHEN** as migrations rodam sobre um banco sem tabelas
 - **THEN** o schema completo é criado pelos `CREATE TABLE` (sem depender de `DROP` prévio)
+
+#### Scenario: Correção de seed é escopada e reexecutável
+- **WHEN** uma migration de correção remove registros de seed por identificador fixo em um banco com dados operacionais
+- **THEN** apenas as linhas de seed são removidas e a migration é idempotente em reexecução
 
 ### Requirement: Registro das migrations executadas
 O sistema SHALL manter uma tabela de controle (`_migrations`) com uma linha por arquivo de migration executado, contendo o nome do arquivo e o momento da execução. O registro SHALL ser resiliente: se o nome já estiver registrado (ex.: duas instâncias subindo ao mesmo tempo), a gravação duplicada SHALL ser tratada como já aplicada e o boot SHALL prosseguir, sem abortar.
@@ -69,7 +73,7 @@ Um erro não tolerado SHALL interromper a execução das migrations e ser claram
 - **THEN** a execução daquele arquivo para, o erro é logado com o nome do arquivo e do statement, e a inicialização sinaliza a falha
 
 ### Requirement: Seeds iniciais completos
-Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 4 perfis padrão (Administrador, Editor, Revisor, Leitor), a matriz de permissões (11 módulos × 4 perfis), a linha `config_default` de `configuracoes_globais` e a linha padrão de `configuracoes_limite_requisicao`. O banco zerado **não** SHALL conter softwares pré-cadastrados — o catálogo de softwares inicia **vazio** e seus códigos sequenciais são gerados pelo servidor na inclusão/importação.
+Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 4 perfis padrão (Administrador, Editor, Revisor, Leitor), a matriz de permissões (11 módulos × 4 perfis), a linha `config_default` de `configuracoes_globais` e a linha padrão de `configuracoes_limite_requisicao`. O banco zerado **não** SHALL conter softwares pré-cadastrados — o catálogo de softwares inicia **vazio** e seus códigos sequenciais são gerados pelo servidor na inclusão/importação. O banco zerado também **não** SHALL conter registros de demonstração na trilha de auditoria: a tabela `auditoria` inicia **vazia**, preenchida apenas por operações reais.
 
 #### Scenario: Perfis e matriz de permissões presentes
 - **WHEN** o provisionamento termina
@@ -82,6 +86,10 @@ Após as migrations, o banco SHALL conter os seeds de `docs/bd/02_seed.sql`: os 
 #### Scenario: Catálogo de softwares inicializado
 - **WHEN** o provisionamento termina em um banco zerado
 - **THEN** a tabela `softwares` está vazia (nenhum software de exemplo é inserido) e o catálogo nasce sem registros
+
+#### Scenario: Trilha de auditoria inicializada vazia
+- **WHEN** o provisionamento termina em um banco zerado
+- **THEN** a tabela `auditoria` está vazia (nenhum registro `log-seed-%`) e é populada apenas por operações reais
 
 ### Requirement: Administrador inicial com hash bcrypt real
 O usuário administrador inicial SHALL existir no banco com hash bcrypt válido (cost 12) da senha provisória documentada (`Public@2026`), permitindo login real. O provisionamento automático SHALL ocorrer **somente quando o ambiente não for de produção** (`NODE_ENV !== 'production'`), SHALL marcar a senha como provisória (`senha_provisoria = 1`) para exigir a troca no primeiro acesso e SHALL ser idempotente: um admin já existente não é sobrescrito.

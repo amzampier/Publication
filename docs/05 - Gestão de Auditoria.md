@@ -309,14 +309,20 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 
 ## 7. Dados iniciais (seed)
 
-- **Migration [`server/migration/07_seed_auditoria.sql`](../server/migration/07_seed_auditoria.sql)**
-  insere 25 registros com ids fixos (`log-seed-001`…`log-seed-025`), `usuario_id NULL`
-  (operadores fictícios: Ana Carolina Ribeiro, Rafael Souza, Mariana Lopes, Carlos Mendes),
-  6 recursos (Publicações, Usuários, Perfis de Acesso, Configurações Globais, Logomarcas,
-  Rate Limits), as 4 ações e 5 IPs — com `data_hora` relativa a `NOW()` (últimos 28 dias), o
-  que mantém o KPI "Última atividade" e o filtro de período coerentes com "hoje".
+- **A trilha nasce vazia.** A tabela `auditoria` não recebe registro de demonstração no
+  provisionamento: um banco novo termina as migrations com `SELECT COUNT(*) FROM auditoria = 0` e
+  a trilha é preenchida **exclusivamente** por operações reais (escritas administrativas e eventos
+  de autenticação via `registrarAuditoria`).
+- As migrations históricas [`07_seed_auditoria.sql`](../server/migration/07_seed_auditoria.sql) e
+  [`13_reconciliar_seed_e_indice.sql`](../server/migration/13_reconciliar_seed_e_indice.sql) ainda
+  contêm o antigo seed (25 linhas `log-seed-001`…`log-seed-025`) e **não são editadas** (convenção
+  `docs/qa/03`: nunca editar migration já executada). A migration
+  [`18_remover_seed_auditoria.sql`](../server/migration/18_remover_seed_auditoria.sql) roda por
+  último e apaga essas linhas (`DELETE FROM auditoria WHERE id LIKE 'log-seed-%'`), tanto em banco
+  novo quanto em banco já provisionado — o `DELETE` é escopado ao prefixo do seed (ids reais são
+  `UUID()`), sem tocar em registros de operações.
 - O runner de migrations é idempotente (`_migrations`; errno 1062 tolerado) — re-execução não
-  duplica. Os registros reais das operações entram acima do seed (ordem por data/hora).
+  duplica; a `18` é naturalmente idempotente (reexecução apaga 0 linhas).
 - **Nomenclatura canônica:** o nome da tabela é **`auditoria`** (a query do banner de
   `AbaRetencaoAuditoria` exibe `DELETE FROM auditoria WHERE data_hora < NOW() - INTERVAL N DAY`
   — coluna `data_hora` da migration 01 §18; a versão anterior da tela citava um nome de coluna
@@ -365,7 +371,9 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   toolbar (9/9), componentes de domínio (14/14), modal de filtros v2 (9/9), exportação CSV (4/4);
   `relatorio-pdf-auditoria` (CDP 8/8).
 - **Fase 2 (change `auditoria-backend-integracao`):**
-  - Seed: `SELECT COUNT(*) = 25` com `log-seed-%` após o boot (migration 07 aplicada).
+  - Seed: `SELECT COUNT(*) FROM auditoria WHERE id LIKE 'log-seed-%'` = **0** após o boot (trilha
+    nasce vazia; a migration 18 remove o seed das 07/13). Em banco novo, `SELECT COUNT(*) FROM
+    auditoria` = **0** antes da primeira operação; após o login, a trilha contém só o evento `Acesso`.
   - `GET /api/auditoria`: 401 sem sessão; 200 com `{ registros, total, kpis, opcoes, pagina, porPagina }`; ordenação
     decrescente; filtro `acao` → só o tipo pedido com `opcoes` intactas; ação desconhecida →
     200 vazio.
