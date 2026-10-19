@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, useId } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, useId, useSlots } from 'vue'
 import {
   ChevronDown,
   ChevronRight,
@@ -15,7 +15,9 @@ import {
   GripVertical,
   Search,
   FileSpreadsheet,
-  Funnel
+  Funnel,
+  Plus,
+  Minus
 } from '@lucide/vue'
 import {
   type ColumnDef,
@@ -54,6 +56,14 @@ interface Props {
   perPage?: number
   /** Debounce (ms) da busca no modo servidor antes de emitir `search` */
   searchDebounceMs?: number
+  /** Expansão de linha (opt-in): habilita o controle +/- em cada linha. */
+  expandable?: boolean
+  /** Chaves (rowKey) das linhas expandidas (`v-model:expanded`). */
+  expanded?: string[]
+  /** Campo identificador da linha usado na expansão (default `id`). */
+  rowKey?: string
+  /** Rótulo acessível do controle de expansão. */
+  expandLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -71,7 +81,11 @@ const props = withDefaults(defineProps<Props>(), {
   total: 0,
   page: 1,
   perPage: 0,
-  searchDebounceMs: 300
+  searchDebounceMs: 300,
+  expandable: false,
+  expanded: () => [],
+  rowKey: 'id',
+  expandLabel: 'Expandir itens'
 })
 
 const emit = defineEmits<{
@@ -80,7 +94,28 @@ const emit = defineEmits<{
   (e: 'per-page-change', porPagina: number): void
   (e: 'sort-change', regras: SortRule[]): void
   (e: 'search', termo: string): void
+  (e: 'update:expanded', chaves: string[]): void
 }>()
+
+const slots = useSlots()
+
+// Expansão de linha (opt-in): a coluna líder é renderizada quando a expansão
+// está habilitada ou quando o chamador fornece o slot de cabeçalho (a flag que
+// liga/desliga os controles). Sem essas props, nada muda no componente.
+const mostrarColunaExpansao = computed(() => props.expandable || !!slots.expandHeader)
+const chavesExpandidas = computed(() => new Set(props.expanded))
+const chaveDaLinha = (row: any): string => String(row?.[props.rowKey] ?? '')
+const linhaExpandida = (row: any): boolean => chavesExpandidas.value.has(chaveDaLinha(row))
+const alternarLinha = (row: any) => {
+  const chave = chaveDaLinha(row)
+  const atual = new Set(props.expanded)
+  if (atual.has(chave)) atual.delete(chave)
+  else atual.add(chave)
+  emit('update:expanded', [...atual])
+}
+const colSpanTotal = computed(
+  () => props.columns.length + (slots.actions ? 1 : 0) + (mostrarColunaExpansao.value ? 1 : 0)
+)
 
 const serverMode = computed(() => props.serverMode === true)
 
@@ -716,6 +751,13 @@ onUnmounted(() => {
         <thead>
           <tr class="bg-brand-primary text-white font-semibold divide-x divide-slate-700 border-b border-slate-800">
             <th
+              v-if="mostrarColunaExpansao"
+              scope="col"
+              class="w-9 px-1 py-1.5 text-center text-[11px] bg-brand-primary"
+            >
+              <slot name="expandHeader" />
+            </th>
+            <th
               v-for="col in columns"
               :key="col.id"
               draggable="true"
@@ -810,7 +852,7 @@ onUnmounted(() => {
                 ]"
                 @click="toggleNode(row.node!.id, 1)"
               >
-                <td :colspan="columns.length + ($slots.actions ? 1 : 0)" class="py-1 px-2.5">
+                <td :colspan="colSpanTotal" class="py-1 px-2.5">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                       <div class="h-5 w-5 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 shadow-2xs shrink-0 transition-colors">
@@ -847,7 +889,7 @@ onUnmounted(() => {
                 ]"
                 @click="toggleNode(row.node!.id, 2)"
               >
-                <td :colspan="columns.length + ($slots.actions ? 1 : 0)" class="py-1 px-2.5 pl-8">
+                <td :colspan="colSpanTotal" class="py-1 px-2.5 pl-8">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                       <div class="h-4.5 w-4.5 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 shadow-2xs shrink-0">
@@ -880,7 +922,7 @@ onUnmounted(() => {
                 class="bg-slate-50/40 font-medium text-slate-700 cursor-pointer hover:bg-slate-100/50 transition-colors border-y border-slate-100 h-8"
                 @click="toggleNode(row.node!.id, 3)"
               >
-                <td :colspan="columns.length + ($slots.actions ? 1 : 0)" class="py-1 px-2.5 pl-14">
+                <td :colspan="colSpanTotal" class="py-1 px-2.5 pl-14">
                   <div class="flex items-center gap-2">
                     <div class="h-4.5 w-4.5 rounded border border-slate-300 bg-white flex items-center justify-center text-slate-600 shadow-2xs shrink-0">
                       <ChevronDown v-if="isNodeExpanded(row.node!.id, 3)" class="h-2.5 w-2.5 text-slate-600" />
@@ -903,6 +945,19 @@ onUnmounted(() => {
                 v-else-if="row.type === 'leaf'"
                 class="hover:bg-slate-50/90 transition-colors divide-x divide-slate-100"
               >
+                <td v-if="mostrarColunaExpansao" class="py-1 px-1.5 text-center">
+                  <button
+                    v-if="expandable"
+                    type="button"
+                    class="inline-flex h-5 w-5 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 shadow-2xs transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+                    :aria-expanded="linhaExpandida(row.item)"
+                    :aria-label="expandLabel"
+                    @click.stop="alternarLinha(row.item)"
+                  >
+                    <Minus v-if="linhaExpandida(row.item)" class="h-3 w-3" aria-hidden="true" />
+                    <Plus v-else class="h-3 w-3" aria-hidden="true" />
+                  </button>
+                </td>
                 <td
                   v-for="(col, cIdx) in columns"
                   :key="col.id"
@@ -922,38 +977,64 @@ onUnmounted(() => {
                   <slot name="actions" :row="row.item" />
                 </td>
               </tr>
+
+              <tr
+                v-if="row.type === 'leaf' && expandable && linhaExpandida(row.item)"
+                class="bg-slate-50/70"
+              >
+                <td :colspan="colSpanTotal" class="border-t border-slate-200 px-3 py-3">
+                  <slot name="expanded" :row="row.item" />
+                </td>
+              </tr>
             </template>
           </template>
 
           <!-- CASO 2: Renderização Plana (Sem agrupamento) com Divisórias Verticais cxGrid -->
           <template v-else>
-            <tr
-              v-for="(row, idx) in paginatedData"
-              :key="idx"
-              class="hover:bg-slate-50/90 transition-colors divide-x divide-slate-100"
-            >
-              <td
-                v-for="col in columns"
-                :key="col.id"
-                :style="getColumnStyle(col)"
-                :class="[
-                  'py-1.5 px-2.5 text-[11px] text-slate-800 truncate',
-                  col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
-                  col.isNumeric || col.align === 'right' ? 'tabular-nums' : ''
-                ]"
-              >
-                <slot :name="`cell(${col.id})`" :row="row" :value="row[col.accessorKey]">
-                  {{ col.format ? col.format(row[col.accessorKey], row) : row[col.accessorKey] }}
-                </slot>
-              </td>
-              <td v-if="$slots.actions" class="py-1.5 px-2 text-center">
-                <slot name="actions" :row="row" />
-              </td>
-            </tr>
+            <template v-for="(row, idx) in paginatedData" :key="chaveDaLinha(row) || idx">
+              <tr class="hover:bg-slate-50/90 transition-colors divide-x divide-slate-100">
+                <td v-if="mostrarColunaExpansao" class="py-1.5 px-1.5 text-center">
+                  <button
+                    v-if="expandable"
+                    type="button"
+                    class="inline-flex h-5 w-5 items-center justify-center rounded border border-slate-300 bg-white text-slate-600 shadow-2xs transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+                    :aria-expanded="linhaExpandida(row)"
+                    :aria-label="expandLabel"
+                    @click.stop="alternarLinha(row)"
+                  >
+                    <Minus v-if="linhaExpandida(row)" class="h-3 w-3" aria-hidden="true" />
+                    <Plus v-else class="h-3 w-3" aria-hidden="true" />
+                  </button>
+                </td>
+                <td
+                  v-for="col in columns"
+                  :key="col.id"
+                  :style="getColumnStyle(col)"
+                  :class="[
+                    'py-1.5 px-2.5 text-[11px] text-slate-800 truncate',
+                    col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
+                    col.isNumeric || col.align === 'right' ? 'tabular-nums' : ''
+                  ]"
+                >
+                  <slot :name="`cell(${col.id})`" :row="row" :value="row[col.accessorKey]">
+                    {{ col.format ? col.format(row[col.accessorKey], row) : row[col.accessorKey] }}
+                  </slot>
+                </td>
+                <td v-if="$slots.actions" class="py-1.5 px-2 text-center">
+                  <slot name="actions" :row="row" />
+                </td>
+              </tr>
+
+              <tr v-if="expandable && linhaExpandida(row)" class="bg-slate-50/70">
+                <td :colspan="colSpanTotal" class="border-t border-slate-200 px-3 py-3">
+                  <slot name="expanded" :row="row" />
+                </td>
+              </tr>
+            </template>
 
             <tr v-if="paginatedData.length === 0">
               <td
-                :colspan="columns.length + ($slots.actions ? 1 : 0)"
+                :colspan="colSpanTotal"
                 class="py-12 text-center text-slate-400"
               >
                 {{ (filtersCount > 0 || searchQuery.trim() !== '') ? 'Nenhum resultado encontrado para o filtro.' : 'Nenhum registro encontrado.' }}
@@ -965,6 +1046,7 @@ onUnmounted(() => {
         <!-- Rodapé com Totalizadores — apenas colunas isNumeric permitem clique direito -->
         <tfoot>
           <tr class="bg-slate-100/90 border-t-2 border-slate-300 font-bold text-slate-900 divide-x divide-slate-200">
+            <td v-if="mostrarColunaExpansao" class="bg-slate-100/90"></td>
             <td
               v-for="col in columns"
               :key="col.id"

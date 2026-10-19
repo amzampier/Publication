@@ -52,7 +52,11 @@ import {
   Pencil,
   Handshake,
   Map,
-  MapPin
+  MapPin,
+  Copy,
+  Send,
+  Archive,
+  MoreVertical
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -551,6 +555,28 @@ const abrirFiltrosDemo = () => {
   )
 }
 
+// Demo da Seção 13 — expansão de linha do UiDataTable
+const expandirDemo = ref(false)
+const linhasExpandidasDemo = ref<string[]>([])
+const onExpandirDemo = (e: Event) => {
+  expandirDemo.value = (e.target as HTMLInputElement).checked
+  if (!expandirDemo.value) linhasExpandidasDemo.value = []
+}
+
+// Demo da Seção 23 — UiActionMenu (ações de linha)
+const acaoMenuDemo = ref('')
+const itensMenuDemo = [
+  { id: 'clonar', label: 'Clonar', icon: Copy },
+  { id: 'publicar', label: 'Publicar', icon: Send },
+  { id: 'arquivar', label: 'Arquivar', icon: Archive },
+  { id: 'excluir', label: 'Excluir', icon: Trash2, tone: 'danger' as const },
+  { id: 'bloqueada', label: 'Ação indisponível', disabled: true, reason: 'Release com itens vinculados' }
+]
+const selecionarAcaoDemo = (id: string) => {
+  acaoMenuDemo.value = id
+  toast.info('Menu de ações', `Ação "${id}" selecionada (demonstração).`)
+}
+
 const tabsDemoAba = ref('design')
 const tabsDemoAbas = [
   { id: 'design', label: 'Design Tokens', icon: Palette, cor: '#7c3aed' },
@@ -677,7 +703,8 @@ const secoes = [
   { id: 'textarea', label: '19. Textarea (UiTextarea)' },
   { id: 'switch', label: '20. Switch (UiSwitch)' },
   { id: 'entity-card', label: '21. Cards de Entidade (UiEntityCard)' },
-  { id: 'pagination', label: '22. Paginação (UiPagination)' }
+  { id: 'pagination', label: '22. Paginação (UiPagination)' },
+  { id: 'action-menu', label: '23. Menu de Ações (UiActionMenu)' }
 ]
 </script>
 
@@ -980,6 +1007,21 @@ const secoes = [
             <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
               <span class="text-[10px] text-slate-400">Neutro</span>
               <UiBadge variant="neutral">Semana 39</UiBadge>
+            </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
+              <span class="text-[10px] text-slate-400">Aberta (Release)</span>
+              <UiBadge variant="aberta" />
+            </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
+              <span class="text-[10px] text-slate-400">Publicado (Release)</span>
+              <UiBadge variant="publicado" />
+            </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
+              <span class="text-[10px] text-slate-400">Arquivado (Release)</span>
+              <UiBadge variant="arquivado" />
             </div>
           </div>
         </section>
@@ -2065,7 +2107,7 @@ variant="lime"
             <!-- Tabela cxGrid em Largura Completa -->
             <UiDataTable
               title="Catálogo de Publicações (Demonstrativo Integrado)"
-              subtitle="Exemplo com dados reais: arraste até 3 colunas para o topo, clique com botão direito no rodapé para calcular, teste ordenação e ações."
+              subtitle="Exemplo com dados reais: arraste até 3 colunas para o topo, clique com botão direito no rodapé para calcular, teste ordenação, ações e a expansão de linha."
               :data="publicacoesGrid"
               :columns="colunasDataTable"
               :initial-grouped-columns="['tipo', 'projeto']"
@@ -2073,11 +2115,36 @@ variant="lime"
               show-header-top
               show-filters
               :filters-count="filtrosDemo"
+              :expandable="expandirDemo"
+              v-model:expanded="linhasExpandidasDemo"
+              row-key="id"
+              expand-label="Exibir itens da publicação"
               @open-filters="abrirFiltrosDemo"
             >
+              <template #expandHeader>
+                <input
+                  type="checkbox"
+                  :checked="expandirDemo"
+                  aria-label="Exibir itens das publicações"
+                  title="Exibir itens"
+                  class="h-3.5 w-3.5 cursor-pointer accent-brand-accent"
+                  @change="onExpandirDemo"
+                >
+              </template>
+
               <!-- Slot customizado para célula de status -->
               <template #cell(status)="{ value }">
                 <UiBadge :variant="value" size="sm" />
+              </template>
+
+              <template #expanded="{ row }">
+                <div class="text-[11px] text-slate-600">
+                  <p class="font-semibold text-slate-800">Itens de {{ row.codigo }}</p>
+                  <ul class="mt-1 list-disc list-inside">
+                    <li>Correção — Ajuste de exibição da listagem</li>
+                    <li>Melhoria — Filtro por status e busca</li>
+                  </ul>
+                </div>
               </template>
             </UiDataTable>
           </div>
@@ -3088,6 +3155,50 @@ variant="lime"
           <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
             <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
             <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiPagination v-model="pagina" v-model:per-page="porPagina" :total="linhas.length" rotulo="parceiros" /&gt;</pre>
+          </div>
+        </section>
+
+        <section id="action-menu" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <MoreVertical class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  23. Menu de Ações (UiActionMenu)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Agrupa as ações de uma linha em um menu suspenso acessível: abre por clique ou
+                  teclado, navega com as setas, fecha no <code class="font-mono text-slate-700">Escape</code>/clique-fora
+                  e mantém a ação destrutiva e os itens desabilitados (com motivo) identificáveis.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50 flex flex-wrap items-center gap-4">
+            <UiActionMenu
+              :items="itensMenuDemo"
+              label="Ações da publicação"
+              @select="selecionarAcaoDemo"
+            />
+            <p class="text-xs text-slate-500">
+              Última ação selecionada:
+              <span class="font-mono text-slate-700">{{ acaoMenuDemo || '—' }}</span>
+            </p>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiActionMenu
+  :items="[
+    { id: 'editar', label: 'Editar', icon: Pencil },
+    { id: 'excluir', label: 'Excluir', icon: Trash2, tone: 'danger' }
+  ]"
+  label="Ações do registro"
+  @select="executarAcao"
+/&gt;</pre>
           </div>
         </section>
       </main>

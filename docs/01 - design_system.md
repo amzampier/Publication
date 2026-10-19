@@ -296,7 +296,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `size` | `'sm' \| 'md'` | `'md'` | `sm` 10px · `md` 11px |
 
 - **Emits:** nenhum · **Slots:** `default` (substitui o rótulo interno).
-- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral'`** (enum em inglês, display em pt-BR).
+- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado'`** (enum em inglês, display em pt-BR; os três últimos são as variantes semânticas do módulo Release Week).
 
 | Variant | Rótulo (PT) | Fundo / Borda / Texto | Ícone |
 | :--- | :--- | :--- | :--- |
@@ -306,6 +306,9 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `inReview` | Em Análise | `bg-blue-50` / `border-blue-200` / `text-blue-800` | `Search` |
 | `blocked` | Bloqueado | `bg-rose-50` / `border-rose-200` / `text-rose-700` | `AlertTriangle` |
 | `neutral` | Neutro | `bg-slate-100` / `border-slate-200` / `text-slate-700` | — |
+| `aberta` | Aberta | `bg-sky-50` / `border-sky-200` / `text-sky-800` | `Clock` |
+| `publicado` | Publicado | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `Rocket` |
+| `arquivado` | Arquivado | `bg-slate-100` / `border-slate-300` / `text-slate-600` | `Archive` |
 
 - **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
 - **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone. Com `prefers-reduced-motion: reduce` a pulsão para (regra global de `main.css` — vale para animações e transições de todo o kit).
@@ -322,6 +325,16 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | — | `reconciled` | **Reservada** — variante legada ("Reconciliado"), sem uso no domínio de publicações |
 
 > Os rótulos exibidos vêm do componente; para rótulos próprios do domínio, use o slot `default` (ex.: `<UiBadge variant="done">Publicado</UiBadge>`).
+
+**Mapeamento do status da Release Week → variante** (módulo `/admin/release-week`):
+
+| Status | Variante | Badge exibido |
+| :--- | :--- | :--- |
+| Aberta | `aberta` | Aberta |
+| Em Revisão | `inReview` | Em Revisão |
+| Aprovado | `reconciled` | Aprovado (o rótulo vem do slot `default`) |
+| Publicado | `publicado` | Publicado |
+| Arquivado | `arquivado` | Arquivado (fora da listagem padrão) |
 
 ```vue
 <UiBadge variant="done" />                      <!-- "Concluído" -->
@@ -679,6 +692,10 @@ type CheckboxPosition = 'start' | 'end'
 | `showHeaderTop` | `boolean` | `false` | Exibe o campo de busca global (`UiInput` do kit) |
 | `showFilters` | `boolean` | `false` | Exibe o botão "Filtros" à direita da busca (emite `open-filters`) |
 | `filtersCount` | `number` | `0` | Badge com a quantidade de filtros ativos no botão Filtros |
+| `expandable` | `boolean` | `false` | Habilita a expansão de linha (controle `+`/`−` por linha) |
+| `expanded` | `string[]` | `[]` | Chaves (`rowKey`) das linhas expandidas (`v-model:expanded`) |
+| `rowKey` | `string` | `'id'` | Campo identificador usado na expansão |
+| `expandLabel` | `string` | `'Expandir itens'` | Rótulo acessível do controle de expansão |
 
 `ColumnDef` (de `app/utils/dataGrid.ts`):
 
@@ -692,8 +709,9 @@ interface ColumnDef<T = any> {
 }
 ```
 
-- **Emits:** `open-filters` (somente com `showFilters` ativo — a página responde, ex.: abrindo seu modal de filtros); o demais estado é interno.
-- **Slots:** `cell(<col.id>)` com escopo `{ row, value }` (fallback: `col.format(value, row)` ou valor cru) — nome dinâmico por coluna; `actions` com escopo `{ row }` (cria a coluna "Ações"); `filtersLeft` **sem escopo**, renderizado imediatamente à esquerda do botão Filtros na toolbar (opt-in — só aparece se o consumidor passar o slot; ex.: botão de ícone "Importar" com tooltip).
+- **Emits:** `open-filters` (somente com `showFilters` ativo — a página responde, ex.: abrindo seu modal de filtros); `update:expanded` (chaves das linhas abertas — `v-model:expanded`); o demais estado é interno.
+- **Slots:** `cell(<col.id>)` com escopo `{ row, value }` (fallback: `col.format(value, row)` ou valor cru) — nome dinâmico por coluna; `actions` com escopo `{ row }` (cria a coluna "Ações"); `filtersLeft` **sem escopo**, renderizado imediatamente à esquerda do botão Filtros na toolbar (opt-in — só aparece se o consumidor passar o slot; ex.: botão de ícone "Importar" com tooltip); `expandHeader` (conteúdo do cabeçalho da coluna de expansão — ex.: a flag que liga os controles) e `expanded` com escopo `{ row }` (conteúdo da linha expandida), ambos opt-in.
+- **Expansão de linha (opt-in, §5.11):** com `expandable` (ou apenas o slot `expandHeader`), a tabela adiciona uma coluna líder; quando `expandable` está ativo, cada linha exibe um botão `+`/`−` com `aria-expanded` que abre/fecha uma linha de largura total logo abaixo (`slot #expanded`). É independente por linha e **não** participa de ordenação, busca, paginação ou agrupamento. Sem essas props, o componente permanece idêntico ao comportamento anterior.
 - **Cabeçalho corporativo:** linha `bg-brand-primary` (**`#112051`**, token `brand.primary` de `tailwind.config.js`) com textos e ícones em **`#f8fafc`**, hover de coluna `bg-white/10`, divisórias `divide-slate-700` (`#334155`); colunas redimensionáveis por handle à direita (hover/ativo `brand-accent`); coluna com cursor `pointer` (**sem tooltip na header** — nem `title` nativo nem balão; as dicas vivem na faixa de agrupamento) e seta de ordenação padrão sempre visível (`h-3`, `stroke-[2.5]`, `white/85`, hover `brand-accent`).
 - **Agrupamento ("Group By Box"):** arrastar `th` (`draggable`) para a faixa `Agrupamento:`; **até 3 níveis** com chips `bg-brand-primary` + badge verde `1º NÍVEL`/`2º`/`3º`; estado drag-over `bg-brand-accent/10 ring-brand-accent/30`; nó de nível 1 expandido por padrão, níveis 2/3 recolhidos; barra lateral da linha de grupo muda por nível (`border-l-brand-accent` → `sky` → `slate-200`); cada nó exibe contagem de registros.
 - **Ordenação multi-coluna:** clique alterna `asc`/`desc` (setas `brand-accent`); **Shift+clique** encadeia regras com badge numérico `bg-brand-accent text-slate-950` (`sortMultiColumn` em `dataGrid.ts`, `localeCompare('pt-BR')` e parsing numérico para `isNumeric`).
@@ -1130,3 +1148,21 @@ kit; espelhado em `docs/09`)
 ```vue
 <UiPagination v-model="pagina" v-model:per-page="porPagina" :total="linhas.length" rotulo="parceiros" />
 ```
+
+### 5.23 UiActionMenu — seção 23 do `/design`
+
+**Arquivo:** `app/components/ui/ActionMenu.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `items` | `ActionMenuItem[]` *(obrigatória)* | — | Ações do menu |
+| `label` | `string` | `'Ações'` | Rótulo acessível do gatilho e do `role="menu"` |
+| `align` | `'start' \| 'end'` | `'end'` | Alinhamento horizontal do menu em relação ao gatilho |
+
+`ActionMenuItem`: `{ id: string; label: string; icon?: Component; tone?: 'default' | 'danger'; disabled?: boolean; reason?: string; hoverBackground?: string; hoverText?: string }` — `hoverBackground` define o fundo e `hoverText` a cor do texto no hover (hex), sobrepondo ao destaque padrão do menu.
+
+- **Emits:** `select` com o `id` do item acionado.
+- **Visual:** gatilho de ícone `MoreVertical` (`h-4 w-4`, `text-slate-500`, hover `bg-slate-100`, foco recortado `brand-focus`); menu `rounded-xl border border-slate-200 bg-white py-1 shadow-xl` em `Teleport`/`fixed` (não é recortado pelo `overflow` da tabela) com `w-52`; item `px-3 py-2 text-xs`, ícone `h-3.5 w-3.5`; ação destrutiva em `text-rose-700 hover:bg-rose-200 hover:text-rose-900`; item habilitado com hover `bg-slate-200` e `text-slate-900`; item desabilitado em `text-slate-400 cursor-not-allowed` com o motivo em `title`/`aria-label`.
+- **Interação:** abre por clique ou `Enter`/`Space`/`ArrowDown` no gatilho; `ArrowUp`/`ArrowDown` navegam ciclicamente (`Home`/`End` vão ao primeiro/último), `Enter`/`Space` acionam, `Escape` e clique-fora fecham devolvendo o foco ao gatilho (clique-fora mantém o foco onde o usuário clicou); `scroll`/`resize` fecham o menu para não descolar do gatilho.
+- **Acessibilidade:** `aria-haspopup="menu"`, `aria-expanded` e `aria-controls` no gatilho; `role="menu"`/`role="menuitem"`; itens desabilitados não recebem foco.
+- **Espelhamento:** seção 23 do `/design` — menu de exemplo com ações habilitadas, destrutiva e desabilitada com motivo.

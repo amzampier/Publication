@@ -1,0 +1,252 @@
+# release-week Specification
+
+## Purpose
+
+Define a página administrativa da Release Week na fase frontend: o cabeçalho da semana, seus KPIs,
+a listagem com filtros e ações, a expansão dos itens de cada release, as exportações, o dataset em
+memória de rascunho e a navegação até a tela — fixando o contrato que o backend servirá depois.
+
+## Requirements
+
+### Requirement: A página de Release Week existe em /admin/release-week
+O sistema SHALL expor a tela de Release Week em `/admin/release-week`, renderizada dentro do shell da
+Área Administrativa (header + sidebar) como as demais rotas sob `/admin/**`. A tela SHALL ser
+alcançável pelo item **Release Week** da sessão **Publicações** da sidebar, que passa a declarar a
+rota `/admin/release-week` e a navegar ao clique. O acesso SHALL estar sujeito à mesma guarda de
+sessão das demais telas administrativas.
+
+#### Scenario: Item Release Week navega pela sidebar
+- **WHEN** o usuário clica em "Release Week" na sidebar
+- **THEN** o navegador vai para `/admin/release-week` e a tela é renderizada dentro do shell
+
+#### Scenario: Item Release Week fica ativo na própria rota
+- **WHEN** a rota corrente é `/admin/release-week`
+- **THEN** o item "Release Week" da sidebar é exibido como ativo, com `aria-current="page"`
+
+#### Scenario: Rota protegida exige sessão
+- **WHEN** um visitante sem sessão tenta abrir `/admin/release-week`
+- **THEN** ele é redirecionado para `/admin/login?redirect=/admin/release-week`
+
+### Requirement: A tela representa o cabeçalho da semana
+Cada Release Week SHALL ser representada pelos campos do cabeçalho: `codigo`, `nome`, `versao`,
+`release`, `semana` (1 a 52), `ano`, `mes` (por extenso), `data_inicio`, `data_finaliza`,
+`data_publicacao`, `status` (`Aberta` | `Em Revisão` | `Aprovado` | `Publicado`), `descricao`,
+`destaque_semana`, `autor_nome`, `revisor_nome`, `criado_em` e `atualizado_em`. O status SHALL ser
+exibido em `UiBadge` com variantes distintas para `Aberta`, `Em Revisão`, `Aprovado` e `Publicado`.
+O `codigo`, os carimbos e os nomes de autor/revisor SHALL ser gerados pelo sistema, nunca digitados
+na tela.
+
+#### Scenario: Cabeçalho exibe os campos da semana
+- **WHEN** uma Release Week é exibida
+- **THEN** ela apresenta código, nome, semana/ano, período, status em `UiBadge`, autor e data de
+  publicação, com as datas formatadas em pt-BR
+
+#### Scenario: Status restrito ao domínio
+- **WHEN** o status é apresentado ou editado
+- **THEN** apenas `Aberta`, `Em Revisão`, `Aprovado` e `Publicado` são oferecidos
+
+### Requirement: Listagem, busca, ordenação e paginação
+A tela SHALL exibir as Release Weeks em uma tabela com as colunas **Código, Nome, Semana/Ano,
+Período, Status, Autor, Data de publicação** e a coluna de ações, oferecendo busca, ordenação e
+paginação no cliente sobre o conjunto vigente. A tela SHALL exibir o cabeçalho e os KPIs mesmo com a
+lista vazia, e a tabela SHALL distinguir base vazia de filtro sem resultado.
+
+#### Scenario: Colunas da listagem
+- **WHEN** a listagem é exibida
+- **THEN** a tabela mostra as colunas Código, Nome, Semana/Ano, Período, Status, Autor, Data de
+  publicação e ações
+
+#### Scenario: Busca, ordenação e paginação no cliente
+- **WHEN** o usuário usa a busca, ordena uma coluna ou troca de página
+- **THEN** a tabela reflete a interação sobre o conjunto vigente
+
+#### Scenario: Base vazia
+- **WHEN** não há Release Week cadastrada
+- **THEN** a tabela exibe o estado vazio de base sem registros e nenhum dado fictício é mostrado
+
+### Requirement: KPIs do conjunto vigente
+A tela SHALL exibir quatro indicadores derivados do conjunto vigente (o conjunto filtrado, quando
+houver filtro): **Abertas**, **Em Revisão**, **Aprovadas** e **Publicadas**.
+
+#### Scenario: KPIs acompanham os filtros
+- **WHEN** um filtro refina o conjunto exibido
+- **THEN** os quatro KPIs são recalculados sobre o conjunto filtrado
+
+### Requirement: Filtros estruturais em modal
+A tela SHALL oferecer um modal de filtros acionado pela toolbar da tabela, com **Status**, **Ano**,
+**Mês** e **Autor** (vazio = todos) e os botões "Limpar Filtros", "Cancelar" e "Aplicar". Aplicar
+SHALL refinar o conjunto vigente; limpar SHALL zerar rascunho e estado; a toolbar SHALL indicar a
+quantidade de filtros ativos no badge do botão "Filtros".
+
+#### Scenario: Aplicar refina a listagem e os KPIs
+- **WHEN** o usuário seleciona filtros e clica em "Aplicar"
+- **THEN** a tabela e os KPIs passam a refletir apenas as Release Weeks que casam com os filtros
+
+#### Scenario: Limpar restaura o conjunto
+- **WHEN** o usuário clica em "Limpar Filtros"
+- **THEN** os filtros são zerados e a listagem completa volta a ser exibida
+
+#### Scenario: Cancelar descarta o rascunho
+- **WHEN** o usuário altera seleções e clica em "Cancelar"
+- **THEN** o modal fecha e o conjunto vigente permanece inalterado
+
+#### Scenario: Contador de filtros ativos
+- **WHEN** há filtros ativos
+- **THEN** o botão "Filtros" exibe a quantidade de filtros aplicados
+
+### Requirement: Inclusão de Release Week
+O sistema SHALL oferecer o botão "Nova Release Week", que abre um modal de cadastro com **Nome**
+(obrigatório, até 255), **Versão**, **Release**, **Semana** (obrigatória, 1 a 52), **Ano**
+(obrigatório), **Mês** (obrigatório), **Data de início**, **Data de finalização** e **Data de
+publicação** (obrigatórias), **Status** (padrão `Aberta`), **Descrição** e **Destaque da semana**. O
+formulário SHALL validar os campos no cliente e focar o primeiro problema; salvar SHALL incluir a
+Release Week no conjunto vigente e fechar o modal com aviso de sucesso. A ação SHALL respeitar a
+permissão de `criar` do módulo `release-week`.
+
+#### Scenario: Abrir o cadastro com padrões
+- **WHEN** o usuário aciona "Nova Release Week"
+- **THEN** o modal abre vazio, com status `Aberta` e destaque desligado
+
+#### Scenario: Campos obrigatórios
+- **WHEN** o usuário tenta salvar sem nome, semana, ano, mês ou com uma das datas vazia
+- **THEN** o primeiro campo inválido recebe o erro e o foco, e nada é incluído
+
+#### Scenario: Inclusão com sucesso
+- **WHEN** o usuário salva um formulário válido
+- **THEN** a Release Week entra na listagem, o modal fecha e um aviso de sucesso é exibido
+
+### Requirement: Edição de Release Week
+O sistema SHALL oferecer a ação de linha **Editar**, que abre o mesmo modal preenchido com o registro,
+em modo edição, exibindo o **Código** somente leitura e a seção **Informações de Cadastro** com
+`criado_em` e `atualizado_em` desabilitados. Salvar SHALL atualizar a Release Week no conjunto e
+fechar o modal com aviso de sucesso. A ação SHALL respeitar a permissão de `alterar`.
+
+#### Scenario: Abrir edição preenchida
+- **WHEN** o usuário aciona "Editar" em uma linha
+- **THEN** o modal abre preenchido, com Código somente leitura e os carimbos de cadastro visíveis
+
+#### Scenario: Atualização com sucesso
+- **WHEN** o usuário salva alterações válidas
+- **THEN** a linha reflete os novos dados, o modal fecha e um aviso de sucesso é exibido
+
+### Requirement: Clonagem de Release Week
+O sistema SHALL oferecer a ação de linha **Clonar**, que abre o modal de cadastro em modo criação com
+apenas **Versão**, **Release** e **Destaque da semana** preenchidos a partir do registro de origem. Os
+demais campos — **Código**, **Nome**, **Semana**, **Ano**, **Mês**, datas, **Status** e **Descrição**
+— SHALL abrir em branco (status volta ao padrão `Aberta`). A clonagem NÃO SHALL copiar os itens da
+release nem gravar nada antes de o usuário salvar.
+
+#### Scenario: Clonar abre o formulário parcialmente preenchido
+- **WHEN** o usuário aciona "Clonar" em uma Release Week
+- **THEN** o modal abre com Versão, Release e Destaque copiados, os demais campos vazios e status
+  `Aberta`, sem criar um novo registro ainda
+
+#### Scenario: Clonar não copia itens
+- **WHEN** a Release Week de origem possui itens vinculados
+- **THEN** o formulário de clonagem não traz itens e o novo registro nasce sem itens
+
+### Requirement: Publicar e arquivar Release Week
+O sistema SHALL oferecer as ações de linha **Publicar** e **Arquivar**, ambas com confirmação.
+Publicar SHALL alterar o status para `Publicado`. Arquivar SHALL marcar a Release Week como
+**arquivada** (`arquivada = true`), sem excluir nenhum dado, e a release arquivada SHALL deixar de
+aparecer na listagem. Arquivar SHALL respeitar a permissão de `arquivar`; publicar, a de `publicar`.
+
+#### Scenario: Publicar altera o status
+- **WHEN** o usuário confirma "Publicar"
+- **THEN** o status da Release Week passa a `Publicado` e a listagem/KPIs refletem a mudança
+
+#### Scenario: Arquivar remove da listagem sem excluir
+- **WHEN** o usuário confirma "Arquivar"
+- **THEN** a Release Week é marcada como arquivada, deixa de aparecer na listagem e seus dados e
+  itens permanecem intactos
+
+#### Scenario: Release arquivada não aparece
+- **WHEN** a listagem é exibida
+- **THEN** as Release Weeks arquivadas não fazem parte do conjunto exibido nem dos KPIs
+
+### Requirement: Exclusão condicionada de Release Week
+O sistema SHALL oferecer a ação **Excluir** somente quando a Release Week **não estiver arquivada** e
+**não possuir nenhum item/relacionamento** vinculado. Quando uma dessas condições falhar, a ação
+SHALL ficar indisponível com a indicação acessível do motivo (release arquivada ou release com itens),
+e nenhum dado SHALL ser removido. A confirmação de exclusão SHALL remover o registro do conjunto
+vigente e fechar o modal com aviso de sucesso. A ação SHALL respeitar a permissão de `excluir`.
+
+#### Scenario: Excluir release sem vínculos
+- **WHEN** a Release Week não está arquivada e não possui itens, e o usuário confirma a exclusão
+- **THEN** o registro é removido da listagem e um aviso de sucesso é exibido
+
+#### Scenario: Release com itens não pode ser excluída
+- **WHEN** a Release Week possui itens vinculados
+- **THEN** a ação de exclusão fica indisponível com o motivo informado e nada é removido
+
+#### Scenario: Release arquivada não pode ser excluída
+- **WHEN** a Release Week está arquivada
+- **THEN** a ação de exclusão fica indisponível com o motivo informado e nada é removido
+
+### Requirement: Flag de itens e expansão somente leitura
+A tabela SHALL oferecer um **controle no cabeçalho** que habilita a visualização dos itens. Enquanto
+habilitado, cada Release Week SHALL exibir um sinal **"+"**; ao acioná-lo, a linha SHALL expandir e
+revelar os **itens da release** (`entregas_itens` vinculados) em modo somente leitura, com Chamada,
+Título, Software, Módulo, Tipo, Impacto, Situação, Status e Data de liberação. Acionar novamente
+recolhe a linha. Release sem itens SHALL exibir um estado vazio próprio dentro da expansão. A coluna
+de expansão não SHALL afetar ordenação, busca ou paginação.
+
+#### Scenario: Habilitar a flag revela o sinal de "+"
+- **WHEN** o usuário marca a flag de itens no cabeçalho da tabela
+- **THEN** cada Release Week passa a exibir um sinal "+" para expandir
+
+#### Scenario: Expandir mostra os itens da release
+- **WHEN** o usuário aciona o "+" de uma Release Week com itens
+- **THEN** a linha expande e exibe os itens daquela release em modo somente leitura
+
+#### Scenario: Release sem itens
+- **WHEN** o usuário expande uma Release Week sem itens
+- **THEN** a expansão exibe um estado vazio informando que não há itens
+
+#### Scenario: Recolher a expansão
+- **WHEN** o usuário aciona novamente o controle de uma linha expandida
+- **THEN** a linha recolhe e os itens deixam de ser exibidos
+
+### Requirement: Exportações PDF e CSV
+A tela SHALL oferecer, no menu "Relatórios" do cabeçalho, a **listagem em PDF** e a **exportação em
+CSV** do conjunto filtrado vigente, com as colunas da listagem. O CSV SHALL usar `;` com BOM UTF-8 e
+neutralizar fórmulas de planilha; falhas na geração SHALL produzir aviso de erro sem interromper a
+tela. Em caso de lista vazia, a exportação SHALL informar que não há dados.
+
+#### Scenario: Exportar o conjunto filtrado
+- **WHEN** o usuário escolhe "Exportar em CSV" ou "Listagem em PDF"
+- **THEN** o arquivo é gerado com as Release Weeks do conjunto filtrado e as colunas da listagem
+
+#### Scenario: Falha na exportação
+- **WHEN** a geração falha
+- **THEN** um aviso de erro é exibido e a tela permanece utilizável
+
+### Requirement: Dataset em memória de rascunho
+Nesta fase, a tela SHALL operar sobre um **dataset em memória** (`useState`) com Release Weeks e itens
+de exemplo, de modo que as ações possam ser exercitadas sem backend. O dataset NÃO SHALL ser
+persistido: recarregar a página restaura o conjunto inicial e nenhum registro SHALL ser gravado no
+banco. As inclusões, edições, clonagens, publicações, arquivamentos e exclusões SHALL atualizar apenas
+esse conjunto em memória. O contrato de leitura futura (`GET /api/release-week`) e o campo `arquivada`
+SHALL ser documentados como a substituição desse dataset na fase backend.
+
+#### Scenario: Ações operam sobre o conjunto em memória
+- **WHEN** o usuário inclui, edita, clona, publica, arquiva ou exclui uma Release Week
+- **THEN** a listagem e os KPIs refletem a mudança imediatamente, sem requisição ao servidor
+
+#### Scenario: Recarregar descarta as mudanças
+- **WHEN** o usuário recarrega a página
+- **THEN** o dataset volta ao conjunto inicial em memória e nada foi persistido
+
+### Requirement: Affordância de importação
+A toolbar da tabela SHALL apresentar o ícone de **importação** imediatamente à **esquerda** do botão
+"Filtros". Nesta fase o ícone SHALL ser apenas uma affordância: acioná-lo NÃO SHALL abrir modal,
+executar leitura de planilha nem disparar requisição. A execução da importação SHALL permanecer como
+pendência para a fase backend.
+
+#### Scenario: Ícone de importação visível ao lado de Filtros
+- **WHEN** a toolbar da tabela é exibida
+- **THEN** o ícone de importação aparece imediatamente à esquerda do botão "Filtros"
+
+#### Scenario: Importação não executa nesta fase
+- **WHEN** o usuário aciona o ícone de importação
+- **THEN** nenhum modal é aberto e nenhuma requisição é disparada

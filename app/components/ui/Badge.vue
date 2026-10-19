@@ -5,7 +5,9 @@ import {
   ShieldCheck,
   Clock,
   Search,
-  AlertTriangle
+  AlertTriangle,
+  Rocket,
+  Archive
 } from '@lucide/vue'
 
 export type BadgeVariant =
@@ -15,6 +17,9 @@ export type BadgeVariant =
   | 'inReview'
   | 'blocked'
   | 'neutral'
+  | 'aberta'
+  | 'publicado'
+  | 'arquivado'
 
 interface Props {
   variant?: BadgeVariant
@@ -66,6 +71,27 @@ const variantConfig = computed(() => {
         dot: 'bg-rose-700',
         icon: AlertTriangle,
         label: 'Bloqueado'
+      }
+    case 'aberta':
+      return {
+        bg: 'bg-sky-50 border-sky-200 text-sky-800',
+        dot: 'bg-sky-700',
+        icon: Clock,
+        label: 'Aberta'
+      }
+    case 'publicado':
+      return {
+        bg: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+        dot: 'bg-emerald-700',
+        icon: Rocket,
+        label: 'Publicado'
+      }
+    case 'arquivado':
+      return {
+        bg: 'bg-slate-100 border-slate-300 text-slate-600',
+        dot: 'bg-slate-500',
+        icon: Archive,
+        label: 'Arquivado'
       }
     case 'neutral':
     default:
