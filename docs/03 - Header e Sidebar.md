@@ -339,6 +339,12 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
 
 ## 11. Mudanças desta fase e pendências
 
+**Change OpenSpec `construir-escopo-projetos-frontend` (atual):**
+
+| Arquivo | Mudança |
+|---|---|
+| `app/config/navigation.ts` | item `escopo-projetos` (sessão Publicações) passa a declarar `to: '/admin/escopo-projetos'` — navega pela sidebar e marca `aria-current="page"` |
+
 **Change OpenSpec `construir-configuracoes-globais` (atual):**
 
 | Arquivo | Mudança |
@@ -388,6 +394,7 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
    + `requirePermission`); itens com o campo opcional `to` já navegam (sidebar e menu Account — na
    Administração, os quatro itens apontam para `/admin/configuracoes-globais`,
    `/admin/gestao-usuarios`, `/admin/auditoria` e `/admin/perfis-acesso`), e o item ativo da sidebar
-   deriva da rota quando a URL casa com um `to`. Os demais itens seguem apenas estado visual — existe
-   apenas a home `/admin`.
+   deriva da rota quando a URL casa com um `to`. O item **Escopo de Projetos** aponta para
+   `/admin/escopo-projetos` (frontend com dataset em memória); os itens sem `to` seguem apenas
+   estado visual.
 3. `Parceiros` e `Softwares` não têm spec de domínio (módulos ainda não construídos).

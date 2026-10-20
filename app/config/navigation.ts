@@ -73,7 +73,7 @@ export const sessoes: SidebarSession[] = [
     items: [
       { id: 'manuais', label: 'Manuais', icon: BookOpen, cor: '#f45f71', to: '/admin/manuais' },
       { id: 'release-week', label: 'Release Week', icon: Rocket, cor: '#1a9e07', to: '/admin/release-week' },
-      { id: 'escopo-projetos', label: 'Escopo de Projetos', icon: ClipboardList, cor: '#50a1ff' }
+      { id: 'escopo-projetos', label: 'Escopo de Projetos', icon: ClipboardList, cor: '#50a1ff', to: '/admin/escopo-projetos' }
     ]
   },
   {

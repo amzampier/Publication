@@ -513,7 +513,8 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 
 O schema já declara as tabelas do conteúdo público (`release_week`, `projetos_escopo`,
 `manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`). `release_week` e `manuais_mensal`
-já têm UI/API; `projetos_escopo` ainda está **sem UI/API**. Ao implementar a **exclusão de
+têm UI/API; `projetos_escopo` tem **UI frontend com dataset em memória** (change
+`construir-escopo-projetos-frontend`) e **API pendente**. Ao implementar a **exclusão de
 releases/manuais**, atenção à interação de chaves estrangeiras:
 
 - `entregas_itens.release_id → release_week(id)` é `ON DELETE CASCADE`: excluir a release apaga os itens.
