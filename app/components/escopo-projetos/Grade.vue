@@ -15,6 +15,7 @@ const emit = defineEmits<{
   (e: 'publicar', escopo: ProjetoEscopoModelo): void
   (e: 'arquivar', escopo: ProjetoEscopoModelo): void
   (e: 'ver-itens', escopo: ProjetoEscopoModelo): void
+  (e: 'importar'): void
   (e: 'open-filters'): void
 }>()
 
@@ -73,13 +74,14 @@ watch(
 
           <UiTooltip
             v-if="can('escopo-projetos', 'importar')"
-            content="Importar escopos (fase backend)"
+            content="Importar Escopos"
             position="top"
           >
             <button
               type="button"
               aria-label="Importar escopos"
               class="inline-flex items-center justify-center rounded p-1 text-slate-500 transition-colors hover:bg-sky-50 hover:text-sky-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              @click="emit('importar')"
             >
               <Import class="h-4 w-4" />
             </button>

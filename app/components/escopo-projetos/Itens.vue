@@ -3,7 +3,7 @@
 // módulo de itens; o CRUD pertence a "Lançar as Chamadas". A grade usa o
 // UiDataTable do kit (busca, agrupamento, multi-sort e totalizadores) e os itens
 // vêm do dataset em memória nesta fase.
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { ListChecks } from '@lucide/vue'
 import type { ColumnDef } from '../../utils/dataGrid'
 import {
@@ -24,9 +24,24 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: boolean): void
 }>()
 
-const { itensDoProjeto } = useEscopoProjetosModelo()
+const { itensDoProjeto, carregarItens, itensCarregando, itensErro } =
+  useEscopoProjetosModelo()
 
 const itens = computed(() => (props.escopo ? itensDoProjeto(props.escopo.id) : []))
+const carregando = computed(() => (props.escopo ? itensCarregando.value[props.escopo.id] === true : false))
+const erro = computed(() => (props.escopo ? itensErro.value[props.escopo.id] ?? null : null))
+
+const tentarNovamente = () => {
+  if (props.escopo) void carregarItens(props.escopo.id, true)
+}
+
+watch(
+  () => [props.modelValue, props.escopo?.id] as const,
+  ([aberto, id]) => {
+    if (aberto && id) void carregarItens(String(id), Boolean(itensErro.value[String(id)]))
+  },
+  { immediate: true }
+)
 
 const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done'> = {
   Revisar: 'pending',
@@ -111,7 +126,16 @@ const fechar = () => emit('update:modelValue', false)
     @update:model-value="emit('update:modelValue', $event)"
   >
     <UiModalSection title="Itens vinculados" :icon="ListChecks">
-      <p v-if="!itens.length" class="py-6 text-center text-xs text-slate-500">
+      <p v-if="carregando" class="py-6 text-center text-xs text-slate-500">
+        Carregando itens…
+      </p>
+
+      <div v-else-if="erro" class="flex flex-col items-center gap-2 py-6 text-center">
+        <p class="text-xs text-rose-700">{{ erro }}</p>
+        <UiButton variant="outline" size="sm" @click="tentarNovamente">Tentar novamente</UiButton>
+      </div>
+
+      <p v-else-if="!itens.length" class="py-6 text-center text-xs text-slate-500">
         Nenhum item vinculado a este projeto.
       </p>
 

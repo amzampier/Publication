@@ -512,10 +512,12 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 ### 4.6. Integridade referencial do conteúdo público (roadmap)
 
 O schema já declara as tabelas do conteúdo público (`release_week`, `projetos_escopo`,
-`manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`). `release_week` e `manuais_mensal`
-têm UI/API; `projetos_escopo` tem **UI frontend com dataset em memória** (change
-`construir-escopo-projetos-frontend`) e **API pendente**. Ao implementar a **exclusão de
-releases/manuais**, atenção à interação de chaves estrangeiras:
+`manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`). `release_week`,
+`manuais_mensal` e `projetos_escopo` têm UI/API. O Escopo de Projetos passou a persistir em
+`projetos_escopo` (change `escopo-projetos-backend-e-importacao`), com a coluna `arquivada`
+(migration 23) e **sem seed**: o módulo nasce vazio e recebe dados por cadastro ou importação
+`.xlsx`. A importação cobre somente escopos; os itens continuam em `entregas_itens`. Ao implementar
+a **exclusão de releases/manuais**, atenção à interação de chaves estrangeiras:
 
 - `entregas_itens.release_id → release_week(id)` é `ON DELETE CASCADE`: excluir a release apaga os itens.
 - `entregas_itens.manual_id → manuais_mensal(id)` é `ON DELETE SET NULL`: a API de Manuais bloqueia a

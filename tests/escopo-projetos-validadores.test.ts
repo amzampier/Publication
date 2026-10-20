@@ -8,10 +8,9 @@ import {
   motivoBloqueioExclusao,
   podeExcluir,
   proximoCodigo,
-  softwaresDosItens,
+  chaveAnoVersao,
   softwaresTexto,
   validarEscopo,
-  type ItemProjeto,
   type ProjetoEscopoModelo
 } from '../app/components/escopo-projetos/validadores'
 
@@ -26,7 +25,7 @@ const escopo = (overrides: Partial<ProjetoEscopoModelo> = {}): ProjetoEscopoMode
   dataPrevisao: '2026-12-20',
   dataPublicacao: '2026-01-02',
   status: 'Em Andamento',
-  softwaresContemplados: ['SFT-001'],
+  softwaresContemplados: ['Teorema ERP'],
   descricaoGeral: 'Escopo de exemplo',
   totalVisualizacoes: 100,
   itensCount: 0,
@@ -75,14 +74,10 @@ describe('validarEscopo', () => {
     expect(resultado.erros.ano).toBeTruthy()
   })
 
-  it('recusa código duplicado, exceto o próprio registro', () => {
+  it('recusa (ano, versão) duplicado, exceto o próprio registro', () => {
     const existente = escopo()
-    expect(
-      validarEscopo({ ...dadosValidos, codigo: 'PE-2026.01' }, [existente]).erros.codigo
-    ).toBeTruthy()
-    expect(
-      validarEscopo({ ...dadosValidos, codigo: 'PE-2026.01' }, [existente], 'esc-1').valido
-    ).toBe(true)
+    expect(validarEscopo(dadosValidos, [existente]).erros.versao).toBeTruthy()
+    expect(validarEscopo(dadosValidos, [existente], 'esc-1').valido).toBe(true)
   })
 })
 
@@ -130,7 +125,7 @@ describe('filtros, busca e KPIs', () => {
         status: 'Publicado',
         ano: '2025',
         versao: 'v2025.2',
-        software: 'SFT-001'
+        software: 'Teorema ERP'
       }).map((e) => e.id)
     ).toEqual(['d'])
   })
@@ -152,35 +147,10 @@ describe('filtros, busca e KPIs', () => {
   })
 })
 
-describe('softwares contemplados derivados dos itens', () => {
-  const item = (overrides: Partial<ItemProjeto> = {}): ItemProjeto => ({
-    id: 'item-1',
-    projetoId: 'esc-1',
-    chamada: '0000581201',
-    titulo: 'Item de exemplo',
-    software: 'Teorema ERP',
-    modulo: 'Fiscal',
-    tipo: 'Melhoria',
-    impacto: 'Médio',
-    situacao: 'Desenvolvimento',
-    status: 'Revisar',
-    dataLiberacao: '2026-03-16',
-    ...overrides
-  })
-
-  it('deriva códigos únicos na ordem de aparição', () => {
-    expect(
-      softwaresDosItens([
-        item({ id: 'a', software: 'Teorema WMS' }),
-        item({ id: 'b', software: 'Teorema ERP' }),
-        item({ id: 'c', software: 'Teorema WMS' })
-      ])
-    ).toEqual(['SFT-002', 'SFT-001'])
-  })
-
-  it('ignora softwares fora do catálogo e lista vazia sem itens', () => {
-    expect(softwaresDosItens([item({ software: 'Software legado' })])).toEqual([])
-    expect(softwaresDosItens([])).toEqual([])
+describe('identidade ano/versão', () => {
+  it('normaliza a chave para comparação', () => {
+    expect(chaveAnoVersao(2026, ' V2026.1 ')).toBe('2026-v2026.1')
+    expect(chaveAnoVersao('2026', 'v2026.1')).toBe('2026-v2026.1')
   })
 })
 
@@ -206,7 +176,7 @@ describe('guarda de exclusão', () => {
 describe('helpers de apresentação', () => {
   it('formata período e softwares', () => {
     expect(formatarPeriodo('2026-01-05', '2026-12-31')).toBe('05/01/2026 a 31/12/2026')
-    expect(softwaresTexto(['SFT-001', 'SFT-002'])).toBe('Teorema ERP, Teorema WMS')
+    expect(softwaresTexto(['Teorema ERP', 'Teorema WMS'])).toBe('Teorema ERP, Teorema WMS')
     expect(softwaresTexto([])).toBe('—')
   })
 })

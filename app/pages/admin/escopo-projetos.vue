@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import {
   useEscopoProjetosModelo,
   type ModoEscopo,
@@ -10,7 +10,29 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
-const { escoposComSoftwares, publicar, arquivar, excluir } = useEscopoProjetosModelo()
+const { escopos, carregarEscopos, publicar, arquivar, excluir } =
+  useEscopoProjetosModelo()
+
+// Overlay já no SSR/F5: nasce true, cobre o primeiro GET e só libera a tela
+// depois que a API responde (mesmo padrão de Manuais/Parceiros).
+const carregando = ref(true)
+
+const mensagemErro = (erro: unknown, padrao: string): string => {
+  const e = erro as { statusMessage?: string; data?: { statusMessage?: string } } | null
+  return e?.data?.statusMessage ?? e?.statusMessage ?? padrao
+}
+
+onMounted(async () => {
+  carregando.value = true
+  const ok = await carregarEscopos()
+  carregando.value = false
+  if (!ok) {
+    toast.danger(
+      'Escopo de Projetos',
+      'Não foi possível carregar os escopos. Recarregue a página e tente novamente.'
+    )
+  }
+})
 
 // Coordenação dos modais: a página é dona do estado.
 const filtrosAbertos = ref(false)
@@ -26,7 +48,7 @@ const abrirNovo = () => {
 }
 
 const abrirEdicao = (escopo: ProjetoEscopoModelo) => {
-  const registro = escoposComSoftwares.value.find((item) => item.id === escopo.id) ?? escopo
+  const registro = escopos.value.find((item) => item.id === escopo.id) ?? escopo
   modo.value = 'editar'
   escopoEditar.value = registro
   modalAberto.value = true
@@ -48,14 +70,14 @@ const abrirExclusao = (escopo: ProjetoEscopoModelo) => {
   exclusaoAberta.value = true
 }
 
-const confirmarExclusao = () => {
+const confirmarExclusao = async () => {
   const alvo = escopoExcluir.value
   if (!alvo) return
 
   exclusaoAberta.value = false
   escopoExcluir.value = null
 
-  const resultado = excluir(alvo.id)
+  const resultado = await excluir(alvo.id)
   if (resultado.ok) {
     toast.success('Escopo de Projetos', 'Escopo excluído com sucesso.')
   } else {
@@ -71,17 +93,18 @@ const abrirPublicacao = (escopo: ProjetoEscopoModelo) => {
   publicarAberto.value = true
 }
 
-const confirmarPublicacao = () => {
+const confirmarPublicacao = async () => {
   const alvo = escopoPublicar.value
   if (!alvo) return
 
   publicarAberto.value = false
   escopoPublicar.value = null
 
-  if (publicar(alvo.id)) {
+  try {
+    await publicar(alvo.id)
     toast.success('Escopo de Projetos', 'Escopo publicado com sucesso.')
-  } else {
-    toast.danger('Escopo de Projetos', 'Não foi possível publicar o escopo.')
+  } catch (erro) {
+    toast.danger('Escopo de Projetos', mensagemErro(erro, 'Não foi possível publicar o escopo.'))
   }
 }
 
@@ -93,24 +116,29 @@ const abrirArquivamento = (escopo: ProjetoEscopoModelo) => {
   arquivarAberto.value = true
 }
 
-const confirmarArquivamento = () => {
+const confirmarArquivamento = async () => {
   const alvo = escopoArquivar.value
   if (!alvo) return
 
   arquivarAberto.value = false
   escopoArquivar.value = null
 
-  if (arquivar(alvo.id)) {
+  try {
+    await arquivar(alvo.id)
     toast.success('Escopo de Projetos', 'Escopo arquivado com sucesso.')
-  } else {
-    toast.danger('Escopo de Projetos', 'Não foi possível arquivar o escopo.')
+  } catch (erro) {
+    toast.danger('Escopo de Projetos', mensagemErro(erro, 'Não foi possível arquivar o escopo.'))
   }
 }
+
+const importarAberto = ref(false)
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
-    <div class="mx-auto max-w-7xl">
+    <UiLoading v-if="carregando" message="Carregando escopos…" />
+
+    <div v-else class="mx-auto max-w-7xl">
       <EscopoProjetosCabecalho @novo="abrirNovo" />
 
       <EscopoProjetosKpis class="mt-6" />
@@ -122,6 +150,7 @@ const confirmarArquivamento = () => {
         @publicar="abrirPublicacao"
         @arquivar="abrirArquivamento"
         @ver-itens="abrirItens"
+        @importar="importarAberto = true"
         @open-filters="filtrosAbertos = true"
       />
 
@@ -148,6 +177,8 @@ const confirmarArquivamento = () => {
         :escopo="escopoArquivar"
         @confirmar="confirmarArquivamento"
       />
+
+      <EscopoProjetosImportar v-model="importarAberto" />
     </div>
   </div>
 </template>

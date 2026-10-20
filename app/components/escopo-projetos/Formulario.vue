@@ -4,7 +4,6 @@ import { ClipboardList, CalendarDays, Boxes, Clock } from '@lucide/vue'
 import type { SegmentedOption } from '../ui/Segmented.vue'
 import { useToast } from '../../composables/useToast'
 import {
-  SOFTWARES_MOCK,
   formatarDataHora,
   validarEscopo,
   useEscopoProjetosModelo,
@@ -28,7 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { escopos, adicionar, atualizar, softwaresDoEscopo } = useEscopoProjetosModelo()
+const { escopos, adicionar, atualizar } = useEscopoProjetosModelo()
 
 interface Rascunho {
   codigo: string
@@ -72,16 +71,9 @@ const statusOpcoes: SegmentedOption[] = [
   { value: 'Publicado', label: 'Publicado', tone: 'navy' }
 ]
 
-// Softwares contemplados NÃO são escolhidos no formulário: vêm das chamadas
-// (itens) do escopo e só aparecem quando existir pelo menos um item.
-const softwaresContemplados = computed(() =>
-  props.escopo
-    ? softwaresDoEscopo(props.escopo.id).map((codigo) => ({
-        codigo,
-        descricao: SOFTWARES_MOCK.find((software) => software.codigo === codigo)?.descricao ?? codigo
-      }))
-    : []
-)
+// Softwares contemplados NÃO são escolhidos no formulário: a API devolve os
+// nomes das chamadas e eles só aparecem quando existir pelo menos um item.
+const softwaresContemplados = computed(() => props.escopo?.softwaresContemplados ?? [])
 
 const paraIso = (data: Date | null): string => {
   if (!data) return ''
@@ -127,7 +119,7 @@ const validar = (): boolean => {
   return true
 }
 
-const salvar = () => {
+const salvar = async () => {
   if (!validar()) return
   const dados = {
     nome: rascunho.value.nome,
@@ -141,14 +133,35 @@ const salvar = () => {
     descricaoGeral: rascunho.value.descricaoGeral
   }
 
-  if (props.modo === 'editar' && props.escopo) {
-    atualizar(props.escopo.id, dados)
-    toast.success('Escopo de Projetos', 'Escopo atualizado com sucesso.')
-  } else {
-    adicionar(dados)
-    toast.success('Escopo de Projetos', 'Escopo incluído com sucesso.')
+  try {
+    if (props.modo === 'editar' && props.escopo) {
+      await atualizar(props.escopo.id, dados)
+      toast.success('Escopo de Projetos', 'Escopo atualizado com sucesso.')
+    } else {
+      await adicionar(dados)
+      toast.success('Escopo de Projetos', 'Escopo incluído com sucesso.')
+    }
+    emit('update:modelValue', false)
+  } catch (erro) {
+    const e = erro as {
+      statusMessage?: string
+      data?: {
+        statusMessage?: string
+        erros?: Partial<Record<CampoEscopo, string>>
+      }
+    } | null
+    const errosApi = e?.data?.erros
+    if (errosApi && Object.keys(errosApi).length) {
+      erros.value = errosApi
+      const primeiro = Object.keys(errosApi)[0]
+      if (primeiro) focarCampo(primeiro)
+      return
+    }
+    toast.danger(
+      'Escopo de Projetos',
+      e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível salvar o escopo.'
+    )
   }
-  emit('update:modelValue', false)
 }
 
 const cancelar = () => emit('update:modelValue', false)
@@ -286,11 +299,11 @@ watch(
             <div class="mt-2 flex flex-wrap gap-1.5">
               <UiBadge
                 v-for="software in softwaresContemplados"
-                :key="software.codigo"
+                :key="software"
                 variant="neutral"
                 size="sm"
               >
-                {{ software.descricao }}
+                {{ software }}
               </UiBadge>
             </div>
             <p class="mt-1 text-xs text-slate-500">

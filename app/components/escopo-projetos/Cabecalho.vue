@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Cabeçalho da tela de Escopo de Projetos: tile, menu "Relatórios" (PDF/CSV
-// sobre o conjunto vigente) e ação primária "Novo Escopo". A fase é frontend:
-// as exportações leem o dataset em memória (nenhuma requisição).
+// sobre o conjunto vigente da API) e ação primária "Novo Escopo". As
+// exportações validam a permissão no servidor antes de gerar o arquivo.
 import { ref, onMounted, onUnmounted } from 'vue'
 import {
   ClipboardList,
@@ -16,6 +16,7 @@ import { gerarPdfEscopoProjetos } from './gerarPdfEscopoProjetos'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
 import { usePermissions } from '../../composables/usePermissions'
+import { useApiFetch } from '../../composables/useApiFetch'
 import { formatarNumero, formatarPeriodo, softwaresTexto } from './validadores'
 
 const emit = defineEmits<{
@@ -52,15 +53,26 @@ const semDados = (): boolean => {
   return true
 }
 
+const validarExportacao = async (): Promise<boolean> => {
+  try {
+    await useApiFetch('/api/escopo-projetos', { query: { exportar: '1' } })
+    return true
+  } catch {
+    toast.danger('Exportação', 'Você não tem permissão para exportar Escopos de Projetos.')
+    return false
+  }
+}
+
 const escapar = (v: string | number) => {
   let texto = String(v)
   if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
   return `"${texto.replace(/"/g, '""')}"`
 }
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
   if (semDados()) return
+  if (!(await validarExportacao())) return
   const cabecalho = [
     'Código',
     'Nome',
@@ -98,6 +110,7 @@ const exportarCsv = () => {
 const relacaoPdf = async () => {
   menuAberto.value = false
   if (semDados()) return
+  if (!(await validarExportacao())) return
   exportando.value = true
   try {
     await gerarPdfEscopoProjetos({
