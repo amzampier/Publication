@@ -370,6 +370,7 @@ CREATE TABLE manuais_mensal (
     status ENUM('Rascunho', 'Em Revisão', 'Alterações Solicitadas', 'Aprovado', 'Publicado') NOT NULL DEFAULT 'Rascunho' COMMENT 'Status de workflow do catálogo mensal',
     destaque_mes TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Destaque principal do mês',
     destaque_semana TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Fixar em destaque semanal',
+    arquivada TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Catálogo arquivado (soft): some da listagem sem apagar dados/itens',
     total_visualizacoes INT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Contador de visualizações do manual',
     autor_id UUID NULL COMMENT 'Chave estrangeira apontando para usuarios.id (autor/gestor do manual)',
     revisor_id UUID NULL COMMENT 'Chave estrangeira apontando para usuarios.id (revisor técnico)',
@@ -394,6 +395,7 @@ CREATE TABLE manuais_mensal (
     KEY idx_manuais_ano_mes (ano, mes_numero),
     KEY idx_manuais_status (status),
     KEY idx_manuais_destaque (destaque_mes, destaque_semana),
+    KEY idx_manuais_arquivada (arquivada),
     KEY idx_manuais_views (total_visualizacoes DESC)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci COMMENT='Catálogos mensais de manuais e procedimentos técnicos';
 

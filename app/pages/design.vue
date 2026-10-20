@@ -1023,6 +1023,11 @@ const secoes = [
               <span class="text-[10px] text-slate-400">Arquivado (Release)</span>
               <UiBadge variant="arquivado" />
             </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
+              <span class="text-[10px] text-slate-400">Alterações (Manuais)</span>
+              <UiBadge variant="alteracoes" />
+            </div>
           </div>
         </section>
 

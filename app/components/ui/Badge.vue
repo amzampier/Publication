@@ -7,7 +7,8 @@ import {
   Search,
   AlertTriangle,
   Rocket,
-  Archive
+  Archive,
+  MessageSquareWarning
 } from '@lucide/vue'
 
 export type BadgeVariant =
@@ -20,6 +21,7 @@ export type BadgeVariant =
   | 'aberta'
   | 'publicado'
   | 'arquivado'
+  | 'alteracoes'
 
 interface Props {
   variant?: BadgeVariant
@@ -92,6 +94,13 @@ const variantConfig = computed(() => {
         dot: 'bg-slate-500',
         icon: Archive,
         label: 'Arquivado'
+      }
+    case 'alteracoes':
+      return {
+        bg: 'bg-amber-50 border-amber-200 text-amber-800',
+        dot: 'bg-amber-600',
+        icon: MessageSquareWarning,
+        label: 'Alterações Solicitadas'
       }
     case 'neutral':
     default:

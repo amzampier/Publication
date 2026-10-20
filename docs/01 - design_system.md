@@ -296,7 +296,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `size` | `'sm' \| 'md'` | `'md'` | `sm` 10px · `md` 11px |
 
 - **Emits:** nenhum · **Slots:** `default` (substitui o rótulo interno).
-- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado'`** (enum em inglês, display em pt-BR; os três últimos são as variantes semânticas do módulo Release Week).
+- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week e `alteracoes` é a do catálogo mensal de Manuais).
 
 | Variant | Rótulo (PT) | Fundo / Borda / Texto | Ícone |
 | :--- | :--- | :--- | :--- |
@@ -309,6 +309,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `aberta` | Aberta | `bg-sky-50` / `border-sky-200` / `text-sky-800` | `Clock` |
 | `publicado` | Publicado | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `Rocket` |
 | `arquivado` | Arquivado | `bg-slate-100` / `border-slate-300` / `text-slate-600` | `Archive` |
+| `alteracoes` | Alterações Solicitadas | `bg-amber-50` / `border-amber-200` / `text-amber-800` | `MessageSquareWarning` |
 
 - **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
 - **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone. Com `prefers-reduced-motion: reduce` a pulsão para (regra global de `main.css` — vale para animações e transições de todo o kit).
@@ -332,6 +333,17 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | :--- | :--- | :--- |
 | Aberta | `aberta` | Aberta |
 | Em Revisão | `inReview` | Em Revisão |
+| Aprovado | `reconciled` | Aprovado (o rótulo vem do slot `default`) |
+| Publicado | `publicado` | Publicado |
+| Arquivado | `arquivado` | Arquivado (fora da listagem padrão) |
+
+**Mapeamento do status do catálogo mensal de Manuais → variante** (módulo `/admin/manuais`):
+
+| Status | Variante | Badge exibido |
+| :--- | :--- | :--- |
+| Rascunho | `neutral` | Rascunho (o rótulo vem do slot `default`) |
+| Em Revisão | `inReview` | Em Revisão |
+| Alterações Solicitadas | `alteracoes` | Alterações Solicitadas |
 | Aprovado | `reconciled` | Aprovado (o rótulo vem do slot `default`) |
 | Publicado | `publicado` | Publicado |
 | Arquivado | `arquivado` | Arquivado (fora da listagem padrão) |

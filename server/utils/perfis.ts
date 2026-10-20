@@ -52,7 +52,7 @@ export const FUNCIONALIDADES_FIXAS = ['visualizar', 'criar', 'alterar', 'excluir
  * As fixas viram colunas; as específicas vão no `extras` JSON.
  */
 export const FUNCIONALIDADES_POR_MODULO: Record<string, readonly string[]> = {
-  'manuais': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
+  'manuais': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'clonar', 'visualizar_itens'],
   'release-week': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar', 'clonar', 'visualizar_itens'],
   'escopo-projetos': ['visualizar', 'criar', 'alterar', 'excluir', 'publicar', 'arquivar', 'download', 'exportar', 'importar', 'filtrar', 'buscar'],
   'esteira-revisao': ['visualizar', 'alterar', 'publicar', 'arquivar', 'filtrar'],
@@ -148,10 +148,12 @@ export function validarMatriz(matriz: unknown): Record<string, string[]> {
     resultado[modulo] = [...new Set(acoes as string[])]
   }
 
-  // `clonar` só faz sentido com `criar`: a clonagem grava via POST (criar).
-  const releaseWeek = resultado['release-week'] ?? []
-  if (releaseWeek.includes('clonar') && !releaseWeek.includes('criar')) {
-    erro400('A funcionalidade clonar exige criar no módulo release-week.')
+  // `clonar` só faz sentido com `criar`: a clonagem grava pela mesma criação.
+  for (const modulo of ['release-week', 'manuais'] as const) {
+    const acoes = resultado[modulo] ?? []
+    if (acoes.includes('clonar') && !acoes.includes('criar')) {
+      erro400(`A funcionalidade clonar exige criar no módulo ${modulo}.`)
+    }
   }
 
   return resultado
