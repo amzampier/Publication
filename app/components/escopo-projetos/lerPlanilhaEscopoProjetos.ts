@@ -7,7 +7,7 @@ import {
   chaveAnoVersao,
   ehDataIso,
   validarEscopo
-} from '#shared/utils/escopo-projetos'
+} from '#shared/escopo-projetos'
 
 export type SituacaoImportacao = 'pronto' | 'ja-cadastrado' | 'repetido' | 'invalido'
 

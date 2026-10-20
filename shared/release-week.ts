@@ -1,5 +1,5 @@
 // Regras puras do módulo Release Week — compartilhadas entre app, server e
-// testes (`#shared/utils/release-week`). Sem imports de Nuxt/Vue.
+// testes (`#shared/release-week`). Sem imports de Nuxt/Vue.
 
 export type StatusRelease = 'Aberta' | 'Em Revisão' | 'Aprovado' | 'Publicado'
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'

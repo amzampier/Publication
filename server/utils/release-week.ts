@@ -1,6 +1,6 @@
 // server/utils/release-week.ts — camada de acesso do módulo Release Week
 // (change release-week-backend-e-importacao). Regras puras vêm de
-// `#shared/utils/release-week` (mesmas da tela/testes). As rotas aplicam RBAC e
+// `#shared/release-week` (mesmas da tela/testes). As rotas aplicam RBAC e
 // auditoria; aqui ficam validação, código RW-XX/AAAA, arquivamento soft e a
 // guarda de exclusão (arquivada ou com itens).
 import { randomUUID } from 'node:crypto'
@@ -14,7 +14,7 @@ import {
   type ItemRelease,
   type ReleaseWeekModelo,
   type StatusRelease
-} from '#shared/utils/release-week'
+} from '#shared/release-week'
 
 const LIMITE_IMPORTACAO = 500
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

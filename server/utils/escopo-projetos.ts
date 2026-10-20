@@ -1,6 +1,6 @@
 // Camada de acesso do módulo Escopo de Projetos (change
 // escopo-projetos-backend-e-importacao). Regras puras vêm de
-// `#shared/utils/escopo-projetos`; aqui ficam validação de entrada, código
+// `#shared/escopo-projetos`; aqui ficam validação de entrada, código
 // PE-<ano>.<seq>, softwares derivados, arquivamento soft, guarda de exclusão e
 // importação transacional. As rotas aplicam RBAC e auditoria.
 import { randomUUID } from 'node:crypto'
@@ -15,7 +15,7 @@ import {
   type ItemProjeto,
   type ProjetoEscopoModelo,
   type StatusEscopo
-} from '#shared/utils/escopo-projetos'
+} from '#shared/escopo-projetos'
 
 const LIMITE_IMPORTACAO = 500
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

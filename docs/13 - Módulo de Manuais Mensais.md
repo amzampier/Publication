@@ -11,7 +11,7 @@ expansão somente leitura, as **exportações PDF/CSV** e a **importação hist�
 O backend está implementado (`/api/manuais/**`), com RBAC, auditoria e transação na importação.
 **Arquivos-fonte:** [`app/pages/admin/manuais.vue`](../app/pages/admin/manuais.vue) ·
 [`app/components/manuais/`](../app/components/manuais) ·
-[`shared/utils/manuais.ts`](../shared/utils/manuais.ts) ·
+[`shared/manuais.ts`](../shared/manuais.ts) ·
 [`server/utils/manuais.ts`](../server/utils/manuais.ts) ·
 [`server/api/manuais/`](../server/api/manuais) ·
 [`app/config/navigation.ts`](../app/config/navigation.ts)
@@ -201,9 +201,9 @@ admin/manuais.vue                                   (page - definePageMeta + com
 
 ### 3.10 `validadores.ts` e `useManuaisModelo.ts`
 
-- **`validadores.ts`:** reexporta `#shared/utils/manuais` (regras puras compartilhadas com o
+- **`validadores.ts`:** reexporta `#shared/manuais` (regras puras compartilhadas com o
   servidor e os testes).
-- **`shared/utils/manuais.ts`:** tipos (`ManuaisModelo`, `ItemManual`, `StatusManual`,
+- **`shared/manuais.ts`:** tipos (`ManuaisModelo`, `ItemManual`, `StatusManual`,
   `FiltrosManuais`, `KpisManuais`, `LinhaManual`), `MESES`, `STATUS_MANUAL`, `gerarCodigo`,
   `mesPorNumero`, `formatarData`, `formatarMesAno`, `validarManual`, `prefillClone`,
   `motivoBloqueioExclusao`, `podeExcluirManual`, `filtrarManuais`, `calcularKpis`, `hojeIso`,

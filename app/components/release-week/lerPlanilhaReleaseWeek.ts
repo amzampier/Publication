@@ -6,7 +6,7 @@ import {
   MESES,
   STATUS_RELEASE,
   validarReleaseWeek
-} from '#shared/utils/release-week'
+} from '#shared/release-week'
 
 export type SituacaoImportacao = 'pronto' | 'ja-cadastrado' | 'repetido' | 'invalido'
 

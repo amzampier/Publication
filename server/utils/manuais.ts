@@ -1,5 +1,5 @@
 // server/utils/manuais.ts — camada de acesso do módulo Manuais Mensais.
-// Regras puras vêm de `#shared/utils/manuais` (mesmas da tela/testes). As rotas
+// Regras puras vêm de `#shared/manuais` (mesmas da tela/testes). As rotas
 // aplicam RBAC e auditoria; aqui ficam validação, código MAN-XX/AAAA, datas,
 // arquivamento soft, guarda de exclusão e importação transacional.
 import { randomUUID } from 'node:crypto'
@@ -16,7 +16,7 @@ import {
   type ItemManual,
   type ManuaisModelo,
   type StatusManual
-} from '#shared/utils/manuais'
+} from '#shared/manuais'
 
 const LIMITE_IMPORTACAO = 500
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

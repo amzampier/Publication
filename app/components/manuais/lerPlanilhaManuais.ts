@@ -7,7 +7,7 @@ import {
   STATUS_MANUAL,
   ehDataIso,
   validarManual
-} from '#shared/utils/manuais'
+} from '#shared/manuais'
 
 export type SituacaoImportacao = 'pronto' | 'ja-cadastrado' | 'repetido' | 'invalido'
 

@@ -7,7 +7,7 @@ condicionada, itens em modal somente leitura, exportações PDF/CSV e **importa�
 A persistência é real em `projetos_escopo`; **não existe seed** e o módulo nasce vazio.
 **Arquivos-fonte:** [`app/pages/admin/escopo-projetos.vue`](../app/pages/admin/escopo-projetos.vue) ·
 [`app/components/escopo-projetos/`](../app/components/escopo-projetos) ·
-[`shared/utils/escopo-projetos.ts`](../shared/utils/escopo-projetos.ts) ·
+[`shared/escopo-projetos.ts`](../shared/escopo-projetos.ts) ·
 [`server/utils/escopo-projetos.ts`](../server/utils/escopo-projetos.ts) ·
 [`server/api/escopo-projetos/`](../server/api/escopo-projetos) ·
 [`docs/modelos/modelo-importacao-escopo-projetos.xlsx`](modelos/modelo-importacao-escopo-projetos.xlsx)
@@ -191,15 +191,15 @@ admin/escopo-projetos.vue                            (page - definePageMeta + co
   datas do Excel/`dd/mm/aaaa`; a classificação é `pronto` / `já cadastrado` / `repetido` /
   `inválido`.
 
-### 3.11 `validadores.ts`, `shared/utils/escopo-projetos.ts` e `useEscopoProjetosModelo.ts`
+### 3.11 `validadores.ts`, `shared/escopo-projetos.ts` e `useEscopoProjetosModelo.ts`
 
-- **`shared/utils/escopo-projetos.ts`:** tipos (`ProjetoEscopoModelo`, `EntradaEscopo`,
+- **`shared/escopo-projetos.ts`:** tipos (`ProjetoEscopoModelo`, `EntradaEscopo`,
   `ItemProjeto`, `StatusEscopo`, `FiltrosEscopo`, `KpisEscopo`), `STATUS_ESCOPO`,
   `VARIANTE_POR_STATUS`, `chaveAnoVersao`, validação, `gerarCodigo`, `proximoCodigo`,
   `formatarData`, `formatarDataHora`, `formatarPeriodo`, `formatarNumero`, `softwaresTexto`,
   `ehDataIso`, `hojeIso`, `motivoBloqueioExclusao`, `podeExcluir`, `filtrarEscopos`,
   `buscarEscopos` e `calcularKpis`.
-- **`app/components/escopo-projetos/validadores.ts`:** reexporta `#shared/utils/escopo-projetos`.
+- **`app/components/escopo-projetos/validadores.ts`:** reexporta `#shared/escopo-projetos`.
 - **`useEscopoProjetosModelo.ts`:** `useState` (`escopos`, `carregando`, `carregado`,
   `itensPorProjeto`, `itensCarregando`, `itensErro`, `filtros`, `busca`), derivados e ações
   assíncronas (`carregarEscopos`, `carregarItens`, `adicionar`, `atualizar`, `publicar`, `arquivar`,

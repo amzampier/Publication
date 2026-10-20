@@ -1,5 +1,5 @@
 // Regras puras do módulo Escopo de Projetos — compartilhadas entre app, server
-// e testes (`#shared/utils/escopo-projetos`). Sem imports de Nuxt/Vue.
+// e testes (`#shared/escopo-projetos`). Sem imports de Nuxt/Vue.
 // A fonte de verdade dos dados é a API `/api/escopo-projetos`; este arquivo
 // concentra validação, código, filtros, KPIs e helpers de apresentação.
 

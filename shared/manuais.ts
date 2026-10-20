@@ -1,5 +1,5 @@
 // Regras puras do catálogo mensal de Manuais — compartilhadas entre app, server
-// e testes (`#shared/utils/manuais`). Sem imports de Nuxt/Vue.
+// e testes (`#shared/manuais`). Sem imports de Nuxt/Vue.
 
 export type StatusManual =
   | 'Rascunho'

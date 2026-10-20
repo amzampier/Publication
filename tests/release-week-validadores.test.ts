@@ -11,7 +11,7 @@ import {
   validarReleaseWeek,
   type ItemRelease,
   type ReleaseWeekModelo
-} from '../shared/utils/release-week'
+} from '../shared/release-week'
 
 const semanaBase = (over: Partial<ReleaseWeekModelo> = {}): ReleaseWeekModelo => ({
   id: 'rw-1',

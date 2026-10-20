@@ -14,7 +14,7 @@ gerado pelo servidor, `arquivada` soft, guarda de exclusão por itens e RBAC/aud
 [`app/components/release-week/`](../app/components/release-week) ·
 [`server/api/release-week/`](../server/api/release-week) ·
 [`server/utils/release-week.ts`](../server/utils/release-week.ts) ·
-[`shared/utils/release-week.ts`](../shared/utils/release-week.ts) ·
+[`shared/release-week.ts`](../shared/release-week.ts) ·
 [`app/config/navigation.ts`](../app/config/navigation.ts)
 **Design system:** [`/design`](../app/pages/design.vue) — `UiActionMenu` (seção 23), variantes
 `aberta`/`publicado`/`arquivado` do `UiBadge` e expansão de linha do `UiDataTable`.
