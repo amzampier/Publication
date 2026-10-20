@@ -36,7 +36,7 @@ válida SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente
 ### Requirement: O catálogo de rotas administrativas mapeia cada rota para módulo e ação
 O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da funcionalidade
 indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
-`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`):
+`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`, `manuais`):
 
 - `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com o parâmetro de **filtro/paginação**
   server-side → `gestao-usuarios` / `filtrar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
@@ -70,6 +70,14 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `PUT /api/release-week/:id/arquivar` → `release-week` / `arquivar`
 - `DELETE /api/release-week/:id` → `release-week` / `excluir`
 - `POST /api/release-week/importar` → `release-week` / `importar`
+- `GET /api/manuais` → `manuais` / `visualizar`; com o parâmetro de **exportação** → `manuais` / `exportar`
+- `GET /api/manuais/:id/itens` → `manuais` / `visualizar_itens`
+- `POST /api/manuais` → `manuais` / `criar`
+- `PUT /api/manuais/:id` → `manuais` / `alterar`
+- `PUT /api/manuais/:id/publicar` → `manuais` / `publicar`
+- `PUT /api/manuais/:id/arquivar` → `manuais` / `arquivar`
+- `DELETE /api/manuais/:id` → `manuais` / `excluir`
+- `POST /api/manuais/importar` → `manuais` / `importar`
 - `GET /api/auditoria` → `auditoria` / `visualizar`; com o parâmetro de **filtro** → `auditoria` / `filtrar`;
   com o parâmetro de **busca** → `auditoria` / `buscar`; com o parâmetro de **exportação** → `auditoria` / `exportar`
 - `GET /api/configuracoes`, `GET /api/seguranca/estado` → `configuracoes-globais` / `visualizar`
@@ -108,6 +116,22 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - **WHEN** um perfil sem `release-week`/`visualizar_itens` chama `GET /api/release-week/:id/itens`
 - **THEN** a API responde `403` e nenhum item é retornado
 
+#### Scenario: Leitor não escreve Manuais
+- **WHEN** um usuário sem `manuais`/`criar`, `alterar` ou `excluir` chama as rotas de escrita de Manuais
+- **THEN** a API responde `403` em todas e nenhum catálogo é criado, alterado ou excluído
+
+#### Scenario: Rotas de Manuais usam o módulo manuais
+- **WHEN** um perfil concede `manuais`/`visualizar` mas não `manuais`/`arquivar` chama `PUT /api/manuais/:id/arquivar`
+- **THEN** a API responde `403` e nenhum catálogo é arquivado
+
+#### Scenario: Itens de Manuais exigem a ação extra
+- **WHEN** um perfil sem `manuais`/`visualizar_itens` chama `GET /api/manuais/:id/itens`
+- **THEN** a API responde `403` e nenhum item é retornado
+
+#### Scenario: Importação de Manuais exige a ação extra
+- **WHEN** um perfil sem `manuais`/`importar` chama `POST /api/manuais/importar`
+- **THEN** a API responde `403` e nada é gravado
+
 ### Requirement: Portas públicas e autoatendimento exigem apenas sessão
 O sistema SHALL manter sem exigência de permissão de módulo as portas públicas e as rotas de
 autoatendimento, que continuam exigindo apenas sessão válida (quando administrativas) ou sendo
@@ -136,7 +160,7 @@ excluir, clonar, bloquear, enviar convite), a flag/expansão de itens (`visualiz
 "Filtros" (`filtrar`), o campo de busca (`buscar`), as exportações (`exportar`/`download`), a
 importação (`importar`) e a ação "Permissões" (`permissoes`). Nos módulos cujo filtro/busca são
 server-side (Gestão de Usuários e Auditoria) a imposição é **também** no servidor; nos demais
-(Softwares, Parceiros, Perfis, Release Week) o controle é de interface.
+(Softwares, Parceiros, Perfis, Release Week, Manuais) o controle é de interface.
 
 #### Scenario: Helper responde pelas permissões do perfil
 - **WHEN** o cliente consulta `.can(modulo, acao)` para o usuário da sessão
@@ -149,3 +173,8 @@ server-side (Gestão de Usuários e Auditoria) a imposição é **também** no s
 #### Scenario: Clonagem e itens respeitam a matriz na interface
 - **WHEN** o perfil não concede `release-week`/`clonar` ou `release-week`/`visualizar_itens`
 - **THEN** a ação "Clonar" e a flag de itens não são exibidas na tela de Release Week
+
+#### Scenario: Manuais respeitam a matriz na interface
+- **WHEN** o perfil não concede `manuais`/`clonar`, `manuais`/`visualizar_itens` ou `manuais`/`importar`
+- **THEN** a ação "Clonar", a flag de itens e o ícone de importação não são exibidos na tela de
+  Manuais Mensais

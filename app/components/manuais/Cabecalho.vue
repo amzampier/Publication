@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // Cabeçalho da tela de Manuais Mensais: tile, menu "Relatórios" (PDF/CSV sobre
-// o conjunto vigente) e ação primária "Novo Manual". A fase é frontend: as
-// exportações leem o dataset em memória (nenhuma requisição).
+// o conjunto vigente) e ação primária "Novo Manual". As exportações validam a
+// guarda `exportar` na API antes de gerar o arquivo.
 import { ref, onMounted, onUnmounted } from 'vue'
 import { BookOpen, Plus, NotebookText, FileDown, FileSpreadsheet, ChevronDown } from '@lucide/vue'
 import { useManuaisModelo } from './useManuaisModelo'
 import { gerarPdfManuais } from './gerarPdfManuais'
+import { useApiFetch } from '../../composables/useApiFetch'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useToast } from '../../composables/useToast'
 import { usePermissions } from '../../composables/usePermissions'
@@ -57,31 +58,38 @@ const descreverDestaques = (linha: (typeof linhas.value)[number]): string => {
   return itens.join(' · ') || '—'
 }
 
-const exportarCsv = () => {
+const exportarCsv = async () => {
   menuAberto.value = false
   if (semDados()) return
-  const cabecalho = ['Código', 'Título', 'Mês/Ano', 'Status', 'Autor', 'Publicação', 'Destaques']
-  const linhasCsv = linhas.value.map((linha) =>
-    [
-      linha.codigo,
-      linha.titulo,
-      linha.mesAno,
-      linha.status,
-      linha.autor,
-      linha.dataPublicacao,
-      descreverDestaques(linha)
-    ]
-      .map(escapar)
-      .join(';')
-  )
-  const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhasCsv].join('\r\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'manuais-mensais.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+  try {
+    // Guarda server-side: exige manuais/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/manuais', { query: { exportar: '1' } })
+    const cabecalho = ['Código', 'Título', 'Mês/Ano', 'Status', 'Autor', 'Publicação', 'Destaques']
+    const linhasCsv = linhas.value.map((linha) =>
+      [
+        linha.codigo,
+        linha.titulo,
+        linha.mesAno,
+        linha.status,
+        linha.autor,
+        linha.dataPublicacao,
+        descreverDestaques(linha)
+      ]
+        .map(escapar)
+        .join(';')
+    )
+    const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhasCsv].join('\r\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'manuais-mensais.csv'
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (erro) {
+    console.error('[csv] falha ao exportar manuais:', erro)
+    toast.danger('Exportação', 'Não foi possível exportar os Manuais. Tente novamente.')
+  }
 }
 
 const relacaoPdf = async () => {
@@ -89,6 +97,8 @@ const relacaoPdf = async () => {
   if (semDados()) return
   exportando.value = true
   try {
+    // Guarda server-side: exige manuais/exportar antes de gerar o arquivo.
+    await useApiFetch('/api/manuais', { query: { exportar: '1' } })
     await gerarPdfManuais({
       manuais: linhas.value,
       logoPreview: previewLoginGlobal.value

@@ -351,6 +351,7 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`); `logomarcas` exige `configuracoes-globais`/`alterar`, `avatares` é session-only.
 - `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
 - `GET/POST/PUT/DELETE /api/release-week`, `PUT /api/release-week/:id/publicar|arquivar`, `GET /api/release-week/:id/itens` e `POST /api/release-week/importar` — Release Week (código `RW-XX/AAAA` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `release-week`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
+- `GET/POST/PUT/DELETE /api/manuais`, `PUT /api/manuais/:id/publicar|arquivar`, `GET /api/manuais/:id/itens` e `POST /api/manuais/importar` — Manuais Mensais (código `MAN-XX/AAAA` gerado pelo servidor, `arquivada` soft, datas históricas, itens somente leitura e importação `.xlsx`); exigem `manuais`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 
 ---
 
@@ -511,10 +512,15 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 ### 4.6. Integridade referencial do conteúdo público (roadmap)
 
 O schema já declara as tabelas do conteúdo público (`release_week`, `projetos_escopo`,
-`manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`), ainda **sem UI/API**. Ao implementar a
-**exclusão de releases**, atenção à interação de chaves estrangeiras:
+`manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`). `release_week` e `manuais_mensal`
+já têm UI/API; `projetos_escopo` ainda está **sem UI/API**. Ao implementar a **exclusão de
+releases/manuais**, atenção à interação de chaves estrangeiras:
 
 - `entregas_itens.release_id → release_week(id)` é `ON DELETE CASCADE`: excluir a release apaga os itens.
+- `entregas_itens.manual_id → manuais_mensal(id)` é `ON DELETE SET NULL`: a API de Manuais bloqueia a
+  exclusão de um catálogo com itens vinculados (o item não fica órfão).
+- `anexos_midias.manual_id → manuais_mensal(id)` é `ON DELETE CASCADE`: a API de Manuais também
+  bloqueia a exclusão quando há anexos.
 - `historico_esteira_revisao.entrega_item_id → entregas_itens(id)` é `ON DELETE RESTRICT`: enquanto
   houver histórico daquele item, o `CASCADE` dos itens é **bloqueado** (erro `1451`).
 

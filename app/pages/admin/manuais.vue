@@ -2,7 +2,6 @@
 import { nextTick, onMounted, ref } from 'vue'
 import { useToast } from '../../composables/useToast'
 import {
-  motivoBloqueioExclusao,
   useManuaisModelo,
   type LinhaManual,
   type ManuaisModelo
@@ -14,18 +13,23 @@ const { toast } = useToast()
 const {
   manuais,
   carregarManuais,
-  itensDoManual,
   clonarPreenchimento,
   publicar,
   arquivar,
   excluir
 } = useManuaisModelo()
 
-// A fase frontend opera sobre o dataset em memória; não há espera de rede na
-// montagem. O `carregarManuais` mantém o mesmo contrato dos módulos de API e
-// será o ponto de troca para `GET /api/manuais` na fase backend.
-onMounted(() => {
-  void carregarManuais()
+const carregando = ref(true)
+
+onMounted(async () => {
+  const ok = await carregarManuais()
+  carregando.value = false
+  if (!ok) {
+    toast.danger(
+      'Manuais Mensais',
+      'Não foi possível carregar os manuais. Recarregue a página e tente novamente.'
+    )
+  }
 })
 
 // Coordenação da página (molde Release Week): a página é dona do estado dos
@@ -79,15 +83,22 @@ const abrirPublicacao = (linha: LinhaManual) => {
   publicarAberto.value = true
 }
 
-const confirmarPublicacao = () => {
+const mensagemErro = (erro: unknown): string =>
+  (erro as { data?: { statusMessage?: string }; statusMessage?: string } | null)?.data
+    ?.statusMessage ??
+  (erro as { statusMessage?: string } | null)?.statusMessage ??
+  'Não foi possível concluir a operação.'
+
+const confirmarPublicacao = async () => {
   const alvo = manualPublicar.value
   if (!alvo) return
   publicarAberto.value = false
   manualPublicar.value = null
-  if (publicar(alvo.id)) {
+  try {
+    await publicar(alvo.id)
     toast.success('Manuais Mensais', 'Manual publicado com sucesso.')
-  } else {
-    toast.danger('Manuais Mensais', 'Não foi possível publicar o manual.')
+  } catch (erro) {
+    toast.danger('Manuais Mensais', mensagemErro(erro))
   }
 }
 
@@ -99,15 +110,16 @@ const abrirArquivamento = (linha: LinhaManual) => {
   arquivarAberto.value = true
 }
 
-const confirmarArquivamento = () => {
+const confirmarArquivamento = async () => {
   const alvo = manualArquivar.value
   if (!alvo) return
   arquivarAberto.value = false
   manualArquivar.value = null
-  if (arquivar(alvo.id)) {
+  try {
+    await arquivar(alvo.id)
     toast.success('Manuais Mensais', 'Manual arquivado com sucesso.')
-  } else {
-    toast.danger('Manuais Mensais', 'Não foi possível arquivar o manual.')
+  } catch (erro) {
+    toast.danger('Manuais Mensais', mensagemErro(erro))
   }
 }
 
@@ -115,23 +127,20 @@ const exclusaoAberta = ref(false)
 const manualExcluir = ref<LinhaManual | null>(null)
 
 const abrirExclusao = (linha: LinhaManual) => {
-  const registro = resolver(linha)
-  if (!registro) return
-  const motivo = motivoBloqueioExclusao(registro, itensDoManual(registro.id))
-  if (motivo) {
-    toast.danger('Manuais Mensais', motivo)
+  if (linha.itensCount > 0) {
+    toast.danger('Manuais Mensais', 'Manual com itens vinculados não pode ser excluído.')
     return
   }
   manualExcluir.value = linha
   exclusaoAberta.value = true
 }
 
-const confirmarExclusao = () => {
+const confirmarExclusao = async () => {
   const alvo = manualExcluir.value
   if (!alvo) return
   exclusaoAberta.value = false
   manualExcluir.value = null
-  const resultado = excluir(alvo.id)
+  const resultado = await excluir(alvo.id)
   if (resultado.ok) {
     toast.success('Manuais Mensais', 'Manual excluído com sucesso.')
     // O gatilho (menu) saiu do DOM com a linha: devolve o foco à busca.
@@ -141,17 +150,14 @@ const confirmarExclusao = () => {
   }
 }
 
-const aoImportar = () => {
-  toast.info(
-    'Importação',
-    'A importação de Manuais Mensais estará disponível na fase backend.'
-  )
-}
+const importarAberto = ref(false)
 </script>
 
 <template>
   <div class="p-4 sm:p-6 lg:p-8">
-    <div class="mx-auto max-w-7xl">
+    <UiLoading v-if="carregando" message="Carregando Manuais Mensais…" />
+
+    <div v-else class="mx-auto max-w-7xl">
       <ManuaisCabecalho @novo="abrirNovo" />
 
       <ManuaisKpis class="mt-6" />
@@ -164,11 +170,13 @@ const aoImportar = () => {
         @publicar="abrirPublicacao"
         @arquivar="abrirArquivamento"
         @excluir="abrirExclusao"
-        @importar="aoImportar"
+        @importar="importarAberto = true"
         @open-filters="filtrosAbertos = true"
       />
 
       <ManuaisFiltros v-model="filtrosAbertos" />
+
+      <ManuaisImportar v-model="importarAberto" />
 
       <ManuaisFormulario
         v-model="modalAberto"

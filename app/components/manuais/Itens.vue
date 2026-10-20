@@ -22,7 +22,7 @@ const carregando = computed(() => itensCarregando.value[props.manualId] === true
 const erro = computed(() => itensErro.value[props.manualId] ?? null)
 
 const recarregar = () => {
-  void carregarItens(props.manualId)
+  void carregarItens(props.manualId, true)
 }
 
 onMounted(() => {

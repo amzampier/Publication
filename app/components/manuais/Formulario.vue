@@ -115,7 +115,7 @@ const validar = (): boolean => {
   return true
 }
 
-const salvar = () => {
+const salvar = async () => {
   if (!validar()) return
   salvando.value = true
   try {
@@ -129,13 +129,32 @@ const salvar = () => {
       destaqueSemana: rascunho.value.destaqueSemana
     }
     if (props.modo === 'editar' && props.manual) {
-      atualizar(props.manual.id, dados)
+      await atualizar(props.manual.id, dados)
       toast.success('Manuais Mensais', 'Manual atualizado com sucesso.')
     } else {
-      adicionar(dados)
+      await adicionar(dados)
       toast.success('Manuais Mensais', 'Manual incluído com sucesso.')
     }
     emit('update:modelValue', false)
+  } catch (erro) {
+    const e = erro as {
+      statusCode?: number
+      statusMessage?: string
+      data?: {
+        statusMessage?: string
+        erros?: Partial<Record<CampoManual, string>>
+      }
+    }
+    const mensagem =
+      e.data?.statusMessage ?? e.statusMessage ?? 'Não foi possível salvar o manual.'
+    if ((e.statusCode === 400 || e.statusCode === 409) && e.data?.erros) {
+      erros.value = { ...erros.value, ...e.data.erros }
+      const ordem: CampoManual[] = ['titulo', 'mes', 'ano']
+      const primeiro = ordem.find((campo) => erros.value[campo])
+      if (primeiro) focarCampo(primeiro)
+    } else {
+      toast.danger('Manuais Mensais', mensagem)
+    }
   } finally {
     salvando.value = false
   }

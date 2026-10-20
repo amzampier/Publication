@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   calcularKpis,
+  dataPublicacaoAoPublicar,
+  ehDataIso,
   filtrarManuais,
   formatarData,
   gerarCodigo,
@@ -111,6 +113,11 @@ describe('guarda de exclusão', () => {
     expect(podeExcluirManual(manual(), [item()])).toBe(false)
   })
 
+  it('bloqueia catálogo com anexos', () => {
+    expect(motivoBloqueioExclusao(manual(), [], 1)).toContain('anexos')
+    expect(podeExcluirManual(manual(), [], 1)).toBe(false)
+  })
+
   it('permite catálogo sem vínculos', () => {
     expect(motivoBloqueioExclusao(manual(), [])).toBeNull()
     expect(podeExcluirManual(manual(), [])).toBe(true)
@@ -194,5 +201,13 @@ describe('helpers de domínio', () => {
   it('formata datas civis sem deslocamento de fuso', () => {
     expect(formatarData('2026-10-12')).toBe('12/10/2026')
     expect(formatarData('')).toBe('—')
+  })
+
+  it('valida datas civis e preserva a publicação histórica', () => {
+    expect(ehDataIso('2026-09-28')).toBe(true)
+    expect(ehDataIso('2026-02-30')).toBe(false)
+    expect(ehDataIso('28/09/2026')).toBe(false)
+    expect(dataPublicacaoAoPublicar('2026-09-28')).toBe('2026-09-28')
+    expect(ehDataIso(dataPublicacaoAoPublicar(''))).toBe(true)
   })
 })

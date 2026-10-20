@@ -254,7 +254,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   `entidade_id` = id da entidade afetada (`''` quando não aplicável); `acao` guarda o **tipo**
   (é o que mantém o badge da tabela íntegro); o texto humano vai em `detalhes`.
 
-### 6.2 Rotas auditadas (23 pontos)
+### 6.2 Rotas auditadas (29 pontos)
 
 | Rota | acao | recurso |
 | :--- | :--- | :--- |
@@ -273,6 +273,12 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 | `PUT /api/softwares/:codigo` | Alteração | Softwares |
 | `DELETE /api/softwares/:codigo` | Exclusão | Softwares |
 | `POST /api/softwares/importar` | Inclusão (1 evento com a contagem) | Softwares |
+| `POST /api/manuais` | Inclusão | Manuais Mensais |
+| `PUT /api/manuais/:id` | Alteração | Manuais Mensais |
+| `PUT /api/manuais/:id/publicar` | Homologação | Manuais Mensais |
+| `PUT /api/manuais/:id/arquivar` | Alteração | Manuais Mensais |
+| `DELETE /api/manuais/:id` | Exclusão | Manuais Mensais |
+| `POST /api/manuais/importar` | Inclusão (1 evento com a contagem) | Manuais Mensais |
 | `PUT /api/configuracoes` | Alteração | Configurações Globais |
 | `POST /api/uploads` | Inclusão | Logomarcas |
 | `POST /api/convite` | Inclusão | Usuários |
