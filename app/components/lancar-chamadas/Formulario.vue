@@ -12,6 +12,7 @@ import {
 } from '@lucide/vue'
 import type { SegmentedOption } from '../ui/Segmented.vue'
 import { useToast } from '../../composables/useToast'
+import { useApiFetch } from '../../composables/useApiFetch'
 import { useLancarChamadasModelo } from './useLancarChamadasModelo'
 import {
   IMPACTOS_CHAMADA,
@@ -20,7 +21,7 @@ import {
   TIPOS_CHAMADA,
   derivarOrigem,
   formatarDataHora,
-  proximaSegunda,
+  hojeIso,
   validarChamada,
   type CampoChamada,
   type ChamadaModelo,
@@ -78,6 +79,7 @@ const camposPorEtapa: CampoChamada[][] = [
 ]
 
 const etapa = ref(0)
+const salvando = ref(false)
 
 interface Rascunho {
   chamada: string
@@ -105,7 +107,7 @@ interface Rascunho {
 const rascunhoVazio = (): Rascunho => ({
   chamada: '',
   titulo: '',
-  dataLancamento: proximaSegunda(),
+  dataLancamento: hojeIso(),
   dataLiberacao: '',
   releaseId: '',
   projetoId: '',
@@ -168,19 +170,19 @@ const autorExibicao = computed(() =>
 const origemDerivada = computed(() => derivarOrigem(rascunho.value))
 
 const opcoesRelease = computed(() =>
-  catalogo.releases.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.releases.map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesProjeto = computed(() =>
-  catalogo.projetos.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.projetos.map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesManual = computed(() =>
-  catalogo.manuais.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.manuais.map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesSoftware = computed(() =>
-  catalogo.softwares.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.softwares.map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesParceiro = computed(() =>
-  catalogo.parceiros.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.parceiros.map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 
 const opcoesTipo: SegmentedOption[] = TIPOS_CHAMADA.map((tipo) => ({
@@ -221,10 +223,6 @@ const definirData = (campo: 'dataLancamento' | 'dataLiberacao', data: Date | nul
 
 const selecionarRelease = (valor: string) => {
   rascunho.value.releaseId = valor
-  const release = catalogo.releases.find((opcao) => opcao.id === valor)
-  if (release?.dataPublicacao) {
-    rascunho.value.dataLiberacao = release.dataPublicacao
-  }
 }
 
 const focarCampo = (campo: string) => {
@@ -244,7 +242,7 @@ const irParaEtapa = (indice: number) => {
   })
 }
 
-const validar = (): ReturnType<typeof validarChamada> => {
+const validar = (campos?: CampoChamada[]): ReturnType<typeof validarChamada> => {
   const resultado = validarChamada(
     {
       ...rascunho.value,
@@ -252,19 +250,22 @@ const validar = (): ReturnType<typeof validarChamada> => {
     chamadas.value,
     props.chamada?.id
   )
-  erros.value = resultado.erros
+  erros.value = campos
+    ? Object.fromEntries(
+        Object.entries(resultado.erros).filter(([campo]) =>
+          campos.includes(campo as CampoChamada)
+        )
+      )
+    : resultado.erros
   return resultado
 }
 
 const avancar = () => {
-  const resultado = validar()
-  const campo = camposPorEtapa[etapa.value]?.find((item) => erros.value[item])
+  const campos = camposPorEtapa[etapa.value] ?? []
+  validar(campos)
+  const campo = campos.find((item) => erros.value[item])
   if (campo) {
     focarCampo(campo)
-    return
-  }
-  if (resultado.primeiroErro && etapa.value === etapas.length - 1) {
-    focarCampo(resultado.primeiroErro)
     return
   }
   irParaEtapa(Math.min(etapa.value + 1, etapas.length - 1))
@@ -274,7 +275,44 @@ const voltar = () => {
   irParaEtapa(Math.max(0, etapa.value - 1))
 }
 
-const salvar = () => {
+const mensagemErro = (erro: unknown): string => {
+  const e = erro as {
+    statusMessage?: string
+    data?: { statusMessage?: string }
+  }
+  return e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível salvar a chamada.'
+}
+
+const enviarImagem = async (dataUrl: string, dataLancamento: string): Promise<string> => {
+  const match = /^data:(image\/(?:png|jpeg|webp|gif));base64,(.+)$/i.exec(dataUrl)
+  if (!match) throw new Error('Formato de imagem não suportado.')
+  const mime = match[1]!
+  const bytes = Uint8Array.from(atob(match[2]!), (c) => c.charCodeAt(0))
+  const arquivo = new File([new Blob([bytes], { type: mime })], 'imagem', { type: mime })
+  const dados = new FormData()
+  dados.append('pasta', 'chamadas')
+  dados.append('ano', dataLancamento.slice(0, 4))
+  dados.append('mes', dataLancamento.slice(5, 7))
+  dados.append('file', arquivo)
+  const resposta = await useApiFetch<{ url: string }>('/api/uploads', {
+    method: 'POST',
+    body: dados
+  })
+  return resposta.url
+}
+
+const prepararImagens = async (imagens: string[], dataLancamento: string): Promise<string[]> => {
+  const resultado: string[] = []
+  for (const imagem of imagens) {
+    resultado.push(
+      imagem.startsWith('data:') ? await enviarImagem(imagem, dataLancamento) : imagem
+    )
+  }
+  return resultado
+}
+
+const salvar = async () => {
+  if (salvando.value) return
   const resultado = validar()
   if (resultado.primeiroErro) {
     const indice = camposPorEtapa.findIndex((campos) =>
@@ -305,17 +343,25 @@ const salvar = () => {
     linkManual: rascunho.value.linkManual.trim(),
     linkVideo: rascunho.value.linkVideo.trim(),
     imagens: [...rascunho.value.imagens],
-    tags: rascunho.value.tags.map((tag) => tag.trim()).filter(Boolean),
+    tags: rascunho.value.tags.map((tag) => tag.trim()).filter(Boolean)
   }
 
-  if (props.modo === 'editar' && props.chamada) {
-    atualizar(props.chamada.id, entrada)
-    toast.success('Lançar as Chamadas', 'Chamada atualizada com sucesso.')
-  } else {
-    adicionar(entrada)
-    toast.success('Lançar as Chamadas', 'Chamada incluída com sucesso.')
+  salvando.value = true
+  try {
+    entrada.imagens = await prepararImagens(entrada.imagens, entrada.dataLancamento)
+    if (props.modo === 'editar' && props.chamada) {
+      await atualizar(props.chamada.id, entrada)
+      toast.success('Lançar as Chamadas', 'Chamada atualizada com sucesso.')
+    } else {
+      await adicionar(entrada)
+      toast.success('Lançar as Chamadas', 'Chamada incluída com sucesso.')
+    }
+    emit('update:modelValue', false)
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
+  } finally {
+    salvando.value = false
   }
-  emit('update:modelValue', false)
 }
 
 const cancelar = () => emit('update:modelValue', false)
@@ -462,9 +508,9 @@ watch(
             <UiDatePicker
               :model-value="paraData(rascunho.dataLiberacao)"
               label="Data de liberação"
-              helper-text="Preenchida pela publicação da Release vinculada; se necessário, ajuste."
+              helper-text="Preenchida automaticamente na aprovação com a publicação da Release vinculada."
               :error="erros.dataLiberacao"
-              @update:model-value="definirData('dataLiberacao', $event)"
+              disabled
             />
           </div>
           <UiInput label="Status" :model-value="statusAtual" disabled />
@@ -478,16 +524,6 @@ watch(
         :icon="Building2"
       >
         <div class="grid gap-x-4 gap-y-[11px] sm:grid-cols-2">
-          <div data-campo="softwareId">
-            <UiSelect
-              :model-value="rascunho.softwareId"
-              label="Software"
-              placeholder="Selecione o software"
-              :options="opcoesSoftware"
-              :error="erros.softwareId"
-              @update:model-value="rascunho.softwareId = String($event)"
-            />
-          </div>
           <div data-campo="parceiroId">
             <UiSelect
               :model-value="rascunho.parceiroId"
@@ -498,16 +534,26 @@ watch(
               @update:model-value="rascunho.parceiroId = String($event)"
             />
           </div>
+          <div data-campo="softwareId">
+            <UiSelect
+              :model-value="rascunho.softwareId"
+              label="Software"
+              placeholder="Selecione o software"
+              :options="opcoesSoftware"
+              :error="erros.softwareId"
+              @update:model-value="rascunho.softwareId = String($event)"
+            />
+          </div>
           <UiInput
             v-model="rascunho.modulo"
             data-campo="modulo"
-            label="Módulo"
+            label="Menu"
             placeholder="Ex.: Fiscal, Financeiro, WMS"
             :error="erros.modulo"
           />
           <UiInput
             v-model="rascunho.menuFuncionalidade"
-            label="Menu / funcionalidade"
+            label="Funcionalidade"
             placeholder="Ex.: Notas fiscais, Expedição"
           />
           <UiSegmented
@@ -588,7 +634,13 @@ watch(
           <UiButton v-if="etapa < etapas.length - 1" variant="primary" @click="avancar">
             Próximo
           </UiButton>
-          <UiButton v-else variant="primary" @click="salvar">
+          <UiButton
+            v-else
+            variant="primary"
+            :loading="salvando"
+            :disabled="salvando"
+            @click="salvar"
+          >
             <template #leftIcon><Save class="h-4 w-4" /></template>
             Salvar Chamada
           </UiButton>

@@ -1230,7 +1230,7 @@ const secoes = [
             </div>
             <div>
               <h2 class="text-base font-bold text-slate-900">6. Upload de Arquivos, Avatares & Logos (UploadFiles & CameraWeb)</h2>
-              <p class="text-xs text-slate-500">Área com bordas pontilhadas para arrastar ou clicar; sem faixa de rodapé — no canto inferior direito ficam só os ícones (incluir, foto e excluir), aparecendo no hover; o nome do arquivo aparece abaixo da prévia. O modo <b>lista separada</b> mostra os arquivos em cards acima da caixa; no modo single-file a caixa some enquanto houver arquivo selecionado (volta ao remover) e no modo múltiplo permanece para acrescentar mais.</p>
+              <p class="text-xs text-slate-500">Área com bordas pontilhadas para arrastar ou clicar; ao arrastar sobre qualquer ponto do componente, um overlay mostra “Solte os arquivos aqui”. Sem faixa de rodapé — no canto inferior direito ficam só os ícones (incluir, foto e excluir), aparecendo no hover; o nome do arquivo aparece abaixo da prévia. O modo <b>lista separada</b> mostra os arquivos em cards acima da caixa; no modo single-file a caixa some enquanto houver arquivo selecionado (volta ao remover) e no modo múltiplo permanece para acrescentar mais.</p>
             </div>
           </div>
 
@@ -1283,7 +1283,7 @@ const secoes = [
               <UiUploadFiles
                 class="mt-2"
                 lista-separada
-                rotulo="Clique para selecionar arquivos"
+                rotulo="Arraste o arquivo aqui ou clique para selecionar"
                 dica="Formatos aceitos: .pdf, .xlsx"
                 :mostrar-camera="false"
               />

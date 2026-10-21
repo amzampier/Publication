@@ -254,7 +254,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   `entidade_id` = id da entidade afetada (`''` quando não aplicável); `acao` guarda o **tipo**
   (é o que mantém o badge da tabela íntegro); o texto humano vai em `detalhes`.
 
-### 6.2 Rotas auditadas (35 pontos)
+### 6.2 Rotas auditadas (42 pontos)
 
 | Rota | acao | recurso |
 | :--- | :--- | :--- |
@@ -279,6 +279,13 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 | `PUT /api/manuais/:id/arquivar` | Alteração | Manuais Mensais |
 | `DELETE /api/manuais/:id` | Exclusão | Manuais Mensais |
 | `POST /api/manuais/importar` | Inclusão (1 evento com a contagem) | Manuais Mensais |
+| `POST /api/lancar-chamadas` | Inclusão | Lançar as Chamadas |
+| `PUT /api/lancar-chamadas/:id` | Alteração | Lançar as Chamadas |
+| `PUT /api/lancar-chamadas/:id/aprovar` | Homologação | Lançar as Chamadas |
+| `PUT /api/lancar-chamadas/:id/desaprovar` | Alteração | Lançar as Chamadas |
+| `PUT /api/lancar-chamadas/:id/recusar` | Alteração | Lançar as Chamadas |
+| `DELETE /api/lancar-chamadas/:id` | Exclusão | Lançar as Chamadas |
+| `POST /api/lancar-chamadas/importar` | Inclusão (1 evento com a contagem) | Lançar as Chamadas |
 | `POST /api/escopo-projetos` | Inclusão | Escopo de Projetos |
 | `PUT /api/escopo-projetos/:id` | Alteração | Escopo de Projetos |
 | `PUT /api/escopo-projetos/:id/publicar` | Homologação | Escopo de Projetos |
@@ -286,7 +293,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 | `DELETE /api/escopo-projetos/:id` | Exclusão | Escopo de Projetos |
 | `POST /api/escopo-projetos/importar` | Inclusão (1 evento com a contagem) | Escopo de Projetos |
 | `PUT /api/configuracoes` | Alteração | Configurações Globais |
-| `POST /api/uploads` | Inclusão | Logomarcas |
+| `POST /api/uploads` | Inclusão | Logomarcas / Avatares / Logos / Lançar as Chamadas |
 | `POST /api/convite` | Inclusão | Usuários |
 | `POST /api/seguranca/liberar` | Alteração | Rate Limits |
 | `POST /api/auth/login` (sucesso) | **Acesso** | Autenticação |
@@ -303,7 +310,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 - **Tentativas de credencial inválida ficam fora da trilha:** vão exclusivamente ao log
   `seguranca_eventos_login` (aba Segurança de Configurações Globais) — os dois logs têm
   papéis distintos (segurança operacional × governança).
-- `Homologação` permanece no enum/seed — não há rota de esteira ainda. O RBAC por módulo
+- `Homologação` cobre a aprovação de chamadas (`PUT /api/lancar-chamadas/:id/aprovar`). O RBAC por módulo
   (`requirePermission`) já exige a permissão nas rotas administrativas (ver `docs/02` §3.5).
 
 ### 6.3 `GET /api/auditoria` — `server/api/auditoria/index.get.ts`

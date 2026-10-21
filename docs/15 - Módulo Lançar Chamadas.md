@@ -1,200 +1,144 @@
-# 15 - Módulo Lançar Chamadas — Área Administrativa
+# 15 - Módulo Lançar Chamadas - Área Administrativa
 
-**Versão:** 1.0.0 — **Data:** 2026-10-21 — **Idioma:** Português do Brasil (pt-BR)
-**Escopo:** tela **fase frontend** do módulo **Lançar as Chamadas** — listagem, quatro KPIs, busca,
-filtros (incluindo períodos), cadastro/edição em wizard, detalhes, aprovação, exclusão condicionada e
-relatórios PDF/CSV sobre
-`entregas_itens`, com dataset em memória e catálogos locais. **Não há backend/API de itens nesta
-fase.**
-**Arquivos-fonte:** [`app/pages/admin/lancar-chamadas.vue`](../app/pages/admin/lancar-chamadas.vue) ·
-[`app/components/lancar-chamadas/`](../app/components/lancar-chamadas) ·
-[`shared/lancar-chamadas.ts`](../shared/lancar-chamadas.ts) ·
-[`app/components/ui/TagInput.vue`](../app/components/ui/TagInput.vue)
-**Design system:** [`/design`](../app/pages/design.vue) — `UiDataTable`, `UiModal`, `UiModalSection`,
-`UiInput`, `UiSelect`, `UiDatePicker`, `UiSegmented`, `UiTextarea`, `UiTagInput` (novo), `UiBadge`,
-`UiActionMenu`, `UiKpi`, `UiButton`, `UiTooltip`, `UiUploadFiles` e `UiLoading`.
+**Versão:** 2.0.0 - **Data:** 2026-10-21 - **Idioma:** Português do Brasil (pt-BR)
+**Escopo:** tela e backend do módulo **Lançar as Chamadas** — listagem, KPIs, busca, filtros,
+cadastro/edição em wizard, detalhes, aprovação, recusa, exclusão condicionada, importação XLSX,
+upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistência no MariaDB.
+**Arquivos-fonte:** `app/pages/admin/lancar-chamadas.vue`,
+`app/components/lancar-chamadas/`, `server/utils/lancar-chamadas.ts`,
+`server/api/lancar-chamadas/`, `shared/lancar-chamadas.ts`.
+**Design system:** `app/pages/design.vue` — `UiDataTable`, `UiModal`, `UiModalSection`, `UiInput`,
+`UiSelect`, `UiDatePicker`, `UiSegmented`, `UiTextarea`, `UiTagInput`, `UiBadge`, `UiActionMenu`,
+`UiKpi`, `UiButton`, `UiTooltip`, `UiUploadFiles` e `UiLoading`.
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md)
-**Autoridade de comportamento:** `openspec/specs/lancar-chamadas` e
-`openspec/specs/design-system/tag-input` (change `construir-lancar-chamadas-frontend`)
+**Autoridade de comportamento:** `openspec/specs/lancar-chamadas`, `openspec/specs/uploads`,
+`openspec/specs/perfis-acesso` e `openspec/specs/autorizacao-rbac`.
 
-> Este documento é a referência da tela `/admin/lancar-chamadas` na fase frontend. Em caso de
-> divergência com a spec, a spec prevalece.
-
----
-
-## Sumário
-
-1. [Visão geral e rota](#1-visão-geral-e-rota)
-2. [Estrutura da página (componentização)](#2-estrutura-da-página-componentização)
-3. [Componentes de domínio](#3-componentes-de-domínio)
-4. [Modelo de dados e mapa de `entregas_itens`](#4-modelo-de-dados-e-mapa-de-entregas_itens)
-5. [Contrato futuro da API](#5-contrato-futuro-da-api)
-6. [Fluxos](#6-fluxos)
-7. [Navegação, RBAC e auditoria](#7-navegação-rbac-e-auditoria)
-8. [Validações e regras de negócio](#8-validações-e-regras-de-negócio)
-9. [Relatórios PDF/CSV](#9-relatórios-pdfcsv)
-10. [Design system](#10-design-system)
-11. [Documentação relacionada](#11-documentação-relacionada)
-12. [Verificação](#12-verificação)
-13. [Pendências e próximos passos](#13-pendências-e-próximos-passos)
+> Em caso de divergência com a spec, a spec prevalece.
 
 ---
 
 ## 1. Visão geral e rota
 
 - **Rota:** `/admin/lancar-chamadas` → `app/pages/admin/lancar-chamadas.vue` com
-  `definePageMeta({ layout: 'admin' })` — herda header + sidebar de `/admin/**`.
-- **Navegação:** o item **Lançar as Chamadas** da sessão **Movimentos** declara
-  `to: '/admin/lancar-chamadas'` em `app/config/navigation.ts` e exibe `aria-current="page"` na rota.
-- **Modelo de dados:** a tela representa `entregas_itens`, a tabela única de itens de Release Week
-  (`release_id`), Escopo de Projetos (`projeto_id`) e Manuais (`manual_id`), com FKs adicionais para
-  `softwares(codigo)`, `parceiros(id)` e `usuarios(id)`.
-- **Fase frontend:** o conjunto de chamadas e os catálogos vivem em memória (`useState`), sem API de
-  itens, sem migration, sem seed de banco e sem persistência. Recarregar a página restaura o dataset
-  de demonstração.
-- **O que é editável:** vínculos/origem, identificação, classificação (incluindo tags), conteúdo,
-  título do manual, links e imagens. O **status** nasce `Revisar` e só muda pela ação
-  **Aprovar** (→ `Aprovado`); a edição do status pertence à Esteira de Revisão. O campo **Situação**
-  não é exibido no formulário — o valor existente é preservado e novas chamadas usam
-  `Desenvolvimento` internamente.
-- **O que não existe nesta fase:** **Arquivar** (não há coluna `arquivada` em `entregas_itens`),
-  **Publicar** como ação (o fluxo desta tela é `Revisar` → `Aprovado`/`Recusado`) e **Importar XLSX** (o catálogo
-  RBAC do módulo não possui `importar`).
+  `definePageMeta({ layout: 'admin' })`.
+- **Navegação:** item **Lançar as Chamadas** na sessão **Movimentos**, com `aria-current="page"`.
+- **Persistência:** tabela `entregas_itens` (itens de Release Week, Escopo de Projetos e Manuais),
+  com FKs para `release_week`, `projetos_escopo`, `manuais_mensal`, `softwares(codigo)`,
+  `parceiros(id)` e `usuarios(id)`.
+- **Status:** `Revisar` (novo), `Aprovado` (aprovação), `Recusado` (recusa) e `Publicar` (legado).
+  A tela cria em `Revisar`; aprovar/recusar exige esse status. Uma chamada `Aprovado` pode ser
+  desaprovada e voltar para `Revisar`. A edição do status pertence à Esteira de Revisão.
+- **Situação:** `Desenvolvimento`, `Homologação` ou `Implantado`; novas chamadas usam
+  `Desenvolvimento` e o formulário não expõe o campo.
+- **Fora de escopo:** Arquivar, Área Pública, `anexos_midias`, importação de imagens pela planilha e
+  limpeza de uploads órfãos de writes cancelados.
 
-## 2. Estrutura da página (componentização)
+## 2. Estrutura da página
 
 ```
 admin/lancar-chamadas.vue                         (page - layout admin + coordenação)
-├── <UiLoading v-if="carregando" />                → overlay do primeiro acesso/F5
-├── <LancarChamadasCabecalho @novo />              → tile Megaphone #f59e0b + "Relatórios" + "Nova Chamada"
-├── <LancarChamadasKpis class="mt-6" />            → 4 UiKpi por status
-├── <LancarChamadasTabela
-│       @detalhes @editar @aprovar @recusar @excluir
-│       @open-filters />                            → busca + Filtros + UiDataTable + ações
-├── <LancarChamadasFiltros v-model="filtrosAbertos" /> → modal de filtros (inclui períodos)
-├── <LancarChamadasFormulario v-model :modo :chamada /> → wizard de cadastro/edição
-├── <LancarChamadasDetalhes v-model :chamada />     → detalhes somente leitura
-├── <LancarChamadasAprovar v-model :chamada @confirmar />
-├── <LancarChamadasRecusar v-model :chamada @confirmar />
-└── <LancarChamadasExclusao v-model :chamada @confirmar />
+├── <UiLoading v-if="carregando" />               → primeiro acesso/F5
+├── <LancarChamadasCabecalho @novo />             → Relatórios + Nova Chamada
+├── <LancarChamadasKpis />                        → 4 UiKpi por status
+├── <LancarChamadasTabela ... />                  → busca + filtros + UiDataTable + ações
+├── <LancarChamadasFiltros v-model />             → filtros e períodos
+├── <LancarChamadasImportar v-model />            → pré-visualização e importação XLSX
+├── <LancarChamadasFormulario v-model />          → wizard de cadastro/edição
+├── <LancarChamadasDetalhes v-model />            → detalhes somente leitura
+├── <LancarChamadasAprovar v-model />             → confirmação
+├── <LancarChamadasDesaprovar v-model />          → confirmação
+├── <LancarChamadasRecusar v-model />             → confirmação
+└── <LancarChamadasExclusao v-model />            → confirmação
 ```
 
-- **Estado de coordenação:** `carregando`, `filtrosAbertos`, `formAberto`/`modo`/`chamadaEditar`,
-  `detalhesAberto`/`chamadaDetalhes`, `aprovarAberto`/`chamadaAprovar`,
-  `recusarAberto`/`chamadaRecusar` e `exclusaoAberta`/`chamadaExcluir`.
-- **Estado de domínio:** `useLancarChamadasModelo` mantém `chamadas`, `busca`, `filtros`, catálogos,
-  derivados e ações.
-- **Loading:** no primeiro acesso/F5 a página exibe `UiLoading` ("Carregando chamadas…") enquanto o
-  seed é montado; falha (não esperada) gera toast e segue para a listagem.
-- **Largura:** container `mx-auto max-w-[85rem]` (1.360 px) com `p-4 sm:p-6` e, a partir de `lg`,
-  `px-1 py-8` — cerca de 1 cm a mais de área útil em cada lado em relação ao `max-w-7xl` anterior. Em
-  telas amplas a tabela cabe sem rolagem horizontal; em telas estreitas a rolagem horizontal é
-  preservada.
+- **Estado de coordenação:** `carregando`, `filtrosAbertos`, `importarAberto`, `formAberto`/`modo`/
+  `chamadaEditar`, `detalhesAberto`, `aprovarAberto`, `desaprovarAberto`, `recusarAberto` e
+  `exclusaoAberta`.
+- **Estado de domínio:** `useLancarChamadasModelo` mantém `chamadas`, `catalogo`, `busca`, `filtros`
+  e derivados. As ações de escrita são assíncronas e atualizam o estado apenas com a resposta da API.
+- **Loading/erro:** no F5 a tela exibe `UiLoading`; falha de carga mostra toast e encerra o loading
+  sem simular dados. Falha de escrita mantém o modal aberto e exibe a mensagem do backend.
 
 ## 3. Componentes de domínio
 
 ### 3.1 `Cabecalho.vue` → `<LancarChamadasCabecalho>`
 
-- Tile `bg-brand-primary` com `Megaphone` em `#f59e0b`, título "Lançar as Chamadas" e subtítulo
-  "Lançamento e manutenção das chamadas — vínculos, classificação, conteúdo e aprovação."
-- **Nova Chamada** (`UiButton` primary + `Plus`), gated por `criar`, emite `@novo`.
-- **Relatórios** (`NotebookText` + `ChevronDown`): "Listagem em PDF" e "Exportar em CSV" do
-  conjunto vigente, gated por `download`. Lista vazia → aviso e nenhum arquivo.
+- Tile `bg-brand-primary` com `Megaphone` em `#f59e0b`, título e subtítulo do módulo.
+- **Relatórios** (`download`): PDF e CSV do conjunto vigente; antes de gerar, chama
+  `GET /api/lancar-chamadas?download=1` para validar a permissão no servidor.
+- **Nova Chamada** (`criar`): abre o wizard.
 
 ### 3.2 `Kpis.vue` → `<LancarChamadasKpis>`
 
-- Quatro `UiKpi` do conjunto filtrado, por **status**: **Total** (`#0364f7`, `Megaphone`),
-  **Revisar** (`#f59e0b`, `Clock`), **Aprovado** (`#1a9e07`, `ShieldCheck`) e
-  **Recusado** (`#be123c`, `XCircle`).
-- Recalculam com busca, filtros, inclusão, edição, aprovação, recusa e exclusão.
+- Quatro `UiKpi` do conjunto filtrado: **Total**, **Revisar**, **Aprovado** e **Recusado**.
+- Recalculam com busca, filtros e mutações.
 
 ### 3.3 `Tabela.vue` → `<LancarChamadasTabela>`
 
-- `UiDataTable` com **Chamada, Título, Software, Módulo, Tipo, Impacto, Status, Lançamento e
-  Liberação**; `defaultPageSize` 10; ordenação padrão por **chamada** e paginação no cliente.
-- **Busca** no slot `#filtersLeft` (o `showSearch` interno fica desligado) para que o termo também
-  recalcule KPIs; o badge de critérios ativos soma busca + filtros.
-- **Filtros** gated por `filtrar`; **busca** gated por `buscar`.
-- **Chamada** é um botão mono que abre os detalhes. Na coluna de ações: **Editar** (`alterar`),
-  **Excluir** (`excluir`, desabilitado com motivo) e `UiActionMenu` com **Detalhes**, **Aprovar**
-  (`publicar`) e **Recusar** (`alterar`), ambos desabilitados quando o status não é `Revisar`.
-- **Status** em `UiBadge`: `Revisar`→`pending`, `Aprovado`→`reconciled`, `Recusado`→`blocked`,
-  `Publicar`→`done`.
-- Estados vazios distintos do kit: base vazia × filtro/busca sem resultado.
+- `UiDataTable` com Chamada, Título, Software, Módulo, Tipo, Impacto, Status, Lançamento e Liberação;
+  página padrão de 10, ordenação/paginação no cliente.
+- Busca gated por `buscar`, filtros por `filtrar`; badge soma busca + filtros.
+- **Importar** (`importar`): ícone somente, imediatamente à esquerda do botão "Filtros".
+- Ações: Detalhes; Editar (`alterar`); Excluir (`excluir`, desabilitado com motivo); Aprovar
+  (`publicar`); Desaprovar (`alterar`, apenas em `Aprovado`); Recusar (`alterar`, apenas em
+  `Revisar`).
+- Status em `UiBadge`: `Revisar` → `pending`, `Aprovado` → `reconciled`, `Recusado` → `blocked`,
+  `Publicar` → `done`.
 
 ### 3.4 `Filtros.vue` → `<LancarChamadasFiltros>`
 
-- `UiModal size="lg"` com **Status, Situação, Tipo, Impacto, Software, Parceiro, Origem** e
-  **Período de lançamento (De/Até)** e **Período de liberação (De/Até)** em **três colunas a partir
-  de `sm`** (uma no mobile), além dos botões "Limpar Filtros", "Cancelar" e "Aplicar". Os períodos são
-  inclusivos; chamadas sem data de liberação não correspondem a um filtro de liberação.
-- Rascunho isolado que espelha o estado vigente ao abrir; "Aplicar" reflete na tabela/KPIs;
-  "Limpar Filtros" zera rascunho e estado (a busca textual permanece).
+- Status, Situação, Tipo, Impacto, Software, Parceiro, Origem, período de lançamento e de liberação.
+- Rascunho isolado; “Aplicar” reflete em tabela/KPIs; “Limpar Filtros” zera; “Cancelar” descarta.
 
 ### 3.5 `Formulario.vue` → `<LancarChamadasFormulario>`
 
-- `UiModal size="xl"` em **wizard de quatro etapas**, navegável pelo indicador (qualquer etapa):
-  1. **Vínculos e origem:** Release, Projeto, Manual e badge de origem derivada. É sempre a primeira
-     etapa.
-  2. **Identificação:** Chamada (mono), Título, Data de lançamento, Data de liberação, Status somente
-     leitura e Autor somente leitura. A **Data de liberação** é preenchida automaticamente com a
-     `dataPublicacao` da Release selecionada e pode ser ajustada.
-  3. **Classificação:** Software, Parceiro, Módulo, Menu/funcionalidade, Tipo, Impacto e **Tags**
-     (`UiTagInput`).
-  4. **Conteúdo e mídias:** Descrição completa, Título do manual, `LancarChamadasMidias` (links +
-     imagens) e Informações de Cadastro (somente edição).
-- **Campo Situação:** não aparece no formulário; o valor existente é preservado e novas chamadas usam
-  `Desenvolvimento` internamente.
-- **Novo:** status `Revisar`, tipo `Correção`, impacto `Médio` e `dataLancamento` pré-preenchida com a
-  próxima segunda-feira.
-- **Editar:** preenchido; status e autor originais permanecem; timestamps são somente leitura.
-- **Status:** não é editável; a aprovação é uma ação separada.
-- **Navegação:** "Próximo" valida a etapa corrente; clicar no indicador vai direto para a etapa
-  escolhida; "Salvar" valida todas e leva à etapa do primeiro erro.
-- **Validação:** cliente + foco no primeiro erro; ver §8.
-- Salvar inclui no topo (novo) ou substitui a linha (edição), fecha o modal e dispara toast.
+- Wizard de quatro etapas: Vínculos e origem; Identificação; Classificação; Conteúdo e mídias.
+- **Novo:** status `Revisar`, tipo `Correção`, impacto `Médio`, data de lançamento no dia atual.
+- **Data de liberação:** fica vazia e desabilitada no formulário; é preenchida apenas na aprovação
+  com a `data_publicacao` da release vinculada.
+- **Editar:** carrega os dados persistidos; status/autor/timestamps originais são preservados.
+- **Salvar:** valida tudo, envia as imagens data URL ao upload, substitui pelas URLs públicas e só
+  então chama `POST`/`PUT`. O botão fica em loading e o modal só fecha no sucesso.
+- Erros `400/403/404/409` exibem a mensagem do servidor sem perder o rascunho.
 
 ### 3.6 `Midias.vue` → `<LancarChamadasMidias>`
 
-- Campos **Título do manual**, **Link do manual** e **Link do vídeo** (`UiInput`).
-- Galeria das imagens existentes com remoção e `UiUploadFiles` (`multiple`, PNG/JPG/WebP, 5 MB).
-- **Colagem com `Ctrl` + `V`:** enquanto a etapa Conteúdo e mídias está montada, o componente lê
-  arquivos de imagem do clipboard, valida tipo/tamanho e incorpora à galeria sem exigir salvar o
-  arquivo localmente. A dica visual fica acima do upload.
-- Imagens são lidas como data URL e guardadas em `imagens` (JSON na fase backend); não há upload
-  persistido nem `anexos_midias` nesta fase.
+- Título do manual, link do manual e link do vídeo.
+- Galeria com remoção; `UiUploadFiles` (PNG/JPG/WebP, 5 MB), colagem `Ctrl+V` e **arrastar e soltar**.
+- O drop funciona em toda a área do componente (galeria, campos e caixa de upload) e mostra o overlay
+  “Solte as imagens aqui”; as imagens são validadas e incorporadas à galeria.
+- As imagens ficam como data URL apenas no rascunho; o upload real ocorre no salvar.
 
-### 3.7 `Detalhes.vue` → `<LancarChamadasDetalhes>`
+### 3.7 `Importar.vue` → `<LancarChamadasImportar>`
 
-- `UiModal size="xl"` somente leitura com identificação, classificação, vínculos, conteúdo
-  (descrição, título do manual e links), tags, imagens e informações de cadastro.
-- Fecha por `Escape`, `X` ou "Fechar".
+- Upload `.xlsx` por clique ou **arrastar e soltar** sobre o `UiUploadFiles`, com leitura via `exceljs`
+  (import dinâmico) e pré-visualização.
+- Classificação por linha: `pronto`, `já cadastrado`, `repetido` ou `inválido`, com motivo.
+- A confirmação fica bloqueada se qualquer linha não estiver pronta; o backend revalida tudo e grava
+  em uma única transação.
 
-### 3.8 `Aprovar.vue` / `Recusar.vue` / `Exclusao.vue`
+### 3.8 `Detalhes.vue`, `Aprovar.vue`, `Desaprovar.vue`, `Recusar.vue` e `Exclusao.vue`
 
-- `UiModal size="sm"` de apresentação pura; emitem `confirmar` e a página chama o modelo.
-- **Aprovar:** confirma a mudança de status para `Aprovado`; só disponível em `Revisar`.
-- **Recusar:** confirma a mudança de status para `Recusado`; só disponível em `Revisar`.
-- **Exclusao:** mostra chamada, título e motivo do bloqueio quando houver; exclusão só ocorre em
-  `Revisar` e sem histórico.
+- Detalhes em modo somente leitura.
+- Aprovar/Desaprovar/Recusar/Excluir são modais de confirmação; a página só fecha o modal após o
+  sucesso da API.
+- **Desaprovar** volta `Aprovado` para `Revisar` e limpa a data de liberação.
+- Exclusão só é permitida em `Revisar` e sem histórico.
 
 ### 3.9 `gerarPdfLancarChamadas.ts`
 
-- `gerarPdfLancarChamadas` (jsPDF A4 paisagem + autotable): logo de login quando houver, título
-  "Relatório de Lançar as Chamadas", data/contagem, colunas da listagem e rodapé
-  "Página X de Y" · "Publications · Lançar as Chamadas". Arquivo `lancar-chamadas.pdf`.
-- `gerarCsvLancarChamadas`: CSV com `;`, BOM UTF-8 e neutralização de fórmulas (`=`, `+`, `-`,
-  `@`, tab, CR). Arquivo `lancar-chamadas.csv`.
+- PDF A4 paisagem com logo opcional, título, data, contagem, colunas e paginação.
+- CSV com `;`, BOM UTF-8 e neutralização de fórmulas.
+- Ambos usam o conjunto vigente (filtros + busca) e exigem `download`.
 
 ### 3.10 `useLancarChamadasModelo.ts`
 
-- `useState` (`lancar-chamadas-base`, `-carregando`, `-carregado`, `-busca`, `-filtros`).
-- Catálogos locais: releases, projetos, manuais, softwares e parceiros.
-- Dataset de demonstração com oito chamadas cobrindo origens, situações, status e histórico.
-- Derivados: `chamadasFiltradas`, `linhas`, `kpis`, `filtrosAtivosCount`, `criteriosAtivosCount`,
-  `opcoes`, `autorAtual`.
-- Ações: `carregarChamadas`, `adicionar`, `atualizar`, `aprovar`, `recusar`, `excluir`,
-  `limparFiltros`, `resolver`.
+- `useState` para lista, catálogo, loading, busca e filtros.
+- `carregarChamadas()` busca `GET /api/lancar-chamadas` e `GET /api/lancar-chamadas/opcoes`.
+- Ações: `adicionar`, `atualizar`, `aprovar`, `desaprovar`, `recusar`, `excluir` e `importar`, todas
+  assíncronas.
+- `importar()` envia as linhas e recarrega a lista após o commit.
 
 ## 4. Modelo de dados e mapa de `entregas_itens`
 
@@ -234,164 +178,164 @@ interface ChamadaModelo {
 }
 ```
 
-| Coluna em `entregas_itens` | Uso na tela |
+| Coluna em `entregas_itens` | Uso |
 |---|---|
-| `id` | Gerado no modelo (`crypto.randomUUID`) nesta fase; backend gera depois |
-| `origem` | Derivada dos vínculos; somente leitura |
-| `release_id` / `projeto_id` / `manual_id` | Selects de vínculo; ao menos um obrigatório |
-| `software_id` / `parceiro_id` | Selects de catálogo |
-| `software` / `parceiro` / `release` | Textos derivados dos catálogos, não digitados |
-| `autor_id` / `autor_nome` | Sessão atual; somente leitura |
-| `chamada` | Input mono, obrigatório, ≤60, sem duplicidade no conjunto |
-| `titulo` | Input, obrigatório, ≤255 |
-| `data_lancamento` / `data_liberacao` | `UiDatePicker`; lançamento obrigatório; ambas segunda-feira |
-| `modulo` | Input, obrigatório, ≤100 |
-| `menu_funcionalidade` | Input opcional |
-| `tipo` / `impacto` | `UiSegmented` na etapa Classificação |
-| `situacao` | Não exibido no formulário; valor preservado / `Desenvolvimento` interno |
-| `descricao_completa` | `UiTextarea`, obrigatório |
-| `manualTitulo` | `UiInput` no conteúdo (campo de frontend; futuro backend) |
-| `link_manual` / `link_video` | `UiInput type="url"` |
-| `tags` | `UiTagInput` (JSON), na etapa Classificação |
-| `imagens` | Galeria + `UiUploadFiles` + colagem `Ctrl+V` (JSON) |
-| `status` | Novo = `Revisar`; ação Aprovar = `Aprovado` |
-| `ordem_apresentacao` | Coluna legada; não usada pela UI — ordenação sempre por `chamada` |
-| `criado_em` / `atualizado_em` | Somente leitura |
+| `id` | UUID gerado no servidor |
+| `origem` | Derivada dos vínculos (`Release`/`Projeto`/`Manual`/`Ambos`) |
+| `release_id` / `projeto_id` / `manual_id` | Vínculos; ao menos um obrigatório |
+| `software_id` / `parceiro_id` | Vínculos validados no servidor |
+| `release` / `software` / `parceiro` | Snapshots textuais gravados na escrita |
+| `autor_id` / `autor_nome` | Sessão do operador |
+| `chamada` | Obrigatória, ≤60 e única (`uk_entregas_chamada`) |
+| `titulo` | Obrigatório, ≤255 |
+| `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação vazia até a aprovação, quando recebe a publicação da release |
+| `modulo` / `menu_funcionalidade` | Texto livre |
+| `tipo` / `impacto` / `situacao` | Enums do banco |
+| `descricao_completa` | Obrigatória |
+| `manual_titulo` | Texto opcional, ≤255 |
+| `link_manual` / `link_video` | URL http(s) opcional |
+| `tags` / `imagens` | JSON arrays |
+| `status` | `Revisar` na criação; `Aprovado`/`Recusado` nas ações |
+| `criado_em` / `atualizado_em` | Timestamps do banco |
 
-**Decisão de origem (A):** um vínculo → `Release`/`Projeto`/`Manual`; dois ou mais → `Ambos`; nenhum
-→ erro de validação. Os vínculos são obrigatórios.
-
-## 5. Contrato futuro da API
-
-A fase backend deverá expor rotas equivalentes (nomes indicativos, ainda não implementados):
+## 5. API
 
 | Ação | Método e rota | Permissão |
 |---|---|---|
 | Listar | `GET /api/lancar-chamadas` | `visualizar` |
+| Relatórios | `GET /api/lancar-chamadas?download=1` | `download` |
+| Catálogos | `GET /api/lancar-chamadas/opcoes` | `visualizar` |
 | Criar | `POST /api/lancar-chamadas` | `criar` |
 | Editar | `PUT /api/lancar-chamadas/:id` | `alterar` |
 | Aprovar | `PUT /api/lancar-chamadas/:id/aprovar` | `publicar` |
+| Desaprovar | `PUT /api/lancar-chamadas/:id/desaprovar` | `alterar` |
 | Recusar | `PUT /api/lancar-chamadas/:id/recusar` | `alterar` |
 | Excluir | `DELETE /api/lancar-chamadas/:id` | `excluir` |
-| Relatórios | `GET /api/lancar-chamadas?exportar=1` | `download` |
-| Catálogos | `GET /api/lancar-chamadas/opcoes` | `visualizar` |
+| Importar | `POST /api/lancar-chamadas/importar` | `importar` |
 
-- A API deverá repetir a validação do cliente, aplicar RBAC/auditoria e usar transação quando
-  necessário.
-- `chamada` precisa de índice único (ou regra de negócio explícita) no backend; hoje o banco só tem
-  índice simples.
-- `arquivada`, importação XLSX e `anexos_midias` ficam para decisões futuras.
+- Todas as rotas exigem sessão e aplicam RBAC no servidor.
+- A lista devolve `{ chamadas: ChamadaModelo[] }`; as escritas devolvem a chamada no mesmo shape.
+- `?download=1` retorna o mesmo conjunto sob a permissão `download`; o PDF/CSV é gerado no cliente.
+- Erros: `400` validação/vínculo, `403` RBAC, `404` id, `409` duplicidade/transição inválida.
+- Escritas geram auditoria no recurso **Lançar as Chamadas** (`Inclusão`, `Alteração`, `Exclusão`,
+  `Homologação`); importação registra a contagem.
 
-## 6. Fluxos
+## 6. Importação XLSX
 
-- **Listagem:** `onMounted` chama `carregarChamadas()`; o seed é montado em memória e a tabela usa o
-  conjunto filtrado.
-- **Busca:** o termo no campo da toolbar refina tabela e KPIs em tempo real.
-- **Filtros:** o modal mantém rascunho isolado; "Aplicar" refina (inclusive períodos de lançamento e
-  liberação); "Limpar Filtros" zera; "Cancelar" descarta.
-- **Nova:** abre na etapa Vínculos e origem; ao escolher uma Release, a Data de liberação recebe a
-  `dataPublicacao` dela. "Próximo" valida a etapa, o indicador permite ir direto a qualquer etapa e
-  "Salvar Chamada" valida tudo, inclui no topo e fecha com toast.
-- **Editar:** resolve o registro por id, abre preenchido no wizard e substitui a linha.
-- **Detalhes:** abre o modal somente leitura; não altera dados.
-- **Colar imagem:** na etapa Conteúdo e mídias, `Ctrl` + `V` incorpora imagens do clipboard à galeria.
-- **Aprovar:** confirmação → status `Aprovado`; linha e KPIs atualizados.
-- **Recusar:** confirmação → status `Recusado`; linha e KPIs atualizados.
-- **Excluir:** só abre quando `Revisar` e sem histórico; confirmação → remove da lista e recalcula.
-- **Relatórios:** PDF/CSV do conjunto vigente; lista vazia → aviso.
-- **F5:** restaura o dataset de demonstração (fase frontend).
+- Modelo: `docs/modelos/modelo-importacao-lancar-chamadas.xlsx`.
+- Aba **Chamadas**, cabeçalho exato com 18 colunas:
+  `Chamada | Título | Data de Lançamento | Data de Liberação | Release | Projeto | Manual |
+  Software | Parceiro | Módulo | Menu/Funcionalidade | Tipo | Impacto | Descrição Completa |
+  Título do Manual | Link do Manual | Link do Vídeo | Tags`.
+- Datas aceitam `dd/mm/aaaa`, `AAAA-MM-DD` e data do Excel; não há exigência de segunda-feira.
+- Vínculos por código: release/projeto/manual por `codigo`; software por `codigo`; parceiro por
+  `codigo` (`RW-...`, `PE-...`, `MAN-...`, `SFT-...`, `PAR-...`).
+- Tags separadas por `;`, com os mesmos limites do formulário.
+- Novas chamadas entram com status `Revisar`, situação `Desenvolvimento` e origem derivada.
+- Limite de 500 linhas; qualquer linha inválida, repetida ou já cadastrada bloqueia a importação
+  inteira (rollback total).
+- Não importa imagens, status ou situação.
 
-## 7. Navegação, RBAC e auditoria
+## 7. Upload e imagens
 
-- Item **Lançar as Chamadas** na sessão **Movimentos** (`Megaphone`, `#f59e0b`), com
-  `to: '/admin/lancar-chamadas'` e `aria-current="page"`.
-- Rota sujeita a `app/middleware/auth.global.ts`; sem sessão → login com `?redirect=`.
+- As imagens são enviadas no **salvar**, via `POST /api/uploads` com `pasta=chamadas`, `ano` e `mes`
+  derivados de `data_lancamento`.
+- Destino físico: `uploads/chamadas/<ano>/<mes>/`; URL pública:
+  `/uploads/chamadas/<ano>/<mes>/<arquivo>`.
+- Formatos PNG/JPEG/WebP/GIF, até 5 MB; o servidor valida magic bytes e deriva a extensão segura.
+- As URLs são persistidas em `entregas_itens.imagens` (JSON) e permanecem após o F5.
+- Na edição, imagens retiradas do array têm o arquivo removido após o commit; na exclusão, as
+  imagens da chamada são removidas após o commit.
+- A limpeza é best-effort, só atua em `/uploads/chamadas/`, preserva arquivos referenciados por outra
+  chamada e não remove nada quando a exclusão é bloqueada.
+- Uploads cancelados/falhos podem deixar arquivos órfãos; a limpeza não faz parte desta change.
+
+## 8. Fluxos
+
+- **Listagem:** `onMounted` chama `carregarChamadas()`; a API devolve as chamadas persistidas.
+- **Busca/filtros:** refletem na tabela e nos KPIs no cliente.
+- **Nova:** abre na etapa Vínculos com a data de lançamento do dia; a Data de liberação fica vazia e
+  desabilitada até a aprovação.
+- **Editar:** resolve por id, abre preenchido; o status/autoria são preservados.
+- **Detalhes:** modal somente leitura.
+- **Colar imagem:** `Ctrl+V` incorpora imagens ao rascunho; o envio ocorre no salvar.
+- **Aprovar/Desaprovar/Recusar:** confirmam a transição e recarregam a linha/KPIs.
+- **Excluir:** só em `Revisar` e sem histórico; remove arquivos de imagem após o banco.
+- **Importar:** seleciona o `.xlsx`, revisa o preview e confirma; a lista é recarregada após o commit.
+- **Relatórios:** validam `download` no servidor e geram PDF/CSV do conjunto vigente.
+- **F5:** os dados permanecem (persistência real).
+
+## 9. Navegação, RBAC e auditoria
+
+- Item **Lançar as Chamadas** na sessão **Movimentos**.
 - Gates da UI via `.can('lancar-chamadas', ação)`:
   - `criar` → Nova Chamada
-  - `alterar` → Editar e Recusar
+  - `alterar` → Editar, Desaprovar e Recusar
   - `excluir` → Excluir
   - `publicar` → Aprovar
   - `download` → Relatórios
+  - `importar` → Importar
   - `filtrar` → Filtros
   - `buscar` → campo de busca
   - `visualizar` → acesso à tela e item da sidebar
-- **Auditoria:** não há auditoria nesta fase (frontend em memória); a fase backend deverá registrar
-  inclusão, alteração, aprovação, recusa e exclusão no recurso **"Lançar as Chamadas"**.
+- O servidor valida as mesmas permissões em todas as rotas, inclusive `importar` e `download`.
+- A matriz tem 91 funcionalidades: Administrador 91/91, Editor 66/91, Revisor 39/91 e Leitor 14/91.
 
-## 8. Validações e regras de negócio
+## 10. Validações e regras de negócio
 
-- `chamada`: obrigatória, ≤60, sem duplicidade (case-insensitive) no conjunto carregado.
+- `chamada`: obrigatória, ≤60 e única (case-insensitive).
 - `titulo`: obrigatório, ≤255.
 - `softwareId`, `parceiroId`, `modulo` e `descricaoCompleta`: obrigatórios; `modulo` ≤100.
 - `manualTitulo`: opcional, ≤255.
 - Ao menos um vínculo (Release, Projeto ou Manual).
-- `dataLancamento`: obrigatória e segunda-feira. `dataLiberacao`: opcional; se preenchida,
-  segunda-feira. Ao selecionar uma Release, recebe a `dataPublicacao` dela automaticamente.
+- `dataLancamento`: obrigatória, qualquer data civil válida (o formulário inicia com a data do dia).
+  `dataLiberacao`: vazia e desabilitada no formulário; a aprovação grava a `data_publicacao` da
+  release vinculada.
 - Links: `http(s)` quando informados.
-- Tags: até 12, cada uma até 30 caracteres; duplicadas são ignoradas; ficam na Classificação.
-- Imagens: PNG/JPG/WebP, até 5 MB cada, por seleção ou colagem `Ctrl+V`; inválidas são recusadas.
-- `situacao`: não editável no formulário; valor preservado e default `Desenvolvimento`.
+- Tags: até 12, cada uma até 30 caracteres, sem duplicatas.
+- Imagens: até 20 URLs, PNG/JPG/WebP/GIF até 5 MB cada.
+- `situacao`: não editável; default `Desenvolvimento`.
 - Novo status `Revisar`; status não editável no formulário.
-- Exclusão bloqueada quando `status !== 'Revisar'` ou `temHistorico = true`.
-- Aprovação e recusa bloqueadas quando o status já não é `Revisar`.
+- Exclusão bloqueada quando `status !== 'Revisar'` ou houver histórico na esteira.
+- Aprovação/recusa bloqueadas quando o status não é `Revisar`.
 
 ### Ordenação
 
-A ordenação é **sempre pelo número da chamada** (`chamada ASC`, com comparação numérica natural). Não
-existe mais campo de ordem manual no formulário e o valor de `ordem_apresentacao` não é usado para
-ordenar. A mesma regra vale para as listas de itens de Release Week, Manuais e Escopo de Projetos, que
-passaram a ordenar por `chamada ASC`; a coluna `ordem_apresentacao` permanece apenas como legado no
-schema.
+A ordenação é sempre por `chamada ASC` (comparação numérica natural). `ordem_apresentacao` permanece
+como legado e não é usada pela UI.
 
-## 9. Relatórios PDF/CSV
+## 11. Relatórios PDF/CSV
 
-- **PDF:** A4 paisagem, logo opcional, título, data de geração, contagem, colunas da listagem e
-  rodapé com paginação.
-- **CSV:** separador `;`, BOM UTF-8, cabeçalho e neutralização de fórmulas.
-- Ambos usam o conjunto vigente (filtros + busca) e a permissão `download`.
-- Nenhum arquivo é gerado com o conjunto vazio.
+- PDF A4 paisagem, logo opcional, título, data, contagem, colunas e paginação.
+- CSV com `;`, BOM UTF-8 e neutralização de fórmulas.
+- Ambos usam o conjunto vigente (filtros + busca) e exigem `download`; conjunto vazio não gera
+  arquivo e exibe aviso.
 
-## 10. Design system
-
-- **Novo componente:** `UiTagInput` (`app/components/ui/TagInput.vue`), documentado na
-  [`§5.24`](01%20-%20design_system.md) e na seção 24 do `/design`.
-- **Reuso:** `UiDataTable`, `UiModal`, `UiModalSection`, `UiInput`, `UiSelect`, `UiDatePicker`,
-  `UiSegmented`, `UiTextarea`, `UiBadge`, `UiActionMenu`, `UiKpi`, `UiButton`, `UiTooltip`,
-  `UiUploadFiles` e `UiLoading`.
-- **Tokens:** foco `brand-focus` `#1a9e07`, erro `rose-700`, accent `brand-accent`; tipografia
-  mono para chamada/datas.
-
-## 11. Documentação relacionada
+## 12. Documentação relacionada
 
 - Design system: [`docs/01`](01%20-%20design_system.md) §5.23 (ActionMenu) e §5.24 (TagInput).
-- Arquitetura: [`docs/02`](02%20-%20Guia%20de%20Arquitetura%20e%20Migrations.md).
+- Arquitetura/migrations: [`docs/02`](02%20-%20Guia%20de%20Arquitetura%20e%20Migrations.md).
 - Header/Sidebar: [`docs/03`](03%20-%20Header%20e%20Sidebar.md).
-- Módulos consumidores: [`docs/12`](12%20-%20Módulo%20das%20Releases%20Week.md),
-  [`docs/13`](13%20-%20Módulo%20de%20Manuais%20Mensais.md) e
-  [`docs/14`](14%20-%20Módulo%20do%20Escopo%20de%20Projetos.md).
-- Banco: [`docs/bd/01`](bd/01%20-%20banco_dados_mariadb.sql) (`entregas_itens`,
-  `historico_esteira_revisao`, `anexos_midias`).
+- Perfis/RBAC: [`docs/07`](07%20-%20Perfis%20de%20Acesso%20(RBAC).md).
+- Auditoria: [`docs/05`](05%20-%20Gestão%20de%20Auditoria.md).
+- Banco: [`docs/bd/01`](bd/01%20-%20banco_dados_mariadb.sql) e
+  [`docs/bd/02`](bd/02_seed.sql).
 
-## 12. Verificação
+## 13. Verificação
 
 - Gates: `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`.
-- Testes: `tests/lancar-chamadas-validadores.test.ts` (obrigatórios, vínculos/origem, segunda-feira,
-  duplicidade, links, tags, filtros por campos e períodos, KPIs e guardas de exclusão/aprovação/recusa).
-- Manual: `/admin/lancar-chamadas` — F5, busca, filtros (incluindo períodos), wizard (etapas
-  clicáveis), criar/editar/detalhar, colar imagem com `Ctrl+V`, aprovar/recusar, exclusão
-  bloqueada/permitida, PDF/CSV e recarga restauradora.
-- Vitrine: `http://localhost:3000/design` — seção 24.
-- Regressão: navegação da sidebar, `/design` e modais de itens de Release Week, Manuais e Escopo de
-  Projetos (somente leitura).
+- Testes: `tests/lancar-chamadas-validadores.test.ts`,
+  `tests/lancar-chamadas-import-parser.test.ts`, `tests/uploads.test.ts` e
+  `tests/perfis-funcionalidades.test.ts`.
+- Manual: F5, busca/filtros, criar/editar/detalhar, upload no salvar (clique, colagem e arrastar/soltar),
+  aprovar/desaprovar/recusar, exclusão com remoção de arquivo, importação válida/inválida (clique ou drop),
+  403 sem `importar` e PDF/CSV.
+- Vitrine: `http://localhost:3000/design` — seções do UI kit.
 
-## 13. Pendências e próximos passos
+## 14. Pendências e próximos passos
 
-- **Backend/API real** de `entregas_itens`, com persistência, RBAC e auditoria.
-- **`manualTitulo`**: campo existe apenas no modelo frontend nesta fase; a fase backend deve definir
-  a coluna/armazenamento (não há coluna correspondente em `entregas_itens`).
-- **`arquivada`** e ação Arquivar (decisão de schema).
-- **Importação XLSX** de chamadas (exige `importar` no catálogo RBAC).
-- **`anexos_midias`** e upload persistente (hoje apenas `imagens` em memória).
-- **Histórico real** da Esteira de Revisão (`temHistorico` é simulado nesta fase).
-- **Unicidade de `chamada`** no banco (hoje só índice).
-- **Área Pública** e exposição das chamadas publicadas.
+- Ação **Arquivar** e coluna correspondente (decisão de schema).
+- **Área Pública** e exposição das chamadas.
+- **`anexos_midias`** e galeria rica (a tabela existe, mas o módulo usa `imagens` JSON).
+- Limpeza de uploads órfãos de chamadas canceladas/falhas após o upload.
+- Evolução para filtros/paginação server-side se o volume crescer.

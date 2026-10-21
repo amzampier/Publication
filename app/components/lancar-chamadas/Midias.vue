@@ -33,6 +33,28 @@ const TAMANHO_MAXIMO = 5 * 1024 * 1024
 const aviso = ref('')
 const sucesso = ref('')
 const uploadKey = ref(0)
+const arrastandoMidia = ref(false)
+const uploadRef = ref<{ aplicarArquivos: (arquivos: File[]) => void } | null>(null)
+
+const aoArrastarSobreMidia = (ev: DragEvent) => {
+  arrastandoMidia.value = true
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy'
+}
+
+const aoArrastarSaiMidia = (ev: DragEvent) => {
+  const atual = ev.currentTarget as HTMLElement | null
+  const relacionado = ev.relatedTarget as Node | null
+  if (relacionado && atual?.contains(relacionado)) return
+  arrastandoMidia.value = false
+}
+
+const aoSoltarNaMidia = (ev: DragEvent) => {
+  arrastandoMidia.value = false
+  const alvo = ev.target as HTMLElement | null
+  if (alvo?.closest('[data-upload-files]')) return
+  const arquivos = Array.from(ev.dataTransfer?.files ?? [])
+  if (arquivos.length) uploadRef.value?.aplicarArquivos(arquivos)
+}
 
 const lerComoDataUrl = (arquivo: File): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -118,7 +140,22 @@ const remover = (indice: number) => {
 </script>
 
 <template>
-  <div class="grid gap-4">
+  <div
+    class="relative grid gap-4"
+    @dragenter.prevent="arrastandoMidia = true"
+    @dragover.prevent="aoArrastarSobreMidia"
+    @dragleave="aoArrastarSaiMidia"
+    @drop.prevent="aoSoltarNaMidia"
+  >
+    <div
+      v-if="arrastandoMidia"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 z-30 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-brand-accent bg-white/90 px-3 text-center backdrop-blur-[1px]"
+    >
+      <ImagePlus class="h-5 w-5 text-brand-focus" />
+      <span class="text-xs font-semibold text-brand-focus">Solte as imagens aqui</span>
+    </div>
+
     <UiInput
       :model-value="manualTitulo"
       data-campo="manualTitulo"
@@ -197,6 +234,7 @@ const remover = (indice: number) => {
 
       <UiUploadFiles
         v-if="!disabled"
+        ref="uploadRef"
         :key="uploadKey"
         rotulo="Adicionar imagens de evidência"
         dica="PNG, JPG ou WebP — até 5 MB por arquivo"

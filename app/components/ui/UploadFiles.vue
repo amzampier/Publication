@@ -101,10 +101,26 @@ function aoRemover() {
   emit('change', null)
 }
 
+function aoArrastarSobre(ev: DragEvent) {
+  arrastando.value = true
+  if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy'
+}
+
+function aoArrastarSai(ev: DragEvent) {
+  const atual = ev.currentTarget as HTMLElement | null
+  const relacionado = ev.relatedTarget as Node | null
+  if (relacionado && atual?.contains(relacionado)) return
+  arrastando.value = false
+}
+
 function aoSoltar(ev: DragEvent) {
   arrastando.value = false
   aplicar(Array.from(ev.dataTransfer?.files ?? []))
 }
+
+defineExpose({
+  aplicarArquivos: (novos: File[]) => aplicar(novos)
+})
 </script>
 
 <template>
@@ -113,10 +129,21 @@ function aoSoltar(ev: DragEvent) {
     :class="props.listaSeparada
       ? 'grid gap-3'
       : ['overflow-hidden rounded-xl border-2 transition-colors', classesRaiz]"
-    @dragover.prevent="arrastando = true"
-    @dragleave.prevent="arrastando = false"
+    data-upload-files
+    @dragenter.prevent="arrastando = true"
+    @dragover.prevent="aoArrastarSobre"
+    @dragleave="aoArrastarSai"
     @drop.prevent="aoSoltar"
   >
+    <div
+      v-if="arrastando"
+      aria-hidden="true"
+      class="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-brand-accent bg-white/90 px-3 text-center backdrop-blur-[1px]"
+    >
+      <Cloud class="h-5 w-5 text-brand-focus" />
+      <span class="text-xs font-semibold text-brand-focus">Solte os arquivos aqui</span>
+    </div>
+
     <!-- Modo lista separada: cards dos arquivos acima + caixa de prompt sempre limpa abaixo -->
     <template v-if="props.listaSeparada">
       <div v-if="arquivos.length" class="grid gap-2">

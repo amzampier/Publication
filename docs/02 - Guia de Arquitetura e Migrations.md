@@ -327,9 +327,9 @@ await registrarAuditoria(event, {
   (migration 01 §18 — mapeamento: `recurso` da tela ↔ coluna `entidade`).
 - **Resiliência:** o helper envolve tudo em `try/catch` e só loga no console — a falha na
   auditoria **nunca** interrompe nem altera a resposta da requisição principal.
-- **Escopo:** 19 rotas auditadas (15 de escrita: usuários, perfis, configurações, uploads,
-  convite, liberação de bloqueio + 4 de autenticação: login, logout, troca e recuperação de
-  senha, com o 5º tipo **`Acesso`** e recurso "Autenticação"). Nos casos em que o request
+- **Escopo:** 41 rotas auditadas (37 de escrita, incluindo Lançar as Chamadas e suas
+  aprovação/recusa/importação, uploads, convite e liberação de bloqueio + 4 de autenticação: login,
+  logout, troca e recuperação de senha, com o 5º tipo **`Acesso`** e recurso "Autenticação"). Nos casos em que o request
   ainda não carrega a sessão (login — os cookies são da resposta — e `esqueci-senha`,
   público), o chamador informa `sessao: { id, nome, perfil }` explicitamente. Tentativas
   de credencial inválida não geram evento na trilha: seguem exclusivamente no log
@@ -348,10 +348,11 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `POST /api/convite` — find-or-create por e-mail + envio (requer `gestao-usuarios`/`criar`).
 - `GET /api/seguranca/estado` (visualizar) e `POST /api/seguranca/liberar` (alterar) — aba Segurança (rate limit/lockout).
 - `GET /api/configuracoes/identidade` — **público**; devolve apenas `logo_login_url` para as telas de autenticação.
-- `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`); `logomarcas` exige `configuracoes-globais`/`alterar`, `avatares` é session-only.
+- `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`|`logos`|`chamadas`); `logomarcas` exige `configuracoes-globais`/`alterar`, `logos` exige `parceiros`/`alterar`, `avatares` é session-only e `chamadas` exige `lancar-chamadas`/`criar` ou `alterar`, com `ano`/`mes` e destino `uploads/chamadas/<ano>/<mes>/`.
 - `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
 - `GET/POST/PUT/DELETE /api/release-week`, `PUT /api/release-week/:id/publicar|arquivar`, `GET /api/release-week/:id/itens` e `POST /api/release-week/importar` — Release Week (código `RW-XX/AAAA` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `release-week`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/manuais`, `PUT /api/manuais/:id/publicar|arquivar`, `GET /api/manuais/:id/itens` e `POST /api/manuais/importar` — Manuais Mensais (código `MAN-XX/AAAA` gerado pelo servidor, `arquivada` soft, datas históricas, itens somente leitura e importação `.xlsx`); exigem `manuais`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
+- `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`.
 
 ---
 
@@ -413,7 +414,9 @@ O Nitro permite rodar rotinas assíncronas no momento em que o servidor sobe, an
 // server/plugins/migration.ts
 export default defineNitroPlugin(async () => {
   try {
+    await verificarDuplicatasChamadas() // impede o 1062 tolerado de esconder duplicatas
     await runMigrations()       // aplica as migrations pendentes
+    await verificarIndiceUnicoChamada() // confirma uk_entregas_chamada no boot
     await ensureAdminUser()     // bootstrap do admin (só fora de produção; senha provisória)
     await migrarSenhasSmtp()    // cifra senhas SMTP legadas em repouso
     await garantirEventScheduler() // habilita o Event Scheduler (expurgo de auditoria)
@@ -516,8 +519,11 @@ O schema já declara as tabelas do conteúdo público (`release_week`, `projetos
 `manuais_mensal` e `projetos_escopo` têm UI/API. O Escopo de Projetos passou a persistir em
 `projetos_escopo` (change `escopo-projetos-backend-e-importacao`), com a coluna `arquivada`
 (migration 23) e **sem seed**: o módulo nasce vazio e recebe dados por cadastro ou importação
-`.xlsx`. A importação cobre somente escopos; os itens continuam em `entregas_itens`. Ao implementar
-a **exclusão de releases/manuais**, atenção à interação de chaves estrangeiras:
+`.xlsx`. A importação cobre somente escopos. A migration 24 (change
+`lancar-chamadas-backend-e-importacao`) passou a persistir `entregas_itens` pelo módulo Lançar as
+Chamadas, com `status` incluindo `Recusado`, coluna `manual_titulo`, índice único
+`uk_entregas_chamada` e imagens em `uploads/chamadas/<ano>/<mes>/`. Ao implementar a **exclusão de
+releases/manuais**, atenção à interação de chaves estrangeiras:
 
 - `entregas_itens.release_id → release_week(id)` é `ON DELETE CASCADE`: excluir a release apaga os itens.
 - `entregas_itens.manual_id → manuais_mensal(id)` é `ON DELETE SET NULL`: a API de Manuais bloqueia a

@@ -7,10 +7,14 @@ import {
   filtrarChamadas,
   formatarData,
   formatarNumero,
+  normalizarImagensChamada,
+  normalizarTagsChamada,
   motivoBloqueioAprovacao,
+  motivoBloqueioDesaprovacao,
   motivoBloqueioExclusao,
   motivoBloqueioRecusa,
   podeAprovar,
+  podeDesaprovar,
   podeExcluir,
   podeRecusar,
   proximaSegunda,
@@ -131,16 +135,13 @@ describe('validarChamada', () => {
     ).toBe(true)
   })
 
-  it('recusa data de lançamento fora de segunda-feira', () => {
-    const resultado = validarChamada(entradaValida({ dataLancamento: '2026-10-20' }))
-    expect(resultado.valido).toBe(false)
-    expect(resultado.erros.dataLancamento).toMatch(/segunda-feira/i)
+  it('aceita data de lançamento em qualquer dia', () => {
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-21' })).valido).toBe(true)
   })
 
-  it('recusa data de liberação fora de segunda-feira e aceita vazia', () => {
-    expect(
-      validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).erros.dataLiberacao
-    ).toMatch(/segunda-feira/i)
+  it('aceita data de liberação em qualquer dia e aceita vazia', () => {
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).valido).toBe(true)
     expect(validarChamada(entradaValida({ dataLiberacao: '' })).valido).toBe(true)
   })
 
@@ -161,6 +162,14 @@ describe('validarChamada', () => {
     expect(longa.erros.tags).toMatch(/30/)
   })
 
+  it('normaliza tags e imagens antes de validar', () => {
+    expect(normalizarTagsChamada([' Fiscal ', 'fiscal', '', 'NF-e'])).toEqual(['Fiscal', 'NF-e'])
+    expect(normalizarImagensChamada([' /uploads/chamadas/2026/10/a.png ', '/uploads/chamadas/2026/10/a.png'])).toEqual([
+      '/uploads/chamadas/2026/10/a.png'
+    ])
+    const imagens = Array.from({ length: 21 }, (_, i) => `/uploads/chamadas/2026/10/${i}.png`)
+    expect(validarChamada(entradaValida({ imagens })).erros.imagens).toMatch(/20/)
+  })
 })
 
 describe('derivarOrigem', () => {
@@ -377,6 +386,21 @@ describe('guarda de aprovação', () => {
     expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Publicar' }))).toMatch(/publicada/i)
     expect(podeAprovar(chamadaBase({ status: 'Recusado' }))).toBe(false)
     expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Recusado' }))).toMatch(/recusada/i)
+  })
+})
+
+describe('guarda de desaprovação', () => {
+  it('permite desaprovar chamada Aprovada', () => {
+    const chamada = chamadaBase({ status: 'Aprovado' })
+    expect(podeDesaprovar(chamada)).toBe(true)
+    expect(motivoBloqueioDesaprovacao(chamada)).toBeNull()
+  })
+
+  it('bloqueia desaprovação fora de Aprovado', () => {
+    expect(podeDesaprovar(chamadaBase())).toBe(false)
+    expect(motivoBloqueioDesaprovacao(chamadaBase())).toMatch(/aprovadas/i)
+    expect(podeDesaprovar(chamadaBase({ status: 'Recusado' }))).toBe(false)
+    expect(podeDesaprovar(chamadaBase({ status: 'Publicar' }))).toBe(false)
   })
 })
 

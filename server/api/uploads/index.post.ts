@@ -9,7 +9,7 @@ import {
   type UploadDestino
 } from '../../utils/uploads'
 import { registrarAuditoria } from '../../utils/audit'
-import { requirePermission } from '../../utils/permission'
+import { pode, requirePermission } from '../../utils/permission'
 import { exigirRateLimit } from '../../utils/rateLimit'
 
 export default defineEventHandler(async (event) => {
@@ -40,6 +40,32 @@ export default defineEventHandler(async (event) => {
       statusCode: 400,
       statusMessage: `Destino inválido. Permitidos: ${UPLOAD_DESTINOS.join(', ')}.`
     })
+  }
+
+  const campoTexto = (nome: string): string => {
+    const campo = partes.find((p) => p.name === nome && !p.filename)
+    return campo ? Buffer.from(campo.data).toString('utf8').trim() : ''
+  }
+
+  let subpastas: string[] = []
+  if (destinoTexto === 'chamadas') {
+    const ano = campoTexto('ano')
+    const mes = campoTexto('mes')
+    if (!/^\d{4}$/.test(ano) || !/^(0[1-9]|1[0-2])$/.test(mes)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Informe ano (AAAA) e mês (01-12) válidos para o upload de chamadas.'
+      })
+    }
+    const podeCriar = await pode(event, 'lancar-chamadas', 'criar')
+    const podeAlterar = await pode(event, 'lancar-chamadas', 'alterar')
+    if (!podeCriar && !podeAlterar) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Você não tem permissão para enviar imagens de chamadas.'
+      })
+    }
+    subpastas = [ano, mes]
   }
 
   // Logomarcas alimentam as Configurações Globais (RBAC); avatares são o
@@ -75,10 +101,22 @@ export default defineEventHandler(async (event) => {
   }
 
   const nome = sanitizarNomeArquivo(campoArquivo.filename ?? 'arquivo')
-  const url = await gravarUpload(destinoTexto as UploadDestino, nome, campoArquivo.data, tipo)
+  const url = await gravarUpload(
+    destinoTexto as UploadDestino,
+    nome,
+    campoArquivo.data,
+    tipo,
+    subpastas
+  )
+  const recursoUpload: Record<string, string> = {
+    logomarcas: 'Logomarcas',
+    avatares: 'Avatares',
+    logos: 'Parceiros',
+    chamadas: 'Lançar as Chamadas'
+  }
   await registrarAuditoria(event, {
     acao: 'Inclusão',
-    recurso: destinoTexto === 'logomarcas' ? 'Logomarcas' : 'Avatares',
+    recurso: recursoUpload[destinoTexto] ?? destinoTexto,
     detalhes: `Enviou o arquivo '${nome}' para '${destinoTexto}'`
   })
   return { url }

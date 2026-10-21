@@ -9,6 +9,7 @@ preservando as portas públicas e o autoatendimento.
 ## Requirements
 
 ### Requirement: Toda rota de módulo exige a permissão correspondente
+
 O sistema SHALL autorizar cada rota administrativa de módulo pela matriz do perfil do usuário da
 sessão, segundo o **catálogo de funcionalidades de cada módulo** (as funcionalidades fixas
 `visualizar`, `criar`, `alterar`, `excluir` e as específicas do módulo — ex.: `importar`, `exportar`,
@@ -34,9 +35,11 @@ válida SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente
 - **THEN** a API responde `403`, tratando a funcionalidade específica como qualquer ação fixa
 
 ### Requirement: O catálogo de rotas administrativas mapeia cada rota para módulo e ação
+
 O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da funcionalidade
 indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
-`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`, `manuais`):
+`auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`, `manuais`,
+`lancar-chamadas`):
 
 - `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com o parâmetro de **filtro/paginação**
   server-side → `gestao-usuarios` / `filtrar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
@@ -78,11 +81,19 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `PUT /api/manuais/:id/arquivar` → `manuais` / `arquivar`
 - `DELETE /api/manuais/:id` → `manuais` / `excluir`
 - `POST /api/manuais/importar` → `manuais` / `importar`
+- `GET /api/lancar-chamadas` → `lancar-chamadas` / `visualizar`; com o parâmetro de **download** → `lancar-chamadas` / `download`
+- `GET /api/lancar-chamadas/opcoes` → `lancar-chamadas` / `visualizar`
+- `POST /api/lancar-chamadas` → `lancar-chamadas` / `criar`
+- `PUT /api/lancar-chamadas/:id` → `lancar-chamadas` / `alterar`
+- `PUT /api/lancar-chamadas/:id/aprovar` → `lancar-chamadas` / `publicar`
+- `PUT /api/lancar-chamadas/:id/recusar` → `lancar-chamadas` / `alterar`
+- `DELETE /api/lancar-chamadas/:id` → `lancar-chamadas` / `excluir`
+- `POST /api/lancar-chamadas/importar` → `lancar-chamadas` / `importar`
 - `GET /api/auditoria` → `auditoria` / `visualizar`; com o parâmetro de **filtro** → `auditoria` / `filtrar`;
   com o parâmetro de **busca** → `auditoria` / `buscar`; com o parâmetro de **exportação** → `auditoria` / `exportar`
 - `GET /api/configuracoes`, `GET /api/seguranca/estado` → `configuracoes-globais` / `visualizar`
 - `PUT /api/configuracoes`, `POST /api/seguranca/liberar` → `configuracoes-globais` / `alterar`
-- `POST /api/uploads` com destino `logomarcas` → `configuracoes-globais` / `alterar`; com destino `logos` → `parceiros` / `alterar`
+- `POST /api/uploads` com destino `logomarcas` → `configuracoes-globais` / `alterar`; com destino `logos` → `parceiros` / `alterar`; com destino `chamadas` → `lancar-chamadas` / `criar` ou `alterar`
 
 #### Scenario: Leitor não executa escrita nem exclusão
 - **WHEN** um usuário com perfil Leitor (que não concede `criar`, `alterar` nem `excluir` em `gestao-usuarios`) chama `POST`, `PUT` ou `DELETE` de usuários
@@ -132,7 +143,24 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - **WHEN** um perfil sem `manuais`/`importar` chama `POST /api/manuais/importar`
 - **THEN** a API responde `403` e nada é gravado
 
+#### Scenario: Importação de chamadas exige a ação extra
+- **WHEN** um perfil sem `lancar-chamadas`/`importar` chama `POST /api/lancar-chamadas/importar`
+- **THEN** a API responde `403` e nenhuma chamada é criada
+
+#### Scenario: Aprovação de chamada exige publicar
+- **WHEN** um perfil concede `lancar-chamadas`/`alterar` mas não `publicar` chama `PUT /api/lancar-chamadas/:id/aprovar`
+- **THEN** a API responde `403` e o status da chamada permanece inalterado
+
+#### Scenario: Download de chamadas exige a ação extra
+- **WHEN** um perfil sem `lancar-chamadas`/`download` chama `GET /api/lancar-chamadas?download=1`
+- **THEN** a API responde `403` e nenhum arquivo é gerado
+
+#### Scenario: Upload de imagem de chamada exige escrita no módulo
+- **WHEN** um perfil sem `lancar-chamadas`/`criar` e sem `alterar` chama `POST /api/uploads` com destino `chamadas`
+- **THEN** a API responde `403` e nenhum arquivo é gravado
+
 ### Requirement: Portas públicas e autoatendimento exigem apenas sessão
+
 O sistema SHALL manter sem exigência de permissão de módulo as portas públicas e as rotas de
 autoatendimento, que continuam exigindo apenas sessão válida (quando administrativas) ou sendo
 abertas: `/api/auth/*`, `GET /api/configuracoes/identidade`, `GET /api/usuarios/eu`,
@@ -152,6 +180,7 @@ alimenta o `.can()`) e `POST /api/uploads` com destino `avatares` (retrato do pr
 - **THEN** a rota responde normalmente, sem `401` nem `403`
 
 ### Requirement: O cliente dispõe do helper `.can(modulo, acao)`
+
 O sistema SHALL disponibilizar no cliente um helper reativo `.can(modulo, acao)` que consulta as
 permissões do perfil do usuário da sessão e SHALL usá-lo para **controlar a interface**: as
 funcionalidades que o perfil não possui SHALL ser escondidas ou desabilitadas — em particular os
@@ -160,7 +189,7 @@ excluir, clonar, bloquear, enviar convite), a flag/expansão de itens (`visualiz
 "Filtros" (`filtrar`), o campo de busca (`buscar`), as exportações (`exportar`/`download`), a
 importação (`importar`) e a ação "Permissões" (`permissoes`). Nos módulos cujo filtro/busca são
 server-side (Gestão de Usuários e Auditoria) a imposição é **também** no servidor; nos demais
-(Softwares, Parceiros, Perfis, Release Week, Manuais) o controle é de interface.
+(Softwares, Parceiros, Perfis, Release Week, Manuais, Lançar as Chamadas) o controle é de interface.
 
 #### Scenario: Helper responde pelas permissões do perfil
 - **WHEN** o cliente consulta `.can(modulo, acao)` para o usuário da sessão

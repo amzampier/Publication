@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   Building2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Eye,
   FileText,
   ImagePlus,
   Link2,
-  Megaphone,
-  Tags
+  Megaphone
 } from '@lucide/vue'
 import { useLancarChamadasModelo } from './useLancarChamadasModelo'
 import {
@@ -45,11 +46,52 @@ const vinculos = computed(() => {
   if (!props.chamada) return []
   const chamada = props.chamada
   return [
-    { rotulo: 'Release', valor: rotulo(catalogo.releases, chamada.releaseId) },
-    { rotulo: 'Projeto', valor: rotulo(catalogo.projetos, chamada.projetoId) },
-    { rotulo: 'Manual', valor: rotulo(catalogo.manuais, chamada.manualId) }
+    { rotulo: 'Release', valor: rotulo(catalogo.value.releases, chamada.releaseId) },
+    { rotulo: 'Projeto', valor: rotulo(catalogo.value.projetos, chamada.projetoId) },
+    { rotulo: 'Manual', valor: rotulo(catalogo.value.manuais, chamada.manualId) }
   ].filter((vinculo) => vinculo.valor)
 })
+
+const galeriaAberta = ref(false)
+const indiceImagem = ref(0)
+const totalImagens = computed(() => props.chamada?.imagens.length ?? 0)
+const imagemAtual = computed(() => props.chamada?.imagens[indiceImagem.value] ?? '')
+
+const abrirGaleria = (indice: number) => {
+  indiceImagem.value = indice
+  galeriaAberta.value = true
+}
+
+const anterior = () => {
+  if (totalImagens.value < 2) return
+  indiceImagem.value = (indiceImagem.value - 1 + totalImagens.value) % totalImagens.value
+}
+
+const proxima = () => {
+  if (totalImagens.value < 2) return
+  indiceImagem.value = (indiceImagem.value + 1) % totalImagens.value
+}
+
+const aoTeclaGaleria = (evento: KeyboardEvent) => {
+  if (!galeriaAberta.value) return
+  if (evento.key === 'ArrowLeft') {
+    evento.preventDefault()
+    anterior()
+  } else if (evento.key === 'ArrowRight') {
+    evento.preventDefault()
+    proxima()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', aoTeclaGaleria))
+onUnmounted(() => window.removeEventListener('keydown', aoTeclaGaleria))
+
+watch(
+  () => props.modelValue,
+  (aberto) => {
+    if (!aberto) galeriaAberta.value = false
+  }
+)
 </script>
 
 <template>
@@ -114,12 +156,12 @@ const vinculos = computed(() => {
       <UiModalSection title="Classificação" :icon="Building2">
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <p class="text-[11px] font-medium text-slate-500">Software</p>
-            <p class="mt-1 text-xs text-slate-800">{{ chamada.software || '—' }}</p>
-          </div>
-          <div>
             <p class="text-[11px] font-medium text-slate-500">Parceiro</p>
             <p class="mt-1 text-xs text-slate-800">{{ chamada.parceiro || '—' }}</p>
+          </div>
+          <div>
+            <p class="text-[11px] font-medium text-slate-500">Software</p>
+            <p class="mt-1 text-xs text-slate-800">{{ chamada.software || '—' }}</p>
           </div>
           <div>
             <p class="text-[11px] font-medium text-slate-500">Módulo</p>
@@ -137,9 +179,18 @@ const vinculos = computed(() => {
             <p class="text-[11px] font-medium text-slate-500">Impacto</p>
             <p class="mt-1 text-xs text-slate-800">{{ chamada.impacto }}</p>
           </div>
-          <div>
-            <p class="text-[11px] font-medium text-slate-500">Situação</p>
-            <p class="mt-1 text-xs text-slate-800">{{ chamada.situacao }}</p>
+          <div class="sm:col-span-2 lg:col-span-3">
+            <p class="text-[11px] font-medium text-slate-500">Tags</p>
+            <div v-if="chamada.tags.length" class="mt-1.5 flex flex-wrap gap-1.5">
+              <span
+                v-for="tag in chamada.tags"
+                :key="tag"
+                class="rounded-md border border-lime-300 bg-lime-50 px-2 py-0.5 text-[10px] font-semibold text-lime-900"
+              >
+                {{ tag }}
+              </span>
+            </div>
+            <p v-else class="mt-1 text-xs text-slate-500">Nenhuma tag.</p>
           </div>
         </div>
       </UiModalSection>
@@ -195,38 +246,30 @@ const vinculos = computed(() => {
         </div>
       </UiModalSection>
 
-      <UiModalSection title="Tags e imagens" :icon="Tags">
-        <div>
-          <p class="text-[11px] font-medium text-slate-500">Tags</p>
-          <div v-if="chamada.tags.length" class="mt-1.5 flex flex-wrap gap-1.5">
-            <span
-              v-for="tag in chamada.tags"
-              :key="tag"
-              class="rounded-md border border-lime-300 bg-lime-50 px-2 py-0.5 text-[10px] font-semibold text-lime-900"
-            >
-              {{ tag }}
-            </span>
-          </div>
-          <p v-else class="mt-1 text-xs text-slate-500">Nenhuma tag.</p>
-        </div>
-
+      <UiModalSection title="Imagens" :icon="ImagePlus">
         <div>
           <p class="text-[11px] font-medium text-slate-500">Imagens</p>
           <div v-if="chamada.imagens.length" class="mt-1.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <a
+            <button
               v-for="(imagem, indice) in chamada.imagens"
               :key="`${indice}-${imagem.slice(0, 24)}`"
-              :href="imagem"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="overflow-hidden rounded-lg border border-slate-200"
+              type="button"
+              :aria-label="`Abrir imagem ${indice + 1} de ${chamada.imagens.length} em galeria`"
+              class="group relative overflow-hidden rounded-lg border border-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              @click="abrirGaleria(indice)"
             >
               <img
                 :src="imagem"
                 :alt="`Imagem de evidência ${indice + 1}`"
-                class="h-24 w-full object-cover transition-transform hover:scale-105"
+                class="h-24 w-full object-cover transition-transform group-hover:scale-105"
               >
-            </a>
+              <span
+                v-if="chamada.imagens.length > 1"
+                class="absolute bottom-1 right-1 rounded bg-slate-950/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white"
+              >
+                {{ indice + 1 }}/{{ chamada.imagens.length }}
+              </span>
+            </button>
           </div>
           <p v-else class="mt-1 flex items-center gap-1.5 text-xs text-slate-500">
             <ImagePlus class="h-3.5 w-3.5" aria-hidden="true" />
@@ -250,7 +293,63 @@ const vinculos = computed(() => {
     </div>
 
     <template #footer>
-      <UiButton variant="outline" @click="emit('update:modelValue', false)">Fechar</UiButton>
+      <UiButton variant="primary" @click="emit('update:modelValue', false)">Fechar</UiButton>
+    </template>
+  </UiModal>
+
+  <UiModal
+    v-model="galeriaAberta"
+    size="xl"
+    title="Imagens da chamada"
+    :subtitle="`${indiceImagem + 1} de ${totalImagens}${chamada?.titulo ? ` — ${chamada.titulo}` : ''}`"
+    :icon="ImagePlus"
+  >
+    <div class="relative flex min-h-[45vh] items-center justify-center overflow-hidden rounded-xl bg-slate-950 p-3">
+      <button
+        v-if="totalImagens > 1"
+        type="button"
+        aria-label="Imagem anterior"
+        class="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent"
+        @click="anterior"
+      >
+        <ChevronLeft class="h-5 w-5" />
+      </button>
+
+      <img
+        v-if="imagemAtual"
+        :src="imagemAtual"
+        :alt="`Imagem ${indiceImagem + 1} de ${totalImagens} da chamada ${chamada?.chamada ?? ''}`"
+        class="max-h-[70vh] max-w-full object-contain"
+      >
+
+      <button
+        v-if="totalImagens > 1"
+        type="button"
+        aria-label="Próxima imagem"
+        class="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent"
+        @click="proxima"
+      >
+        <ChevronRight class="h-5 w-5" />
+      </button>
+    </div>
+
+    <div v-if="totalImagens > 1" class="mt-3 flex justify-center gap-2 overflow-x-auto pb-1">
+      <button
+        v-for="(imagem, indice) in chamada?.imagens ?? []"
+        :key="`thumb-${indice}-${imagem.slice(0, 24)}`"
+        type="button"
+        :aria-label="`Ver imagem ${indice + 1}`"
+        :aria-current="indice === indiceImagem ? 'true' : undefined"
+        class="shrink-0 overflow-hidden rounded-lg border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+        :class="indice === indiceImagem ? 'border-brand-focus' : 'border-transparent opacity-70 hover:opacity-100'"
+        @click="indiceImagem = indice"
+      >
+        <img :src="imagem" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover">
+      </button>
+    </div>
+
+    <template #footer>
+      <UiButton variant="primary" @click="galeriaAberta = false">Fechar</UiButton>
     </template>
   </UiModal>
 </template>

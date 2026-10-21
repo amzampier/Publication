@@ -438,14 +438,16 @@ CREATE TABLE entregas_itens (
         'Implantado'
     ) NOT NULL DEFAULT 'Desenvolvimento' COMMENT 'Fase de execução do escopo',
     descricao_completa MEDIUMTEXT NOT NULL COMMENT 'Detalhamento do impacto, causas, manual e validação',
+    manual_titulo VARCHAR(255) NULL COMMENT 'Título do manual vinculado à chamada (campo textual do formulário)',
     link_manual TEXT NULL COMMENT 'URL do manual de apoio ou documento passo a passo',
     link_video TEXT NULL COMMENT 'URL do vídeo explicativo/demonstrativo',
     imagens JSON NULL COMMENT 'Array JSON com URLs de imagens/evidências',
     status ENUM(
         'Revisar',
         'Aprovado',
+        'Recusado',
         'Publicar'
-    ) NOT NULL DEFAULT 'Revisar' COMMENT 'Status de workflow na esteira: Revisar, Aprovado ou Publicar',
+    ) NOT NULL DEFAULT 'Revisar' COMMENT 'Status de workflow na esteira: Revisar, Aprovado, Recusado ou Publicar',
     tags JSON NULL COMMENT 'Tags/assuntos em JSON para busca rápida por tema',
     ordem_apresentacao INT NOT NULL DEFAULT 0 COMMENT 'Ordem de ordenação na lista',
     criado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -489,7 +491,7 @@ CREATE TABLE entregas_itens (
     KEY idx_entregas_soft (software_id),
     KEY idx_entregas_parc (parceiro_id),
     KEY idx_entregas_autor (autor_id),
-    KEY idx_entregas_chamada (chamada),
+    UNIQUE KEY uk_entregas_chamada (chamada),
     KEY idx_entregas_release (`release`),
     KEY idx_entregas_software (software),
     KEY idx_entregas_modulo (modulo),

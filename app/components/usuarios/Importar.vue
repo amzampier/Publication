@@ -180,7 +180,7 @@ const colunas: ColumnDef[] = [
       <UiModalSection title="Planilha modelo" :icon="Import">
         <UiUploadFiles
           lista-separada
-          rotulo="Clique para selecionar arquivos"
+          rotulo="Arraste o arquivo aqui ou clique para selecionar"
           dica="Formatos aceitos: .xlsx"
           rotulo-lista="Arquivo selecionado"
           aceitar=".xlsx"

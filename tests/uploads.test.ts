@@ -3,7 +3,8 @@ import {
   detectarTipoImagem,
   ehImagemReal,
   sanitizarNomeArquivo,
-  EXTENSAO_POR_TIPO
+  EXTENSAO_POR_TIPO,
+  UPLOAD_DESTINOS
 } from '../server/utils/uploads'
 
 const bytes = (...a: number[]) => Buffer.from(a)
@@ -32,6 +33,12 @@ describe('sanitizarNomeArquivo', () => {
     expect(sanitizarNomeArquivo('../../evil.html')).toBe('evil.html')
     expect(sanitizarNomeArquivo('meu arquivo.png')).toBe('meu-arquivo.png')
     expect(sanitizarNomeArquivo('///')).toBe('arquivo')
+  })
+})
+
+describe('destinos', () => {
+  it('inclui chamadas além dos destinos fixos', () => {
+    expect(UPLOAD_DESTINOS).toEqual(expect.arrayContaining(['chamadas', 'logomarcas', 'avatares', 'logos']))
   })
 })
 

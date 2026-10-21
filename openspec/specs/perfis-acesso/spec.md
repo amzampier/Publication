@@ -13,6 +13,7 @@ acesso conforme o modelo `perfis_acesso`/`permissoes_perfil` descrito no `docs/0
 ## Requirements
 
 ### Requirement: A página é servida em /admin/perfis-acesso com a identidade do módulo
+
 O sistema SHALL servir a Perfis de Acesso (RBAC) em `/admin/perfis-acesso`, renderizada com o
 shell da Área Administrativa (header + sidebar), exibindo o título "Perfis de Acesso (RBAC)" com
 a identidade do módulo (tile do ícone `ShieldCheck` na cor `#f5b302`) e um subtítulo que descreve
@@ -30,6 +31,7 @@ a finalidade da tela (administração dos perfis e suas permissões).
   declarado (`admin`), como as demais telas administrativas
 
 ### Requirement: Os itens de navegação de perfis ganham rota e rótulo unificado
+
 O sistema SHALL declarar a rota `/admin/perfis-acesso` no item "Perfis de Acesso (RBAC)" da
 sidebar e no item homônimo do menu da conta (rótulo do conta unificado: era "Configuração de
 Perfis (RBAC)"), de modo que ambos naveguem para a página, o menu da conta feche após a
@@ -50,6 +52,7 @@ navegação e o item da sidebar correspondente apareça como ativo na rota.
 - **THEN** o item "Perfis de Acesso (RBAC)" da sidebar aparece como ativo
 
 ### Requirement: A página carrega e mantém os perfis sincronizados com a API
+
 O sistema SHALL carregar os perfis e suas matrizes de permissões a partir de `GET /api/perfis`
 na montagem da página `/admin/perfis-acesso`, exibindo estado de carregamento enquanto a
 requisição estiver em voo e um toast de erro caso ela falhe (sem exibir a base de
@@ -62,7 +65,7 @@ foi gravado persiste, sem restauração da semente de demonstração.
 - **WHEN** o navegador abre `/admin/perfis-acesso`
 - **THEN** um estado de carregamento é exibido enquanto `GET /api/perfis` responde e, em
   seguida, a tabela exibe os perfis persistidos (a base semeada: 4 perfis, todos Ativos, com as
-  matrizes normativas do `docs/07`, ex.: Administrador 90/90)
+  matrizes normativas do `docs/07`, ex.: Administrador 91/91)
 
 #### Scenario: Falha na carga exibe erro sem simular dados
 - **WHEN** a requisição `GET /api/perfis` falha (rede ou banco indisponível)
@@ -81,12 +84,13 @@ foi gravado persiste, sem restauração da semente de demonstração.
   recarga da página
 
 ### Requirement: Os KPIs refletem o conjunto vigente de perfis
+
 O sistema SHALL exibir no topo da página os KPIs "Total de perfis" (contagem do conjunto
 vigente), "Ativos", "Inativos", "Bloqueados" e "Permissões concedidas"
 (`<soma das permissões verdadeiras>/<perfis × total do catálogo de funcionalidades>`), recalculados
 sempre que o conjunto de perfis muda — inclusive quando um filtro do módulo o refina (o conjunto
 vigente passa a ser o conjunto filtrado). O total do catálogo SHALL ser a soma das funcionalidades
-de todos os módulos (para os 11 módulos atuais, **90**).
+de todos os módulos (para os 11 módulos atuais, **91**).
 
 #### Scenario: Base de demonstração
 - **WHEN** a página é aberta com a base de demonstração (4 perfis, todos Ativos, matriz normativa
@@ -105,6 +109,7 @@ de todos os módulos (para os 11 módulos atuais, **90**).
   na limpeza) imediatamente
 
 ### Requirement: O modal de filtros refina o conjunto vigente de perfis
+
 O sistema SHALL abrir um modal de filtros ao acionar o botão "Filtros" da toolbar da tabela
 (`UiModal` de largura `sm`, com ícone no cabeçalho, título "Filtros de Perfis"), cujo corpo
 é organizado em duas sessões `UiModalSection`: **"Perfil"**, contendo um controle de seleção
@@ -166,6 +171,7 @@ sem nenhuma requisição HTTP, e serem descartados na recarga da página.
 - **THEN** os filtros voltam ao estado vazio e a base completa é exibida
 
 ### Requirement: A exportação gera arquivos sobre o conjunto de perfis vigente
+
 O sistema SHALL oferecer no cabeçalho o menu "Relatórios" (posicionado à esquerda do botão
 "Novo Perfil") com as opções "Relação de perfis" (gera e baixa o relatório `perfis.pdf` em
 folha paisagem sobre o conjunto vigente, com logo de login configurada quando houver e as
@@ -197,6 +203,7 @@ somente o conjunto filtrado.
 - **THEN** o arquivo gerado contém somente os perfis do conjunto filtrado
 
 ### Requirement: A listagem exibe perfis em UiDataTable com seis colunas
+
 O sistema SHALL exibir os perfis em `UiDataTable` com colunas **Nome**, **Descrição**,
 **Usuários** (contagem), **Permissões** (`n/<total do catálogo>`), **Status** (badge) e **Ações**, com
 paginação, ordenação e busca textual do componente, badge de Status distinguível entre "Ativo", "Inativo"
@@ -220,12 +227,13 @@ inclusive após trocar a quantidade de registros exibidos por página.
   vigente nem os KPIs (a busca é visual, recurso do componente)
 
 ### Requirement: As contagens de permissões e de usuários são derivadas, nunca digitadas
+
 O sistema SHALL derivar a coluna **Permissões** da matriz de permissões servida pela API, somando as
 funcionalidades concedidas em cada perfil sobre o **total do catálogo** (`docs/07` §7 e `docs/02`
 §3.5) — as funcionalidades são **por módulo** (as fixas `visualizar`, `criar`, `alterar`, `excluir`
 mais as específicas de cada módulo, ex.: `clonar`, `publicar`, `arquivar`, `download`, `exportar`,
 `importar`, `filtrar`, `buscar`, `visualizar_itens`, `permissoes`) —, exibindo as contagens normativas de cada perfil da base
-(ex.: Administrador `90/90`); e SHALL derivar a coluna
+(ex.: Administrador `91/91`); e SHALL derivar a coluna
 **Usuários** das contagens de vínculo servidas pela API (derivadas da tabela `usuarios`), que
 refletem os usuários efetivamente cadastrados no banco. Nenhuma das duas contagens pode ser um valor
 digitado ou fixado no template.
@@ -233,7 +241,7 @@ digitado ou fixado no template.
 #### Scenario: Contagens derivadas da matriz e da base de usuários
 - **WHEN** a tabela é renderizada após o carregamento pela API
 - **THEN** a coluna Permissões exibe as contagens normativas do `docs/07` para cada perfil (ex.:
-  Administrador `90/90`), e a coluna Usuários exibe a contagem de usuários vinculados a cada
+  Administrador `91/91`), e a coluna Usuários exibe a contagem de usuários vinculados a cada
   perfil na base de usuários do banco, sem valores digitados nem fixados no template
 
 #### Scenario: Acompanha a base de usuários
@@ -247,6 +255,7 @@ digitado ou fixado no template.
   derivada da matriz gravada na API, sem valor digitado
 
 ### Requirement: A ação de permissões abre o modal de configuração
+
 O sistema SHALL abrir o modal de permissões (`UiModal`) ao acionar a ação de linha
 **Permissões** (ícone `KeyRound`, com tooltip e `aria-label` próprios), exibindo a matriz do
 perfil daquela linha, **sem** nenhum toast de "próxima etapa" — o modal de cadastro/edição
@@ -259,6 +268,7 @@ conforme seus próprios requisitos.
   "próxima etapa" é exibido
 
 ### Requirement: O modal de permissões configura a matriz do perfil na API
+
 O sistema SHALL abrir um modal de permissões (`UiModal` de largura `xl`) pelo controle
 Permissões de qualquer linha, exibindo a matriz do perfil — **11 módulos no total,
 organizados em abas pelas 4 sessões da sidebar**, cada linha com nome e descrição do
@@ -274,14 +284,14 @@ Alterações valem apenas no rascunho até **Salvar**, que SHALL gravar a matriz
 os KPIs recalculam e um toast de sucesso é exibido —; **"Cancelar"**, `Escape` ou o `X` do
 cabeçalho SHALL descartar o rascunho sem nenhuma requisição; e a recarga SHALL restaurar a
 matriz gravada na API. A matriz do perfil **Administrador é editável como as demais**, e um
-perfil novo (matriz vazia, `0/90`) SHALL poder ser configurado no mesmo modal.
+perfil novo (matriz vazia, `0/91`) SHALL poder ser configurado no mesmo modal.
 
 #### Scenario: Abertura pela ação Permissões
 - **WHEN** o usuário aciona "Configurar permissões" na linha de um perfil
 - **THEN** o modal "Permissões" abre exibindo o nome do perfil, as abas das 4 sessões da
   sidebar com os módulos da primeira sessão (nome + descrição em cada linha), os
   interruptores das funcionalidades fixas aplicáveis, os chips das Funcionalidades do módulo e o
-  contador `n/90` global
+  contador `n/91` global
 
 #### Scenario: Abas particionam os módulos por sessão
 - **WHEN** o usuário troca de aba (ex.: "Movimentos")
@@ -317,10 +327,11 @@ perfil novo (matriz vazia, `0/90`) SHALL poder ser configurado no mesmo modal.
 - **THEN** a matriz vinda da API reflete o que foi gravado (sem volta à semente original)
 
 #### Scenario: Administrador editável e perfil novo configurável
-- **WHEN** o usuário abre o modal do Administrador ou de um perfil recém-criado (`0/90`)
+- **WHEN** o usuário abre o modal do Administrador ou de um perfil recém-criado (`0/91`)
 - **THEN** a matriz é editável como a de qualquer outro perfil, sem trava por papel
 
 ### Requirement: O modal de permissões copia a matriz entre perfis
+
 O sistema SHALL oferecer no rodapé do modal de permissões, **alinhadas ao lado esquerdo**
 (grupo próprio à esquerda; `Cancelar` e `Salvar` permanecem à direita), duas ações de cópia
 identificadas por ícone com tooltip e `aria-label` próprios:
@@ -336,7 +347,7 @@ identificadas por ícone com tooltip e `aria-label` próprios:
   modal corrente (Cancelar/Escape/X) **não desfaz** a cópia já feita no alvo.
 
 O modal filho SHALL listar cada perfil candidato como escolha única com nome, descrição e
-sua contagem `n/90`; o perfil corrente SHALL estar sempre ausente da lista, e, sem
+sua contagem `n/91`; o perfil corrente SHALL estar sempre ausente da lista, e, sem
 candidatos (base com um único perfil), o modal filho SHALL exibir estado vazio com a ação
 de descarte. Ao fechar o modal filho, o foco SHALL voltar ao botão de ícone que o abriu, com
 o modal de permissões subjacente intacto (pilha de modais). A ação "copiar de" não emite
@@ -374,10 +385,11 @@ nenhuma requisição (vale até Salvar); a ação "copiar para" grava via API.
 #### Scenario: O seletor exclui o perfil corrente
 - **WHEN** qualquer uma das duas ações de cópia abre o modal filho
 - **THEN** a lista apresenta somente os demais perfis da base como escolhas únicas com nome,
-  descrição e contagem `n/90`; o perfil corrente nunca aparece e, sem candidatos, um estado
+  descrição e contagem `n/91`; o perfil corrente nunca aparece e, sem candidatos, um estado
   vazio é exibido com a ação de descarte
 
 ### Requirement: A API de perfis valida a entrada e responde com códigos de erro consistentes
+
 O sistema SHALL expor a API de perfis com validação de entrada e códigos de erro
 observáveis: criação com dados válidos responde `201`; nome vazio ou com mais de 100
 caracteres, situação fora de `Ativo`/`Inativo`/`Bloqueado`, módulo desconhecido ou funcionalidade
@@ -409,6 +421,7 @@ de integridade final).
 - **THEN** a API responde `409` e o perfil permanece no banco
 
 ### Requirement: O modal de cadastro/edição cria e altera perfis persistidos via API
+
 O sistema SHALL abrir um modal de cadastro/edição (`UiModal`, molde do modal de usuários) ao
 acionar "Novo Perfil" do cabeçalho ou "Editar" (`Pencil`) de uma linha, contendo a seção
 "Dados do Perfil" com os campos **Nome** (`nome_perfil`), **Situação** (`situacao`,
@@ -424,7 +437,7 @@ devolvendo o foco ao primeiro campo com erro — tanto na validação do cliente
 (`400`).
 
 Ao salvar na criação, o sistema SHALL criar o perfil pela API com matriz de permissões vazia
-(`0/90`) e zero usuários vinculados — a linha aparece, os KPIs recalculam e um toast de
+(`0/91`) e zero usuários vinculados — a linha aparece, os KPIs recalculam e um toast de
 sucesso é exibido. Ao salvar na edição, SHALL atualizar os campos editáveis mantendo
 `criado_em` preservado e fazendo `atualizado_em` refletir a edição. "Cancelar", `Escape` ou
 `X` do cabeçalho SHALL fechar o modal sem nenhuma requisição. Toda gravação SHALL persistir
@@ -448,7 +461,7 @@ via API e sobreviver à recarga da página.
 
 #### Scenario: Salvar cria o perfil na API
 - **WHEN** o usuário preenche os dados válidos e clica em "Salvar" na criação
-- **THEN** o perfil é criado pela API com id UUID gerado no banco, matriz vazia (`0/90`) e 0
+- **THEN** o perfil é criado pela API com id UUID gerado no banco, matriz vazia (`0/91`) e 0
   usuários, a linha aparece na tabela, os KPIs recalculam (o denominador de Permissões concedidas
   passa a considerar o novo perfil), um toast de sucesso é exibido e o modal fecha
 
@@ -473,6 +486,7 @@ via API e sobreviver à recarga da página.
   base de demonstração original
 
 ### Requirement: O modal de exclusão confirma a remoção de um perfil via API
+
 O sistema SHALL abrir um modal de confirmação (`UiModal` de largura `sm`) ao acionar o
 "Excluir perfil" (`Trash2`) de qualquer linha, com título "Excluir Perfil", identificação do
 alvo (nome e contagem de usuários vinculados) e o aviso de que a ação não pode ser desfeita,
@@ -528,6 +542,7 @@ perfil excluído.
   demonstração
 
 ### Requirement: O docs/07 é a fonte normativa da matriz de permissões
+
 O sistema SHALL manter o documento `docs/07 - Perfis de Acesso (RBAC).md` documentando a
 página (rota, componentes e comportamento) e a **matriz de permissões normativa** — 4 perfis ×
 11 módulos da sidebar, com **funcionalidades por módulo** (catálogo) — com exatamente as mesmas
@@ -536,7 +551,7 @@ contagens exibidas na tela, e declarando-se a fonte que o modal de permissões S
 #### Scenario: Consistência documento ↔ tela
 - **WHEN** o `docs/07` e a página são comparados
 - **THEN** as regras por perfil do documento produzem as mesmas contagens da tabela (ex.:
-  Administrador `90/90`) e do KPI de Permissões concedidas
+  Administrador `91/91`) e do KPI de Permissões concedidas
 
 #### Scenario: Escopo do modal futuro declarado
 - **WHEN** o `docs/07` é lido
@@ -544,6 +559,7 @@ contagens exibidas na tela, e declarando-se a fonte que o modal de permissões S
   que o modal de permissões implementa
 
 ### Requirement: A matriz de permissões é aplicada pelas APIs administrativas
+
 A matriz de permissões de um perfil SHALL determinar, no servidor, o que os usuários vinculados a
 ele podem fazer nas APIs administrativas — deixando de ser apenas normativa. Após salvar a matriz
 de um perfil (ou copiá-la), os usuários daquele perfil SHALL passar a ter exatamente as ações
@@ -559,6 +575,7 @@ concedidas (e a perder as revogadas) na próxima requisição, conforme a capabi
 - **THEN** os usuários daquele perfil passam a receber `403` na operação correspondente
 
 ### Requirement: A gravação da matriz protege contra o lockout administrativo
+
 O sistema SHALL recusar com `409` (sem gravar) a substituição ou cópia de matriz que deixaria o
 sistema **sem nenhum usuário ativo** cujo perfil conceda a ação `alterar` nos **três módulos
 essenciais** (`gestao-usuarios`, `perfis-acesso` e `configuracoes-globais`), evitando que o sistema
@@ -597,6 +614,7 @@ preservada a editabilidade da matriz de qualquer perfil na abertura do modal.
 - **THEN** o cliente exibe a mensagem devolvida pelo servidor, em vez de um erro genérico de conexão
 
 ### Requirement: O nome do perfil é único
+
 O sistema SHALL garantir a unicidade do nome do perfil no banco (`perfis_acesso.nome_perfil`): criar
 um perfil ou renomear um perfil para um nome já existente SHALL responder `409` sem gravar,
 preservando o registro existente. A restrição de unicidade do banco é a garantia de integridade
@@ -611,6 +629,7 @@ final.
 - **THEN** a API responde `409` e nenhum nome é alterado
 
 ### Requirement: A situação do perfil controla o acesso e a atribuição
+
 O sistema SHALL impedir o login de um usuário cujo perfil esteja **Inativo** ou **Bloqueado**
 (aviso próprio, sem autenticar) e SHALL recusar a atribuição de um perfil não-Ativo na criação,
 na edição e no convite de usuários. Tornar um perfil **não-Ativo** SHALL ainda derrubar as sessões
@@ -631,6 +650,7 @@ depender de novo login.
 - **THEN** as requisições seguintes desses usuários respondem `401` e o refresh não renova a sessão, sem novo login
 
 ### Requirement: A edição do perfil preserva campos omitidos
+
 O sistema SHALL atualizar o perfil de forma **parcial**: um campo ausente no corpo do
 `PUT /api/perfis/:id` SHALL manter o valor vigente (não apagar). Em particular, omitir a
 `descricao` SHALL preservar a descrição atual.
@@ -644,6 +664,7 @@ O sistema SHALL atualizar o perfil de forma **parcial**: um campo ausente no cor
 - **THEN** a descrição é atualizada para o valor enviado
 
 ### Requirement: A exportação de perfis informa falha ao usuário
+
 Ao gerar um relatório de perfis (CSV ou PDF), se a geração do arquivo falhar, o sistema SHALL exibir um toast de erro, nunca falhando em silêncio.
 
 #### Scenario: Falha na exportação exibe erro
@@ -651,6 +672,7 @@ Ao gerar um relatório de perfis (CSV ou PDF), se a geração do arquivo falhar,
 - **THEN** um toast de erro é exibido informando que a exportação não foi concluída
 
 ### Requirement: As mensagens de erro não expõem detalhe de infraestrutura
+
 As mensagens de falha exibidas ao usuário em Perfis de Acesso SHALL ser genéricas, sem revelar detalhe de infraestrutura (ex.: "Verifique a conexão com o banco").
 
 #### Scenario: Falha sem detalhe interno
@@ -658,6 +680,7 @@ As mensagens de falha exibidas ao usuário em Perfis de Acesso SHALL ser genéri
 - **THEN** a mensagem informa apenas que a operação não foi concluída, sem citar banco
 
 ### Requirement: A matriz exige criar para conceder clonar
+
 A validação da matriz de permissões SHALL recusar (`400`) uma configuração que conceda `clonar` em
 um módulo que oferece essa funcionalidade (`release-week` ou `manuais`) sem conceder `criar` no
 mesmo módulo, pois a clonagem grava pela mesma criação e exige `criar` no servidor. A recusa SHALL

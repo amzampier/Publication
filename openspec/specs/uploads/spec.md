@@ -7,6 +7,7 @@ Contrato do serviço de uploads de arquivos da aplicação: recepção multipart
 ## Requirements
 
 ### Requirement: Upload de imagem via endpoint multipart
+
 O sistema SHALL expor um endpoint `POST /api/uploads` que aceita upload multipart com um arquivo de imagem e o destino (`pasta`), grava o arquivo em `uploads/<pasta>/` no servidor e responde com a URL pública do arquivo no formato `/uploads/<pasta>/<nome>`.
 
 #### Scenario: Upload de logomarca
@@ -22,6 +23,7 @@ O sistema SHALL expor um endpoint `POST /api/uploads` que aceita upload multipar
 - **THEN** o servidor responde com erro 400 e nada é gravado
 
 ### Requirement: Somente imagens dentro dos limites são aceitas
+
 O endpoint SHALL aceitar apenas arquivos que sejam **imagens reais** (PNG, JPEG, WebP, GIF) de até
 5 MB, validando o **conteúdo** do arquivo (assinatura/magic bytes) **e** a coerência entre o tipo
 detectado e a extensão/nome do arquivo; requisições sem arquivo, com outro tipo de arquivo
@@ -55,6 +57,7 @@ de imagem detectado (nunca a extensão arbitrária enviada pelo cliente).
 - **THEN** o servidor responde com erro 400
 
 ### Requirement: Arquivos gravados são servidos publicamente
+
 Os arquivos gravados em `uploads/` SHALL ser servidos pela aplicação em `/uploads/**` tanto em
 desenvolvimento quanto em produção, sem depender de cópia no build, e o servimento SHALL incluir o
 cabeçalho `X-Content-Type-Options: nosniff` (o navegador não deve adivinhar o tipo do arquivo).
@@ -77,3 +80,32 @@ a resposta SHALL usar um tipo de mídia derivado do tipo real de imagem (ou um t
 #### Scenario: Arquivo gravado nunca é servido como documento executável
 - **WHEN** um arquivo de `/uploads/**` é requisitado
 - **THEN** a resposta nunca traz `Content-Type: text/html` para o conteúdo gravado (mesmo que o nome do arquivo tenha extensão executável), de modo que o navegador não execute script na origem da aplicação
+
+### Requirement: Uploads de chamadas usam subpastas de ano e mês
+
+Além das subpastas fixas por finalidade, o endpoint SHALL aceitar o destino `chamadas` acompanhado de
+`ano` e `mes`, gravando a imagem em `uploads/chamadas/<ano>/<mes>/<nome>` e respondendo com a URL
+pública `/uploads/chamadas/<ano>/<mes>/<nome>`. O `ano` SHALL ter quatro dígitos e o `mes` SHALL estar
+entre `01` e `12`; valores ausentes, inválidos ou com tentativa de travessia de diretório SHALL ser
+rejeitados com `400` sem gravar nada. O upload para `chamadas` SHALL exigir `criar` ou `alterar` no
+módulo `lancar-chamadas`.
+
+#### Scenario: Upload de imagem de chamada
+
+- **WHEN** a requisição envia uma imagem válida com destino `chamadas`, `ano=2026` e `mes=10`
+- **THEN** o arquivo é gravado em `uploads/chamadas/2026/10/` e a resposta traz a URL `/uploads/chamadas/2026/10/<nome>`
+
+#### Scenario: Ano ou mês inválido
+
+- **WHEN** a requisição envia `ano` fora de quatro dígitos ou `mes` fora de `01` a `12`
+- **THEN** o servidor responde `400` e nenhum arquivo é criado
+
+#### Scenario: Travessia de diretório
+
+- **WHEN** `ano`, `mes` ou o nome do arquivo tentam sair de `uploads/chamadas/` (ex.: `../fora`)
+- **THEN** o servidor responde `400` e nada é gravado
+
+#### Scenario: Perfil sem permissão de escrita
+
+- **WHEN** um perfil sem `criar` e sem `alterar` em `lancar-chamadas` envia uma imagem para `chamadas`
+- **THEN** o servidor responde `403` e nenhum arquivo é criado

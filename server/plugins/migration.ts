@@ -5,9 +5,64 @@
 // change auditoria-backend-integracao, design D9): antes, a rejeição virava
 // `[unhandledRejection]` no log e o processo seguia ouvindo — contradizendo
 // o "fails fast by design" do AGENTS.md. Agora: mensagem + exit != 0.
+import { getDbPool } from '../utils/db'
+
+/**
+ * O runner tolera `errno 1062` (chave duplicada). Sem esta pré-checagem, o
+ * `ADD UNIQUE KEY` da migration 24 poderia ser ignorado e o app subiria sem
+ * unicidade de `chamada`. Só roda quando a tabela já existe (primeiro boot
+ * ainda não tem `entregas_itens`).
+ */
+async function verificarDuplicatasChamadas(): Promise<void> {
+  const pool = getDbPool()
+  const [tabelas] = (await pool.query(
+    `SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entregas_itens' LIMIT 1`
+  )) as unknown as [Array<Record<string, unknown>>, unknown]
+  if (tabelas.length === 0) return
+
+  const [linhas] = (await pool.query(
+    `SELECT chamada, COUNT(*) AS total
+       FROM entregas_itens
+      GROUP BY chamada
+     HAVING COUNT(*) > 1
+      LIMIT 5`
+  )) as unknown as [Array<{ chamada: string; total: number }>, unknown]
+
+  if (linhas.length > 0) {
+    const exemplos = linhas.map((l) => `${l.chamada} (${l.total})`).join(', ')
+    throw new Error(
+      `[migrations] Existem chamadas duplicadas em entregas_itens: ${exemplos}. ` +
+      'Corrija os números repetidos antes de subir a aplicação (a migration 24 não pode criar o índice único).'
+    )
+  }
+}
+
+/** Confirma que o UNIQUE realmente foi criado, mesmo com o `1062` tolerado. */
+async function verificarIndiceUnicoChamada(): Promise<void> {
+  const pool = getDbPool()
+  const [tabelas] = (await pool.query(
+    `SELECT 1 FROM information_schema.TABLES
+      WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'entregas_itens' LIMIT 1`
+  )) as unknown as [Array<Record<string, unknown>>, unknown]
+  if (tabelas.length === 0) return
+
+  const [indices] = (await pool.query(
+    `SHOW INDEX FROM entregas_itens WHERE Key_name = 'uk_entregas_chamada'`
+  )) as unknown as [Array<Record<string, unknown>>, unknown]
+  if (indices.length === 0) {
+    throw new Error(
+      "[migrations] O índice único 'uk_entregas_chamada' não foi criado em entregas_itens. " +
+      'Verifique duplicatas de chamada e reaplique a migration 24.'
+    )
+  }
+}
+
 export default defineNitroPlugin(async () => {
   try {
+    await verificarDuplicatasChamadas()
     await runMigrations()
+    await verificarIndiceUnicoChamada()
     await ensureAdminUser()
     await migrarSenhasSmtp()
     await garantirEventScheduler()

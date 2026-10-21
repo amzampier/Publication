@@ -10,6 +10,7 @@ import {
 } from '@lucide/vue'
 import { usePermissions } from '../../composables/usePermissions'
 import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
+import { useApiFetch } from '../../composables/useApiFetch'
 import { useToast } from '../../composables/useToast'
 import { useLancarChamadasModelo } from './useLancarChamadasModelo'
 import {
@@ -54,9 +55,24 @@ const semDados = (): boolean => {
   return true
 }
 
-const exportarCsv = () => {
+const autorizarDownload = async (): Promise<boolean> => {
+  try {
+    await useApiFetch('/api/lancar-chamadas?download=1')
+    return true
+  } catch (erro) {
+    const e = erro as { statusMessage?: string; data?: { statusMessage?: string } }
+    toast.danger(
+      'Exportação',
+      e?.data?.statusMessage ?? e?.statusMessage ?? 'Você não tem permissão para exportar chamadas.'
+    )
+    return false
+  }
+}
+
+const exportarCsv = async () => {
   menuAberto.value = false
   if (semDados()) return
+  if (!(await autorizarDownload())) return
   try {
     gerarCsvLancarChamadas(linhas.value)
   } catch (erro) {
@@ -68,6 +84,7 @@ const exportarCsv = () => {
 const gerarPdf = async () => {
   menuAberto.value = false
   if (semDados()) return
+  if (!(await autorizarDownload())) return
   exportando.value = true
   try {
     await gerarPdfLancarChamadas({

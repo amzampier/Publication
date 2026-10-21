@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Eye, Pencil, Search, ShieldCheck, Trash2, XCircle } from '@lucide/vue'
+import { Eye, Import, Pencil, Search, ShieldCheck, Trash2, Undo2, XCircle } from '@lucide/vue'
 import type { ColumnDef } from '../../utils/dataGrid'
 import type { ActionMenuItem } from '../ui/ActionMenu.vue'
 import { usePermissions } from '../../composables/usePermissions'
 import {
   motivoBloqueioAprovacao,
+  motivoBloqueioDesaprovacao,
   motivoBloqueioExclusao,
   motivoBloqueioRecusa,
   podeExcluir,
@@ -18,8 +19,10 @@ const emit = defineEmits<{
   (e: 'detalhes', linha: LinhaChamada): void
   (e: 'editar', linha: LinhaChamada): void
   (e: 'aprovar', linha: LinhaChamada): void
+  (e: 'desaprovar', linha: LinhaChamada): void
   (e: 'recusar', linha: LinhaChamada): void
   (e: 'excluir', linha: LinhaChamada): void
+  (e: 'importar'): void
   (e: 'open-filters'): void
 }>()
 
@@ -74,6 +77,16 @@ const acoesDaLinha = (linha: LinhaChamada): ActionMenuItem[] => {
   }
   if (can('lancar-chamadas', 'alterar')) {
     const chamada = resolver(linha.id)
+    const motivoDesaprovar = chamada
+      ? motivoBloqueioDesaprovacao(chamada)
+      : 'Chamada não encontrada.'
+    itens.push({
+      id: 'desaprovar',
+      label: 'Desaprovar',
+      icon: Undo2,
+      disabled: motivoDesaprovar !== null,
+      reason: motivoDesaprovar ?? undefined
+    })
     const motivo = chamada ? motivoBloqueioRecusa(chamada) : 'Chamada não encontrada.'
     itens.push({
       id: 'recusar',
@@ -90,6 +103,7 @@ const acoesDaLinha = (linha: LinhaChamada): ActionMenuItem[] => {
 const acionar = (id: string, linha: LinhaChamada) => {
   if (id === 'detalhes') emit('detalhes', linha)
   else if (id === 'aprovar') emit('aprovar', linha)
+  else if (id === 'desaprovar') emit('desaprovar', linha)
   else if (id === 'recusar') emit('recusar', linha)
 }
 </script>
@@ -120,6 +134,16 @@ const acionar = (id: string, linha: LinhaChamada) => {
             :left-icon="Search"
           />
         </div>
+        <UiTooltip v-if="can('lancar-chamadas', 'importar')" content="Importar Chamadas" position="top">
+          <button
+            type="button"
+            aria-label="Importar chamadas"
+            class="inline-flex items-center justify-center rounded p-1 text-slate-500 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            @click="emit('importar')"
+          >
+            <Import class="h-4 w-4" />
+          </button>
+        </UiTooltip>
       </template>
 
       <template #cell(chamada)="{ row }">

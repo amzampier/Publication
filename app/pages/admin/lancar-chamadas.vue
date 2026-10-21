@@ -7,6 +7,7 @@ import {
 } from '../../components/lancar-chamadas/useLancarChamadasModelo'
 import {
   motivoBloqueioAprovacao,
+  motivoBloqueioDesaprovacao,
   motivoBloqueioExclusao,
   motivoBloqueioRecusa,
   type ChamadaModelo
@@ -20,9 +21,18 @@ const {
   carregarChamadas,
   resolver,
   aprovar,
+  desaprovar,
   recusar,
   excluir
 } = useLancarChamadasModelo()
+
+const mensagemErro = (erro: unknown): string => {
+  const e = erro as {
+    statusMessage?: string
+    data?: { statusMessage?: string }
+  }
+  return e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível concluir a operação.'
+}
 
 onMounted(async () => {
   const ok = await carregarChamadas()
@@ -36,6 +46,7 @@ onMounted(async () => {
 })
 
 const filtrosAbertos = ref(false)
+const importarAberto = ref(false)
 
 const formAberto = ref(false)
 const modo = ref<'novo' | 'editar'>('novo')
@@ -80,16 +91,44 @@ const abrirAprovacao = (linha: LinhaChamada) => {
   aprovarAberto.value = true
 }
 
-const confirmarAprovacao = () => {
+const confirmarAprovacao = async () => {
   const alvo = chamadaAprovar.value
   if (!alvo) return
-  aprovarAberto.value = false
-  chamadaAprovar.value = null
-  const resultado = aprovar(alvo.id)
-  if (resultado.ok) {
+  try {
+    await aprovar(alvo.id)
+    aprovarAberto.value = false
+    chamadaAprovar.value = null
     toast.success('Lançar as Chamadas', 'Chamada aprovada com sucesso.')
-  } else {
-    toast.danger('Lançar as Chamadas', resultado.motivo ?? 'Não foi possível aprovar a chamada.')
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
+  }
+}
+
+const desaprovarAberto = ref(false)
+const chamadaDesaprovar = ref<ChamadaModelo | null>(null)
+
+const abrirDesaprovacao = (linha: LinhaChamada) => {
+  const registro = resolver(linha.id)
+  if (!registro) return
+  const motivo = motivoBloqueioDesaprovacao(registro)
+  if (motivo) {
+    toast.info('Lançar as Chamadas', motivo)
+    return
+  }
+  chamadaDesaprovar.value = registro
+  desaprovarAberto.value = true
+}
+
+const confirmarDesaprovacao = async () => {
+  const alvo = chamadaDesaprovar.value
+  if (!alvo) return
+  try {
+    await desaprovar(alvo.id)
+    desaprovarAberto.value = false
+    chamadaDesaprovar.value = null
+    toast.success('Lançar as Chamadas', 'Chamada devolvida para Revisar.')
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
 
@@ -108,16 +147,16 @@ const abrirRecusa = (linha: LinhaChamada) => {
   recusarAberto.value = true
 }
 
-const confirmarRecusa = () => {
+const confirmarRecusa = async () => {
   const alvo = chamadaRecusar.value
   if (!alvo) return
-  recusarAberto.value = false
-  chamadaRecusar.value = null
-  const resultado = recusar(alvo.id)
-  if (resultado.ok) {
+  try {
+    await recusar(alvo.id)
+    recusarAberto.value = false
+    chamadaRecusar.value = null
     toast.success('Lançar as Chamadas', 'Chamada recusada com sucesso.')
-  } else {
-    toast.danger('Lançar as Chamadas', resultado.motivo ?? 'Não foi possível recusar a chamada.')
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
 
@@ -136,16 +175,16 @@ const abrirExclusao = (linha: LinhaChamada) => {
   exclusaoAberta.value = true
 }
 
-const confirmarExclusao = () => {
+const confirmarExclusao = async () => {
   const alvo = chamadaExcluir.value
   if (!alvo) return
-  exclusaoAberta.value = false
-  chamadaExcluir.value = null
-  const resultado = excluir(alvo.id)
-  if (resultado.ok) {
+  try {
+    await excluir(alvo.id)
+    exclusaoAberta.value = false
+    chamadaExcluir.value = null
     toast.success('Lançar as Chamadas', 'Chamada excluída com sucesso.')
-  } else {
-    toast.danger('Lançar as Chamadas', resultado.motivo ?? 'Não foi possível excluir a chamada.')
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
 </script>
@@ -164,12 +203,16 @@ const confirmarExclusao = () => {
         @detalhes="abrirDetalhes"
         @editar="abrirEdicao"
         @aprovar="abrirAprovacao"
+        @desaprovar="abrirDesaprovacao"
         @recusar="abrirRecusa"
         @excluir="abrirExclusao"
+        @importar="importarAberto = true"
         @open-filters="filtrosAbertos = true"
       />
 
       <LancarChamadasFiltros v-model="filtrosAbertos" />
+
+      <LancarChamadasImportar v-model="importarAberto" />
 
       <LancarChamadasFormulario
         v-model="formAberto"
@@ -186,6 +229,12 @@ const confirmarExclusao = () => {
         v-model="aprovarAberto"
         :chamada="chamadaAprovar"
         @confirmar="confirmarAprovacao"
+      />
+
+      <LancarChamadasDesaprovar
+        v-model="desaprovarAberto"
+        :chamada="chamadaDesaprovar"
+        @confirmar="confirmarDesaprovacao"
       />
 
       <LancarChamadasRecusar

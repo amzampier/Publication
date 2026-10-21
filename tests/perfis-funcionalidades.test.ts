@@ -40,9 +40,14 @@ describe('catálogo de funcionalidades por módulo (sincronia app × server)', (
     expect([...SRV_EXTRAS].sort()).toEqual([...APP_EXTRAS].sort())
   })
 
-  it('total do catálogo é 90', () => {
+  it('total do catálogo é 91', () => {
     const total = Object.values(SRV).reduce((soma, acoes) => soma + acoes.length, 0)
-    expect(total).toBe(90)
+    expect(total).toBe(91)
+  })
+
+  it('Lançar as Chamadas oferece importar como funcionalidade extra', () => {
+    expect(SRV['lancar-chamadas']).toContain('importar')
+    expect(APP['lancar-chamadas']).toContain('importar')
   })
 })
 

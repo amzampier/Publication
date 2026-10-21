@@ -37,6 +37,8 @@ export const VARIANTE_STATUS_CHAMADA: Record<
 
 export const MAX_TAGS_CHAMADA = 12
 export const MAX_TAG_CHAMADA = 30
+export const MAX_IMAGENS_CHAMADA = 20
+export const LIMITE_IMPORTACAO_CHAMADAS = 500
 
 export interface OpcaoChamada {
   id: string
@@ -113,6 +115,27 @@ export interface EntradaChamada {
   tags: string[]
 }
 
+export interface LinhaImportacaoChamada {
+  chamada: string
+  titulo: string
+  dataLancamento: string
+  dataLiberacao: string
+  releaseCodigo: string
+  projetoCodigo: string
+  manualCodigo: string
+  softwareCodigo: string
+  parceiroCodigo: string
+  modulo: string
+  menuFuncionalidade: string
+  tipo: TipoChamada
+  impacto: ImpactoChamada
+  descricaoCompleta: string
+  manualTitulo: string
+  linkManual: string
+  linkVideo: string
+  tags: string[]
+}
+
 export interface FiltrosChamada {
   status: string
   situacao: string
@@ -150,6 +173,7 @@ export type CampoChamada =
   | 'situacao'
   | 'linkManual'
   | 'linkVideo'
+  | 'imagens'
   | 'tags'
 
 export interface ResultadoValidacaoChamada {
@@ -162,6 +186,36 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
 const URL_HTTP = /^https?:\/\/\S+$/i
 
 const texto = (valor: unknown): string => (typeof valor === 'string' ? valor.trim() : '')
+
+/** Normaliza tags: trim, remove vazias e deduplica sem diferenciar maiúsculas. */
+export function normalizarTagsChamada(valor: unknown): string[] {
+  if (!Array.isArray(valor)) return []
+  const vistos = new Set<string>()
+  const tags: string[] = []
+  for (const item of valor) {
+    const tag = texto(item)
+    if (!tag) continue
+    const chave = tag.toLowerCase()
+    if (vistos.has(chave)) continue
+    vistos.add(chave)
+    tags.push(tag)
+  }
+  return tags
+}
+
+/** Normaliza URLs de imagem: trim, remove vazias e deduplica. */
+export function normalizarImagensChamada(valor: unknown): string[] {
+  if (!Array.isArray(valor)) return []
+  const vistos = new Set<string>()
+  const imagens: string[] = []
+  for (const item of valor) {
+    const url = texto(item)
+    if (!url || vistos.has(url)) continue
+    vistos.add(url)
+    imagens.push(url)
+  }
+  return imagens
+}
 
 /** `true` quando a string é uma data civil `AAAA-MM-DD` válida. */
 export function ehDataIso(valor: string): boolean {
@@ -296,8 +350,8 @@ export function validarChamada(
   if (!texto(dados.parceiroId)) erros.parceiroId = 'Selecione o parceiro.'
 
   const modulo = texto(dados.modulo)
-  if (!modulo) erros.modulo = 'Informe o módulo.'
-  else if (modulo.length > 100) erros.modulo = 'O módulo deve ter no máximo 100 caracteres.'
+  if (!modulo) erros.modulo = 'Informe o menu.'
+  else if (modulo.length > 100) erros.modulo = 'O menu deve ter no máximo 100 caracteres.'
 
   if (!texto(dados.descricaoCompleta)) {
     erros.descricaoCompleta = 'Informe a descrição completa da chamada.'
@@ -311,16 +365,10 @@ export function validarChamada(
   const dataLancamento = texto(dados.dataLancamento)
   if (!dataLancamento) erros.dataLancamento = 'Informe a data de lançamento.'
   else if (!ehDataIso(dataLancamento)) erros.dataLancamento = 'A data de lançamento é inválida.'
-  else if (!ehSegundaFeira(dataLancamento)) {
-    erros.dataLancamento = 'A data de lançamento deve ser uma segunda-feira.'
-  }
 
   const dataLiberacao = texto(dados.dataLiberacao)
-  if (dataLiberacao) {
-    if (!ehDataIso(dataLiberacao)) erros.dataLiberacao = 'A data de liberação é inválida.'
-    else if (!ehSegundaFeira(dataLiberacao)) {
-      erros.dataLiberacao = 'A data de liberação deve ser uma segunda-feira.'
-    }
+  if (dataLiberacao && !ehDataIso(dataLiberacao)) {
+    erros.dataLiberacao = 'A data de liberação é inválida.'
   }
 
   const tipo = texto(dados.tipo)
@@ -346,9 +394,12 @@ export function validarChamada(
     erros.linkVideo = 'Informe uma URL http(s) válida.'
   }
 
-  const tags = Array.isArray(dados.tags)
-    ? dados.tags.map((tag) => String(tag).trim()).filter(Boolean)
-    : []
+  const imagens = normalizarImagensChamada(dados.imagens)
+  if (imagens.length > MAX_IMAGENS_CHAMADA) {
+    erros.imagens = `Informe no máximo ${MAX_IMAGENS_CHAMADA} imagens.`
+  }
+
+  const tags = normalizarTagsChamada(dados.tags)
   if (tags.length > MAX_TAGS_CHAMADA) {
     erros.tags = `Informe no máximo ${MAX_TAGS_CHAMADA} tags.`
   } else if (tags.some((tag) => tag.length > MAX_TAG_CHAMADA)) {
@@ -371,6 +422,7 @@ export function validarChamada(
     'situacao',
     'linkManual',
     'linkVideo',
+    'imagens',
     'tags'
   ]
   const primeiroErro = prioridade.find((campo) => erros[campo]) ?? null
@@ -469,6 +521,17 @@ export function motivoBloqueioAprovacao(chamada: ChamadaModelo): string | null {
 /** Aprovação permitida apenas a partir de `Revisar`. */
 export function podeAprovar(chamada: ChamadaModelo): boolean {
   return motivoBloqueioAprovacao(chamada) === null
+}
+
+/** Motivo pelo qual a desaprovação está bloqueada (null quando permitida). */
+export function motivoBloqueioDesaprovacao(chamada: ChamadaModelo): string | null {
+  if (chamada.status !== 'Aprovado') return 'Somente chamadas aprovadas podem voltar para Revisar.'
+  return null
+}
+
+/** Desaprovação permitida apenas a partir de `Aprovado`. */
+export function podeDesaprovar(chamada: ChamadaModelo): boolean {
+  return motivoBloqueioDesaprovacao(chamada) === null
 }
 
 /** Motivo pelo qual a recusa está bloqueada (null quando permitida). */

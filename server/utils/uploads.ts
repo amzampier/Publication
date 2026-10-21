@@ -4,7 +4,7 @@ import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 
 /** Destinos permitidos — whitelist fechada (spec uploads: destino fora → 400). */
-export const UPLOAD_DESTINOS = ['logomarcas', 'avatares', 'logos'] as const
+export const UPLOAD_DESTINOS = ['logomarcas', 'avatares', 'logos', 'chamadas'] as const
 export type UploadDestino = (typeof UPLOAD_DESTINOS)[number]
 
 export const UPLOAD_MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
@@ -85,9 +85,14 @@ export async function gravarUpload(
   destino: UploadDestino,
   nome: string,
   dados: Buffer,
-  tipo: TipoImagem
+  tipo: TipoImagem,
+  subpastas: string[] = []
 ): Promise<string> {
-  const dir = join(uploadsDir(), destino)
+  const segmentos = subpastas
+    .map((segmento) => segmento.trim().replace(/[^a-zA-Z0-9_-]/g, ''))
+    .filter(Boolean)
+  const partes = [destino, ...segmentos]
+  const dir = join(uploadsDir(), ...partes)
   await mkdir(dir, { recursive: true })
 
   const ext = EXTENSAO_POR_TIPO[tipo]
@@ -105,5 +110,5 @@ export async function gravarUpload(
     }
   }
   await writeFile(join(dir, final), dados)
-  return `/uploads/${destino}/${final}`
+  return `/uploads/${partes.join('/')}/${final}`
 }
