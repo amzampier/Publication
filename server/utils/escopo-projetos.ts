@@ -215,7 +215,7 @@ export async function listarItensEscopo(id: string): Promise<ItemProjeto[]> {
             situacao, status, data_liberacao
        FROM entregas_itens
       WHERE projeto_id = ?
-      ORDER BY ordem_apresentacao ASC, chamada ASC`,
+      ORDER BY chamada ASC`,
     [id]
   )
   return linhas.map((row) => ({

@@ -197,7 +197,7 @@ export async function listarItensRelease(id: string): Promise<ItemRelease[]> {
             situacao, status, data_liberacao
        FROM entregas_itens
       WHERE release_id = ?
-      ORDER BY ordem_apresentacao ASC, chamada ASC`,
+      ORDER BY chamada ASC`,
     [id]
   )
   return linhas.map((row) => ({

@@ -43,6 +43,8 @@
 - [5.20 Avatar de Perfil (domínio)](#520-avatar-de-perfil-domínio--tela-meu-perfil)
 - [5.21 UiEntityCard](#521-uientitycard--seção-21-do-design) (seção 21)
 - [5.22 UiPagination](#522-uipagination--seção-22-do-design) (seção 22)
+- [5.23 UiActionMenu](#523-uiactionmenu--seção-23-do-design) (seção 23)
+- [5.24 UiTagInput](#524-uitaginput--seção-24-do-design) (seção 24)
 
 ## 1. Princípios & Tipografia
 
@@ -551,7 +553,7 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 - **Emits:** `update:modelValue(date: Date | null)` · `change(date: Date | null)` — **só emite quando a máscara completa (10 chars) ou ao limpar** (valores intermediários não emitem).
 - **Máscara:** `DD/MM/AAAA` automática ao digitar (só dígitos, validação de data real no parse).
 - **Estados:** aberto/focado = `border-b-brand-focus border-b-2` (foco canônico) · erro = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` (sem contorno em toda a volta) + `AlertCircle` em `<UiTooltip>` (mensagem no hover) e **sem texto abaixo do campo** (mensagem `sr-only` com `role="alert"`) · botão X limpa (`change(null)`).
-- **Popover:** `<Transition>` com o `Calendar`; fecha ao selecionar, com `Esc` ou clique fora (listener global) — com o popover **aberto** o `Esc` é consumido aqui (`stopPropagation`) e não fecha um `UiModal` por baixo; sem popover, o `Esc` propaga (fecha o modal). Abre também no `focus` do campo. **Auto-inversão vertical** — se não há espaço abaixo do campo para o calendário, o popover abre **para cima** (`bottom-full mb-1`), medindo o limite do ancestral rolável mais próximo à altura real do popover na abertura e a cada `scroll`/`resize` (listener em capture), mesmo padrão do `Select` (§4.81); **largura limitada** a `max-w-[min(100%,calc(100vw-1rem))]` (nunca maior que o campo nem que a janela) com alinhamento `right-0` quando o `left-0` transbordar a borda direita, e o `Calendar` usa `w-72 max-w-full`.
+- **Popover:** `<Transition>` com o `Calendar`; fecha ao selecionar, com `Esc` ou clique fora (listener global) — com o popover **aberto** o `Esc` é consumido aqui (`stopPropagation`) e não fecha um `UiModal` por baixo; sem popover, o `Esc` propaga (fecha o modal). Abre também no `focus` do campo. **Posicionamento fixo na viewport** — o popover usa `position: fixed` com coordenadas calculadas a partir do campo, abre para cima quando não há espaço abaixo e é limitado a `calc(100vw - 1rem)`/`calc(100vh - 1rem)`, com `overflow-y: auto`; isso evita o recorte pelo `overflow` do corpo do modal e mantém o calendário inteiro visível. A posição é recalculada em `scroll`/`resize`; se o campo sair da viewport, o popover fecha. O `Calendar` usa `w-72 max-w-full`.
 
 #### Calendar (embutido ou dentro do popover)
 
@@ -1178,3 +1180,25 @@ kit; espelhado em `docs/09`)
 - **Interação:** abre por clique ou `Enter`/`Space`/`ArrowDown` no gatilho; `ArrowUp`/`ArrowDown` navegam ciclicamente (`Home`/`End` vão ao primeiro/último), `Enter`/`Space` acionam, `Escape` e clique-fora fecham devolvendo o foco ao gatilho (clique-fora mantém o foco onde o usuário clicou); `scroll`/`resize` fecham o menu para não descolar do gatilho.
 - **Acessibilidade:** `aria-haspopup="menu"`, `aria-expanded` e `aria-controls` no gatilho; `role="menu"`/`role="menuitem"`; itens desabilitados não recebem foco.
 - **Espelhamento:** seção 23 do `/design` — menu de exemplo com ações habilitadas, destrutiva e desabilitada com motivo.
+
+### 5.24 UiTagInput — seção 24 do `/design`
+
+**Arquivo:** `app/components/ui/TagInput.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string[]` | `[]` | Coleção de tags |
+| `label` | `string` | `''` | Rótulo associado ao campo (`useId()` → `for`) |
+| `placeholder` | `string` | `'Digite uma tag e pressione Enter'` | Texto sem tags |
+| `disabled` | `boolean` | `false` | Fundo `slate-200`, opacidade reduzida, sem foco/hover |
+| `error` | `string` | `''` | Erro canônico (ícone + tooltip + região viva) |
+| `helperText` | `string` | `''` | Texto auxiliar abaixo do campo |
+| `max` | `number` | `12` | Quantidade máxima de tags |
+| `maxLength` | `number` | `30` | Comprimento máximo de cada tag |
+
+- **Emits:** `update:modelValue(tags: string[])` e `change(tags: string[])`.
+- **Adição:** `Enter` ou vírgula confirmam a tag; `trim` é aplicado, valores vazios e duplicados são ignorados. Ao atingir `max` ou `maxLength`, a tag é recusada e um aviso em `text-amber-700` é exibido.
+- **Remoção:** botão `X` em cada chip (nome acessível "Remover tag …") ou `Backspace` com o campo vazio remove a última tag; o foco permanece no campo.
+- **Visual:** container `min-h-[34px]` com chips `rounded-md border-lime-300 bg-lime-50 text-lime-900`; foco com recorte inferior `brand-focus`; erro com recorte inferior `rose-700` e `AlertCircle`; sem contorno na borda superior/laterais.
+- **Acessibilidade:** lista de chips com rótulo, botões de remoção nomeados, mensagem de erro em `role="alert"` e `aria-describedby`; limite comunicado por `role="status"`.
+- **Espelhamento:** seção 24 do `/design` — exemplos habilitado, erro, limite e desabilitado.

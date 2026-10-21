@@ -134,27 +134,12 @@ const handleClickOutside = (e: MouseEvent) => {
   }
 }
 
-// Auto-inversão do popover (espelha o UiSelect): abre para cima quando não há
-// espaço suficiente abaixo e há mais espaço acima do que abaixo.
-const abreParaCima = ref(false)
-const alinhaDireita = ref(false)
+// O popover usa posição fixa na viewport (e não `absolute` dentro do modal) para
+// não ser recortado pelo `overflow` do corpo do modal. A abertura é invertida
+// para cima quando não há espaço abaixo e o posicionamento é recalculado em
+// scroll/resize.
 const popoverRef = ref<HTMLElement | null>(null)
-
-function limitesDeRolagem(el: HTMLElement) {
-  let superior = 0
-  let inferior = window.innerHeight
-  let atual: HTMLElement | null = el
-  while (atual && atual !== document.documentElement) {
-    const estilo = getComputedStyle(atual)
-    if (estilo.overflowY !== 'visible' || estilo.overflowX !== 'visible') {
-      const rect = atual.getBoundingClientRect()
-      superior = Math.max(superior, rect.top)
-      inferior = Math.min(inferior, rect.bottom)
-    }
-    atual = atual.parentElement
-  }
-  return { superior, inferior }
-}
+const popoverStyle = ref<Record<string, string>>({})
 
 function atualizarPosicao() {
   const campo = datePickerRef.value
@@ -163,11 +148,33 @@ function atualizarPosicao() {
   const rect = campo.getBoundingClientRect()
   const alturaPopover = popover.offsetHeight
   const larguraPopover = popover.offsetWidth
-  const { superior, inferior } = limitesDeRolagem(campo)
-  const espacoAbaixo = inferior - rect.bottom
-  const espacoAcima = rect.top - superior
-  abreParaCima.value = espacoAbaixo < alturaPopover && espacoAcima > espacoAbaixo
-  alinhaDireita.value = rect.left + larguraPopover > window.innerWidth - 8
+
+  if (rect.bottom < 0 || rect.top > window.innerHeight) {
+    isOpen.value = false
+    return
+  }
+
+  const espacoAbaixo = window.innerHeight - rect.bottom
+  const espacoAcima = rect.top
+  const abrirAcima = espacoAbaixo < alturaPopover + 8 && espacoAcima > espacoAbaixo
+  const top = abrirAcima
+    ? Math.max(8, rect.top - alturaPopover - 4)
+    : Math.min(rect.bottom + 4, Math.max(8, window.innerHeight - alturaPopover - 8))
+  const left = Math.min(
+    Math.max(8, rect.left),
+    Math.max(8, window.innerWidth - larguraPopover - 8)
+  )
+
+  popoverStyle.value = {
+    position: 'fixed',
+    top: `${top}px`,
+    left: `${left}px`,
+    zIndex: '80',
+    width: `${larguraPopover}px`,
+    maxWidth: 'calc(100vw - 1rem)',
+    maxHeight: 'calc(100vh - 1rem)',
+    overflowY: 'auto'
+  }
 }
 
 function aoRolar() {
@@ -294,11 +301,8 @@ onUnmounted(() => {
       <div
         v-if="isOpen"
         ref="popoverRef"
-        :class="[
-          'absolute z-50 max-w-[min(100%,calc(100vw-1rem))]',
-          abreParaCima ? 'bottom-full mb-1' : 'top-full mt-1',
-          alinhaDireita ? 'right-0' : 'left-0'
-        ]"
+        :style="popoverStyle"
+        class="z-[80] max-w-[calc(100vw-1rem)]"
       >
         <Calendar
           :model-value="modelValue"

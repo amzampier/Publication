@@ -577,6 +577,11 @@ const selecionarAcaoDemo = (id: string) => {
   toast.info('Menu de ações', `Ação "${id}" selecionada (demonstração).`)
 }
 
+// Demo da Seção 24 - UiTagInput (coleção de tags em chips)
+const tagsDemo = ref(['fiscal', 'financeiro'])
+const tagsDemoErro = ref(['xml', 'sped'])
+const tagsDemoLimite = ref(['erp', 'portal', 'wms'])
+
 const tabsDemoAba = ref('design')
 const tabsDemoAbas = [
   { id: 'design', label: 'Design Tokens', icon: Palette, cor: '#7c3aed' },
@@ -704,7 +709,8 @@ const secoes = [
   { id: 'switch', label: '20. Switch (UiSwitch)' },
   { id: 'entity-card', label: '21. Cards de Entidade (UiEntityCard)' },
   { id: 'pagination', label: '22. Paginação (UiPagination)' },
-  { id: 'action-menu', label: '23. Menu de Ações (UiActionMenu)' }
+  { id: 'action-menu', label: '23. Menu de Ações (UiActionMenu)' },
+  { id: 'tag-input', label: '24. Entrada de Tags (UiTagInput)' }
 ]
 </script>
 
@@ -3203,6 +3209,78 @@ variant="lime"
   ]"
   label="Ações do registro"
   @select="executarAcao"
+/&gt;</pre>
+          </div>
+        </section>
+
+        <section id="tag-input" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-[#f59e0b] shrink-0 mt-0.5">
+                <Tag class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  24. Entrada de Tags (UiTagInput)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Coleção de tags em chips com adição por <code class="font-mono text-slate-700">Enter</code>
+                  ou vírgula, remoção por botão/<code class="font-mono text-slate-700">Backspace</code>,
+                  deduplicação e limites. Foco e erro seguem o recorte canônico do design system.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-2 mb-6">
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+              <UiTagInput
+                v-model="tagsDemo"
+                label="Tags da chamada"
+                helper-text="Digite uma tag e pressione Enter ou vírgula. Backspace remove a última."
+              />
+              <p class="mt-3 text-[11px] text-slate-500">
+                Valor atual:
+                <span class="font-mono text-slate-700">[{{ tagsDemo.join(', ') }}]</span>
+              </p>
+            </div>
+
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+              <UiTagInput
+                v-model="tagsDemoErro"
+                label="Com erro de validação"
+                error="Informe ao menos uma tag relacionada ao módulo."
+              />
+            </div>
+
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+              <UiTagInput
+                v-model="tagsDemoLimite"
+                label="Limite de 3 tags / 8 caracteres"
+                :max="3"
+                :max-length="8"
+                helper-text="Ao atingir o limite, novas tentativas são recusadas com aviso."
+              />
+            </div>
+
+            <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+              <UiTagInput
+                :model-value="['fiscal', 'sped']"
+                label="Desabilitado"
+                disabled
+                helper-text="Somente leitura: sem foco, hover ou remoção."
+              />
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiTagInput
+  v-model="tags"
+  label="Tags da chamada"
+  :max="12"
+  :max-length="30"
+  helper-text="Enter ou vírgula adiciona; Backspace remove a última."
 /&gt;</pre>
           </div>
         </section>

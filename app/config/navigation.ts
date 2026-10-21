@@ -81,7 +81,7 @@ export const sessoes: SidebarSession[] = [
     aberto: true,
     items: [
       { id: 'esteira-revisao', label: 'Esteira de Revisão', icon: Workflow, cor: '#8b5cf6' },
-      { id: 'lancar-chamadas', label: 'Lançar as Chamadas', icon: Megaphone, cor: '#f59e0b' }
+      { id: 'lancar-chamadas', label: 'Lançar as Chamadas', icon: Megaphone, cor: '#f59e0b', to: '/admin/lancar-chamadas' }
     ]
   },
   {

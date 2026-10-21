@@ -208,7 +208,7 @@ export async function listarItensManual(id: string): Promise<ItemManual[]> {
             situacao, status, data_liberacao
        FROM entregas_itens
       WHERE manual_id = ?
-      ORDER BY ordem_apresentacao ASC, chamada ASC`,
+      ORDER BY chamada ASC`,
     [id]
   )
   return linhas.map((row) => ({

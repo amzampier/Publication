@@ -230,13 +230,15 @@ ADMINISTRAÇÃO
 Observações:
 
 - Os quatro grupos cobrem as frentes do sistema: **conteúdo publicado** (Área Pública lê Manuais,
-  Release Week e Escopo de Projetos), **movimentos de negócio** (Esteira de Revisão e Lançar as
-  Chamadas — itens ainda sem rota), **cadastros de apoio** e **administração/governança**.
+  Release Week e Escopo de Projetos), **movimentos de negócio** (Esteira de Revisão, ainda sem rota,
+  e Lançar as Chamadas, em `/admin/lancar-chamadas`), **cadastros de apoio** e
+  **administração/governança**.
 - **Itens sem rota:** o clique não navega — exibe `toast.info` com o rótulo do item e a
   mensagem "Módulo em construção." (spec `design-system/layout-navigation`; **MEL-03 do
-  `RL01` resolvido**). O menu da conta fica fora do aviso: "Meu Perfil" navega para
-  `/admin/meu-perfil` (como os itens com rota) e "Encerrar Sessão" mantém seu comportamento
-  próprio (fecho de sessão).
+  `RL01` resolvido**). Nesta árvore, apenas **Esteira de Revisão** permanece sem rota; Lançar as
+  Chamadas passou a navegar para `/admin/lancar-chamadas`. O menu da conta fica fora do aviso:
+  "Meu Perfil" navega para `/admin/meu-perfil` (como os itens com rota) e "Encerrar Sessão" mantém
+  seu comportamento próprio (fecho de sessão).
 - **Cores dos ícones (`SidebarItem.cor`)** — o ícone fica colorido sempre e o hover da opção pinta
   rótulo/ícone com a mesma cor (`.ds-item-hover` + `--item-cor` em
   [`app/assets/css/main.css`](../app/assets/css/main.css)). As cores no config são **cheias** (mesma
