@@ -165,7 +165,7 @@ describe('calcularProgresso', () => {
     })
   })
 
-  it('ignora vínculo arquivado ou publicado na quebra por origem', () => {
+  it('ignora apenas vínculo arquivado na quebra por origem', () => {
     const progresso = calcularProgresso([
       comStatus('Revisar', {
         contexto: {
@@ -175,7 +175,7 @@ describe('calcularProgresso', () => {
         }
       })
     ])
-    expect(progresso.porVinculo.release.total).toBe(0)
+    expect(progresso.porVinculo.release.total).toBe(1)
     expect(progresso.porVinculo.manual.total).toBe(0)
     expect(progresso.total).toBe(1)
   })
@@ -246,6 +246,24 @@ describe('filtrarItensEsteira', () => {
         ''
       ).map((i) => i.chamada)
     ).toEqual(['100'])
+  })
+
+  it('inclui item de manual publicado no board', () => {
+    const publicado = item({
+      chamada: '900',
+      contexto: {
+        release: null,
+        manual: contexto('man-9', 'MAN-09/2026', 'Publicado'),
+        projeto: null
+      }
+    })
+    expect(
+      filtrarItensEsteira(
+        [publicado],
+        { ...FILTROS_ESTEIRA_VAZIOS, origem: 'Manual' },
+        ''
+      ).map((i) => i.chamada)
+    ).toEqual(['900'])
   })
 
   it('filtra por parceiro', () => {

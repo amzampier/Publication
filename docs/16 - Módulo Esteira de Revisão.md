@@ -42,7 +42,7 @@ aprovar, recusar, reabrir, publicar e suspender com parecer e critérios.
 
 A Esteira de Revisão é a **dona do fluxo de homologação** das chamadas de `entregas_itens`. Ela
 reúne, em um board visual, os itens cujo conteúdo pai (Release Week, Manual ou Escopo de Projetos)
-ainda está ativo — **não arquivado e não publicado** —, com o objetivo de revisar, homologar,
+ainda está ativo — **não arquivado** —, com o objetivo de revisar, homologar,
 publicar ou recusar cada chamada com parecer e trilha imutável.
 
 - **Rota:** `/admin/esteira-revisao` → `app/pages/admin/esteira-revisao.vue` com
@@ -311,7 +311,8 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 ## 6. Progresso da Esteira
 
 **Universo (ciclo ativo):** inclui a chamada quando **ao menos um** vínculo aponta para conteúdo pai
-`arquivada = 0` **e** `status <> 'Publicado'`. Itens sem vínculo ativo não entram.
+`arquivada = 0`. Itens sem vínculo não arquivado não entram. O status `Publicado` do pai **não**
+exclui o item do board: ele é usado apenas pelo gate de visibilidade pública.
 
 ```text
 total          = itens distintos no ciclo ativo
@@ -358,7 +359,7 @@ avançou        = aprovado + publicar
 - **Gates:** `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`.
 - **Testes unitários:**
   - `tests/esteira-revisao-validadores.test.ts` — progresso (zero, contagens, percentual =
-    aprovado + publicado, multi-vínculo por origem, vínculo arquivado/publicado), filtros (origem,
+    aprovado + publicado, multi-vínculo por origem, vínculo arquivado), filtros (origem,
     status, vínculo, software, parceiro, tipo, impacto, período e busca sem acento) e
     transições/parecer (aprovar, recusar, reabrir, publicar, suspender).
   - `tests/perfis-funcionalidades.test.ts` — catálogo de 92 e `buscar` na esteira.

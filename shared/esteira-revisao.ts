@@ -99,9 +99,14 @@ export const FILTROS_ESTEIRA_VAZIOS: FiltrosEsteira = {
   dataLiberacaoAte: ''
 }
 
-/** Contexto entra no ciclo ativo quando não está arquivado nem publicado. */
+/**
+ * Contexto entra no board/progresso quando não está arquivado. O status
+ * `Publicado` NÃO exclui o item do board: ele é usado apenas pelo gate de
+ * visibilidade pública (`itemVisivelNoPortal`), para que itens em `Publicar`
+ * de conteúdo já publicado continuem visíveis na coluna Publicados.
+ */
 export function contextoAtivo(contexto: ContextoVinculo | null): boolean {
-  return Boolean(contexto && !contexto.arquivada && contexto.status !== 'Publicado')
+  return Boolean(contexto && !contexto.arquivada)
 }
 
 export type TipoVinculo = 'release' | 'manual' | 'projeto'

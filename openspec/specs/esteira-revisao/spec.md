@@ -51,7 +51,8 @@ tela SHALL exibir o painel **Progresso da Esteira** ao lado do filtro **Demandas
 origem). O painel SHALL ser compacto (percentual em `text-lg`, contagens em linha e barra `h-1.5`) e
 NÃO SHALL ocupar 100% da largura; em telas estreitas, painel e origem SHALL empilhar. O painel SHALL
 ser calculado sobre o **ciclo ativo**: chamadas cujo ao menos um vínculo aponte para Release Week,
-Manual ou Escopo de Projetos **não arquivado e não publicado**. O painel SHALL apresentar o
+Manual ou Escopo de Projetos **não arquivado**. O status `Publicado` do pai não exclui o item do
+board; ele é usado apenas pelo gate de visibilidade pública. O painel SHALL apresentar o
 percentual do fluxo (`(Aprovado + Publicar) / total`), as contagens **a revisar**, **aprovados** e
 **publicados**, e uma barra segmentada com as cores sólidas de Revisar (`#f59e0b`), Aprovado
 (`#1a9e07`), Publicar (`#0364f7`) e Recusado (`#be123c`). O painel SHALL ser **global** e NÃO SHALL
