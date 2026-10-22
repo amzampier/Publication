@@ -101,9 +101,8 @@ export const FILTROS_ESTEIRA_VAZIOS: FiltrosEsteira = {
 
 /**
  * Contexto entra no board/progresso quando não está arquivado. O status
- * `Publicado` NÃO exclui o item do board: ele é usado apenas pelo gate de
- * visibilidade pública (`itemVisivelNoPortal`), para que itens em `Publicar`
- * de conteúdo já publicado continuem visíveis na coluna Publicados.
+ * `Publicado` não exclui o vínculo por si só; a saída de itens em `Publicar`
+ * com pai publicado é decidida por `itemPublicadoNoPortal`.
  */
 export function contextoAtivo(contexto: ContextoVinculo | null): boolean {
   return Boolean(contexto && !contexto.arquivada)
@@ -122,14 +121,49 @@ export function contextoPublicado(contexto: ContextoVinculo | null): boolean {
 }
 
 /**
- * O item só aparece no portal quando ele está em `Publicar` E ao menos um
- * vínculo aponta para conteúdo pai com status `Publicado`.
+ * O item já está publicado no portal quando está em `Publicar` E ao menos um
+ * vínculo ativo aponta para conteúdo pai com status `Publicado`.
  */
-export function itemVisivelNoPortal(item: Pick<ItemEsteira, 'status' | 'contexto'>): boolean {
+export function itemPublicadoNoPortal(
+  item: Pick<ItemEsteira, 'status' | 'contexto'>
+): boolean {
   if (item.status !== 'Publicar') return false
   return [item.contexto.release, item.contexto.manual, item.contexto.projeto].some(
-    contextoPublicado
+    (contexto) => contextoAtivo(contexto) && contextoPublicado(contexto)
   )
+}
+
+/** Alias de leitura para a visibilidade pública do item. */
+export function itemVisivelNoPortal(item: Pick<ItemEsteira, 'status' | 'contexto'>): boolean {
+  return itemPublicadoNoPortal(item)
+}
+
+/** O item possui ao menos um vínculo não arquivado. */
+export function itemComVinculoAtivo(item: Pick<ItemEsteira, 'contexto'>): boolean {
+  return [item.contexto.release, item.contexto.manual, item.contexto.projeto].some(contextoAtivo)
+}
+
+/**
+ * Item do ciclo ativo: possui vínculo não arquivado e ainda não está publicado
+ * no portal. Itens em `Publicar` com pai `Publicado` saem do ciclo; `Revisar`,
+ * `Aprovado` e `Recusado` permanecem mesmo com o pai publicado.
+ */
+export function itemNoCicloAtivo(item: Pick<ItemEsteira, 'status' | 'contexto'>): boolean {
+  return itemComVinculoAtivo(item) && !itemPublicadoNoPortal(item)
+}
+
+/**
+ * Item exibido no board: o ciclo ativo por padrão. Quando um vínculo
+ * específico (Release Week, Manual ou Escopo) está filtrado, inclui também os
+ * itens em `Publicar` já visíveis no portal para consulta.
+ */
+export function itemVisivelNoBoard(
+  item: Pick<ItemEsteira, 'status' | 'contexto'>,
+  filtros: Pick<FiltrosEsteira, 'releaseId' | 'manualId' | 'projetoId'>
+): boolean {
+  if (!itemComVinculoAtivo(item)) return false
+  if (itemNoCicloAtivo(item)) return true
+  return Boolean(filtros.releaseId || filtros.manualId || filtros.projetoId)
 }
 
 /** Origem efetiva de um item a partir dos vínculos ATIVOS. */
@@ -211,6 +245,19 @@ const statusDaAba = (aba: AbaEsteira): StatusChamada | null => {
   return null
 }
 
+/**
+ * Vínculos específicos do filtro combinam por união: a chamada entra quando
+ * corresponde a qualquer Release Week, Manual ou Escopo selecionado.
+ */
+const correspondeVinculo = (item: ItemEsteira, filtros: FiltrosEsteira): boolean => {
+  if (!filtros.releaseId && !filtros.manualId && !filtros.projetoId) return true
+  return (
+    (Boolean(filtros.releaseId) && item.contexto.release?.id === filtros.releaseId) ||
+    (Boolean(filtros.manualId) && item.contexto.manual?.id === filtros.manualId) ||
+    (Boolean(filtros.projetoId) && item.contexto.projeto?.id === filtros.projetoId)
+  )
+}
+
 const temVinculo = (item: ItemEsteira, origem: string): boolean => {
   const release = contextoAtivo(item.contexto.release)
   const manual = contextoAtivo(item.contexto.manual)
@@ -268,9 +315,7 @@ export function filtrarItensEsteira(
     .filter((item) => !statusAba || item.status === statusAba)
     .filter((item) => !filtros.status || item.status === filtros.status)
     .filter((item) => temVinculo(item, filtros.origem))
-    .filter((item) => !filtros.releaseId || item.contexto.release?.id === filtros.releaseId)
-    .filter((item) => !filtros.manualId || item.contexto.manual?.id === filtros.manualId)
-    .filter((item) => !filtros.projetoId || item.contexto.projeto?.id === filtros.projetoId)
+    .filter((item) => correspondeVinculo(item, filtros))
     .filter(
       (item) => !filtros.softwareId || item.softwareIds.includes(filtros.softwareId)
     )

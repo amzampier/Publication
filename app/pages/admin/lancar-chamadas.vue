@@ -35,7 +35,7 @@ const mensagemErro = (erro: unknown): string => {
 }
 
 onMounted(async () => {
-  const ok = await carregarChamadas()
+  const ok = await carregarChamadas(true)
   carregando.value = false
   if (!ok) {
     toast.danger(

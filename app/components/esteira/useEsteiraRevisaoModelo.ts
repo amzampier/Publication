@@ -9,6 +9,8 @@ import {
   contextoAtivo,
   filtrarItensEsteira,
   formatarDataHora,
+  itemNoCicloAtivo,
+  itemVisivelNoBoard,
   origemDoItem,
   rotuloVinculo,
   type AcaoEsteira,
@@ -145,11 +147,18 @@ export const useEsteiraRevisaoModelo = () => {
     }
   }
 
+  const itensCiclo = computed(() => itens.value.filter(itemNoCicloAtivo))
+
   const itensFiltrados = computed(() =>
-    filtrarItensEsteira(itens.value, filtros.value, busca.value, 'todas')
+    filtrarItensEsteira(
+      itens.value.filter((item) => itemVisivelNoBoard(item, filtros.value)),
+      filtros.value,
+      busca.value,
+      'todas'
+    )
   )
 
-  const progresso = computed(() => calcularProgresso(itens.value))
+  const progresso = computed(() => calcularProgresso(itensCiclo.value))
 
   const kpis = computed<KpisEsteira>(() => {
     const conjunto = itensFiltrados.value
@@ -182,17 +191,17 @@ export const useEsteiraRevisaoModelo = () => {
   )
 
   const contagemPorOrigem = computed<Record<string, number>>(() => ({
-    '': itens.value.length,
-    Release: itens.value.filter((item) => contextoAtivo(item.contexto.release)).length,
-    Manual: itens.value.filter((item) => contextoAtivo(item.contexto.manual)).length,
-    Projeto: itens.value.filter((item) => contextoAtivo(item.contexto.projeto)).length
+    '': itensCiclo.value.length,
+    Release: itensCiclo.value.filter((item) => contextoAtivo(item.contexto.release)).length,
+    Manual: itensCiclo.value.filter((item) => contextoAtivo(item.contexto.manual)).length,
+    Projeto: itensCiclo.value.filter((item) => contextoAtivo(item.contexto.projeto)).length
   }))
 
   const contagemPorStatus = computed<Record<StatusChamada, number>>(() => ({
-    Revisar: itens.value.filter((item) => item.status === 'Revisar').length,
-    Aprovado: itens.value.filter((item) => item.status === 'Aprovado').length,
-    Recusado: itens.value.filter((item) => item.status === 'Recusado').length,
-    Publicar: itens.value.filter((item) => item.status === 'Publicar').length
+    Revisar: itensCiclo.value.filter((item) => item.status === 'Revisar').length,
+    Aprovado: itensCiclo.value.filter((item) => item.status === 'Aprovado').length,
+    Recusado: itensCiclo.value.filter((item) => item.status === 'Recusado').length,
+    Publicar: itensCiclo.value.filter((item) => item.status === 'Publicar').length
   }))
 
   const opcoesFiltro = computed<OpcoesEsteira>(() => ({

@@ -25,8 +25,6 @@ export interface DadosTransicao {
   ator: AtorTransicao
   parecer?: string
   criterios?: boolean
-  /** ISO/data de criação do item — fallback quando não há transição anterior. */
-  criadoEm: string
 }
 
 /** Executor mínimo aceito tanto pelo pool quanto por uma transação. */
@@ -56,17 +54,20 @@ export async function registrarTransicao(
   dados: DadosTransicao
 ): Promise<void> {
   const linhas = await executor.query<Array<{ minutos: number | null }>>(
-    `SELECT TIMESTAMPDIFF(
-        MINUTE,
-        COALESCE(
-          (SELECT MAX(h.data_transicao)
-             FROM historico_esteira_revisao h
-            WHERE h.entrega_item_id = ? AND h.novo_status = ?),
-          ?
+    `SELECT GREATEST(
+        TIMESTAMPDIFF(
+          MINUTE,
+          COALESCE(
+            (SELECT MAX(h.data_transicao)
+               FROM historico_esteira_revisao h
+              WHERE h.entrega_item_id = ? AND h.novo_status = ?),
+            (SELECT e.criado_em FROM entregas_itens e WHERE e.id = ?)
+          ),
+          NOW()
         ),
-        NOW()
+        0
       ) AS minutos`,
-    [dados.itemId, dados.statusAnterior, dados.criadoEm]
+    [dados.itemId, dados.statusAnterior, dados.itemId]
   )
   const minutos = linhas[0]?.minutos == null ? null : Number(linhas[0].minutos)
 
@@ -91,7 +92,7 @@ export async function registrarTransicao(
   )
 }
 
-/** Histórico de um item em ordem cronológica (mais antigo primeiro). */
+/** Histórico de um item do mais recente para o mais antigo (atual primeiro). */
 export async function listarHistoricoItem(itemId: string): Promise<HistoricoEsteira[]> {
   const linhas = await query<Row[]>(
     `SELECT id, status_anterior, novo_status, responsavel_id, responsavel_nome,
@@ -99,7 +100,7 @@ export async function listarHistoricoItem(itemId: string): Promise<HistoricoEste
             tempo_no_estagio_minutos, data_transicao
        FROM historico_esteira_revisao
       WHERE entrega_item_id = ?
-      ORDER BY data_transicao ASC, id ASC`,
+      ORDER BY data_transicao DESC, id DESC`,
     [itemId]
   )
   return linhas.map((linha) => ({

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import {
   Building2,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   FileText,
   GitBranch,
@@ -45,14 +47,54 @@ const vinculos = computed(() => {
   ]
 })
 
-const listaHistorico = computed(() => (props.item ? historico.value[props.item.id] ?? [] : []))
+const listaHistorico = computed(() => {
+  if (!props.item) return []
+  return [...(historico.value[props.item.id] ?? [])].sort(
+    (a, b) => new Date(b.dataTransicao).getTime() - new Date(a.dataTransicao).getTime()
+  )
+})
 const carregandoHistorico = computed(() =>
   props.item ? historicoCarregando.value[props.item.id] === true : false
 )
 
+const galeriaAberta = ref(false)
+const indiceImagem = ref(0)
+const totalImagens = computed(() => props.item?.imagens.length ?? 0)
+const imagemAtual = computed(() => props.item?.imagens[indiceImagem.value] ?? '')
+
+const abrirGaleria = (indice: number) => {
+  indiceImagem.value = indice
+  galeriaAberta.value = true
+}
+
+const anterior = () => {
+  if (totalImagens.value < 2) return
+  indiceImagem.value = (indiceImagem.value - 1 + totalImagens.value) % totalImagens.value
+}
+
+const proxima = () => {
+  if (totalImagens.value < 2) return
+  indiceImagem.value = (indiceImagem.value + 1) % totalImagens.value
+}
+
+const aoTeclaGaleria = (evento: KeyboardEvent) => {
+  if (!galeriaAberta.value) return
+  if (evento.key === 'ArrowLeft') {
+    evento.preventDefault()
+    anterior()
+  } else if (evento.key === 'ArrowRight') {
+    evento.preventDefault()
+    proxima()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', aoTeclaGaleria))
+onUnmounted(() => window.removeEventListener('keydown', aoTeclaGaleria))
+
 watch(
   () => [props.modelValue, props.item?.id] as const,
   ([aberto, id]) => {
+    if (!aberto) galeriaAberta.value = false
     if (aberto && id) void carregarHistorico(String(id))
   },
   { immediate: true }
@@ -255,21 +297,26 @@ watch(
 
       <UiModalSection title="Imagens" :icon="ImagePlus">
         <div v-if="item.imagens.length" class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <a
+          <button
             v-for="(imagem, indice) in item.imagens"
             :key="`${indice}-${imagem.slice(0, 24)}`"
-            :href="imagem"
-            target="_blank"
-            rel="noopener noreferrer"
+            type="button"
+            :aria-label="`Abrir imagem ${indice + 1} de ${item.imagens.length} em galeria`"
             class="group relative overflow-hidden rounded-lg border border-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
-            :aria-label="`Abrir imagem ${indice + 1} de ${item.imagens.length}`"
+            @click="abrirGaleria(indice)"
           >
             <img
               :src="imagem"
               :alt="`Imagem de evidência ${indice + 1}`"
               class="h-24 w-full object-cover transition-transform group-hover:scale-105"
             >
-          </a>
+            <span
+              v-if="item.imagens.length > 1"
+              class="absolute bottom-1 right-1 rounded bg-slate-950/75 px-1.5 py-0.5 font-mono text-[10px] font-medium text-white"
+            >
+              {{ indice + 1 }}/{{ item.imagens.length }}
+            </span>
+          </button>
         </div>
         <p v-else class="flex items-center gap-1.5 text-xs text-slate-500">
           <ImagePlus class="h-3.5 w-3.5" aria-hidden="true" />
@@ -300,6 +347,64 @@ watch(
 
     <template #footer>
       <UiButton variant="primary" @click="emit('update:modelValue', false)">Fechar</UiButton>
+    </template>
+  </UiModal>
+
+  <UiModal
+    v-model="galeriaAberta"
+    size="xl"
+    title="Imagens da chamada"
+    :subtitle="`${indiceImagem + 1} de ${totalImagens}${item?.titulo ? ` — ${item.titulo}` : ''}`"
+    :icon="ImagePlus"
+  >
+    <div
+      class="relative flex min-h-[45vh] items-center justify-center overflow-hidden rounded-xl bg-slate-950 p-3"
+    >
+      <button
+        v-if="totalImagens > 1"
+        type="button"
+        aria-label="Imagem anterior"
+        class="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent"
+        @click="anterior"
+      >
+        <ChevronLeft class="h-5 w-5" />
+      </button>
+
+      <img
+        v-if="imagemAtual"
+        :src="imagemAtual"
+        :alt="`Imagem ${indiceImagem + 1} de ${totalImagens} da chamada ${item?.chamada ?? ''}`"
+        class="max-h-[70vh] max-w-full object-contain"
+      >
+
+      <button
+        v-if="totalImagens > 1"
+        type="button"
+        aria-label="Próxima imagem"
+        class="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-800 shadow-sm transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent"
+        @click="proxima"
+      >
+        <ChevronRight class="h-5 w-5" />
+      </button>
+    </div>
+
+    <div v-if="totalImagens > 1" class="mt-3 flex justify-center gap-2 overflow-x-auto pb-1">
+      <button
+        v-for="(imagem, indice) in item?.imagens ?? []"
+        :key="`thumb-${indice}-${imagem.slice(0, 24)}`"
+        type="button"
+        :aria-label="`Ver imagem ${indice + 1}`"
+        :aria-current="indice === indiceImagem ? 'true' : undefined"
+        class="shrink-0 overflow-hidden rounded-lg border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+        :class="indice === indiceImagem ? 'border-brand-focus' : 'border-transparent opacity-70 hover:opacity-100'"
+        @click="indiceImagem = indice"
+      >
+        <img :src="imagem" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover">
+      </button>
+    </div>
+
+    <template #footer>
+      <UiButton variant="primary" @click="galeriaAberta = false">Fechar</UiButton>
     </template>
   </UiModal>
 </template>

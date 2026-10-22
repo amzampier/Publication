@@ -752,8 +752,7 @@ async function transicionarChamada(
       novoStatus,
       ator,
       parecer: opcoes.parecer,
-      criterios: opcoes.criterios,
-      criadoEm: atual.criadoEm
+      criterios: opcoes.criterios
     })
     await tx.commit()
   } catch (erro) {
@@ -777,12 +776,16 @@ export async function aprovarChamada(
   }
 
   let dataLiberacao = atual.dataLiberacao || null
-  if (!dataLiberacao && atual.releaseId) {
-    const releases = await query<Row[]>(
-      'SELECT data_publicacao FROM release_week WHERE id = ? LIMIT 1',
-      [atual.releaseId]
+  if (!dataLiberacao && (atual.releaseId || atual.manualId || atual.projetoId)) {
+    const pais = await query<Row[]>(
+      `SELECT COALESCE(
+         (SELECT data_publicacao FROM release_week WHERE id = ?),
+         (SELECT data_publicacao FROM manuais_mensal WHERE id = ?),
+         (SELECT data_publicacao FROM projetos_escopo WHERE id = ?)
+       ) AS data_publicacao`,
+      [atual.releaseId || null, atual.manualId || null, atual.projetoId || null]
     )
-    dataLiberacao = releases[0] ? dataDia(releases[0].data_publicacao) || null : null
+    dataLiberacao = pais[0] ? dataDia(pais[0].data_publicacao) || null : null
   }
 
   return transicionarChamada(atual, 'Aprovado', dataLiberacao, ator, {

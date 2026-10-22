@@ -116,7 +116,7 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
   Conteúdo e mídias; a Solução é opcional e é o texto exibido na Área Pública. O HTML é sanitizado no
   servidor e o texto puro é derivado para busca/validação.
 - **Data de liberação:** fica vazia e desabilitada no formulário; é preenchida apenas na aprovação
-  com a `data_publicacao` da release vinculada.
+  com a `data_publicacao` do conteúdo pai (Release Week, Manual ou Escopo, nesta ordem).
 - **Editar:** carrega os dados persistidos; status/autor/timestamps originais são preservados.
 - **Salvar:** valida tudo, envia as imagens data URL ao upload, substitui pelas URLs públicas e só
   então chama `POST`/`PUT`. O botão fica em loading e o modal só fecha no sucesso.
@@ -147,8 +147,9 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
   sucesso da API. **Aprovar** e **Recusar** agora coletam parecer (opcional no aprovar, obrigatório
   na recusa) e o aprovar exige o checkbox de critérios de aceite atendidos; **Desaprovar** aceita
   parecer opcional.
-- **Aprovar** preserva a `data_liberacao` existente e herda a `data_publicacao` da release somente
-  quando ela estiver vazia. **Recusar** não altera a data.
+- **Aprovar** preserva a `data_liberacao` existente e herda a `data_publicacao` do conteúdo pai
+  (Release Week, Manual ou Escopo, nesta ordem) somente quando ela estiver vazia. **Recusar** não
+  altera a data.
 - **Desaprovar** volta `Aprovado` **ou** `Recusado` para `Revisar`, limpa a data de liberação e grava
   a transição (com `criterios_aceite_atendidos = 0`).
 - Toda transição grava `historico_esteira_revisao` (status anterior/novo, responsável, perfil,

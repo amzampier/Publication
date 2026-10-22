@@ -42,8 +42,9 @@ aprovar, recusar, reabrir, publicar e suspender com parecer e critérios.
 
 A Esteira de Revisão é a **dona do fluxo de homologação** das chamadas de `entregas_itens`. Ela
 reúne, em um board visual, os itens cujo conteúdo pai (Release Week, Manual ou Escopo de Projetos)
-ainda está ativo — **não arquivado** —, com o objetivo de revisar, homologar,
-publicar ou recusar cada chamada com parecer e trilha imutável.
+ainda está ativo — **não arquivado** —, exceto os itens em `Publicar` cujo pai já está `Publicado`
+(ocultos por padrão, pois já estão no portal, mas consultáveis ao filtrar o vínculo publicado), com o
+objetivo de revisar, homologar, publicar ou recusar cada chamada com parecer e trilha imutável.
 
 - **Rota:** `/admin/esteira-revisao` → `app/pages/admin/esteira-revisao.vue` com
   `definePageMeta({ layout: 'admin' })` — herda o shell (header + sidebar) por `/admin/**`.
@@ -60,8 +61,10 @@ publicar ou recusar cada chamada com parecer e trilha imutável.
 - **Vínculos permitidos:** o formulário de Lançar as Chamadas só oferece Release Week em
   `Aberta`/`Em Revisão`, Manuais em `Rascunho`/`Em Revisão` e Escopo em `Em Andamento`/`Homologação`.
 - **Visibilidade pública:** um item em `Publicar` só aparece na Área Pública quando ao menos um
-  vínculo aponta para conteúdo pai `Publicado`; caso contrário, o card mostra **Aguardando pai** e a
-  ação "No Portal" fica desabilitada.
+  vínculo ativo aponta para conteúdo pai `Publicado`; caso contrário, o card mostra **Aguardando pai**
+  e a ação "No Portal" fica desabilitada. Quando o pai é publicado, o item passa a ser visível e sai
+  do board por padrão; ao filtrar o vínculo publicado (Release Week, Manual ou Escopo), ele reaparece
+  na coluna Publicados com "No Portal" habilitado.
 - **Navegação:** item **Esteira de Revisão** na sessão **Movimentos** da sidebar
   (`app/config/navigation.ts`), com `to: '/admin/esteira-revisao'` e `aria-current="page"`.
 - **Ver Portal Público:** botão no cabeçalho abre a Área Pública (`/`) em nova aba.
@@ -133,9 +136,10 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 
 - **Barra de ferramentas no padrão das demais telas:** card branco `rounded-xl border
   border-slate-200 shadow-xs` com ícone `FileSpreadsheet`, título "Chamadas da esteira", subtítulo,
-  campo de busca (gate `buscar`), seletor **Pacote de Origem** (releases/manuais/projetos ativos)
-  **à esquerda do botão Filtros** (gate `filtrar`, com badge de critérios ativos) e o ícone `X` para
-  limpar filtros e busca.
+  campo de busca (gate `buscar`), seletor **Pacote de Origem** (releases/manuais/projetos não
+  arquivados, inclusive publicados — selecionar um publicado revela as chamadas em `Publicar` daquele
+  vínculo) **à esquerda do botão Filtros** (gate `filtrar`, com badge de critérios ativos) e o ícone
+  `X` para limpar filtros e busca.
 - **Segunda faixa (onde ficavam os filtros rápidos):** à esquerda, o card **Demandas por origem**
   com o `UiSegmented` compacto (Todas, Releases, Manuais, Escopo) e as contagens globais; à direita,
   o painel compacto de progresso.
@@ -144,7 +148,9 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 - **Três colunas:**
   - **1. Em Revisão** (`Revisar`) — "Chamadas aguardando homologação do Revisor / QA";
   - **2. Homologados** (`Aprovado`) — "Validadas pelo QA, prontas para publicação";
-  - **3. Publicados** (`Publicar`) — "Visíveis aos clientes e parceiros no portal público".
+  - **3. Publicados** (`Publicar`) — "Visíveis no portal com o pai publicado; filtre o vínculo para
+    consultar". Por padrão, mostra só o que aguarda o pai; ao filtrar um vínculo publicado, inclui as
+    chamadas já visíveis no portal.
   Cada coluna tem o **cabeçalho com o mesmo background do header dos modais**
   (`bg-gradient-to-r from-brand-primary to-brand-structure`), texto branco, borda esquerda de `2.5px`
   na cor do estágio (`#f59e0b`, `#1a9e07`, `#0364f7`) e contagem em pílula `bg-white/15`. Em telas
@@ -167,7 +173,9 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
     - **Homologados:** `Undo2` (Voltar p/ Revisão) e `UploadCloud` (Publicar Item);
     - **Publicados:** `ArchiveRestore` (Suspender p/ Homologado) e `ExternalLink` (No Portal);
     - **Recusadas:** `Eye` (Inspecionar) e `Undo2` (Reabrir).
-- **No Portal** abre a Área Pública (`/`) em nova aba.
+- **No Portal** abre a Área Pública (`/`) em nova aba; fica desabilitado enquanto o item aguarda o
+  pai. Com o pai publicado, o item sai do board por padrão, mas reaparece com "No Portal" habilitado
+  quando o vínculo publicado é filtrado.
 
 ### 3.5 `Filtros.vue` → `<EsteiraFiltros>`
 
@@ -176,6 +184,8 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   **Software**, **Parceiro**, **Período de lançamento** (De/Até) e **Período de liberação** (De/Até).
 - **Software Atendido** e **Parceiro / Cliente** ficam neste modal, não na barra de ferramentas.
 - `UiSelect` para seleção única e `UiDatePicker` para os períodos; vazio = todos.
+- Os vínculos específicos combinam por **união**: ao selecionar Release Week + Manual (ou Escopo), o
+  board traz as chamadas vinculadas a qualquer um deles, incluindo as já publicadas.
 - "Aplicar" refina o board; "Limpar Filtros" zera rascunho e estado; "Cancelar" fecha sem aplicar.
 - A toolbar indica a quantidade de filtros ativos (`criteriosAtivosCount`).
 
@@ -196,8 +206,9 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 
 ### 3.7 `Historico.vue` → `<EsteiraHistorico>`
 
-- Timeline cronológica com badges de status anterior/novo, data/hora, responsável, perfil, parecer
-  (quando houver), critérios de aceite (atendidos/não atendidos) e tempo no estágio (min/h).
+- Timeline do mais recente para o mais antigo (a transição atual fica primeiro), com badges de status
+  anterior/novo, data/hora, responsável, perfil, parecer (quando houver), critérios de aceite
+  (atendidos/não atendidos) e tempo no estágio (min/h).
 - Estados de carregamento e "Nenhuma transição registrada para esta chamada.".
 
 ### 3.8 `Decisao.vue` → `<EsteiraDecisao>`
@@ -209,7 +220,8 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 - **Recusar:** `UiTextarea` de parecer **obrigatório** (erro canônico em `rose-700`); critérios
   gravados como não atendidos.
 - **Reabrir:** parecer opcional; a chamada volta a `Revisar` e a `data_liberacao` é limpa.
-- **Publicar Item:** parecer opcional; o item homologado passa a `Publicar` e fica visível no portal.
+- **Publicar Item:** parecer opcional; o item homologado passa a `Publicar`. Com o pai já publicado,
+  ele fica visível no portal e sai do board; sem pai publicado, permanece em "Aguardando pai".
 - **Suspender:** parecer opcional; o item volta de `Publicar` para `Aprovado`.
 - O botão de confirmação fica desabilitado quando a validação falha ou o checkbox de critérios não
   está marcado. Emite `confirmar({ acao, parecer, criterios })`.
@@ -221,14 +233,17 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   `esteira-historico-carregando`.
 - `carregar(forcar)` → `GET /api/esteira-revisao` (com `?busca=1`/`?filtros=1` quando aplicável);
   hidrata itens, opções e progresso.
-- Derivados: `itensFiltrados` (origem + filtros + busca), `linhas` (shape dos cards),
-  `progresso` (global, calculado por `calcularProgresso`), `contagemPorOrigem`,
+- Derivados: `itensCiclo` (exclui `Publicar` com pai publicado), `itensFiltrados` (ciclo + filtros +
+  busca; ao filtrar um vínculo, inclui os itens publicados daquele vínculo), `linhas` (shape dos
+  cards), `progresso` (global do ciclo, calculado por `calcularProgresso`), `contagemPorOrigem`,
   `contagemPorStatus`, `filtrosAtivosCount`, `criteriosAtivosCount`, `opcoesFiltro`,
   `opcoesPacotes`, `pacoteSelecionado` e `aplicarPacote`.
 - `limparFiltros`, `filtrarPorOrigem`, `alternarRecusadas`, `resolver(id)`,
   `carregarHistorico(id, forcar)`.
 - Ações `aprovar`, `recusar`, `reabrir`, `publicar` e `suspender` chamam as rotas da esteira,
-  atualizam o item na lista, recalculam o painel e invalidam o cache do histórico.
+  atualizam o item na lista, recalculam o painel e invalidam o cache do histórico. O item que passa a
+  satisfazer a visibilidade pública (em `Publicar` com pai `Publicado`) sai do board por padrão, mas
+  continua disponível para consulta ao filtrar o vínculo.
 
 ## 4. Contrato de dados (API)
 
@@ -243,10 +258,11 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 | Publicar Item | `PUT /api/esteira-revisao/:id/publicar` | `publicar` |
 | Suspender | `PUT /api/esteira-revisao/:id/suspender` | `publicar` |
 
-- **Listagem:** `{ itens, opcoes, progresso }` — `itens` são as chamadas do ciclo ativo com
+- **Listagem:** `{ itens, opcoes, progresso }` — `itens` são as chamadas com ao menos um vínculo não
+  arquivado (inclusive as em `Publicar` já visíveis no portal, para consulta por filtro), com
   `contexto` (release/manual/projeto), `revisorId`, `revisorNome`, `dataDecisao` e `parecer`;
   `opcoes` traz releases, manuais, projetos, softwares e parceiros ativos; `progresso` segue o
-  contrato de `shared/esteira-revisao`.
+  contrato de `shared/esteira-revisao` e considera apenas o ciclo ativo (sem as já publicadas).
 - **Transições:** aceitam `{ parecer?, criterios? }`; `recusar` exige `parecer` não vazio.
 - **Erros:** `401` sem sessão, `403` sem permissão, `404` id inexistente, `409` status incompatível
   ou concorrência.
@@ -284,8 +300,9 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   +------------+      +------------+
 ```
 
-- **Aprovar:** só de `Revisar`; preserva a `data_liberacao` existente e herda
-  `release_week.data_publicacao` somente quando estiver vazia; grava `criterios_aceite_atendidos = 1`.
+- **Aprovar:** só de `Revisar`; preserva a `data_liberacao` existente e herda a `data_publicacao` do
+  conteúdo pai (Release Week, Manual ou Escopo, nesta ordem) somente quando estiver vazia; grava
+  `criterios_aceite_atendidos = 1`.
 - **Recusar:** só de `Revisar`; parecer obrigatório; não altera `data_liberacao`; grava
   `criterios_aceite_atendidos = 0`.
 - **Reabrir:** de `Aprovado` ou `Recusado`; volta para `Revisar`; **limpa** `data_liberacao`; grava
@@ -301,9 +318,10 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   ficam na Esteira.
 - **Imutabilidade:** o histórico não é editado nem apagado por ações da esteira.
 - **Visibilidade pública:** o item em `Publicar` só é visível na Área Pública quando ao menos um
-  vínculo aponta para conteúdo pai `Publicado`. A ação "No Portal" fica desabilitada com o motivo
-  "Aguardando publicação do conteúdo pai" e o card exibe "Aguardando pai" enquanto o pai não estiver
-  publicado.
+  vínculo ativo aponta para conteúdo pai `Publicado`. A ação "No Portal" fica desabilitada com o
+  motivo "Aguardando publicação do conteúdo pai" e o card exibe "Aguardando pai" enquanto o pai não
+  estiver publicado. Quando o pai é publicado, o item é visível na Área Pública e sai do board por
+  padrão; ao filtrar o vínculo publicado, ele reaparece em Publicados com "No Portal" habilitado.
 - **Publicar o item não publica o conteúdo pai:** o gate de publicação do pai (bloquear a publicação
   enquanto houver itens em `Revisar`/`Recusado`) continua na fase 2; a visibilidade pública do item
   já é gated pelo status `Publicado` do pai.
@@ -311,8 +329,11 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 ## 6. Progresso da Esteira
 
 **Universo (ciclo ativo):** inclui a chamada quando **ao menos um** vínculo aponta para conteúdo pai
-`arquivada = 0`. Itens sem vínculo não arquivado não entram. O status `Publicado` do pai **não**
-exclui o item do board: ele é usado apenas pelo gate de visibilidade pública.
+`arquivada = 0`, **exceto** a chamada em `Publicar` cujo ao menos um vínculo ativo aponta para pai
+`Publicado` (já visível no portal, portanto fora do ciclo e do painel). Itens em `Revisar`, `Aprovado`
+ou `Recusado` permanecem mesmo com o pai publicado. Itens sem vínculo não arquivado não entram. A
+listagem da API ainda devolve as chamadas já publicadas para consulta; ao filtrar o vínculo
+correspondente, o board as exibe em Publicados, sem alterar o painel global.
 
 ```text
 total          = itens distintos no ciclo ativo
@@ -358,20 +379,27 @@ avançou        = aprovado + publicar
 
 - **Gates:** `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`.
 - **Testes unitários:**
-  - `tests/esteira-revisao-validadores.test.ts` — progresso (zero, contagens, percentual =
-    aprovado + publicado, multi-vínculo por origem, vínculo arquivado), filtros (origem,
-    status, vínculo, software, parceiro, tipo, impacto, período e busca sem acento) e
-    transições/parecer (aprovar, recusar, reabrir, publicar, suspender).
+  - `tests/esteira-revisao-validadores.test.ts` — ciclo ativo (pai publicado em Revisar/Aprovado/
+    Recusado permanece; `Publicar` com pai publicado sai; `Publicar` aguardando pai permanece),
+    visibilidade no board (item publicado oculto por padrão e revelado ao filtrar o vínculo),
+    progresso (zero, contagens, percentual = aprovado + publicado, multi-vínculo por origem, vínculo
+    arquivado), filtros (origem, status, vínculo, união de vínculos, software, parceiro, tipo,
+    impacto, período e busca sem acento) e transições/parecer (aprovar, recusar, reabrir, publicar,
+    suspender).
   - `tests/perfis-funcionalidades.test.ts` — catálogo de 92 e `buscar` na esteira.
+  - `tests/historico-esteira.test.ts` — tempo no estágio calculado no banco (fallback em
+    `entregas_itens.criado_em`) e protegido contra valor negativo com `GREATEST(..., 0)`.
 - **API/E2E:** `GET /api/esteira-revisao` 200 com `itens`, `opcoes` e `progresso`; detalhe/histórico;
   aprovar 200; recusar sem parecer `400`; recusar com parecer 200; reabrir 200; publicar 200;
   suspender 200; id inexistente `404`; status incompatível `409`; sem permissão `403`; sem sessão
   `401`.
 - **Manual:** criar chamada em Lançar as Chamadas → abrir a esteira → conferir o painel, as abas de
-  origem e a coluna Em Revisão → aprovar → conferir Homologados → publicar → conferir Publicados e o
-  link "No Portal" → suspender → recusar com parecer → reabrir → filtrar por origem, buscar, usar os
-  filtros rápidos e a faixa de recusadas → repetir como Revisor (aprova/publica) e Leitor (sem
-  acesso) → recarregar e confirmar a persistência.
+  origem e a coluna Em Revisão → aprovar → conferir Homologados → publicar → conferir Publicados com
+  "Aguardando pai" e "No Portal" desabilitado → publicar o Manual/Release Week → confirmar que a
+  chamada sai do board e aparece na Área Pública → selecionar o vínculo publicado no Pacote de Origem
+  e confirmar que a chamada reaparece em Publicados com "No Portal" habilitado → recusar com parecer
+  → reabrir → filtrar por origem, buscar, usar os filtros rápidos e a faixa de recusadas → repetir
+  como Revisor (aprova/publica) e Leitor (sem acesso) → recarregar e confirmar a persistência.
 - **Banco:** conferir `historico_esteira_revisao` após cada transição (status anterior/novo,
   responsável, parecer, critérios, tempo e data) e `permissoes_perfil` após a migration 27.
 

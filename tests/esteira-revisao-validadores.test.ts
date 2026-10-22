@@ -3,6 +3,9 @@ import {
   FILTROS_ESTEIRA_VAZIOS,
   calcularProgresso,
   filtrarItensEsteira,
+  itemComVinculoAtivo,
+  itemNoCicloAtivo,
+  itemVisivelNoBoard,
   itemVisivelNoPortal,
   origemDoItem,
   podeTransicionar,
@@ -235,6 +238,18 @@ describe('filtrarItensEsteira', () => {
     expect(filtrarItensEsteira(itens, { ...FILTROS_ESTEIRA_VAZIOS, projetoId: 'proj-1' }, '').map((i) => i.chamada)).toEqual(['100'])
   })
 
+  it('combina vínculos específicos por união', () => {
+    const filtros = {
+      ...FILTROS_ESTEIRA_VAZIOS,
+      releaseId: 'rel-2',
+      manualId: 'man-2'
+    }
+    expect(filtrarItensEsteira(itens, filtros, '').map((i) => i.chamada)).toEqual([
+      '200',
+      '300'
+    ])
+  })
+
   it('filtra por tipo, impacto, software e período', () => {
     expect(filtrarItensEsteira(itens, { ...FILTROS_ESTEIRA_VAZIOS, tipo: 'Melhoria' }, '').map((i) => i.chamada)).toEqual(['100'])
     expect(filtrarItensEsteira(itens, { ...FILTROS_ESTEIRA_VAZIOS, impacto: 'Alto' }, '').map((i) => i.chamada)).toEqual(['100'])
@@ -248,22 +263,32 @@ describe('filtrarItensEsteira', () => {
     ).toEqual(['100'])
   })
 
-  it('inclui item de manual publicado no board', () => {
+  it('revela item de manual publicado ao filtrar o vínculo', () => {
     const publicado = item({
       chamada: '900',
+      status: 'Publicar',
       contexto: {
         release: null,
         manual: contexto('man-9', 'MAN-09/2026', 'Publicado'),
         projeto: null
       }
     })
+    const filtros = { ...FILTROS_ESTEIRA_VAZIOS, manualId: 'man-9' }
     expect(
       filtrarItensEsteira(
-        [publicado],
-        { ...FILTROS_ESTEIRA_VAZIOS, origem: 'Manual' },
+        [publicado].filter((i) => itemVisivelNoBoard(i, filtros)),
+        filtros,
         ''
       ).map((i) => i.chamada)
     ).toEqual(['900'])
+    expect(itemVisivelNoBoard(publicado, FILTROS_ESTEIRA_VAZIOS)).toBe(false)
+    expect(
+      filtrarItensEsteira(
+        [publicado].filter((i) => itemVisivelNoBoard(i, FILTROS_ESTEIRA_VAZIOS)),
+        FILTROS_ESTEIRA_VAZIOS,
+        ''
+      )
+    ).toEqual([])
   })
 
   it('filtra por parceiro', () => {
@@ -356,6 +381,103 @@ describe('rótulos de vínculo', () => {
         })
       )
     ).toBe('RW-39/2026 · MAN-10/2026')
+  })
+})
+
+describe('ciclo ativo do board', () => {
+  it('mantém em revisão, aprovado ou recusado mesmo com pai publicado', () => {
+    for (const status of ['Revisar', 'Aprovado', 'Recusado'] as StatusChamada[]) {
+      const comPaiPublicado = item({
+        status,
+        contexto: {
+          release: contexto('rel-1', 'RW-39/2026', 'Publicado'),
+          manual: null,
+          projeto: null
+        }
+      })
+      expect(itemNoCicloAtivo(comPaiPublicado)).toBe(true)
+    }
+  })
+
+  it('remove item em Publicar quando o pai está publicado', () => {
+    const publicado = item({
+      status: 'Publicar',
+      contexto: {
+        release: null,
+        manual: contexto('man-9', 'MAN-09/2026', 'Publicado'),
+        projeto: null
+      }
+    })
+    expect(itemNoCicloAtivo(publicado)).toBe(false)
+  })
+
+  it('mantém item em Publicar aguardando o pai', () => {
+    const aguardando = item({
+      status: 'Publicar',
+      contexto: {
+        release: null,
+        manual: contexto('man-9', 'MAN-09/2026', 'Em Revisão'),
+        projeto: null
+      }
+    })
+    expect(itemNoCicloAtivo(aguardando)).toBe(true)
+  })
+
+  it('remove item em Publicar quando um dos vínculos já está publicado', () => {
+    const multi = item({
+      status: 'Publicar',
+      contexto: {
+        release: contexto('rel-1', 'RW-39/2026', 'Em Revisão'),
+        manual: contexto('man-9', 'MAN-09/2026', 'Publicado'),
+        projeto: null
+      }
+    })
+    expect(itemNoCicloAtivo(multi)).toBe(false)
+  })
+
+  it('não considera vínculo arquivado como ativo', () => {
+    const arquivado = item({
+      status: 'Publicar',
+      contexto: {
+        release: contexto('rel-1', 'RW-39/2026', 'Publicado', true),
+        manual: null,
+        projeto: null
+      }
+    })
+    const semVinculo = item({
+      contexto: { release: null, manual: null, projeto: null }
+    })
+    expect(itemComVinculoAtivo(arquivado)).toBe(false)
+    expect(itemNoCicloAtivo(arquivado)).toBe(false)
+    expect(itemNoCicloAtivo(semVinculo)).toBe(false)
+  })
+
+  it('revela item publicado no portal ao filtrar o vínculo', () => {
+    const publicado = item({
+      status: 'Publicar',
+      contexto: {
+        release: contexto('rel-1', 'RW-39/2026', 'Publicado'),
+        manual: null,
+        projeto: null
+      }
+    })
+    const semFiltro = { releaseId: '', manualId: '', projetoId: '' }
+    expect(itemVisivelNoBoard(publicado, semFiltro)).toBe(false)
+    expect(itemVisivelNoBoard(publicado, { ...semFiltro, releaseId: 'rel-1' })).toBe(true)
+    expect(itemVisivelNoBoard(publicado, { ...semFiltro, manualId: 'man-9' })).toBe(true)
+  })
+
+  it('mantém no board o item que ainda aguarda o pai', () => {
+    const aguardando = item({
+      status: 'Publicar',
+      contexto: {
+        release: contexto('rel-1', 'RW-39/2026', 'Em Revisão'),
+        manual: null,
+        projeto: null
+      }
+    })
+    const semFiltro = { releaseId: '', manualId: '', projetoId: '' }
+    expect(itemVisivelNoBoard(aguardando, semFiltro)).toBe(true)
   })
 })
 

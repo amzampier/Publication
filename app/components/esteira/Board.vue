@@ -65,7 +65,7 @@ const colunas = computed(() => [
     id: 'Publicar',
     numero: '3.',
     titulo: 'Publicados',
-    descricao: 'Visíveis aos clientes e parceiros no portal público',
+    descricao: 'Visíveis no portal com o pai publicado; filtre o vínculo para consultar',
     cor: '#0364f7',
     itens: linhas.value.filter((linha) => linha.status === 'Publicar')
   }

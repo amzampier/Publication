@@ -51,12 +51,14 @@ tela SHALL exibir o painel **Progresso da Esteira** ao lado do filtro **Demandas
 origem). O painel SHALL ser compacto (percentual em `text-lg`, contagens em linha e barra `h-1.5`) e
 NÃO SHALL ocupar 100% da largura; em telas estreitas, painel e origem SHALL empilhar. O painel SHALL
 ser calculado sobre o **ciclo ativo**: chamadas cujo ao menos um vínculo aponte para Release Week,
-Manual ou Escopo de Projetos **não arquivado**. O status `Publicado` do pai não exclui o item do
-board; ele é usado apenas pelo gate de visibilidade pública. O painel SHALL apresentar o
-percentual do fluxo (`(Aprovado + Publicar) / total`), as contagens **a revisar**, **aprovados** e
-**publicados**, e uma barra segmentada com as cores sólidas de Revisar (`#f59e0b`), Aprovado
-(`#1a9e07`), Publicar (`#0364f7`) e Recusado (`#be123c`). O painel SHALL ser **global** e NÃO SHALL
-mudar quando os filtros do board forem aplicados. Quando houver chamadas recusadas, o painel SHALL
+Manual ou Escopo de Projetos **não arquivado**, exceto as chamadas em `Publicar` cujo ao menos um
+vínculo ativo aponte para conteúdo pai `Publicado` — já visíveis no portal e, por isso, fora do
+ciclo. Itens em `Revisar`, `Aprovado` ou `Recusado` permanecem no ciclo mesmo com o pai publicado. O
+painel SHALL apresentar o percentual do fluxo (`(Aprovado + Publicar) / total`), as contagens
+**a revisar**, **aprovados** e **publicados**, e uma barra segmentada com as cores sólidas de Revisar
+(`#f59e0b`), Aprovado (`#1a9e07`), Publicar (`#0364f7`) e Recusado (`#be123c`). O painel SHALL ser **global** e NÃO SHALL
+mudar quando os filtros do board forem aplicados, inclusive quando o filtro de vínculo revelar no
+board chamadas já publicadas. Quando houver chamadas recusadas, o painel SHALL
 exibir um acionador **recusadas** que mostra ou oculta a faixa de recusadas do board. Com total zero,
 o painel SHALL exibir estado vazio sem divisão por zero. A barra SHALL expor `role="progressbar"`
 com `aria-valuenow`, `aria-valuemin`, `aria-valuemax` e rótulo textual.
@@ -96,12 +98,26 @@ com `aria-valuenow`, `aria-valuemin`, `aria-valuemax` e rótulo textual.
 - **WHEN** não há chamadas de conteúdo ativo
 - **THEN** o painel exibe "Nenhuma chamada no fluxo" e os percentuais ficam zerados, sem divisão por zero
 
+#### Scenario: Item em Publicar com pai publicado sai do ciclo
+
+- **WHEN** uma chamada está em `Publicar` e ao menos um vínculo ativo aponta para conteúdo pai `Publicado`
+- **THEN** a chamada fica fora do board por padrão e não entra no painel de progresso; ao filtrar o vínculo publicado, ela aparece na coluna Publicados
+
+#### Scenario: Item em revisão ou aprovado com pai publicado permanece
+
+- **WHEN** uma chamada está em `Revisar`, `Aprovado` ou `Recusado` e o conteúdo pai está `Publicado`
+- **THEN** a chamada continua no board e no painel de progresso
+
 ### Requirement: O board organiza as chamadas em estágios do fluxo
 
 A tela SHALL organizar as chamadas do ciclo ativo em um board com três colunas principais:
 **1. Em Revisão** (`Revisar`), **2. Homologados** (`Aprovado`) e **3. Publicados** (`Publicar`).
 Cada coluna SHALL exibir título, descrição, contagem do conjunto filtrado e os cards das chamadas.
-As chamadas `Recusado` SHALL ficar em uma faixa separada **Recusadas**, exibida sob demanda pelo
+A coluna **Publicados** SHALL conter, por padrão, apenas chamadas em `Publicar` que ainda aguardam a
+publicação do conteúdo pai; quando o pai é publicado, a chamada sai do board. Quando o usuário filtra
+um vínculo específico (Release Week, Manual ou Escopo), a coluna SHALL incluir também as chamadas em
+`Publicar` daquele vínculo já visíveis no portal, para consulta. As chamadas `Recusado` SHALL ficar em
+uma faixa separada **Recusadas**, exibida sob demanda pelo
 acionador do painel de progresso. A barra de ferramentas do board SHALL seguir o padrão das demais
 telas: card branco com título, subtítulo, campo de busca, seletor **Pacote de Origem** à esquerda do
 botão **Filtros** (com badge de critérios ativos) e limpeza rápida. Na segunda faixa do mesmo card,
@@ -109,7 +125,9 @@ a tela SHALL oferecer as abas de origem — **Todas**, **Releases**, **Manuais**
 contagem global de cada origem, ao lado do painel compacto de progresso. O modal de filtros SHALL
 complementar com **Status**, **Tipo**, **Impacto**, **Software**, **Parceiro / Cliente**,
 **Períodos de lançamento/liberação** e os vínculos específicos, com "Limpar Filtros", "Cancelar" e
-"Aplicar". A busca SHALL operar somente sobre o texto puro das descrições, nunca sobre a marcação
+"Aplicar". Quando mais de um vínculo específico (Release Week, Manual ou Escopo) for selecionado, o
+board SHALL combinar os critérios por **união** (qualquer um dos vínculos), não pela interseção. A
+busca SHALL operar somente sobre o texto puro das descrições, nunca sobre a marcação
 HTML, e SHALL cobrir chamada, título, descrição, solução, software, módulo, menu, parceiro, tags e
 códigos/nomes dos vínculos. O board SHALL distinguir ciclo vazio, estágio vazio e conjunto filtrado
 sem resultados.
@@ -123,6 +141,16 @@ sem resultados.
 
 - **WHEN** o usuário aciona "Releases Week", "Manuais" ou "Projetos Escopo"
 - **THEN** o board exibe apenas as chamadas com vínculo ativo naquela origem, mantendo as três colunas de estágio
+
+#### Scenario: Filtro por vínculo publicado revela Publicados
+
+- **WHEN** o usuário seleciona no filtro de vínculo uma Release Week, Manual ou Escopo já publicado
+- **THEN** as chamadas em `Publicar` desse vínculo aparecem na coluna Publicados, com "No Portal" habilitado
+
+#### Scenario: Múltiplos vínculos filtrados
+
+- **WHEN** o usuário seleciona mais de uma Release Week, Manual ou Escopo no filtro de vínculos
+- **THEN** o board exibe as chamadas vinculadas a qualquer um deles, incluindo as já publicadas quando os pais estão publicados
 
 #### Scenario: Barra de ferramentas no padrão das telas
 
@@ -185,10 +213,15 @@ módulo e o status da chamada.
 - **WHEN** uma chamada está em `Aprovado`
 - **THEN** o card exibe Voltar p/ Revisão e Publicar Item
 
-#### Scenario: Card publicado
+#### Scenario: Card publicado aguardando o pai
 
-- **WHEN** uma chamada está em `Publicar`
-- **THEN** o card exibe Suspender p/ Homologado e No Portal
+- **WHEN** uma chamada está em `Publicar` e nenhum vínculo ativo aponta para pai `Publicado`
+- **THEN** o card exibe Suspender p/ Homologado e No Portal desabilitado, com "Aguardando pai"
+
+#### Scenario: Item publicado com pai publicado sai do board
+
+- **WHEN** a chamada está em `Publicar` e ao menos um vínculo ativo aponta para pai `Publicado`
+- **THEN** a chamada não é exibida no board por padrão, pois já está visível na Área Pública; ao filtrar o vínculo publicado, ela reaparece em Publicados com "No Portal" habilitado
 
 #### Scenario: Card recusado
 
@@ -205,19 +238,21 @@ módulo e o status da chamada.
 Um item no terceiro estágio (`Publicar`) NÃO SHALL ser considerado visível na Área Pública apenas pelo
 seu próprio status: a visibilidade SHALL exigir que ao menos um vínculo ativo aponte para conteúdo pai
 com status `Publicado`. A ação **No Portal** SHALL ficar desabilitada, com motivo acessível, enquanto
-o conteúdo pai não estiver publicado; o card SHALL indicar **Aguardando pai** nesse caso. A Área
-Pública SHALL aplicar a mesma regra ao listar itens. A publicação do conteúdo pai SHALL continuar
-sendo uma ação explícita de Release Week, Manual ou Escopo de Projetos.
+o conteúdo pai não estiver publicado; o card SHALL indicar **Aguardando pai** nesse caso. Quando a
+visibilidade for satisfeita, o item SHALL sair do board da Esteira por padrão, permanecendo
+consultável quando o vínculo publicado é filtrado. A Área Pública SHALL aplicar a mesma regra ao
+listar itens. A publicação do conteúdo pai SHALL continuar sendo uma ação explícita de
+Release Week, Manual ou Escopo de Projetos.
 
 #### Scenario: Item publicado com pai publicado
 
-- **WHEN** o item está em `Publicar` e ao menos um vínculo aponta para conteúdo pai `Publicado`
-- **THEN** o item é visível na Área Pública e a ação "No Portal" fica habilitada
+- **WHEN** o item está em `Publicar` e ao menos um vínculo ativo aponta para conteúdo pai `Publicado`
+- **THEN** o item é visível na Área Pública e sai do board por padrão, reaparecendo em Publicados quando o vínculo publicado é filtrado
 
 #### Scenario: Item publicado com pai em revisão
 
 - **WHEN** o item está em `Publicar` e todos os vínculos apontam para conteúdo pai fora de `Publicado`
-- **THEN** o item não é visível na Área Pública, a ação "No Portal" fica desabilitada e o card exibe "Aguardando pai"
+- **THEN** o item não é visível na Área Pública, permanece na coluna Publicados, a ação "No Portal" fica desabilitada e o card exibe "Aguardando pai"
 
 #### Scenario: Item aprovado com pai publicado
 
@@ -227,7 +262,7 @@ sendo uma ação explícita de Release Week, Manual ou Escopo de Projetos.
 #### Scenario: Item com múltiplos vínculos
 
 - **WHEN** o item está em `Publicar` e tem dois vínculos, sendo um deles `Publicado`
-- **THEN** o item é visível na Área Pública pelo vínculo publicado
+- **THEN** o item é visível na Área Pública pelo vínculo publicado e sai do board por padrão, reaparecendo quando o vínculo publicado é filtrado
 
 ### Requirement: O detalhe exibe a chamada, os vínculos e o histórico em modo somente leitura
 
@@ -235,7 +270,7 @@ A tela SHALL oferecer a ação **Inspecionar**, que abre um modal `xl` somente l
 (chamada, título, status, origem), conteúdo (descrição completa com formatação, solução, links,
 imagens e tags), classificação (tipo, impacto, situação, módulo, software e parceiro), vínculos
 (código, nome/título e status do conteúdo pai), autor e timestamps, além do **histórico da esteira**
-em ordem cronológica. O histórico SHALL exibir, para cada transição, o status anterior, o novo
+do mais recente para o mais antigo, com o atual primeiro. O histórico SHALL exibir, para cada transição, o status anterior, o novo
 status, o responsável, o perfil, o parecer, os critérios de aceite, a data/hora e o tempo no estágio.
 O modal SHALL fechar por `Escape`, pelo `X` ou por "Fechar", devolvendo o foco ao acionador.
 
@@ -252,7 +287,7 @@ O modal SHALL fechar por `Escape`, pelo `X` ou por "Fechar", devolvendo o foco a
 #### Scenario: Histórico com transições
 
 - **WHEN** a chamada já passou por aprovação, recusa, publicação ou reabertura
-- **THEN** o histórico exibe cada transição em ordem cronológica, com responsável, parecer e data
+- **THEN** o histórico exibe cada transição do mais recente para o mais antigo (atual primeiro), com responsável, parecer e data
 
 #### Scenario: Chamada sem histórico
 
@@ -277,8 +312,9 @@ Toda transição SHALL ser atômica e SHALL gravar uma linha em `historico_estei
 anterior, novo status, responsável (id, nome e perfil), parecer, critérios de aceite, tempo no
 estágio e data/hora, além de atualizar o status da chamada. O critério de aceite SHALL ser registrado
 como atendido no aprovar e não atendido na recusa; publicar e suspender preservam os critérios como
-atendidos. **Aprovar** SHALL preservar a `data_liberacao` existente e herdar a `data_publicacao` da
-release somente quando ela estiver vazia; **Recusar** NÃO SHALL alterar a `data_liberacao`;
+atendidos. **Aprovar** SHALL preservar a `data_liberacao` existente e herdar a `data_publicacao` do
+conteúdo pai (Release Week, Manual ou Escopo, nesta ordem) somente quando ela estiver vazia;
+**Recusar** NÃO SHALL alterar a `data_liberacao`;
 **Reabrir** SHALL limpar a `data_liberacao`; **Publicar** e **Suspender** SHALL preservar a
 `data_liberacao`. Se o status da chamada tiver mudado desde a abertura da ação, a transição SHALL ser
 recusada com conflito e o board SHALL ser atualizado.
@@ -286,7 +322,7 @@ recusada com conflito e o board SHALL ser atualizado.
 #### Scenario: Aprovar chamada
 
 - **WHEN** o usuário confirma a aprovação de uma chamada em `Revisar` com os critérios atendidos
-- **THEN** o status passa a `Aprovado`, a `data_liberacao` é preservada ou herdada da release quando vazia, o histórico registra a transição e o board é atualizado
+- **THEN** o status passa a `Aprovado`, a `data_liberacao` é preservada ou herdada do conteúdo pai quando vazia, o histórico registra a transição e o board é atualizado
 
 #### Scenario: Recusar com parecer
 
@@ -306,7 +342,7 @@ recusada com conflito e o board SHALL ser atualizado.
 #### Scenario: Publicar item
 
 - **WHEN** o usuário confirma "Publicar Item" em uma chamada `Aprovado`
-- **THEN** o status passa a `Publicar`, a `data_liberacao` é preservada, o histórico registra a transição e o card aparece em Publicados
+- **THEN** o status passa a `Publicar`, a `data_liberacao` é preservada, o histórico registra a transição e o card aparece em Publicados; se o pai já está `Publicado`, a chamada sai do board e fica visível na Área Pública
 
 #### Scenario: Suspender item
 

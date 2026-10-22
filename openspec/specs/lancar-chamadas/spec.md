@@ -755,7 +755,8 @@ As ações **Aprovar**, **Recusar** e **Desaprovar** de Lançar as Chamadas SHAL
 transição da Esteira de Revisão e SHALL gravar uma linha em `historico_esteira_revisao` com status
 anterior, novo status, responsável (id, nome e perfil), parecer, critérios de aceite, tempo no estágio
 e data/hora, além de atualizar o status da chamada na mesma transação. A aprovação SHALL preservar a
-`data_liberacao` existente e herdar a `data_publicacao` da release somente quando ela estiver vazia.
+`data_liberacao` existente e herdar a `data_publicacao` do conteúdo pai (Release Week, Manual ou
+Escopo, nesta ordem) somente quando ela estiver vazia.
 A recusa NÃO SHALL alterar a `data_liberacao` e SHALL exigir parecer não vazio. A desaprovação SHALL
 voltar a chamada para `Revisar`, limpar a `data_liberacao` e gravar a transição. A ação SHALL ser
 recusada com conflito quando o status da chamada tiver mudado desde a leitura.
@@ -763,7 +764,7 @@ recusada com conflito quando o status da chamada tiver mudado desde a leitura.
 #### Scenario: Aprovar grava histórico
 
 - **WHEN** o usuário confirma a aprovação de uma chamada em `Revisar`
-- **THEN** o status passa a `Aprovado`, a `data_liberacao` existente é preservada (ou herdada da release quando vazia) e o histórico registra a transição
+- **THEN** o status passa a `Aprovado`, a `data_liberacao` existente é preservada (ou herdada do conteúdo pai quando vazia) e o histórico registra a transição
 
 #### Scenario: Recusar exige parecer e grava histórico
 

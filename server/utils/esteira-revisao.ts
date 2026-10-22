@@ -1,6 +1,7 @@
-// Camada da Esteira de Revisão: o ciclo ativo de `entregas_itens` (conteúdo pai
-// não arquivado e não publicado), com o contexto dos vínculos, a última decisão
-// e o progresso global. A transição em si vem de `lancar-chamadas.ts`.
+// Camada da Esteira de Revisão: as chamadas com vínculo não arquivado (o board
+// oculta por padrão os itens em `Publicar` já visíveis no portal, mas os devolve
+// para consulta quando o vínculo é filtrado), com o contexto, a última decisão e
+// o progresso do ciclo ativo. A transição em si vem de `lancar-chamadas.ts`.
 import { query } from './db'
 import {
   buscarChamada,
@@ -11,6 +12,8 @@ import { listarHistoricoItem } from './historico-esteira'
 import {
   calcularProgresso,
   contextoAtivo,
+  itemComVinculoAtivo,
+  itemNoCicloAtivo,
   type ContextoVinculo,
   type HistoricoEsteira,
   type ItemEsteira,
@@ -114,14 +117,6 @@ function montarItem(
   }
 }
 
-function itemDoCicloAtivo(item: ItemEsteira): boolean {
-  return (
-    contextoAtivo(item.contexto.release) ||
-    contextoAtivo(item.contexto.manual) ||
-    contextoAtivo(item.contexto.projeto)
-  )
-}
-
 function filtrarOpcoesAtivas(
   opcoes: CatalogosChamada,
   mapas: MapasPais
@@ -154,12 +149,12 @@ export async function listarEsteira(): Promise<RespostaEsteira> {
   const decisoes = await listarUltimasDecisoes(chamadas.map((chamada) => chamada.id))
   const itens = chamadas
     .map((chamada) => montarItem(chamada, mapas, decisoes))
-    .filter(itemDoCicloAtivo)
+    .filter(itemComVinculoAtivo)
 
   return {
     itens,
     opcoes: filtrarOpcoesAtivas(opcoesBase, mapas),
-    progresso: calcularProgresso(itens)
+    progresso: calcularProgresso(itens.filter(itemNoCicloAtivo))
   }
 }
 
