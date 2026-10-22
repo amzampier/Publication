@@ -55,6 +55,9 @@ A tela de Release Week é o **cabeçalho do ciclo semanal** da Área Administrat
   `autor_nome`/`revisor_nome` e timestamps. Os itens vivem em `entregas_itens` (`release_id`).
 - **Status x arquivamento:** `status` é o fluxo editorial (4 valores). **`arquivada` é um booleano
   separado** — arquivar é soft, remove a release da listagem/KPIs e **não** apaga dados/itens.
+- **Vínculo com chamadas:** ao lançar uma chamada vinculada a esta release, ela passa automaticamente
+  para `Em Revisão` (inclusive se estava `Aprovado`/`Publicado`). A Área Pública só exibe a release
+  quando o status é `Publicado`.
 - **Persistência:** `GET /api/release-week` carrega as releases não arquivadas (com `itensCount`);
   inclusão/edição/clonagem/publicação/arquivamento/exclusão gravam no banco via API.
 - **Componentização:** a página é fina e dona da coordenação; cada parte é um componente em
@@ -148,8 +151,11 @@ admin/release-week.vue                              (page - definePageMeta + com
 - **Semana 1–52:** o campo só aceita dígitos e faz **clamp imediato** (nunca 0/53+); a API reforça a
   regra e recusa valores fora do intervalo.
 - **Validação** (cliente + servidor, `validarReleaseWeek`): nome, semana 1–52, ano, mês do domínio,
-  datas `AAAA-MM-DD` e **`data_publicacao` em segunda-feira**. Erro persistente no campo e foco no
+  datas `AAAA-MM-DD` e **`data_publicacao` em segunda-feira ou no próximo dia útil quando a segunda-feira for feriado nacional**. Erro persistente no campo e foco no
   primeiro problema; a API responde `400` com `data.erros`.
+- **Feriados:** `shared/feriados.ts` lista feriados nacionais fixos e móveis (Carnaval, Sexta-feira
+  Santa e Corpus Christi) e aceita `FERIADOS_EXTRAS` para datas locais/estaduais. A regra aceita o
+  próximo dia útil após uma segunda-feira feriado (ex.: 03/11/2026 após 02/11/2026 — Finados).
 - Salvar chama `adicionar`/`atualizar` (API) e fecha com `toast.success`; `409` (semana/ano
   duplicado) é exibido no toast.
 - **Datas:** `UiDatePicker` ⇄ conversão local `Date` ↔ `AAAA-MM-DD` (sem deslocamento de fuso).
@@ -178,7 +184,7 @@ admin/release-week.vue                              (page - definePageMeta + com
 - `lerPlanilhaReleaseWeek.ts`: parser puro do modelo (colunas **Nome, Semana, Ano, Mês, Data Início,
   Data Finaliza, Data Publicação, Status, Versão, Release, Descrição, Destaque**), sem imports de
   Nuxt — `classificarLinhasReleaseWeek` é coberto por testes. A chave de duplicidade é `(ano, semana)`
-  e a publicação fora de segunda-feira marca a linha como inválida.
+  e a publicação fora de segunda-feira (ou do próximo dia útil após feriado na segunda) marca a linha como inválida.
 
 ## 4. Contrato de dados (API)
 
@@ -196,7 +202,7 @@ interface ReleaseWeekModelo {
   mes: string               // por extenso
   dataInicio: string        // AAAA-MM-DD
   dataFinaliza: string
-  dataPublicacao: string    // sempre segunda-feira
+  dataPublicacao: string    // segunda-feira ou próximo dia útil após feriado
   status: 'Aberta' | 'Em Revisão' | 'Aprovado' | 'Publicado'
   descricao: string
   destaqueSemana: boolean
@@ -226,7 +232,7 @@ interface ReleaseWeekModelo {
 - **Código:** derivado de `semana`/`ano` (`RW-XX/AAAA`) na criação e **regenerado na edição** quando
   semana/ano mudam; duplicidade de `codigo`/`(ano, semana)` → `409`.
 - **Validação:** campos obrigatórios, semana 1–52, mês do domínio, datas `AAAA-MM-DD` e
-  `data_publicacao` em segunda-feira (UTC) → `400` com `data.erros`.
+  `data_publicacao` em segunda-feira ou no próximo dia útil quando a segunda-feira for feriado nacional (UTC) → `400` com `data.erros`.
 - **Arquivamento:** `PUT /:id/arquivar` marca `arquivada = 1`; a listagem filtra as arquivadas.
 - **Exclusão:** `409` quando arquivada ou com itens em `entregas_itens`.
 - **Auditoria:** recurso **"Release Week"** (Inclusão/Alteração/Homologação/Exclusão).
@@ -270,7 +276,7 @@ interface ReleaseWeekModelo {
   com **Nome, Semana, Ano, Mês, Data Início, Data Finaliza, Data Publicação, Status, Versão,
   Release, Descrição, Destaque** (sem Código — o servidor gera).
 - **Fluxo:** o ícone da toolbar abre `ReleaseWeekImportar`; o parser local classifica as linhas; o
-  commit vai a `POST /api/release-week/importar`, que revalida (incluindo segunda-feira), recusa tudo
+  commit vai a `POST /api/release-week/importar`, que revalida (incluindo segunda-feira/feriado), recusa tudo
   se houver linha inválida/duplicada (`400` com motivos/conflitos), grava em **transação** (códigos
   gerados) e registra auditoria.
 - **Unicidade:** `(ano, semana)` no arquivo e contra o banco; limite de 500 linhas.

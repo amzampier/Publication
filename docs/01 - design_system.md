@@ -1270,3 +1270,78 @@ kit; espelhado em `docs/09`)
 - **Visual:** mesmo DNA do `UiSelect` (§5.7) — foco recortado `.ds-bottom-clip` em `brand-focus`, erro
   `rose-700` com `AlertCircle`; altura mínima `34px` com chips.
 - **Espelhamento:** seção 26 do `/design` — exemplo habilitado e outro desabilitado em erro.
+
+### 5.27 Painel compacto de Progresso e board da Esteira (domínio) — tela Esteira de Revisão
+
+**Arquivos:** `app/components/esteira/Progresso.vue`, `app/components/esteira/Board.vue` e
+`app/components/esteira/ChamadaCard.vue`
+
+Componentes de domínio da tela `/admin/esteira-revisao`. Os KPIs ficam no topo; a barra de
+ferramentas concentra busca, **Pacote de Origem** e **Filtros**; na segunda faixa do mesmo card ficam
+o filtro **Demandas por origem** e o painel compacto de progresso, lado a lado. O board de três
+estágios vem abaixo.
+
+**Topo: KPIs (`Kpis.vue`)**
+
+- Fileira de 4 `UiKpi` do conjunto filtrado — **No filtro**, **Em revisão**, **Aprovadas** e
+  **Recusadas** — acima da barra de ferramentas.
+
+**Painel de progresso (`Progresso.vue`) — compacto, junto da origem**
+
+| Prop | Tipo | Descrição |
+| :--- | :--- | :--- |
+| `progresso` | `ProgressoEsteira` | Total, contagens por status e percentual do fluxo |
+
+- **Layout:** o painel é menor e fica na segunda faixa da barra de ferramentas, ao lado do filtro
+  **Demandas por origem** (`lg:grid-cols-[1fr_20rem]`). Em telas estreitas, os dois empilham.
+- **Card compacto:** `rounded-lg border border-slate-200 bg-white p-3 shadow-xs`; rótulo
+  "Progresso" em versalete; **percentual em `text-lg`** (não é mais o número grande anterior);
+  contagens **a revisar**, **aprov.** e **publ.** em linha, com pontos coloridos; barra `h-1.5`;
+  rodapé com `revisado/total` e acionador de **recusadas**.
+- **Percentual do fluxo:** `(Aprovado + Publicar) / total`; recusadas não entram no numerador
+  (aguardam correção).
+- **Barra segmentada:** trilha `bg-slate-100` e segmentos com **cores sólidas** — Revisar
+  `#f59e0b`, Aprovado `#1a9e07`, Publicar `#0364f7` e Recusado `rose-700` `#be123c`. **Sem degradê**;
+  a largura é proporcional ao total.
+- **Recusadas:** quando `recusado > 0`, um acionador compacto com ponto rose e `aria-pressed`
+  mostra/oculta a faixa de recusadas do board.
+- **Acessibilidade:** a trilha expõe `role="progressbar"` com `aria-valuenow` (percentual do fluxo),
+  `aria-valuemin="0"`, `aria-valuemax="100"` e `aria-label` textual com as contagens.
+- **Escopo:** o painel é **global** (não muda com os filtros do board).
+
+**Barra de ferramentas (`Board.vue`)**
+
+- A barra segue o padrão das demais telas (`UiDataTable`): card branco `rounded-xl border
+  border-slate-200 shadow-xs` com título "Chamadas da esteira", subtítulo, ícone
+  `FileSpreadsheet` e, à direita, o campo de busca (gate `buscar`), o seletor **Pacote de Origem**
+  (releases/manuais/projetos ativos) **à esquerda do botão Filtros** (gate `filtrar`, com badge de
+  critérios ativos) e o ícone `X` para limpar.
+- **Segunda faixa (onde ficavam os filtros rápidos):** à esquerda, o card **Demandas por origem**
+  com o `UiSegmented` compacto (Todas, Releases, Manuais, Escopo) e as contagens globais; à direita,
+  o painel compacto de progresso.
+- **Software Atendido** e **Parceiro / Cliente** saíram da barra e ficaram **dentro do modal de
+  Filtros**, junto de Status, Origem, Tipo, Impacto, vínculos e períodos.
+
+**Board (`Board.vue` + `ChamadaCard.vue`)**
+
+- **Três colunas:** **1. Em Revisão** (amber `#f59e0b`), **2. Homologados** (verde `#1a9e07`) e
+  **3. Publicados** (azul `#0364f7`). Em telas estreitas as colunas empilham.
+- **Cabeçalho das colunas:** usa o **mesmo background do header dos modais**
+  (`bg-gradient-to-r from-brand-primary to-brand-structure`) com texto branco, borda esquerda de
+  `2.5px` na cor do estágio e contagem em pílula `bg-white/15`. É uma exceção visual deliberada
+  desta tela ao padrão de superfícies sólidas; a barra de progresso e os cards continuam sólidos.
+- **Faixa de recusadas:** seção separada, exibida sob demanda pelo painel, com o mesmo cabeçalho em
+  degradê e borda esquerda `rose-700`; contém os cards `Recusado` e a ação Reabrir.
+- **Cards:** origem em `UiBadge`, código do vínculo em `font-mono`, chamada, software, parceiro,
+  título, resumo da descrição (`line-clamp-3`), tags (até três + `+N`) e contador de imagens de
+  evidência. As ações são **somente ícones alinhados à direita**, com tooltip e `aria-label`:
+  - Em Revisão: `Eye` (Inspecionar), `ShieldCheck` (Aprovar) e `XCircle` (Recusar);
+  - Homologados: `Undo2` (Voltar p/ Revisão) e `UploadCloud` (Publicar Item);
+  - Publicados: `ArchiveRestore` (Suspender p/ Homologado) e `ExternalLink` (No Portal);
+  - Recusadas: `Eye` (Inspecionar) e `Undo2` (Reabrir).
+- **Degradês:** além do `UiButton variant="primary"`, esta tela usa o degradê do header de modal nos
+  cabeçalhos das colunas e da faixa de recusadas (pedido explícito de produto). Nenhuma outra
+  superfície usa degradê.
+- **Espelhamento:** a referência visual é a própria tela `/admin/esteira-revisao`; a seção 5 do
+  `/design` cobre os controles do kit usados nela (Segmented, Select, Input, Modal, Badge, Button).
+  O padrão documentado aqui é o contrato para futuras telas de board/progresso.

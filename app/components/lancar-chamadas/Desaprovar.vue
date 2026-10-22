@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { Undo2 } from '@lucide/vue'
 import {
   motivoBloqueioDesaprovacao,
@@ -17,18 +17,28 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', valor: boolean): void
-  (e: 'confirmar'): void
+  (e: 'confirmar', payload: { parecer: string }): void
 }>()
+
+const parecer = ref('')
 
 const motivo = computed(() =>
   props.chamada ? motivoBloqueioDesaprovacao(props.chamada) : 'Chamada não encontrada.'
+)
+
+watch(
+  () => [props.modelValue, props.chamada?.id] as const,
+  ([aberto]) => {
+    if (aberto) parecer.value = ''
+  },
+  { immediate: true }
 )
 
 const cancelar = () => emit('update:modelValue', false)
 
 const confirmar = () => {
   if (motivo.value) return
-  emit('confirmar')
+  emit('confirmar', { parecer: parecer.value.trim() })
 }
 </script>
 
@@ -48,6 +58,14 @@ const confirmar = () => {
         voltará para <strong>Revisar</strong> para correção.
       </p>
       <p class="text-sm font-medium text-slate-900">{{ chamada?.titulo }}</p>
+
+      <UiTextarea
+        v-model="parecer"
+        label="Parecer (opcional)"
+        placeholder="Observações da reabertura..."
+        :rows="3"
+      />
+
       <p v-if="motivo" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
         {{ motivo }}
       </p>

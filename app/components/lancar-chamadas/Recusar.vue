@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { XCircle } from '@lucide/vue'
+import { validarParecer } from '#shared/esteira-revisao'
 import {
   motivoBloqueioRecusa,
   type ChamadaModelo
@@ -17,18 +18,40 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', valor: boolean): void
-  (e: 'confirmar'): void
+  (e: 'confirmar', payload: { parecer: string; criterios: boolean }): void
 }>()
+
+const parecer = ref('')
+const tentou = ref(false)
 
 const motivo = computed(() =>
   props.chamada ? motivoBloqueioRecusa(props.chamada) : 'Chamada não encontrada.'
 )
 
+const erroParecer = computed(() =>
+  tentou.value ? validarParecer('recusar', parecer.value) : null
+)
+
+const podeConfirmar = computed(
+  () => motivo.value === null && validarParecer('recusar', parecer.value) === null
+)
+
+watch(
+  () => [props.modelValue, props.chamada?.id] as const,
+  ([aberto]) => {
+    if (!aberto) return
+    parecer.value = ''
+    tentou.value = false
+  },
+  { immediate: true }
+)
+
 const cancelar = () => emit('update:modelValue', false)
 
 const confirmar = () => {
-  if (motivo.value) return
-  emit('confirmar')
+  tentou.value = true
+  if (!podeConfirmar.value) return
+  emit('confirmar', { parecer: parecer.value.trim(), criterios: false })
 }
 </script>
 
@@ -48,6 +71,15 @@ const confirmar = () => {
         será marcada como <strong>Recusada</strong> e sairá do fluxo de aprovação.
       </p>
       <p class="text-sm font-medium text-slate-900">{{ chamada?.titulo }}</p>
+
+      <UiTextarea
+        v-model="parecer"
+        label="Parecer da recusa"
+        placeholder="Descreva o motivo da recusa e o que precisa ser corrigido..."
+        :rows="4"
+        :error="erroParecer ?? ''"
+      />
+
       <p v-if="motivo" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
         {{ motivo }}
       </p>
@@ -55,7 +87,7 @@ const confirmar = () => {
 
     <template #footer>
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="danger" :disabled="Boolean(motivo)" @click="confirmar">
+      <UiButton variant="danger" :disabled="!podeConfirmar" @click="confirmar">
         <template #leftIcon><XCircle class="h-4 w-4" /></template>
         Recusar
       </UiButton>

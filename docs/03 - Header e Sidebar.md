@@ -230,13 +230,14 @@ ADMINISTRAÇÃO
 Observações:
 
 - Os quatro grupos cobrem as frentes do sistema: **conteúdo publicado** (Área Pública lê Manuais,
-  Release Week e Escopo de Projetos), **movimentos de negócio** (Esteira de Revisão, ainda sem rota,
-  e Lançar as Chamadas, em `/admin/lancar-chamadas`), **cadastros de apoio** e
-  **administração/governança**.
-- **Itens sem rota:** o clique não navega — exibe `toast.info` com o rótulo do item e a
-  mensagem "Módulo em construção." (spec `design-system/layout-navigation`; **MEL-03 do
-  `RL01` resolvido**). Nesta árvore, apenas **Esteira de Revisão** permanece sem rota; Lançar as
-  Chamadas passou a navegar para `/admin/lancar-chamadas`. O menu da conta fica fora do aviso:
+  Release Week e Escopo de Projetos), **movimentos de negócio** (Esteira de Revisão, em
+  `/admin/esteira-revisao`, e Lançar as Chamadas, em `/admin/lancar-chamadas`), **cadastros de apoio**
+  e **administração/governança**.
+- **Itens com rota:** todos os itens desta árvore declaram `to` e navegam ao clique. A Esteira de
+  Revisão passou a navegar para `/admin/esteira-revisao` (change `construir-esteira-revisao`),
+  encerrando o último item sem rota da sidebar. O comportamento genérico de item sem rota
+  (`toast.info` "Módulo em construção.", spec `design-system/layout-navigation`) permanece disponível
+  para itens futuros, mas nenhum item atual o utiliza. O menu da conta fica fora do aviso:
   "Meu Perfil" navega para `/admin/meu-perfil` (como os itens com rota) e "Encerrar Sessão" mantém
   seu comportamento próprio (fecho de sessão).
 - **Cores dos ícones (`SidebarItem.cor`)** — o ícone fica colorido sempre e o hover da opção pinta

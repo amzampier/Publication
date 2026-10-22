@@ -8,7 +8,7 @@ import { createError } from 'h3'
 import { query, getTransaction } from './db'
 import {
   STATUS_RELEASE,
-  ehSegundaFeira,
+  dataPublicacaoValida,
   gerarCodigo,
   validarReleaseWeek,
   type ItemRelease,
@@ -146,10 +146,10 @@ export function validarEntradaReleaseWeek(dados: EntradaReleaseWeek): ReleaseWee
     const campo = resultado.primeiroErro
     erro400(resultado.erros[campo ?? 'nome'] ?? 'Dados inválidos.', { erros: resultado.erros })
   }
-  if (typeof dados.dataPublicacao === 'string' && !ehSegundaFeira(dados.dataPublicacao)) {
-    erro400('A data de publicação deve ser uma segunda-feira.', {
-      erros: { dataPublicacao: 'A data de publicação deve ser uma segunda-feira.' }
-    })
+  if (typeof dados.dataPublicacao === 'string' && !dataPublicacaoValida(dados.dataPublicacao)) {
+    const mensagem =
+      'A data de publicação deve ser uma segunda-feira ou o próximo dia útil quando a segunda-feira for feriado.'
+    erro400(mensagem, { erros: { dataPublicacao: mensagem } })
   }
   const status = (typeof dados.status === 'string' && dados.status) || 'Aberta'
   if (!STATUS_RELEASE.includes(status as StatusRelease)) {

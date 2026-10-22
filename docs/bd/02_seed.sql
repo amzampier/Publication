@@ -22,15 +22,15 @@ INSERT INTO perfis_acesso (id, nome_perfil, descricao, situacao) VALUES
 -- Catálogo de funcionalidades POR MÓDULO (server/utils/perfis.ts): as fixas
 -- (visualizar, criar, alterar, excluir) viram colunas; as específicas vão no
 -- `extras` JSON. Uma coluna só é 1 quando o módulo possui a funcionalidade.
--- Totais (catálogo = 90): Administrador 90, Editor 65, Revisor 39, Leitor 14.
+-- Totais (catálogo = 92): Administrador 92, Editor 67, Revisor 41, Leitor 14.
 -- =========================================================================
 
--- --- Administrador: 91/91 (todas as funcionalidades do catálogo) ---
+-- --- Administrador: 92/92 (todas as funcionalidades do catálogo) ---
 INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras) VALUES
     ('10000000-0000-4000-8000-000000000001', 'manuais', 1, 1, 1, 1, '["publicar","arquivar","download","exportar","importar","filtrar","buscar","clonar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000001', 'release-week', 1, 1, 1, 1, '["publicar","arquivar","download","exportar","importar","filtrar","buscar","clonar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000001', 'escopo-projetos', 1, 1, 1, 1, '["publicar","arquivar","download","exportar","importar","filtrar","buscar"]'),
-    ('10000000-0000-4000-8000-000000000001', 'esteira-revisao', 1, 0, 1, 0, '["publicar","arquivar","filtrar"]'),
+    ('10000000-0000-4000-8000-000000000001', 'esteira-revisao', 1, 0, 1, 0, '["publicar","arquivar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000001', 'lancar-chamadas', 1, 1, 1, 1, '["publicar","arquivar","download","importar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000001', 'parceiros', 1, 1, 1, 1, '["importar","exportar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000001', 'softwares', 1, 1, 1, 1, '["importar","exportar","filtrar","buscar"]'),
@@ -39,12 +39,12 @@ INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir,
     ('10000000-0000-4000-8000-000000000001', 'auditoria', 1, 0, 0, 0, '["exportar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000001', 'configuracoes-globais', 1, 0, 1, 0, NULL);
 
--- --- Editor: 66/91 ---
+-- --- Editor: 67/92 ---
 INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras) VALUES
     ('10000000-0000-4000-8000-000000000002', 'manuais', 1, 1, 1, 0, '["publicar","arquivar","download","exportar","filtrar","buscar","clonar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000002', 'release-week', 1, 1, 1, 0, '["publicar","arquivar","download","exportar","filtrar","buscar","clonar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000002', 'escopo-projetos', 1, 1, 1, 0, '["publicar","arquivar","download","exportar","filtrar","buscar"]'),
-    ('10000000-0000-4000-8000-000000000002', 'esteira-revisao', 1, 0, 1, 0, '["publicar","arquivar","filtrar"]'),
+    ('10000000-0000-4000-8000-000000000002', 'esteira-revisao', 1, 0, 1, 0, '["publicar","arquivar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000002', 'lancar-chamadas', 1, 1, 1, 0, '["publicar","arquivar","download","importar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000002', 'parceiros', 1, 1, 1, 0, '["exportar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000002', 'softwares', 1, 1, 1, 0, '["exportar","filtrar","buscar"]'),
@@ -53,12 +53,12 @@ INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir,
     ('10000000-0000-4000-8000-000000000002', 'auditoria', 1, 0, 0, 0, '["exportar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000002', 'configuracoes-globais', 0, 0, 0, 0, NULL);
 
--- --- Revisor: 39/91 ---
+-- --- Revisor: 41/92 ---
 INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras) VALUES
     ('10000000-0000-4000-8000-000000000003', 'manuais', 1, 0, 1, 0, '["download","exportar","filtrar","buscar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000003', 'release-week', 1, 0, 1, 0, '["download","exportar","filtrar","buscar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000003', 'escopo-projetos', 1, 0, 1, 0, '["download","exportar","filtrar","buscar"]'),
-    ('10000000-0000-4000-8000-000000000003', 'esteira-revisao', 1, 0, 1, 0, '["filtrar"]'),
+    ('10000000-0000-4000-8000-000000000003', 'esteira-revisao', 1, 0, 1, 0, '["publicar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000003', 'lancar-chamadas', 1, 0, 1, 0, '["filtrar"]'),
     ('10000000-0000-4000-8000-000000000003', 'parceiros', 1, 0, 0, 0, '["filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000003', 'softwares', 1, 0, 0, 0, '["filtrar","buscar"]'),
@@ -67,7 +67,7 @@ INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir,
     ('10000000-0000-4000-8000-000000000003', 'auditoria', 1, 0, 0, 0, '["exportar","filtrar","buscar"]'),
     ('10000000-0000-4000-8000-000000000003', 'configuracoes-globais', 0, 0, 0, 0, NULL);
 
--- --- Leitor: 14/91 ---
+-- --- Leitor: 14/92 ---
 INSERT INTO permissoes_perfil (perfil_id, modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras) VALUES
     ('10000000-0000-4000-8000-000000000004', 'manuais', 1, 0, 0, 0, '["download","filtrar","buscar","visualizar_itens"]'),
     ('10000000-0000-4000-8000-000000000004', 'release-week', 1, 0, 0, 0, '["download","filtrar","buscar","visualizar_itens"]'),

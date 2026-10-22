@@ -27,6 +27,7 @@ import {
   type ChamadaModelo,
   type EntradaChamada,
   type ImpactoChamada,
+  type OpcaoChamada,
   type SituacaoChamada,
   type TipoChamada
 } from './validadores'
@@ -179,14 +180,36 @@ const autorExibicao = computed(() =>
 
 const origemDerivada = computed(() => derivarOrigem(rascunho.value))
 
+const STATUS_VINCULO_RELEASE = ['Aberta', 'Em Revisão']
+const STATUS_VINCULO_MANUAL = ['Rascunho', 'Em Revisão']
+const STATUS_VINCULO_PROJETO = ['Em Andamento', 'Homologação']
+
+const opcaoVinculavel = (
+  opcao: OpcaoChamada,
+  permitidos: string[],
+  atual: string
+): boolean => !opcao.status || permitidos.includes(opcao.status) || opcao.id === atual
+
 const opcoesRelease = computed(() =>
-  catalogo.value.releases.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.releases
+    .filter((opcao) =>
+      opcaoVinculavel(opcao, STATUS_VINCULO_RELEASE, rascunho.value.releaseId)
+    )
+    .map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesProjeto = computed(() =>
-  catalogo.value.projetos.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.projetos
+    .filter((opcao) =>
+      opcaoVinculavel(opcao, STATUS_VINCULO_PROJETO, rascunho.value.projetoId)
+    )
+    .map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesManual = computed(() =>
-  catalogo.value.manuais.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  catalogo.value.manuais
+    .filter((opcao) =>
+      opcaoVinculavel(opcao, STATUS_VINCULO_MANUAL, rascunho.value.manualId)
+    )
+    .map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesSoftware = computed(() =>
   catalogo.value.softwares.map((opcao) => ({ value: opcao.id, label: opcao.label }))

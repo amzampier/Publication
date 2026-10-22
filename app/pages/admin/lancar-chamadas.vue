@@ -91,11 +91,14 @@ const abrirAprovacao = (linha: LinhaChamada) => {
   aprovarAberto.value = true
 }
 
-const confirmarAprovacao = async () => {
+const confirmarAprovacao = async (payload: {
+  parecer: string
+  criterios: boolean
+}) => {
   const alvo = chamadaAprovar.value
   if (!alvo) return
   try {
-    await aprovar(alvo.id)
+    await aprovar(alvo.id, payload)
     aprovarAberto.value = false
     chamadaAprovar.value = null
     toast.success('Lançar as Chamadas', 'Chamada aprovada com sucesso.')
@@ -119,11 +122,11 @@ const abrirDesaprovacao = (linha: LinhaChamada) => {
   desaprovarAberto.value = true
 }
 
-const confirmarDesaprovacao = async () => {
+const confirmarDesaprovacao = async (payload: { parecer: string }) => {
   const alvo = chamadaDesaprovar.value
   if (!alvo) return
   try {
-    await desaprovar(alvo.id)
+    await desaprovar(alvo.id, payload)
     desaprovarAberto.value = false
     chamadaDesaprovar.value = null
     toast.success('Lançar as Chamadas', 'Chamada devolvida para Revisar.')
@@ -147,11 +150,14 @@ const abrirRecusa = (linha: LinhaChamada) => {
   recusarAberto.value = true
 }
 
-const confirmarRecusa = async () => {
+const confirmarRecusa = async (payload: {
+  parecer: string
+  criterios: boolean
+}) => {
   const alvo = chamadaRecusar.value
   if (!alvo) return
   try {
-    await recusar(alvo.id)
+    await recusar(alvo.id, payload)
     recusarAberto.value = false
     chamadaRecusar.value = null
     toast.success('Lançar as Chamadas', 'Chamada recusada com sucesso.')

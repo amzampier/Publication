@@ -36,10 +36,27 @@ describe('classificarLinhasReleaseWeek', () => {
     expect(r?.situacaoImportacao).toBe('ja-cadastrado')
   })
 
-  it('recusa data de publicação que não é segunda-feira', () => {
-    const [r] = classificarLinhasReleaseWeek([linha({ dataPublicacao: '2026-10-27' })], [])
-    expect(r?.situacaoImportacao).toBe('invalido')
-    expect(r?.motivo).toMatch(/segunda-feira/i)
+  it('recusa data de publicação que não é segunda-feira nem o próximo dia útil de feriado', () => {
+    const [tercaComum] = classificarLinhasReleaseWeek(
+      [linha({ dataPublicacao: '2026-10-27' })],
+      []
+    )
+    expect(tercaComum?.situacaoImportacao).toBe('invalido')
+    expect(tercaComum?.motivo).toMatch(/segunda-feira/i)
+
+    const [segundaFeriado] = classificarLinhasReleaseWeek(
+      [linha({ semana: '45', dataPublicacao: '2026-11-02' })],
+      []
+    )
+    expect(segundaFeriado?.situacaoImportacao).toBe('invalido')
+  })
+
+  it('aceita o próximo dia útil após feriado na segunda-feira', () => {
+    const [r] = classificarLinhasReleaseWeek(
+      [linha({ semana: '45', dataPublicacao: '2026-11-03' })],
+      []
+    )
+    expect(r?.situacaoImportacao).toBe('pronto')
   })
 
   it('recusa nome ausente, semana fora de 1–52 e status inválido', () => {

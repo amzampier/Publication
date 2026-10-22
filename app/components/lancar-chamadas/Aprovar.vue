@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ShieldCheck } from '@lucide/vue'
+import { validarParecer } from '#shared/esteira-revisao'
 import {
   motivoBloqueioAprovacao,
   type ChamadaModelo
@@ -17,18 +18,45 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', valor: boolean): void
-  (e: 'confirmar'): void
+  (e: 'confirmar', payload: { parecer: string; criterios: boolean }): void
 }>()
+
+const parecer = ref('')
+const criterios = ref(true)
+const tentou = ref(false)
 
 const motivo = computed(() =>
   props.chamada ? motivoBloqueioAprovacao(props.chamada) : 'Chamada não encontrada.'
 )
 
+const erroParecer = computed(() =>
+  tentou.value ? validarParecer('aprovar', parecer.value) : null
+)
+
+const podeConfirmar = computed(
+  () =>
+    motivo.value === null &&
+    criterios.value &&
+    validarParecer('aprovar', parecer.value) === null
+)
+
+watch(
+  () => [props.modelValue, props.chamada?.id] as const,
+  ([aberto]) => {
+    if (!aberto) return
+    parecer.value = ''
+    criterios.value = true
+    tentou.value = false
+  },
+  { immediate: true }
+)
+
 const cancelar = () => emit('update:modelValue', false)
 
 const confirmar = () => {
-  if (motivo.value) return
-  emit('confirmar')
+  tentou.value = true
+  if (!podeConfirmar.value) return
+  emit('confirmar', { parecer: parecer.value.trim(), criterios: criterios.value })
 }
 </script>
 
@@ -48,6 +76,21 @@ const confirmar = () => {
         será marcada como <strong>Aprovada</strong> e seguirá para a etapa seguinte do fluxo.
       </p>
       <p class="text-sm font-medium text-slate-900">{{ chamada?.titulo }}</p>
+
+      <UiCheckbox
+        v-model="criterios"
+        label="Confirmo que os critérios de aceite foram atendidos"
+        description="O histórico registrará os critérios como atendidos."
+      />
+
+      <UiTextarea
+        v-model="parecer"
+        label="Parecer (opcional)"
+        placeholder="Observações da revisão..."
+        :rows="3"
+        :error="erroParecer ?? ''"
+      />
+
       <p v-if="motivo" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
         {{ motivo }}
       </p>
@@ -55,7 +98,7 @@ const confirmar = () => {
 
     <template #footer>
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" :disabled="Boolean(motivo)" @click="confirmar">
+      <UiButton variant="primary" :disabled="!podeConfirmar" @click="confirmar">
         <template #leftIcon><ShieldCheck class="h-4 w-4" /></template>
         Aprovar
       </UiButton>

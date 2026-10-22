@@ -70,7 +70,7 @@ Administrativa:
   (`UiTextarea`) e situação (sem campo de código: o identificador é o UUID gerado na
   criação); na edição a
   seção "Informações de Cadastro" exibe `criado_em`/`atualizado_em` desabilitados. Perfil
-  novo nasce com matriz vazia (0/91) e 0 usuários.
+  novo nasce com matriz vazia (0/92) e 0 usuários.
 - **Modal de exclusão (change `perfis-acesso-modal-exclusao`):** "Excluir" (`Trash2`) **abre o
   modal** `PerfisExclusao` (`UiModal size="sm"`); ao confirmar, a exclusão vai para a API e,
   **com usuários vinculados, o servidor responde `409`** — o modal fecha e um `toast.warning`
@@ -142,7 +142,7 @@ admin/perfis-acesso.vue            (page - definePageMeta + composição + coord
 ### 3.2 `Kpis.vue` → `<PerfisKpis>`
 
 5 `UiKpi` em `grid sm:grid-cols-2 xl:grid-cols-5` (5 colunas só a partir de 1280px — em
-1024–1279px o grid fica 2×N para o valor longo `210/364` não truncar, correção UX-M1), todos
+1024–1279px o grid fica 2×N para o valor longo `214/368` não truncar, correção UX-M1), todos
 derivados do conjunto vigente (`perfisFiltrados` do `useState` — a base completa sem filtro, o
 conjunto filtrado com filtro do módulo aplicado):
 
@@ -152,10 +152,10 @@ conjunto filtrado com filtro do módulo aplicado):
 | Ativos | `4` | `#047857` (esmeralda) | `UserCheck` |
 | Inativos | `0` | `#64748b` (slate) | `UserX` |
 | Bloqueados | `0` | `#be123c` (rose-700) | `ShieldOff` |
-| Permissões concedidas | `210/364` | `#112051` (navy) | `KeyRound` |
+| Permissões concedidas | `214/368` | `#112051` (navy) | `KeyRound` |
 
 - "Permissões concedidas" = **soma das permissões verdadeiras de todos os perfis /**
-  **`perfis × 91`** (`91 = soma do catálogo por módulo`).
+  **`perfis × 92`** (`92 = soma do catálogo por módulo`).
 - **Inativos e Bloqueados = 0 é comportamento esperado** (design D7): os 4 perfis semeados são
   os canônicos, todos Ativo; a situação muda pelo modal de edição (§3.6).
 - Os KPIs recalculam sempre que o conjunto de perfis muda — criação, edição, exclusão,
@@ -169,8 +169,8 @@ conjunto filtrado com filtro do módulo aplicado):
   `:filters-count="filtrosAtivosCount"`, emitindo `@open-filters` para a página abrir o
   `PerfisFiltros`, §3.8) além da busca textual do kit com `show-header-top`,
   `title="Perfis de Acesso"`,
-  `subtitle="Dados persistidos via API (MariaDB) · Permissões: funcionalidades concedidas de 91
-(catálogo por módulo)"` (legenda do `n/91` — UX-B2), `default-page-size="5"`.
+  `subtitle="Dados persistidos via API (MariaDB) · Permissões: funcionalidades concedidas de 92
+(catálogo por módulo)"` (legenda do `n/92` — UX-B2), `default-page-size="5"`.
 - **Colunas (6 — cinco de dados + Ações, sem rolagem horizontal em ≥ ~1280px):**
 
 | Coluna | Origem | Formatação |
@@ -178,7 +178,7 @@ conjunto filtrado com filtro do módulo aplicado):
 | Nome | `perfil.nome` | texto |
 | Descrição | `perfil.descricao` | texto (elástica) |
 | Usuários | `usuariosPorPerfil[nome]` — **derivada** do campo `usuarios` da API (COUNT sobre a tabela `usuarios`) | `align: 'right'`, `font-mono tabular-nums` |
-| Permissões | `contarPermissoes(perfil)/91` — **derivada** da matriz | `align: 'right'`, `font-mono tabular-nums` |
+| Permissões | `contarPermissoes(perfil)/92` — **derivada** da matriz | `align: 'right'`, `font-mono tabular-nums` |
 | Status | `perfil.situacao` | `UiBadge` via `VARIANTE_POR_STATUS` (Ativo `done`, Inativo `neutral`, Bloqueado `blocked`) |
 | Ações | gatilhos | `KeyRound` · `Pencil` · `Trash2` (tooltip + `aria-label` próprios) |
 
@@ -200,7 +200,7 @@ conjunto filtrado com filtro do módulo aplicado):
   `Acao` (4), `Extra` (5), `Permissao = Acao | Extra`.
 - **Constantes:** `MODULOS` (11 rótulos idênticos aos da sidebar + `descricao` curta p/ a
   lista do modal), `ACOES`, `EXTRAS`,
-  `PERMISSOES_POR_PERFIL = 91`, `VARIANTE_POR_STATUS` (3 estados: `done`/`neutral`/`blocked`).
+  `PERMISSOES_POR_PERFIL = 92`, `VARIANTE_POR_STATUS` (3 estados: `done`/`neutral`/`blocked`).
   Os mesmos ids de módulo/ações estão duplicados em `server/utils/perfis.ts` (barreira
   `app/` × `server/`) — mantenha os dois lados em sincronia.
 - **Estado:** `useState('perfis-base', () => [])` — **inicia vazio**; `carregarPerfis()`
@@ -266,7 +266,7 @@ conjunto filtrado com filtro do módulo aplicado):
   `nome`/`descricao`/`situacao` para a API: o **servidor** gera o `id` UUID (criação),
   preserva `criado_em` e grava `atualizado_em`; erro `400` devolve a mensagem ao campo com
   foco (modal aberto), demais erros → `toast.danger`. Perfil novo nasce com matriz vazia
-  (**0/91**) e 0 usuários.
+  (**0/92**) e 0 usuários.
 - **Aceite documentado:** a coluna "Usuários" conta do banco (`usuarios.perfil_id`), enquanto
   o dropdown de perfis de `/admin/gestao-usuarios` **já deriva da base de perfis** (`opcoes.perfis`,
   apenas perfis Ativos), casando o nome com a contagem do banco.
@@ -277,7 +277,7 @@ conjunto filtrado com filtro do módulo aplicado):
   `modelValue: boolean` e `perfil: PerfilModelo | null`; emite `update:modelValue`; grava via
   `salvarPermissoes()` + `toast.success` ("Permissões do perfil atualizadas com sucesso.").
 - `UiModal` `size="xl"`, `title="Permissões"`, `subtitle="<nome> · matriz de 11 módulos
-  (91 funcionalidades)"` e ícone `KeyRound` (comportamento do kit: backdrop não fecha,
+  (92 funcionalidades)"` e ícone `KeyRound` (comportamento do kit: backdrop não fecha,
   `Escape`/`X`, focus-trap — `docs/01` §5.12).
 - **Tabela-cartão própria** (modelo de referência do usuário): `<table>` dentro de
   `rounded-xl border border-slate-200` com cabeçalho `bg-slate-50` (headers em versalete
@@ -298,7 +298,7 @@ conjunto filtrado com filtro do módulo aplicado):
   Administração — aba ativa volta à primeira na abertura, `role="tabpanel"` com
   `permissoes-panel-*`/`permissoes-tab-*`). O rodapé informativo com ícone `Info` explica a
   régua (fixas com interruptor, Funcionalidades em chip, nada vale até "Salvar") e o
-  contador **"n/91"** **global** aparece num `UiBadge` (variant `done` em 91/91, `pending`
+  contador **"n/92"** **global** aparece num `UiBadge` (variant `done` em 92/92, `pending`
   parcial, `neutral` em 0; região viva `aria-live="polite"` — leitores de tela ouvem a nova
   contagem) — trocar de aba não muda o contador.
 - **Rascunho isolado:** a matriz é copiada para um `ref` na abertura; nada altera a base
@@ -306,12 +306,12 @@ conjunto filtrado com filtro do módulo aplicado):
   coluna Permissões + KPIs recalculam (computeds da §3.4) e o modal fecha; **Cancelar/Escape/X**
   descartam sem requisição. Recarga restaura a matriz **gravada** na API.
 - **Administrador editável como os demais** (decisão do usuário — sem trava por papel) e
-  perfil novo (0/91) pode ter a matriz preenchida no mesmo modal.
+  perfil novo (0/92) pode ter a matriz preenchida no mesmo modal.
 - **Cópia entre perfis (rodapé):** dois ícones **alinhados à esquerda** do rodapé (grupo
   `mr-auto` no slot; `Cancelar`/`Salvar` seguem à direita) — `ClipboardPaste` **"Copiar
   permissões de outro perfil"** (tooltip "Copiar de outro perfil — vale após Salvar") abre
   o modal filho (`UiModal size="sm"`, subtítulo "Origem — substitui o rascunho; só vale após
-  Salvar") com um `UiChoiceCard` por perfil candidato (nome, descrição e badge `n/91` com
+  Salvar") com um `UiChoiceCard` por perfil candidato (nome, descrição e badge `n/92` com
   `badge-mono` — o perfil atual nunca aparece; sem candidatos, estado vazio) e **substitui o
   rascunho** por inteiro (clone via `clonarMatriz`, sem mescla) com `toast.info` reforçando
   "vale após Salvar"; `ClipboardCopy` **"Copiar permissões para outro perfil"** (tooltip
@@ -319,7 +319,7 @@ conjunto filtrado com filtro do módulo aplicado):
    "Destino — grava já a matriz salva; Cancelar não desfaz") e grava **imediatamente, via
    API** (`POST /api/perfis/:id/permissoes/copiar`), no alvo a **matriz salva** do perfil
    corrente (nunca o rascunho, mesmo com células editadas) com `toast.success` com o valor
-   substituído (ex.: "substituiu 14/91") —
+   substituído (ex.: "substituiu 14/92") —
    a linha do alvo e os KPIs recalculam na hora, **a cópia persiste na recarga** e o
    Cancelar/Escape/X do modal pai **não
    desfaz** a cópia. O
@@ -404,23 +404,23 @@ controle de linha exibe mais toast de transição.
 ## 6. Base semeada (banco) e KPIs
 
 - A carga inicial (`GET /api/perfis`) devolve os **4 perfis canônicos** semeados em
-  `server/migration/02_seed.sql`, **todos Ativo**, com **matriz 91/66/39/14** idêntica ao §7:
+  `server/migration/02_seed.sql`, **todos Ativo**, com **matriz 92/67/41/14** idêntica ao §7:
 
 | Perfil | Descrição | Usuários (banco) | Permissões |
 | :--- | :--- | ---: | ---: |
-| Administrador | Acesso total ao sistema, incluindo perfis de acesso e configurações globais. | 2 | 91/91 |
-| Editor | Produz, publica e mantém conteúdos e cadastros do portal. | 0 | 66/91 |
-| Revisor | Revisa e homologa conteúdos na esteira, sem criar nem excluir registros. | 0 | 39/91 |
-| Leitor | Consulta e baixa os conteúdos publicados. | 0 | 14/91 |
+| Administrador | Acesso total ao sistema, incluindo perfis de acesso e configurações globais. | 2 | 92/92 |
+| Editor | Produz, publica e mantém conteúdos e cadastros do portal. | 0 | 67/92 |
+| Revisor | Revisa e homologa conteúdos na esteira, sem criar nem excluir registros. | 0 | 41/92 |
+| Leitor | Consulta e baixa os conteúdos publicados. | 0 | 14/92 |
 
 - KPIs da base completa: **Total 4 · Ativos 4 · Inativos 0 · Bloqueados 0 · Permissões
-  concedidas 210/364** (`91 + 66 + 39 + 14 = 210`; `4 × 91 = 364`). Criar um perfil leva o
-  KPI a `210/455` (matriz vazia não soma permissões).
+  concedidas 214/368** (`92 + 67 + 41 + 14 = 214`; `4 × 92 = 368`). Criar um perfil leva o
+  KPI a `214/460` (matriz vazia não soma permissões).
 - **Persistência total:** a recarga rebusca `GET /api/perfis` — criações, edições, exclusões,
   matrizes e cópias persistem no MariaDB (o estado de coordenação vive em `useState` e vai
   junto na navegação interna; filtros descartam na recarga).
 - **Contagens nunca digitadas:** usuários (2/0/0/0 — `COUNT` sobre a tabela `usuarios`, cresce
-  quando a gestão de usuários for ao backend) e permissões (91/66/39/14, da matriz servida
+  quando a gestão de usuários for ao backend) e permissões (92/67/41/14, da matriz servida
   pela API) — ambas calculadas em `computed`.
 
 ## 7. Matriz de permissões (normativa)
@@ -432,14 +432,14 @@ exibe apenas a **contagem** derivada desta matriz (§3.4).
 **Catálogo de funcionalidades POR MÓDULO** (`app/config/perfis.ts` ↔ `server/utils/perfis.ts`;
 `docs/02` §3.5). Cada módulo oferece somente as suas funcionalidades: as **fixas**
 (`visualizar`, `criar`, `alterar`, `excluir`) viram colunas; as **específicas** vão no `extras`
-JSON. O total do catálogo é **91**.
+JSON. O total do catálogo é **92**.
 
 | Módulo | Funcionalidades |
 | :--- | :--- |
 | Manuais | visualizar, criar, alterar, excluir, publicar, arquivar, download, exportar, importar, filtrar, buscar, **clonar**, **visualizar_itens** |
 | Release Week | visualizar, criar, alterar, excluir, publicar, arquivar, download, exportar, importar, filtrar, buscar, **clonar**, **visualizar_itens** |
 | Escopo de Projetos | visualizar, criar, alterar, excluir, publicar, arquivar, download, exportar, importar, filtrar, buscar |
-| Esteira de Revisão | visualizar, alterar, publicar, arquivar, filtrar |
+| Esteira de Revisão | visualizar, alterar, publicar, arquivar, filtrar, buscar |
 | Lançar as Chamadas | visualizar, criar, alterar, excluir, publicar, arquivar, download, importar, filtrar, buscar |
 | Parceiros | visualizar, criar, alterar, excluir, importar, exportar, filtrar, buscar |
 | Softwares | visualizar, criar, alterar, excluir, importar, exportar, filtrar, buscar |
@@ -453,20 +453,20 @@ Manuais, Release Week, Escopo de Projetos (Publicações); Esteira de Revisão, 
 Chamadas (Movimentos); Parceiros, Softwares (Cadastros); Gestão de Usuários, Perfis de Acesso
 (RBAC), Gestão de Auditoria, Configurações Globais (Administração).
 
-### 7.1 Administrador — 91/91
+### 7.1 Administrador — 92/92
 
 Acesso irrestrito: **todas as funcionalidades do catálogo, em todos os 11 módulos** (único perfil
 que acessa Próprios **Perfis de Acesso (RBAC)** e **Configurações Globais**, com `permissoes` e
 `excluir` onde existem).
 
-### 7.2 Editor — 66/91
+### 7.2 Editor — 67/92
 
 | Módulo | Funcionalidades concedidas |
 | :--- | :--- |
 | Manuais | visualizar, criar, alterar, publicar, arquivar, download, exportar, filtrar, buscar, **clonar**, **visualizar_itens** |
 | Escopo de Projetos | visualizar, criar, alterar, publicar, arquivar, download, exportar, filtrar, buscar |
 | Release Week | visualizar, criar, alterar, publicar, arquivar, download, exportar, filtrar, buscar, **clonar**, **visualizar_itens** |
-| Esteira de Revisão | visualizar, alterar, publicar, arquivar, filtrar |
+| Esteira de Revisão | visualizar, alterar, publicar, arquivar, filtrar, buscar |
 | Lançar as Chamadas | visualizar, criar, alterar, publicar, arquivar, download, importar, filtrar, buscar |
 | Parceiros / Softwares | visualizar, criar, alterar, exportar, filtrar, buscar |
 | Gestão de Usuários | visualizar, importar, exportar, filtrar, buscar |
@@ -478,25 +478,27 @@ Release Weeks e Manuais (`clonar`, sempre com `criar`) e enxerga os itens (`visu
 cadastros do portal; importa/exporta usuários; lê/exporta a auditoria; não toca em perfis nem em
 configurações globais.
 
-### 7.3 Revisor — 39/91
+### 7.3 Revisor — 41/92
 
 | Módulo | Funcionalidades concedidas |
 | :--- | :--- |
 | Manuais | visualizar, alterar, download, exportar, filtrar, buscar, **visualizar_itens** |
 | Escopo de Projetos | visualizar, alterar, download, exportar, filtrar, buscar |
 | Release Week | visualizar, alterar, download, exportar, filtrar, buscar, **visualizar_itens** |
-| Esteira de Revisão / Lançar as Chamadas | visualizar, alterar, filtrar |
+| Esteira de Revisão | visualizar, alterar, publicar, filtrar, buscar |
+| Lançar as Chamadas | visualizar, alterar, filtrar |
 | Parceiros / Softwares / Gestão de Usuários | visualizar, filtrar, buscar |
 | Gestão de Auditoria | visualizar, exportar, filtrar, buscar |
 | Perfis de Acesso (RBAC) / Configurações Globais | — |
 
 **Regras:** só revisita — `visualizar` no conteúdo, na Esteira, nas Chamadas, em Parceiros,
-Softwares e Usuários, e na Auditoria; `alterar` apenas no conteúdo, na esteira e nas Chamadas
-(homologação); `download`/`exportar` do conteúdo e `exportar` da auditoria; enxerga os itens das
-Release Weeks e dos Manuais (`visualizar_itens`); **não cria, não exclui e não publica**; não acessa perfis nem
+Softwares e Usuários, e na Auditoria; `alterar` no conteúdo, na esteira e nas Chamadas (recusa e
+reabertura) e `publicar` **na esteira** (homologação e publicação do item); `download`/`exportar` do
+conteúdo e `exportar` da auditoria; enxerga os itens das Release Weeks e dos Manuais
+(`visualizar_itens`); **não cria, não exclui e não publica conteúdo**; não acessa perfis nem
 configurações globais.
 
-### 7.4 Leitor — 14/91
+### 7.4 Leitor — 14/92
 
 | Módulo | Funcionalidades concedidas |
 | :--- | :--- |
@@ -512,11 +514,11 @@ dos Manuais (`visualizar_itens`); sem acesso a movimentos, cadastros, administra
 
 | Perfil | Contagem da matriz | Coluna "Permissões" | Soma |
 | :--- | ---: | :---: | ---: |
-| Administrador | 91 | `91/91` | \- |
-| Editor | 66 | `66/91` | \- |
-| Revisor | 39 | `39/91` | \- |
-| Leitor | 14 | `14/91` | \- |
-| **Total** | **210** | KPI **`210/364`** | `91+66+39+14` |
+| Administrador | 92 | `92/92` | \- |
+| Editor | 67 | `67/92` | \- |
+| Revisor | 41 | `41/92` | \- |
+| Leitor | 14 | `14/92` | \- |
+| **Total** | **214** | KPI **`214/368`** | `92+67+41+14` |
 
 Qualquer mudança nesta matriz SHALL atualizar o catálogo (`app/config/perfis.ts` ↔
 `server/utils/perfis.ts`), o seed de referência (`docs/bd/02_seed.sql`) e uma migration de
@@ -533,8 +535,10 @@ reconciliação para as bases existentes, mantendo contagens, KPI e este documen
 > `server/migration/22_reconciliar_rbac_manuais.sql` faz o mesmo para o módulo Manuais
 > (`clonar` no Administrador/Editor e `visualizar_itens` em todos os perfis). A migration
 > `server/migration/24_lancar-chamadas_backend.sql` acrescenta `importar` ao módulo Lançar as
-> Chamadas no Administrador e no Editor. Em banco novo, o `02_seed.sql` e as migrations de
-> reconciliação formam a matriz vigente.
+> Chamadas no Administrador e no Editor. A migration
+> `server/migration/27_reconciliar_rbac_esteira.sql` acrescenta `buscar` ao módulo Esteira de
+> Revisão para todos os perfis que o enxergam e `publicar` ao Revisor nesse módulo. Em banco novo,
+> o `02_seed.sql` e as migrations de reconciliação formam a matriz vigente.
 
 ## 8. Navegação até a tela
 
@@ -633,11 +637,11 @@ exportação:
 - Smoke SSR da rota: `/admin/perfis-acesso` responde 200 com shell, título "Perfis de Acesso
   (RBAC)", KPIs e **sem** marcação de modal (o `UiModal` só renderiza com `modelValue=true`).
 - Checagem visual no dev server (`http://localhost:3000`):
-  - **`/admin/perfis-acesso`:** KPIs **4 / 4 / 0 / 0 / 171·396** (5 cards); tabela com **6
-    colunas**, busca filtrando a visualização, valores **88/88 · 63/88 · 38/88 · 13/88** e
+  - **`/admin/perfis-acesso`:** KPIs **4 / 4 / 0 / 0 / 214/368** (5 cards); tabela com **6
+    colunas**, busca filtrando a visualização, valores **92/92 · 67/92 · 41/92 · 14/92** e
     usuários **2 · 0 · 0 · 0** (do banco); badges de Status (Ativo/Inativo/Bloqueado);
     **Novo/Editar abrem o `PerfisFormulario`** (sem toast) — sem campo de código (id UUID
-    gerado na criação), criação validando nome, perfil novo 0/88 com KPI `202/440`, edição com
+    gerado na criação), criação validando nome, perfil novo 0/88 com KPI `214/460`, edição com
     datas `dd/mm/yyyy` desabilitadas, `Escape`/Cancelar descartam;
     **Permissões (`KeyRound`) abre o `PerfisPermissoes`** (sem toast) — abas `UiTabs` por
     sessão com a tabela-cartão de módulos (nome + descrição) × 4 ações fixas em `UiSwitch`

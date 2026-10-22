@@ -203,18 +203,25 @@ export const useLancarChamadasModelo = () => {
     return atualizada
   }
 
-  const aprovar = async (id: string): Promise<ChamadaModelo> => {
+  const aprovar = async (
+    id: string,
+    opcoes: { parecer?: string; criterios?: boolean } = {}
+  ): Promise<ChamadaModelo> => {
     const aprovada = await useApiFetch<ChamadaModelo>(`/api/lancar-chamadas/${id}/aprovar`, {
-      method: 'PUT'
+      method: 'PUT',
+      body: opcoes
     })
     chamadas.value = chamadas.value.map((chamada) => (chamada.id === id ? aprovada : chamada))
     return aprovada
   }
 
-  const desaprovar = async (id: string): Promise<ChamadaModelo> => {
+  const desaprovar = async (
+    id: string,
+    opcoes: { parecer?: string } = {}
+  ): Promise<ChamadaModelo> => {
     const desaprovada = await useApiFetch<ChamadaModelo>(
       `/api/lancar-chamadas/${id}/desaprovar`,
-      { method: 'PUT' }
+      { method: 'PUT', body: opcoes }
     )
     chamadas.value = chamadas.value.map((chamada) =>
       chamada.id === id ? desaprovada : chamada
@@ -222,9 +229,13 @@ export const useLancarChamadasModelo = () => {
     return desaprovada
   }
 
-  const recusar = async (id: string): Promise<ChamadaModelo> => {
+  const recusar = async (
+    id: string,
+    opcoes: { parecer: string; criterios?: boolean }
+  ): Promise<ChamadaModelo> => {
     const recusada = await useApiFetch<ChamadaModelo>(`/api/lancar-chamadas/${id}/recusar`, {
-      method: 'PUT'
+      method: 'PUT',
+      body: opcoes
     })
     chamadas.value = chamadas.value.map((chamada) => (chamada.id === id ? recusada : chamada))
     return recusada

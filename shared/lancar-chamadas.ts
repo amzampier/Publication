@@ -50,6 +50,8 @@ export interface OpcaoChamada {
   description?: string
   /** Data de publicação da release (usada para preencher a liberação da chamada). */
   dataPublicacao?: string
+  /** Status atual do conteúdo pai (filtro de vínculo no formulário). */
+  status?: string
 }
 
 export interface CatalogosChamada {

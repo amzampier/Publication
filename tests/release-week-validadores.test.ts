@@ -94,10 +94,22 @@ describe('validarReleaseWeek', () => {
     expect(r.primeiroErro).toBe('nome')
   })
 
-  it('exige que a data de publicação caia em uma segunda-feira', () => {
-    const r = validarReleaseWeek({ ...entradaValida, dataPublicacao: '2026-10-06' })
-    expect(r.valido).toBe(false)
-    expect(r.erros.dataPublicacao).toMatch(/segunda-feira/i)
+  it('exige segunda-feira ou o próximo dia útil após feriado na segunda', () => {
+    const tercaComum = validarReleaseWeek({ ...entradaValida, dataPublicacao: '2026-10-06' })
+    expect(tercaComum.valido).toBe(false)
+    expect(tercaComum.erros.dataPublicacao).toMatch(/segunda-feira/i)
+
+    const segundaFeriado = validarReleaseWeek({ ...entradaValida, dataPublicacao: '2026-11-02' })
+    expect(segundaFeriado.valido).toBe(false)
+
+    const proximoDiaUtil = validarReleaseWeek({ ...entradaValida, dataPublicacao: '2026-11-03' })
+    expect(proximoDiaUtil.valido).toBe(true)
+
+    const quartaDepoisDoFeriado = validarReleaseWeek({
+      ...entradaValida,
+      dataPublicacao: '2026-11-04'
+    })
+    expect(quartaDepoisDoFeriado.valido).toBe(false)
   })
 
   it('aceita segunda-feira na publicação e não exige segunda nas demais datas', () => {

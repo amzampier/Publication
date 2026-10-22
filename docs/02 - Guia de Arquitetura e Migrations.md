@@ -352,7 +352,8 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
 - `GET/POST/PUT/DELETE /api/release-week`, `PUT /api/release-week/:id/publicar|arquivar`, `GET /api/release-week/:id/itens` e `POST /api/release-week/importar` — Release Week (código `RW-XX/AAAA` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `release-week`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/manuais`, `PUT /api/manuais/:id/publicar|arquivar`, `GET /api/manuais/:id/itens` e `POST /api/manuais/importar` — Manuais Mensais (código `MAN-XX/AAAA` gerado pelo servidor, `arquivada` soft, datas históricas, itens somente leitura e importação `.xlsx`); exigem `manuais`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
-- `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`.
+- `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`. As transições gravam `historico_esteira_revisao` com parecer e critérios.
+- `GET /api/esteira-revisao`, `GET /api/esteira-revisao/:id`, `GET /api/esteira-revisao/:id/historico` e `PUT /api/esteira-revisao/:id/aprovar|recusar|reabrir|publicar|suspender` — board do ciclo ativo (Release Week, Manuais e Escopo de Projetos não arquivados e não publicados), progresso do fluxo, detalhe, histórico e transições com parecer; exigem `esteira-revisao`/`visualizar|buscar|filtrar|publicar|alterar` e registram auditoria com o recurso "Esteira de Revisão".
 
 ---
 
@@ -512,7 +513,7 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 5. **Seeds e Dados Iniciais**:
    - Insira os dados necessários para o funcionamento inicial do sistema (Perfis padrão, usuário Administrador inicial, configurações globais) em arquivos de migration específicos ou na migration `01`.
 
-### 4.6. Integridade referencial do conteúdo público (roadmap)
+### 4.6. Integridade referencial do conteúdo público
 
 O schema já declara as tabelas do conteúdo público (`release_week`, `projetos_escopo`,
 `manuais_mensal`, `entregas_itens`, `historico_esteira_revisao`). `release_week`,
@@ -533,10 +534,13 @@ releases/manuais**, atenção à interação de chaves estrangeiras:
 - `historico_esteira_revisao.entrega_item_id → entregas_itens(id)` é `ON DELETE RESTRICT`: enquanto
   houver histórico daquele item, o `CASCADE` dos itens é **bloqueado** (erro `1451`).
 
-Ou seja, excluir uma release cujos itens tenham histórico na esteira **falha**. Ao construir o módulo,
-decidir explicitamente entre: (a) apagar o histórico do item antes da exclusão (dentro da mesma
-transação) ou (b) trocar a FK do histórico para `ON DELETE CASCADE`/`SET NULL` (conforme a regra de
-retenção da trilha de revisão).
+A partir da change `construir-esteira-revisao`, as transições de aprovação, recusa, reabertura,
+publicação e suspensão gravam `historico_esteira_revisao` (status anterior/novo, responsável, perfil,
+parecer, critérios, tempo no estágio e data/hora). A FK `ON DELETE RESTRICT` foi mantida de propósito:
+a trilha de revisão é imutável e a exclusão de conteúdo pai com itens já é bloqueada pela API. Para
+retirar um conteúdo de circulação, o caminho é **arquivar**, não excluir. Se uma base precisar remover
+um item historiado, o histórico deve ser tratado explicitamente numa operação administrativa futura —
+nunca por um `CASCADE` silencioso.
 
 ---
 

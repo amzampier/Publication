@@ -27,8 +27,23 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
   com FKs para `release_week`, `projetos_escopo`, `manuais_mensal`, `softwares(codigo)`,
   `parceiros(id)` e `usuarios(id)`.
 - **Status:** `Revisar` (novo), `Aprovado` (aprovação), `Recusado` (recusa) e `Publicar` (legado).
-  A tela cria em `Revisar`; aprovar/recusar exige esse status. Uma chamada `Aprovado` pode ser
-  desaprovada e voltar para `Revisar`. A edição do status pertence à Esteira de Revisão.
+  A tela cria em `Revisar`; aprovar/recusar exige esse status. Uma chamada `Aprovado` ou `Recusado`
+  pode ser desaprovada e voltar para `Revisar`. A **Esteira de Revisão** é a dona do fluxo
+  (`docs/16`); as ações rápidas desta tela usam a mesma transição de domínio e também gravam
+  `historico_esteira_revisao` com parecer e critérios.
+- **Esteira de Revisão:** o board de homologação, o painel de progresso e o histórico completo estão
+  em [`16 - Módulo Esteira de Revisão.md`](16%20-%20Módulo%20Esteira%20de%20Revisão.md). As ações de
+  **Publicar Item** (Aprovado → Publicar) e **Suspender** (Publicar → Aprovado) pertencem à Esteira;
+  esta tela mantém apenas aprovar, recusar e desaprovar.
+- **Vínculos permitidos:** o formulário só oferece **Release Week** em `Aberta`/`Em Revisão`,
+  **Manuais** em `Rascunho`/`Em Revisão` e **Escopo de Projetos** em `Em Andamento`/`Homologação`.
+  A importação XLSX rejeita linhas com pai fora desses status; na edição, o vínculo atual é preservado.
+- **Status do pai:** ao criar, importar ou trocar vínculos, o conteúdo pai vinculado passa
+  automaticamente para `Em Revisão` (Release/Manual) ou `Homologação` (Escopo), inclusive se estava
+  `Aprovado`/`Publicado`; o pai é reaberto para revisão.
+- **Visibilidade no portal:** uma chamada em `Publicar` só aparece na Área Pública quando ao menos um
+  vínculo aponta para conteúdo pai com status `Publicado`. A Esteira mostra **Aguardando pai** e
+  desabilita "No Portal" enquanto o pai não estiver publicado.
 - **Situação:** `Desenvolvimento`, `Homologação` ou `Implantado`; novas chamadas usam
   `Desenvolvimento` e o formulário não expõe o campo.
 - **Fora de escopo:** Arquivar, Área Pública, `anexos_midias`, importação de imagens pela planilha e
@@ -129,8 +144,15 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
   Projetos) acima da linha da Chamada; o **Conteúdo** exibe a Descrição do Resumo e a Solução com a
   formatação salva (negrito, cor e tamanho), caindo para o texto puro quando não há HTML.
 - Aprovar/Desaprovar/Recusar/Excluir são modais de confirmação; a página só fecha o modal após o
-  sucesso da API.
-- **Desaprovar** volta `Aprovado` para `Revisar` e limpa a data de liberação.
+  sucesso da API. **Aprovar** e **Recusar** agora coletam parecer (opcional no aprovar, obrigatório
+  na recusa) e o aprovar exige o checkbox de critérios de aceite atendidos; **Desaprovar** aceita
+  parecer opcional.
+- **Aprovar** preserva a `data_liberacao` existente e herda a `data_publicacao` da release somente
+  quando ela estiver vazia. **Recusar** não altera a data.
+- **Desaprovar** volta `Aprovado` **ou** `Recusado` para `Revisar`, limpa a data de liberação e grava
+  a transição (com `criterios_aceite_atendidos = 0`).
+- Toda transição grava `historico_esteira_revisao` (status anterior/novo, responsável, perfil,
+  parecer, critérios, tempo no estágio e data/hora) e auditoria no recurso "Lançar as Chamadas".
 - Exclusão só é permitida em `Revisar` e sem histórico.
 
 ### 3.9 `gerarPdfLancarChamadas.ts`
@@ -199,7 +221,7 @@ interface ChamadaModelo {
 | `autor_id` / `autor_nome` | Sessão do operador |
 | `chamada` | Obrigatória, ≤60 e única (`uk_entregas_chamada`) |
 | `titulo` | Obrigatório, ≤255 |
-| `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação vazia até a aprovação, quando recebe a publicação da release |
+| `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação vazia até a aprovação, quando herda a publicação da release **somente se estiver vazia** (a data existente é preservada); a recusa não altera e a desaprovação limpa |
 | `modulo` / `menu_funcionalidade` | Texto livre |
 | `tipo` / `impacto` / `situacao` | Enums do banco |
 | `descricao_completa` | Obrigatória (texto puro derivado do HTML) |
@@ -302,15 +324,20 @@ interface ChamadaModelo {
 - `manualTitulo`: opcional, ≤255.
 - Ao menos um vínculo (Release, Projeto ou Manual).
 - `dataLancamento`: obrigatória, qualquer data civil válida (o formulário inicia com a data do dia).
-  `dataLiberacao`: vazia e desabilitada no formulário; a aprovação grava a `data_publicacao` da
-  release vinculada.
+  `dataLiberacao`: vazia e desabilitada no formulário; a aprovação preserva a data existente e herda
+  a `data_publicacao` da release vinculada somente quando estiver vazia. A recusa não altera a data
+  e a desaprovação a limpa.
 - Links: `http(s)` quando informados.
 - Tags: até 12, cada uma até 30 caracteres, sem duplicatas.
 - Imagens: até 20 URLs, PNG/JPG/WebP/GIF até 5 MB cada.
 - `situacao`: não editável; default `Desenvolvimento`.
 - Novo status `Revisar`; status não editável no formulário.
 - Exclusão bloqueada quando `status !== 'Revisar'` ou houver histórico na esteira.
-- Aprovação/recusa bloqueadas quando o status não é `Revisar`.
+- Aprovação/recusa bloqueadas quando o status não é `Revisar`; desaprovação permitida em `Aprovado`
+  ou `Recusado`.
+- Recusa sem parecer é bloqueada no cliente e na API (`400` com erro no campo `parecer`).
+- Aprovação exige o checkbox de critérios de aceite atendidos no modal; o histórico grava
+  `criterios_aceite_atendidos = 1` no aprovar e `0` na recusa/desaprovação.
 
 ### Ordenação
 

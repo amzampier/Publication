@@ -59,6 +59,9 @@ A tela de Manuais Mensais é o **catálogo mensal** da Área Administrativa:
   rebusca os dados — não há mais dataset de demonstração.
 - **Status x arquivamento:** `status` é o fluxo editorial de **cinco** valores; **`arquivada` é um
   booleano separado**. Arquivar é soft, remove o mês da listagem/KPIs e **não** apaga dados/itens.
+- **Vínculo com chamadas:** ao lançar uma chamada vinculada a este manual, ele passa automaticamente
+  para `Em Revisão` (inclusive se estava `Aprovado`/`Publicado`). A Área Pública só exibe o manual
+  quando o status é `Publicado`.
 - **Componentização:** a página é fina e dona da coordenação; cada parte é um componente em
   `app/components/manuais/` (auto-import com prefixo `Manuais*`).
 

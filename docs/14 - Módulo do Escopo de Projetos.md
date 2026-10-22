@@ -54,6 +54,9 @@ A persistência é real em `projetos_escopo`; **não existe seed** e o módulo n
   JSON `softwares_contemplados` é gravado como `[]`.
 - **Itens:** vivem em `entregas_itens` (`projeto_id`), são somente leitura nesta tela e alimentam
   `itensCount` e os softwares.
+- **Vínculo com chamadas:** ao lançar uma chamada vinculada a este escopo, ele passa automaticamente
+  para `Homologação` (inclusive se estava `Concluído`/`Publicado`). A Área Pública só exibe o escopo
+  quando o status é `Publicado`.
 - **Sem seed:** a migration 23 só altera o schema; o primeiro acesso exibe a grade vazia.
 - **Persistência:** criar/editar/publicar/arquivar/excluir/importar gravam no banco e sobrevivem ao
   F5.

@@ -65,7 +65,7 @@ foi gravado persiste, sem restauração da semente de demonstração.
 - **WHEN** o navegador abre `/admin/perfis-acesso`
 - **THEN** um estado de carregamento é exibido enquanto `GET /api/perfis` responde e, em
   seguida, a tabela exibe os perfis persistidos (a base semeada: 4 perfis, todos Ativos, com as
-  matrizes normativas do `docs/07`, ex.: Administrador 91/91)
+  matrizes normativas do `docs/07`, ex.: Administrador 92/92)
 
 #### Scenario: Falha na carga exibe erro sem simular dados
 - **WHEN** a requisição `GET /api/perfis` falha (rede ou banco indisponível)
@@ -90,7 +90,7 @@ vigente), "Ativos", "Inativos", "Bloqueados" e "Permissões concedidas"
 (`<soma das permissões verdadeiras>/<perfis × total do catálogo de funcionalidades>`), recalculados
 sempre que o conjunto de perfis muda — inclusive quando um filtro do módulo o refina (o conjunto
 vigente passa a ser o conjunto filtrado). O total do catálogo SHALL ser a soma das funcionalidades
-de todos os módulos (para os 11 módulos atuais, **91**).
+de todos os módulos (para os 11 módulos atuais, **92**).
 
 #### Scenario: Base de demonstração
 - **WHEN** a página é aberta com a base de demonstração (4 perfis, todos Ativos, matriz normativa
@@ -233,7 +233,7 @@ funcionalidades concedidas em cada perfil sobre o **total do catálogo** (`docs/
 §3.5) — as funcionalidades são **por módulo** (as fixas `visualizar`, `criar`, `alterar`, `excluir`
 mais as específicas de cada módulo, ex.: `clonar`, `publicar`, `arquivar`, `download`, `exportar`,
 `importar`, `filtrar`, `buscar`, `visualizar_itens`, `permissoes`) —, exibindo as contagens normativas de cada perfil da base
-(ex.: Administrador `91/91`); e SHALL derivar a coluna
+(ex.: Administrador `92/92`); e SHALL derivar a coluna
 **Usuários** das contagens de vínculo servidas pela API (derivadas da tabela `usuarios`), que
 refletem os usuários efetivamente cadastrados no banco. Nenhuma das duas contagens pode ser um valor
 digitado ou fixado no template.
@@ -241,7 +241,7 @@ digitado ou fixado no template.
 #### Scenario: Contagens derivadas da matriz e da base de usuários
 - **WHEN** a tabela é renderizada após o carregamento pela API
 - **THEN** a coluna Permissões exibe as contagens normativas do `docs/07` para cada perfil (ex.:
-  Administrador `91/91`), e a coluna Usuários exibe a contagem de usuários vinculados a cada
+  Administrador `92/92`), e a coluna Usuários exibe a contagem de usuários vinculados a cada
   perfil na base de usuários do banco, sem valores digitados nem fixados no template
 
 #### Scenario: Acompanha a base de usuários
@@ -284,14 +284,14 @@ Alterações valem apenas no rascunho até **Salvar**, que SHALL gravar a matriz
 os KPIs recalculam e um toast de sucesso é exibido —; **"Cancelar"**, `Escape` ou o `X` do
 cabeçalho SHALL descartar o rascunho sem nenhuma requisição; e a recarga SHALL restaurar a
 matriz gravada na API. A matriz do perfil **Administrador é editável como as demais**, e um
-perfil novo (matriz vazia, `0/91`) SHALL poder ser configurado no mesmo modal.
+perfil novo (matriz vazia, `0/92`) SHALL poder ser configurado no mesmo modal.
 
 #### Scenario: Abertura pela ação Permissões
 - **WHEN** o usuário aciona "Configurar permissões" na linha de um perfil
 - **THEN** o modal "Permissões" abre exibindo o nome do perfil, as abas das 4 sessões da
   sidebar com os módulos da primeira sessão (nome + descrição em cada linha), os
   interruptores das funcionalidades fixas aplicáveis, os chips das Funcionalidades do módulo e o
-  contador `n/91` global
+  contador `n/92` global
 
 #### Scenario: Abas particionam os módulos por sessão
 - **WHEN** o usuário troca de aba (ex.: "Movimentos")
@@ -327,7 +327,7 @@ perfil novo (matriz vazia, `0/91`) SHALL poder ser configurado no mesmo modal.
 - **THEN** a matriz vinda da API reflete o que foi gravado (sem volta à semente original)
 
 #### Scenario: Administrador editável e perfil novo configurável
-- **WHEN** o usuário abre o modal do Administrador ou de um perfil recém-criado (`0/91`)
+- **WHEN** o usuário abre o modal do Administrador ou de um perfil recém-criado (`0/92`)
 - **THEN** a matriz é editável como a de qualquer outro perfil, sem trava por papel
 
 ### Requirement: O modal de permissões copia a matriz entre perfis
@@ -347,7 +347,7 @@ identificadas por ícone com tooltip e `aria-label` próprios:
   modal corrente (Cancelar/Escape/X) **não desfaz** a cópia já feita no alvo.
 
 O modal filho SHALL listar cada perfil candidato como escolha única com nome, descrição e
-sua contagem `n/91`; o perfil corrente SHALL estar sempre ausente da lista, e, sem
+sua contagem `n/92`; o perfil corrente SHALL estar sempre ausente da lista, e, sem
 candidatos (base com um único perfil), o modal filho SHALL exibir estado vazio com a ação
 de descarte. Ao fechar o modal filho, o foco SHALL voltar ao botão de ícone que o abriu, com
 o modal de permissões subjacente intacto (pilha de modais). A ação "copiar de" não emite
@@ -385,7 +385,7 @@ nenhuma requisição (vale até Salvar); a ação "copiar para" grava via API.
 #### Scenario: O seletor exclui o perfil corrente
 - **WHEN** qualquer uma das duas ações de cópia abre o modal filho
 - **THEN** a lista apresenta somente os demais perfis da base como escolhas únicas com nome,
-  descrição e contagem `n/91`; o perfil corrente nunca aparece e, sem candidatos, um estado
+  descrição e contagem `n/92`; o perfil corrente nunca aparece e, sem candidatos, um estado
   vazio é exibido com a ação de descarte
 
 ### Requirement: A API de perfis valida a entrada e responde com códigos de erro consistentes
@@ -437,7 +437,7 @@ devolvendo o foco ao primeiro campo com erro — tanto na validação do cliente
 (`400`).
 
 Ao salvar na criação, o sistema SHALL criar o perfil pela API com matriz de permissões vazia
-(`0/91`) e zero usuários vinculados — a linha aparece, os KPIs recalculam e um toast de
+(`0/92`) e zero usuários vinculados — a linha aparece, os KPIs recalculam e um toast de
 sucesso é exibido. Ao salvar na edição, SHALL atualizar os campos editáveis mantendo
 `criado_em` preservado e fazendo `atualizado_em` refletir a edição. "Cancelar", `Escape` ou
 `X` do cabeçalho SHALL fechar o modal sem nenhuma requisição. Toda gravação SHALL persistir
@@ -461,7 +461,7 @@ via API e sobreviver à recarga da página.
 
 #### Scenario: Salvar cria o perfil na API
 - **WHEN** o usuário preenche os dados válidos e clica em "Salvar" na criação
-- **THEN** o perfil é criado pela API com id UUID gerado no banco, matriz vazia (`0/91`) e 0
+- **THEN** o perfil é criado pela API com id UUID gerado no banco, matriz vazia (`0/92`) e 0
   usuários, a linha aparece na tabela, os KPIs recalculam (o denominador de Permissões concedidas
   passa a considerar o novo perfil), um toast de sucesso é exibido e o modal fecha
 
@@ -551,7 +551,7 @@ contagens exibidas na tela, e declarando-se a fonte que o modal de permissões S
 #### Scenario: Consistência documento ↔ tela
 - **WHEN** o `docs/07` e a página são comparados
 - **THEN** as regras por perfil do documento produzem as mesmas contagens da tabela (ex.:
-  Administrador `91/91`) e do KPI de Permissões concedidas
+  Administrador `92/92`) e do KPI de Permissões concedidas
 
 #### Scenario: Escopo do modal futuro declarado
 - **WHEN** o `docs/07` é lido

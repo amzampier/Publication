@@ -6,6 +6,16 @@ import { getTransaction, query } from './db'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
 import {
+  registrarTransicao,
+  type AtorTransicao,
+  type OpcoesTransicao
+} from './historico-esteira'
+import {
+  statusRevisaoDoPai,
+  validarParecer,
+  type TipoVinculo
+} from '#shared/esteira-revisao'
+import {
   LIMITE_IMPORTACAO_CHAMADAS,
   derivarOrigem,
   normalizarImagensChamada,
@@ -187,19 +197,19 @@ export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
 export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
   const [releases, projetos, manuais, softwares, parceiros] = await Promise.all([
     query<Row[]>(
-      `SELECT id, codigo, nome, data_publicacao
+      `SELECT id, codigo, nome, data_publicacao, status
          FROM release_week
         WHERE arquivada = 0
         ORDER BY data_publicacao DESC, codigo DESC`
     ),
     query<Row[]>(
-      `SELECT id, codigo, nome
+      `SELECT id, codigo, nome, status
          FROM projetos_escopo
         WHERE arquivada = 0
         ORDER BY ano DESC, versao DESC, codigo ASC`
     ),
     query<Row[]>(
-      `SELECT id, codigo, titulo
+      `SELECT id, codigo, titulo, status
          FROM manuais_mensal
         WHERE arquivada = 0
         ORDER BY ano DESC, mes_numero DESC`
@@ -227,14 +237,17 @@ export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
   return {
     releases: releases.map((row) => ({
       ...opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.nome)}`, texto(row.codigo)),
-      dataPublicacao: dataDia(row.data_publicacao)
+      dataPublicacao: dataDia(row.data_publicacao),
+      status: texto(row.status)
     })),
-    projetos: projetos.map((row) =>
-      opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.nome)}`, texto(row.codigo))
-    ),
-    manuais: manuais.map((row) =>
-      opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.titulo)}`, texto(row.codigo))
-    ),
+    projetos: projetos.map((row) => ({
+      ...opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.nome)}`, texto(row.codigo)),
+      status: texto(row.status)
+    })),
+    manuais: manuais.map((row) => ({
+      ...opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.titulo)}`, texto(row.codigo)),
+      status: texto(row.status)
+    })),
     softwares: softwares.map((row) =>
       opcao(texto(row.codigo), texto(row.descricao), texto(row.codigo))
     ),
@@ -393,6 +406,47 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
   }
 }
 
+interface PaiRevisao {
+  tipo: TipoVinculo
+  id: string
+}
+
+const TABELA_PAI: Record<TipoVinculo, string> = {
+  release: 'release_week',
+  manual: 'manuais_mensal',
+  projeto: 'projetos_escopo'
+}
+
+function paisDosVinculos(vinculos: VinculosResolvidos): PaiRevisao[] {
+  const pais: PaiRevisao[] = []
+  if (vinculos.release) pais.push({ tipo: 'release', id: texto(vinculos.release.id) })
+  if (vinculos.manual) pais.push({ tipo: 'manual', id: texto(vinculos.manual.id) })
+  if (vinculos.projeto) pais.push({ tipo: 'projeto', id: texto(vinculos.projeto.id) })
+  return pais
+}
+
+/**
+ * Move os conteúdos pai vinculados para o status de revisão (Release/Manual:
+ * `Em Revisão`; Escopo: `Homologação`). Idempotente: não reescreve quando o pai
+ * já está nesse status.
+ */
+async function sincronizarStatusPais(
+  executor: ExecutorSql,
+  pais: PaiRevisao[]
+): Promise<void> {
+  const vistos = new Set<string>()
+  for (const pai of pais) {
+    const chave = `${pai.tipo}:${pai.id}`
+    if (vistos.has(chave)) continue
+    vistos.add(chave)
+    const status = statusRevisaoDoPai(pai.tipo)
+    await executor.query(
+      `UPDATE ${TABELA_PAI[pai.tipo]} SET status = ? WHERE id = ? AND status <> ?`,
+      [status, pai.id, status]
+    )
+  }
+}
+
 interface ChamadaPreparada {
   id: string
   origem: OrigemChamada
@@ -546,6 +600,7 @@ export async function criarChamada(
   try {
     await tx.query(SQL_INSERT, valoresInsert(preparada))
     await gravarSoftwares(tx, preparada.id, preparada.softwares)
+    await sincronizarStatusPais(tx, paisDosVinculos(vinculos))
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
@@ -598,6 +653,10 @@ export async function atualizarChamada(
 
   const entrada = await validarEntrada(mesclado, id)
   const vinculos = await resolverVinculos(entrada)
+  const mudouVinculos =
+    atual.releaseId !== entrada.releaseId ||
+    atual.manualId !== entrada.manualId ||
+    atual.projetoId !== entrada.projetoId
   const preparada = prepararChamada(id, entrada, vinculos, {
     id: atual.autorId,
     nome: atual.autorNome
@@ -647,6 +706,9 @@ export async function atualizarChamada(
       ]
     )
     await gravarSoftwares(tx, id, preparada.softwares)
+    if (mudouVinculos) {
+      await sincronizarStatusPais(tx, paisDosVinculos(vinculos))
+    }
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
@@ -663,15 +725,59 @@ export async function atualizarChamada(
   return atualizada
 }
 
-export async function aprovarChamada(id: string): Promise<ChamadaModelo> {
+/**
+ * Executa a transição de status e grava o histórico na mesma transação, com
+ * update condicionado ao status lido (evita dupla aprovação concorrente).
+ */
+async function transicionarChamada(
+  atual: ChamadaModelo,
+  novoStatus: StatusChamada,
+  dataLiberacao: string | null,
+  ator: AtorTransicao,
+  opcoes: OpcoesTransicao
+): Promise<ChamadaModelo> {
+  const tx = await getTransaction()
+  try {
+    const resultado = await tx.query<{ affectedRows: number }>(
+      'UPDATE entregas_itens SET status = ?, data_liberacao = ? WHERE id = ? AND status = ?',
+      [novoStatus, dataLiberacao, atual.id, atual.status]
+    )
+    if (Number(resultado.affectedRows) !== 1) {
+      erro409('A chamada já avançou na esteira. Recarregue a lista.')
+    }
+    await registrarTransicao(tx, {
+      itemId: atual.id,
+      chamada: atual.chamada,
+      statusAnterior: atual.status,
+      novoStatus,
+      ator,
+      parecer: opcoes.parecer,
+      criterios: opcoes.criterios,
+      criadoEm: atual.criadoEm
+    })
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
+  const atualizada = await buscarChamada(atual.id)
+  if (!atualizada) erro404()
+  return atualizada
+}
+
+export async function aprovarChamada(
+  id: string,
+  ator: AtorTransicao,
+  opcoes: OpcoesTransicao = {}
+): Promise<ChamadaModelo> {
   const atual = await buscarChamada(id)
   if (!atual) erro404()
   if (atual.status !== 'Revisar') {
     erro409('Somente chamadas em Revisar podem ser aprovadas.')
   }
 
-  let dataLiberacao: string | null = null
-  if (atual.releaseId) {
+  let dataLiberacao = atual.dataLiberacao || null
+  if (!dataLiberacao && atual.releaseId) {
     const releases = await query<Row[]>(
       'SELECT data_publicacao FROM release_week WHERE id = ? LIMIT 1',
       [atual.releaseId]
@@ -679,41 +785,83 @@ export async function aprovarChamada(id: string): Promise<ChamadaModelo> {
     dataLiberacao = releases[0] ? dataDia(releases[0].data_publicacao) || null : null
   }
 
-  await query(
-    "UPDATE entregas_itens SET status = 'Aprovado', data_liberacao = ? WHERE id = ?",
-    [dataLiberacao, id]
-  )
-  const aprovada = await buscarChamada(id)
-  if (!aprovada) erro404()
-  return aprovada
+  return transicionarChamada(atual, 'Aprovado', dataLiberacao, ator, {
+    ...opcoes,
+    criterios: opcoes.criterios ?? true
+  })
 }
 
-export async function desaprovarChamada(id: string): Promise<ChamadaModelo> {
+export async function desaprovarChamada(
+  id: string,
+  ator: AtorTransicao,
+  opcoes: OpcoesTransicao = {}
+): Promise<ChamadaModelo> {
   const atual = await buscarChamada(id)
   if (!atual) erro404()
-  if (atual.status !== 'Aprovado') {
-    erro409('Somente chamadas aprovadas podem voltar para Revisar.')
+  if (atual.status !== 'Aprovado' && atual.status !== 'Recusado') {
+    erro409('Somente chamadas aprovadas ou recusadas podem voltar para Revisar.')
   }
 
-  await query(
-    "UPDATE entregas_itens SET status = 'Revisar', data_liberacao = NULL WHERE id = ?",
-    [id]
-  )
-  const desaprovada = await buscarChamada(id)
-  if (!desaprovada) erro404()
-  return desaprovada
+  return transicionarChamada(atual, 'Revisar', null, ator, {
+    ...opcoes,
+    criterios: false
+  })
 }
 
-export async function recusarChamada(id: string): Promise<ChamadaModelo> {
+export async function recusarChamada(
+  id: string,
+  ator: AtorTransicao,
+  opcoes: OpcoesTransicao = {}
+): Promise<ChamadaModelo> {
   const atual = await buscarChamada(id)
   if (!atual) erro404()
   if (atual.status !== 'Revisar') {
     erro409('Somente chamadas em Revisar podem ser recusadas.')
   }
-  await query("UPDATE entregas_itens SET status = 'Recusado' WHERE id = ?", [id])
-  const recusada = await buscarChamada(id)
-  if (!recusada) erro404()
-  return recusada
+
+  const erroParecer = validarParecer('recusar', opcoes.parecer ?? '')
+  if (erroParecer) {
+    erro400(erroParecer, { erros: { parecer: erroParecer } })
+  }
+
+  return transicionarChamada(atual, 'Recusado', atual.dataLiberacao || null, ator, {
+    ...opcoes,
+    criterios: false
+  })
+}
+
+export async function publicarChamada(
+  id: string,
+  ator: AtorTransicao,
+  opcoes: OpcoesTransicao = {}
+): Promise<ChamadaModelo> {
+  const atual = await buscarChamada(id)
+  if (!atual) erro404()
+  if (atual.status !== 'Aprovado') {
+    erro409('Somente chamadas aprovadas podem ser publicadas.')
+  }
+
+  return transicionarChamada(atual, 'Publicar', atual.dataLiberacao || null, ator, {
+    ...opcoes,
+    criterios: true
+  })
+}
+
+export async function suspenderChamada(
+  id: string,
+  ator: AtorTransicao,
+  opcoes: OpcoesTransicao = {}
+): Promise<ChamadaModelo> {
+  const atual = await buscarChamada(id)
+  if (!atual) erro404()
+  if (atual.status !== 'Publicar') {
+    erro409('Somente chamadas publicadas podem ser suspensas.')
+  }
+
+  return transicionarChamada(atual, 'Aprovado', atual.dataLiberacao || null, ator, {
+    ...opcoes,
+    criterios: true
+  })
 }
 
 export async function excluirChamada(id: string): Promise<ChamadaModelo> {
@@ -770,9 +918,15 @@ export async function importarChamadas(
   }
 
   const [releases, projetos, manuais, softwares, parceiros, existentes] = await Promise.all([
-    query<Row[]>('SELECT id, codigo, data_publicacao FROM release_week'),
-    query<Row[]>('SELECT id, codigo FROM projetos_escopo'),
-    query<Row[]>('SELECT id, codigo FROM manuais_mensal'),
+    query<Row[]>(
+      "SELECT id, codigo, data_publicacao FROM release_week WHERE status IN ('Aberta', 'Em Revisão')"
+    ),
+    query<Row[]>(
+      "SELECT id, codigo FROM projetos_escopo WHERE status IN ('Em Andamento', 'Homologação')"
+    ),
+    query<Row[]>(
+      "SELECT id, codigo FROM manuais_mensal WHERE status IN ('Rascunho', 'Em Revisão')"
+    ),
     query<Row[]>('SELECT codigo, descricao FROM softwares'),
     query<Row[]>('SELECT id, codigo, nome_fantasia FROM parceiros'),
     query<Row[]>('SELECT chamada FROM entregas_itens')
@@ -788,6 +942,7 @@ export async function importarChamadas(
   const motivos: string[] = []
   const conflitos: string[] = []
   const preparadas: ChamadaPreparada[] = []
+  const paisParaRevisao: PaiRevisao[] = []
 
   for (const [indice, item] of linhas.entries()) {
     const linha = (item ?? {}) as Record<string, unknown>
@@ -879,6 +1034,7 @@ export async function importarChamadas(
     }
 
     preparadas.push(prepararChamada(randomUUID(), entrada, vinculos, autor, 'Revisar'))
+    paisParaRevisao.push(...paisDosVinculos(vinculos))
   }
 
   if (motivos.length > 0 || conflitos.length > 0) {
@@ -895,6 +1051,7 @@ export async function importarChamadas(
       await tx.query(SQL_INSERT, valoresInsert(preparada))
       await gravarSoftwares(tx, preparada.id, preparada.softwares)
     }
+    await sincronizarStatusPais(tx, paisParaRevisao)
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})

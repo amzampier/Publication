@@ -272,11 +272,11 @@ O sistema SHALL servir `/api/release-week/**` sob a permissão do módulo `relea
 (arquivar) marca `arquivada`; `DELETE /api/release-week/:id` (excluir) remove. O servidor SHALL gerar
 o `codigo` `RW-XX/AAAA` a partir de `semana`/`ano` (na criação e **regenerar** na edição quando
 `semana`/`ano` mudarem), recusando com `409` a duplicidade de `codigo`/`(ano, semana)`. O servidor
-SHALL validar os campos obrigatórios, exigir que **`data_publicacao`** caia em uma segunda-feira
-(`400` caso contrário; as demais datas não têm essa restrição), aplicar a guarda de exclusão
-(arquivada ou com itens → `409`) e registrar a operação na trilha de auditoria com recurso
-**"Release Week"**. A listagem e os itens SHALL refletir o banco, e a release arquivada SHALL deixar
-de aparecer na listagem.
+SHALL validar os campos obrigatórios, exigir que **`data_publicacao`** caia em uma segunda-feira ou,
+quando a segunda-feira for feriado nacional, no próximo dia útil (`400` caso contrário; as demais
+datas não têm essa restrição), aplicar a guarda de exclusão (arquivada ou com itens → `409`) e
+registrar a operação na trilha de auditoria com recurso **"Release Week"**. A listagem e os itens
+SHALL refletir o banco, e a release arquivada SHALL deixar de aparecer na listagem.
 
 #### Scenario: Criar gera código e registra auditoria
 - **WHEN** um usuário com `release-week`/`criar` cria uma release válida
@@ -288,8 +288,12 @@ de aparecer na listagem.
 - **THEN** a API responde `409` sem gravar
 
 #### Scenario: Data de publicação fora de segunda-feira é recusada
-- **WHEN** a criação ou edição envia `data_publicacao` que não é segunda-feira
+- **WHEN** a criação ou edição envia `data_publicacao` que não é segunda-feira nem o próximo dia útil de uma segunda-feira que seja feriado nacional
 - **THEN** a API responde `400` e nada é gravado
+
+#### Scenario: Próximo dia útil após feriado na segunda-feira
+- **WHEN** a criação ou edição envia `data_publicacao` no próximo dia útil de uma segunda-feira que é feriado nacional (ex.: 03/11/2026, após 02/11/2026 — Finados)
+- **THEN** a API aceita a data e grava a release
 
 #### Scenario: Edição regenera o código
 - **WHEN** a edição altera `semana` ou `ano`
@@ -308,10 +312,11 @@ O sistema SHALL importar Release Weeks de uma planilha `.xlsx` com as colunas **
 Mês, Data Início, Data Finaliza, Data Publicação, Status, Versão, Release, Descrição e Destaque** por
 `POST /api/release-week/importar`, sob a permissão `release-week`/`importar`. O servidor SHALL
 revalidar cada linha (campos obrigatórios, semana 1–52, mês do domínio, datas `AAAA-MM-DD` e
-`data_publicacao` em segunda-feira), recusar a importação inteira (`400`, com os motivos) quando
-houver linha inválida, tratar `(ano, semana)` já cadastrado como conflito (sem gravar) e, quando tudo
-estiver válido, gravar em **transação** gerando os códigos. A importação bem-sucedida SHALL ser
-registrada na trilha de auditoria.
+`data_publicacao` em segunda-feira ou no próximo dia útil de uma segunda-feira que seja feriado
+nacional), recusar a importação inteira (`400`, com os motivos) quando houver linha inválida, tratar
+`(ano, semana)` já cadastrado como conflito (sem gravar) e, quando tudo estiver válido, gravar em
+**transação** gerando os códigos. A importação bem-sucedida SHALL ser registrada na trilha de
+auditoria.
 
 #### Scenario: Importar linhas válidas
 - **WHEN** um usuário com `release-week`/`importar` envia linhas válidas

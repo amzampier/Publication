@@ -1,6 +1,10 @@
 // Regras puras do módulo Release Week — compartilhadas entre app, server e
 // testes (`#shared/release-week`). Sem imports de Nuxt/Vue.
 
+import { dataPublicacaoValida } from './feriados'
+
+export { dataPublicacaoValida } from './feriados'
+
 export type StatusRelease = 'Aberta' | 'Em Revisão' | 'Aprovado' | 'Publicado'
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
@@ -165,13 +169,15 @@ export function validarReleaseWeek(dados: {
   validarData('dataFinaliza', 'data de finalização')
   validarData('dataPublicacao', 'data de publicação')
 
-  // Regra normativa: somente a publicação precisa cair em uma segunda-feira.
+  // Regra normativa: publicação em segunda-feira ou no próximo dia útil quando
+  // a segunda-feira for feriado nacional.
   if (
     !erros.dataPublicacao &&
     typeof dados.dataPublicacao === 'string' &&
-    !ehSegundaFeira(dados.dataPublicacao)
+    !dataPublicacaoValida(dados.dataPublicacao)
   ) {
-    erros.dataPublicacao = 'A data de publicação deve ser uma segunda-feira.'
+    erros.dataPublicacao =
+      'A data de publicação deve ser uma segunda-feira ou o próximo dia útil quando a segunda-feira for feriado.'
   }
 
   const ordem: CampoReleaseWeek[] = [
