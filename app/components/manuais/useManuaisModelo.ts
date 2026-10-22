@@ -67,6 +67,7 @@ export const useManuaisModelo = () => {
     if (carregado.value && !forcar) return true
     if (carregando.value) return false
     carregando.value = true
+    if (forcar) itensPorManual.value = {}
     try {
       const lista = await useApiFetch<ManuaisModelo[]>('/api/manuais')
       manuais.value = Array.isArray(lista) ? lista : []

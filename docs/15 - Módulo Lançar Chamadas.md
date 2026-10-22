@@ -76,7 +76,7 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 
 ### 3.3 `Tabela.vue` → `<LancarChamadasTabela>`
 
-- `UiDataTable` com Chamada, Título, Software, Módulo, Tipo, Impacto, Status, Lançamento e Liberação;
+- `UiDataTable` com Chamada, Título, Softwares, Módulo, Tipo, Impacto, Status, Lançamento e Liberação;
   página padrão de 10, ordenação/paginação no cliente.
 - Busca gated por `buscar`, filtros por `filtrar`; badge soma busca + filtros.
 - **Importar** (`importar`): ícone somente, imediatamente à esquerda do botão "Filtros".
@@ -88,13 +88,18 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 
 ### 3.4 `Filtros.vue` → `<LancarChamadasFiltros>`
 
-- Status, Situação, Tipo, Impacto, Software, Parceiro, Origem, período de lançamento e de liberação.
+- Status, Situação, Tipo, Impacto, Softwares (um ou mais), Parceiro, Origem, período de lançamento e de liberação.
 - Rascunho isolado; “Aplicar” reflete em tabela/KPIs; “Limpar Filtros” zera; “Cancelar” descarta.
 
 ### 3.5 `Formulario.vue` → `<LancarChamadasFormulario>`
 
 - Wizard de quatro etapas: Vínculos e origem; Identificação; Classificação; Conteúdo e mídias.
 - **Novo:** status `Revisar`, tipo `Correção`, impacto `Médio`, data de lançamento no dia atual.
+- **Softwares:** o campo da etapa Classificação usa o `UiMultiSelect` (busca + chips) e exige ao menos
+  um software; o primeiro selecionado é o software principal gravado em `software_id`/`software`.
+- **Descrição do Resumo e Solução:** usam o `UiRichText` (negrito, cor e tamanho de fonte) na etapa
+  Conteúdo e mídias; a Solução é opcional e é o texto exibido na Área Pública. O HTML é sanitizado no
+  servidor e o texto puro é derivado para busca/validação.
 - **Data de liberação:** fica vazia e desabilitada no formulário; é preenchida apenas na aprovação
   com a `data_publicacao` da release vinculada.
 - **Editar:** carrega os dados persistidos; status/autor/timestamps originais são preservados.
@@ -120,7 +125,9 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 
 ### 3.8 `Detalhes.vue`, `Aprovar.vue`, `Desaprovar.vue`, `Recusar.vue` e `Exclusao.vue`
 
-- Detalhes em modo somente leitura.
+- Detalhes em modo somente leitura. A **Identificação** reúne os vínculos (Release, Manual e Escopo de
+  Projetos) acima da linha da Chamada; o **Conteúdo** exibe a Descrição do Resumo e a Solução com a
+  formatação salva (negrito, cor e tamanho), caindo para o texto puro quando não há HTML.
 - Aprovar/Desaprovar/Recusar/Excluir são modais de confirmação; a página só fecha o modal após o
   sucesso da API.
 - **Desaprovar** volta `Aprovado` para `Revisar` e limpa a data de liberação.
@@ -149,7 +156,7 @@ interface ChamadaModelo {
   releaseId: string
   projetoId: string
   manualId: string
-  softwareId: string
+  softwareIds: string[]
   parceiroId: string
   autorId: string
   autorNome: string
@@ -159,13 +166,16 @@ interface ChamadaModelo {
   release: string
   titulo: string
   parceiro: string
-  software: string
+  softwares: string[]
   modulo: string
   menuFuncionalidade: string
   tipo: 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
   impacto: 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
   situacao: 'Desenvolvimento' | 'Homologação' | 'Implantado'
   descricaoCompleta: string
+  descricaoHtml: string
+  solucao: string
+  solucaoHtml: string
   manualTitulo: string
   linkManual: string
   linkVideo: string
@@ -183,15 +193,18 @@ interface ChamadaModelo {
 | `id` | UUID gerado no servidor |
 | `origem` | Derivada dos vínculos (`Release`/`Projeto`/`Manual`/`Ambos`) |
 | `release_id` / `projeto_id` / `manual_id` | Vínculos; ao menos um obrigatório |
-| `software_id` / `parceiro_id` | Vínculos validados no servidor |
-| `release` / `software` / `parceiro` | Snapshots textuais gravados na escrita |
+| `software_id` / `parceiro_id` | Vínculos validados no servidor (`software_id` = software principal) |
+| `release` / `software` / `parceiro` | Snapshots textuais gravados na escrita (`software` = principal) |
+| `entregas_itens_softwares` (tabela) | Junção N:N com todos os softwares da chamada (código, nome snapshot e ordem) |
 | `autor_id` / `autor_nome` | Sessão do operador |
 | `chamada` | Obrigatória, ≤60 e única (`uk_entregas_chamada`) |
 | `titulo` | Obrigatório, ≤255 |
 | `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação vazia até a aprovação, quando recebe a publicação da release |
 | `modulo` / `menu_funcionalidade` | Texto livre |
 | `tipo` / `impacto` / `situacao` | Enums do banco |
-| `descricao_completa` | Obrigatória |
+| `descricao_completa` | Obrigatória (texto puro derivado do HTML) |
+| `descricao_html` | HTML sanitizado da Descrição (allowlist do design system) |
+| `solucao` / `solucao_html` | Solução opcional: texto puro + HTML sanitizado |
 | `manual_titulo` | Texto opcional, ≤255 |
 | `link_manual` / `link_video` | URL http(s) opcional |
 | `tags` / `imagens` | JSON arrays |
@@ -225,11 +238,11 @@ interface ChamadaModelo {
 - Modelo: `docs/modelos/modelo-importacao-lancar-chamadas.xlsx`.
 - Aba **Chamadas**, cabeçalho exato com 18 colunas:
   `Chamada | Título | Data de Lançamento | Data de Liberação | Release | Projeto | Manual |
-  Software | Parceiro | Módulo | Menu/Funcionalidade | Tipo | Impacto | Descrição Completa |
+  Softwares | Parceiro | Módulo | Menu/Funcionalidade | Tipo | Impacto | Descrição Completa |
   Título do Manual | Link do Manual | Link do Vídeo | Tags`.
 - Datas aceitam `dd/mm/aaaa`, `AAAA-MM-DD` e data do Excel; não há exigência de segunda-feira.
-- Vínculos por código: release/projeto/manual por `codigo`; software por `codigo`; parceiro por
-  `codigo` (`RW-...`, `PE-...`, `MAN-...`, `SFT-...`, `PAR-...`).
+- Vínculos por código: release/projeto/manual por `codigo`; softwares por `codigo` (um ou mais
+  separados por `;`); parceiro por `codigo` (`RW-...`, `PE-...`, `MAN-...`, `SFT-...`, `PAR-...`).
 - Tags separadas por `;`, com os mesmos limites do formulário.
 - Novas chamadas entram com status `Revisar`, situação `Desenvolvimento` e origem derivada.
 - Limite de 500 linhas; qualquer linha inválida, repetida ou já cadastrada bloqueia a importação
@@ -285,7 +298,7 @@ interface ChamadaModelo {
 
 - `chamada`: obrigatória, ≤60 e única (case-insensitive).
 - `titulo`: obrigatório, ≤255.
-- `softwareId`, `parceiroId`, `modulo` e `descricaoCompleta`: obrigatórios; `modulo` ≤100.
+- `softwareIds` (ao menos um), `parceiroId`, `modulo` e `descricaoCompleta`: obrigatórios; `modulo` ≤100.
 - `manualTitulo`: opcional, ≤255.
 - Ao menos um vínculo (Release, Projeto ou Manual).
 - `dataLancamento`: obrigatória, qualquer data civil válida (o formulário inicia com a data do dia).

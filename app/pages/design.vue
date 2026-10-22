@@ -56,7 +56,8 @@ import {
   Copy,
   Send,
   Archive,
-  MoreVertical
+  MoreVertical,
+  Boxes
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
@@ -678,6 +679,22 @@ onUnmounted(encerrarLoadingDemo)
 // Demo do UiTextarea (Seção 19) — campo livre com v-model e exemplo fixo em erro
 const textareaDemo = ref('')
 const textareaErroDemo = 'Informe a descrição.'
+// Demo do UiRichText (Seção 25) — HTML com a formatação da allowlist
+const richTextDemo = ref(
+  '<p>Descrição com <strong>negrito</strong>, <span style="color:#dc2626">vermelho</span> e <span style="font-size:1.3em">destaque</span>.</p>'
+)
+const richTextErroDemo = 'Informe a descrição.'
+const richTextViewerDemo =
+  '<p>Solução aplicada com <strong>ênfase</strong> e <span style="color:#0f7a06">verde</span>.</p>'
+// Demo do UiMultiSelect (Seção 26)
+const multiSelectOpcoes = [
+  { value: 'SFT-001', label: 'Teorema ERP' },
+  { value: 'SFT-002', label: 'Arquivos Digitais - SPED' },
+  { value: 'SFT-003', label: 'Atualizador' },
+  { value: 'SFT-004', label: 'Balcão - Caixa - OS' }
+]
+const multiSelectDemo = ref<string[]>(['SFT-001'])
+const multiSelectErroDemo = 'Selecione ao menos um software.'
 const switchDemo = ref(true)
 
 // Demonstração das seções 21/22 — UiEntityCard e UiPagination
@@ -710,7 +727,9 @@ const secoes = [
   { id: 'entity-card', label: '21. Cards de Entidade (UiEntityCard)' },
   { id: 'pagination', label: '22. Paginação (UiPagination)' },
   { id: 'action-menu', label: '23. Menu de Ações (UiActionMenu)' },
-  { id: 'tag-input', label: '24. Entrada de Tags (UiTagInput)' }
+  { id: 'tag-input', label: '24. Entrada de Tags (UiTagInput)' },
+  { id: 'rich-text', label: '25. Texto Rico (UiRichText)' },
+  { id: 'multi-select', label: '26. Seleção Múltipla (UiMultiSelect)' }
 ]
 </script>
 
@@ -3281,6 +3300,116 @@ variant="lime"
   :max="12"
   :max-length="30"
   helper-text="Enter ou vírgula adiciona; Backspace remove a última."
+/&gt;</pre>
+          </div>
+        </section>
+
+        <section id="rich-text" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <AlignLeft class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  25. Texto Rico (UiRichText)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Editor de texto com <strong>negrito</strong>, cor e tamanho de fonte — mesma
+                  identidade do <code class="font-mono text-slate-700">UiTextarea</code>, com toolbar
+                  no hover/foco e bubble na seleção. O
+                  <code class="font-mono text-slate-700">UiRichTextViewer</code> exibe o HTML
+                  sanitizado; sem HTML, cai no texto puro.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="grid gap-4 md:grid-cols-2">
+              <UiRichText
+                v-model="richTextDemo"
+                label="Descrição completa"
+                placeholder="Detalhe o impacto, causas e validação…"
+                :min-height="96"
+              />
+              <UiRichText
+                :model-value="'<p>Campo fixado em erro para conferir o recorte rose-700.</p>'"
+                label="Descrição completa"
+                :error="richTextErroDemo"
+                disabled
+              />
+            </div>
+            <div class="mt-5">
+              <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">
+                Leitura (UiRichTextViewer)
+              </p>
+              <UiRichTextViewer :html="richTextViewerDemo" />
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiRichText
+  v-model="descricaoHtml"
+  label="Descrição completa"
+  placeholder="Detalhe o impacto, causas e validação…"
+  @update:text="descricao = $event"
+/&gt;
+&lt;UiRichTextViewer :html="chamada.descricaoHtml" :text="chamada.descricaoCompleta" /&gt;</pre>
+          </div>
+        </section>
+
+        <section id="multi-select" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
+          <div class="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 mb-5">
+            <div class="flex items-start gap-2.5">
+              <div class="p-1.5 rounded-lg bg-brand-primary text-brand-accent shrink-0 mt-0.5">
+                <Boxes class="h-4 w-4" />
+              </div>
+              <div>
+                <h2 class="text-base font-bold text-slate-900 tracking-tight">
+                  26. Seleção Múltipla (UiMultiSelect)
+                </h2>
+                <p class="text-xs text-slate-500 mt-0.5">
+                  Campo de escolha múltipla com busca accent-insensitive e chips removíveis — mesmo
+                  DNA do <code class="font-mono text-slate-700">UiSelect</code>, com navegação por
+                  teclado (setas, Enter, Escape e Backspace) e papéis
+                  <code class="font-mono text-slate-700">combobox</code>/<code class="font-mono text-slate-700">listbox</code>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 mb-6 bg-slate-50/50">
+            <div class="grid gap-4 md:grid-cols-2">
+              <UiMultiSelect
+                v-model="multiSelectDemo"
+                label="Softwares"
+                placeholder="Selecione um ou mais softwares"
+                :options="multiSelectOpcoes"
+              />
+              <UiMultiSelect
+                :model-value="['SFT-001']"
+                label="Softwares"
+                :options="multiSelectOpcoes"
+                :error="multiSelectErroDemo"
+                disabled
+              />
+            </div>
+            <p class="mt-3 text-xs text-slate-500">
+              Valor da demo (v-model):
+              <span class="font-mono text-slate-700">{{ multiSelectDemo.join(', ') || '—' }}</span>
+              · o exemplo da direita está desabilitado e em erro.
+            </p>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <p class="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-2">Uso</p>
+            <pre class="text-xs font-mono text-slate-700 whitespace-pre-wrap">&lt;UiMultiSelect
+  v-model="softwareIds"
+  label="Softwares"
+  placeholder="Selecione um ou mais softwares"
+  :options="opcoesSoftware"
 /&gt;</pre>
           </div>
         </section>

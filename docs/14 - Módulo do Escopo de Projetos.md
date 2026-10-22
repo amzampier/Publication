@@ -49,7 +49,8 @@ A persistência é real em `projetos_escopo`; **não existe seed** e o módulo n
   `Concluído` | `Publicado`), `softwares_contemplados` (JSON), `descricao_geral`,
   `total_visualizacoes`, `arquivada`, `criado_em` e `atualizado_em`.
 - **Softwares contemplados:** não são digitados no escopo. A API deriva os **nomes distintos** dos
-  itens de `entregas_itens` (via `software_id`/`softwares`, com fallback para o texto do item) e o
+  itens de `entregas_itens` — pela junção `entregas_itens_softwares` (todos os softwares da chamada),
+  com fallback para `software_id`/`softwares` (texto do item) em registros legados — e o
   JSON `softwares_contemplados` é gravado como `[]`.
 - **Itens:** vivem em `entregas_itens` (`projeto_id`), são somente leitura nesta tela e alimentam
   `itensCount` e os softwares.

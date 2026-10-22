@@ -30,6 +30,7 @@ import {
   type SituacaoChamada,
   type TipoChamada
 } from './validadores'
+import { textoParaRichText } from '#shared/rich-text'
 
 interface Props {
   modelValue: boolean
@@ -74,8 +75,8 @@ const etapas = [
 const camposPorEtapa: CampoChamada[][] = [
   ['vinculo'],
   ['chamada', 'titulo', 'dataLancamento', 'dataLiberacao'],
-  ['softwareId', 'parceiroId', 'modulo', 'tipo', 'impacto', 'tags'],
-  ['descricaoCompleta', 'manualTitulo', 'linkManual', 'linkVideo']
+  ['softwareIds', 'parceiroId', 'modulo', 'tipo', 'impacto', 'tags'],
+  ['descricaoCompleta', 'solucao', 'manualTitulo', 'linkManual', 'linkVideo']
 ]
 
 const etapa = ref(0)
@@ -89,7 +90,7 @@ interface Rascunho {
   releaseId: string
   projetoId: string
   manualId: string
-  softwareId: string
+  softwareIds: string[]
   parceiroId: string
   modulo: string
   menuFuncionalidade: string
@@ -97,6 +98,9 @@ interface Rascunho {
   impacto: ImpactoChamada
   situacao: SituacaoChamada
   descricaoCompleta: string
+  descricaoHtml: string
+  solucao: string
+  solucaoHtml: string
   manualTitulo: string
   linkManual: string
   linkVideo: string
@@ -112,7 +116,7 @@ const rascunhoVazio = (): Rascunho => ({
   releaseId: '',
   projetoId: '',
   manualId: '',
-  softwareId: '',
+  softwareIds: [],
   parceiroId: '',
   modulo: '',
   menuFuncionalidade: '',
@@ -120,6 +124,9 @@ const rascunhoVazio = (): Rascunho => ({
   impacto: 'Médio',
   situacao: 'Desenvolvimento',
   descricaoCompleta: '',
+  descricaoHtml: '',
+  solucao: '',
+  solucaoHtml: '',
   manualTitulo: '',
   linkManual: '',
   linkVideo: '',
@@ -135,7 +142,7 @@ const deChamada = (chamada: ChamadaModelo): Rascunho => ({
   releaseId: chamada.releaseId,
   projetoId: chamada.projetoId,
   manualId: chamada.manualId,
-  softwareId: chamada.softwareId,
+  softwareIds: [...chamada.softwareIds],
   parceiroId: chamada.parceiroId,
   modulo: chamada.modulo,
   menuFuncionalidade: chamada.menuFuncionalidade,
@@ -143,6 +150,9 @@ const deChamada = (chamada: ChamadaModelo): Rascunho => ({
   impacto: chamada.impacto,
   situacao: chamada.situacao,
   descricaoCompleta: chamada.descricaoCompleta,
+  descricaoHtml: chamada.descricaoHtml || textoParaRichText(chamada.descricaoCompleta),
+  solucao: chamada.solucao,
+  solucaoHtml: chamada.solucaoHtml || textoParaRichText(chamada.solucao),
   manualTitulo: chamada.manualTitulo,
   linkManual: chamada.linkManual,
   linkVideo: chamada.linkVideo,
@@ -229,7 +239,7 @@ const focarCampo = (campo: string) => {
   nextTick(() => {
     const wrapper = document.querySelector<HTMLElement>(`[data-campo="${campo}"]`)
     const alvo = wrapper?.querySelector<HTMLElement>(
-      'input:not([disabled]), textarea:not([disabled]), [role="combobox"], [role="radio"][tabindex="0"]'
+      'input:not([disabled]), textarea:not([disabled]), [contenteditable="true"], [role="combobox"], [role="radio"][tabindex="0"]'
     )
     alvo?.focus()
   })
@@ -331,7 +341,7 @@ const salvar = async () => {
     releaseId: rascunho.value.releaseId,
     projetoId: rascunho.value.projetoId,
     manualId: rascunho.value.manualId,
-    softwareId: rascunho.value.softwareId,
+    softwareIds: [...rascunho.value.softwareIds],
     parceiroId: rascunho.value.parceiroId,
     modulo: rascunho.value.modulo.trim(),
     menuFuncionalidade: rascunho.value.menuFuncionalidade.trim(),
@@ -339,6 +349,9 @@ const salvar = async () => {
     impacto: rascunho.value.impacto,
     situacao: rascunho.value.situacao,
     descricaoCompleta: rascunho.value.descricaoCompleta.trim(),
+    descricaoHtml: rascunho.value.descricaoHtml,
+    solucao: rascunho.value.solucao.trim(),
+    solucaoHtml: rascunho.value.solucaoHtml,
     manualTitulo: rascunho.value.manualTitulo.trim(),
     linkManual: rascunho.value.linkManual.trim(),
     linkVideo: rascunho.value.linkVideo.trim(),
@@ -534,14 +547,14 @@ watch(
               @update:model-value="rascunho.parceiroId = String($event)"
             />
           </div>
-          <div data-campo="softwareId">
-            <UiSelect
-              :model-value="rascunho.softwareId"
-              label="Software"
-              placeholder="Selecione o software"
+          <div data-campo="softwareIds">
+            <UiMultiSelect
+              :model-value="rascunho.softwareIds"
+              label="Softwares"
+              placeholder="Selecione um ou mais softwares"
               :options="opcoesSoftware"
-              :error="erros.softwareId"
-              @update:model-value="rascunho.softwareId = String($event)"
+              :error="erros.softwareIds"
+              @update:model-value="rascunho.softwareIds = $event as string[]"
             />
           </div>
           <UiInput
@@ -590,13 +603,24 @@ watch(
         title="Conteúdo e mídias"
         :icon="FileText"
       >
-        <UiTextarea
-          v-model="rascunho.descricaoCompleta"
+        <UiRichText
+          v-model="rascunho.descricaoHtml"
           data-campo="descricaoCompleta"
-          label="Descrição completa"
+          label="Descrição do Resumo"
           placeholder="Detalhamento do impacto, causas, manual e validação"
-          :rows="4"
+          :min-height="96"
           :error="erros.descricaoCompleta"
+          @update:text="rascunho.descricaoCompleta = $event"
+        />
+
+        <UiRichText
+          v-model="rascunho.solucaoHtml"
+          data-campo="solucao"
+          label="Solução"
+          placeholder="Como a chamada foi solucionada (exibida na Área Pública)"
+          :min-height="80"
+          :error="erros.solucao"
+          @update:text="rascunho.solucao = $event"
         />
 
         <LancarChamadasMidias

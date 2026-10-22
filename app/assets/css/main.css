@@ -189,6 +189,21 @@ input[type='password']::-ms-expand {
   background: rgba(148, 163, 184, 0.5);
 }
 
+/* Texto rico (UiRichText / UiRichTextViewer): parágrafos compactos e quebras de
+   linha preservadas; cor e tamanho vêm de `style` inline restrito à allowlist
+   de `shared/rich-text.ts`. O editor (ProseMirror) usa a mesma classe. */
+.ds-rich-text p {
+  margin: 0 0 0.5em;
+}
+
+.ds-rich-text p:last-child {
+  margin-bottom: 0;
+}
+
+.ds-rich-text strong {
+  font-weight: 700;
+}
+
 /* Folha de estilo de impressão contábil (@media print) */
 @media print {
   header,

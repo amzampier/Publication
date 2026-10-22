@@ -57,6 +57,7 @@ export const useEscopoProjetosModelo = () => {
     if (carregado.value && !forcar) return true
     if (carregando.value) return false
     carregando.value = true
+    if (forcar) itensPorProjeto.value = {}
     try {
       const lista = await useApiFetch<ProjetoEscopoModelo[]>('/api/escopo-projetos')
       escopos.value = Array.isArray(lista) ? lista : []

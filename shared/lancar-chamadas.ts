@@ -1,3 +1,5 @@
+import { MAX_TEXTO_RICO } from './rich-text'
+
 // Regras puras do módulo Lançar as Chamadas — compartilhadas entre app e testes
 // (`#shared/lancar-chamadas`). Sem imports de Nuxt/Vue. A fonte de verdade dos
 // dados será a API `/api/lancar-chamadas` na fase backend; nesta fase o modelo
@@ -64,7 +66,7 @@ export interface ChamadaModelo {
   releaseId: string
   projetoId: string
   manualId: string
-  softwareId: string
+  softwareIds: string[]
   parceiroId: string
   autorId: string
   autorNome: string
@@ -74,13 +76,16 @@ export interface ChamadaModelo {
   release: string
   titulo: string
   parceiro: string
-  software: string
+  softwares: string[]
   modulo: string
   menuFuncionalidade: string
   tipo: TipoChamada
   impacto: ImpactoChamada
   situacao: SituacaoChamada
   descricaoCompleta: string
+  descricaoHtml: string
+  solucao: string
+  solucaoHtml: string
   manualTitulo: string
   linkManual: string
   linkVideo: string
@@ -100,7 +105,7 @@ export interface EntradaChamada {
   releaseId: string
   projetoId: string
   manualId: string
-  softwareId: string
+  softwareIds: string[]
   parceiroId: string
   modulo: string
   menuFuncionalidade: string
@@ -108,6 +113,9 @@ export interface EntradaChamada {
   impacto: ImpactoChamada
   situacao: SituacaoChamada
   descricaoCompleta: string
+  descricaoHtml: string
+  solucao: string
+  solucaoHtml: string
   manualTitulo?: string
   linkManual: string
   linkVideo: string
@@ -123,7 +131,7 @@ export interface LinhaImportacaoChamada {
   releaseCodigo: string
   projetoCodigo: string
   manualCodigo: string
-  softwareCodigo: string
+  softwareCodigos: string[]
   parceiroCodigo: string
   modulo: string
   menuFuncionalidade: string
@@ -141,7 +149,7 @@ export interface FiltrosChamada {
   situacao: string
   tipo: string
   impacto: string
-  softwareId: string
+  softwareIds: string[]
   parceiroId: string
   origem: string
   dataLancamentoDe: string
@@ -161,10 +169,11 @@ export type CampoChamada =
   | 'chamada'
   | 'titulo'
   | 'vinculo'
-  | 'softwareId'
+  | 'softwareIds'
   | 'parceiroId'
   | 'modulo'
   | 'descricaoCompleta'
+  | 'solucao'
   | 'manualTitulo'
   | 'dataLancamento'
   | 'dataLiberacao'
@@ -215,6 +224,20 @@ export function normalizarImagensChamada(valor: unknown): string[] {
     imagens.push(url)
   }
   return imagens
+}
+
+/** Normaliza códigos de software: trim, remove vazios e deduplica. */
+export function normalizarSoftwareIds(valor: unknown): string[] {
+  if (!Array.isArray(valor)) return []
+  const vistos = new Set<string>()
+  const codigos: string[] = []
+  for (const item of valor) {
+    const codigo = texto(item)
+    if (!codigo || vistos.has(codigo)) continue
+    vistos.add(codigo)
+    codigos.push(codigo)
+  }
+  return codigos
 }
 
 /** `true` quando a string é uma data civil `AAAA-MM-DD` válida. */
@@ -305,7 +328,7 @@ export function validarChamada(
     releaseId?: unknown
     projetoId?: unknown
     manualId?: unknown
-    softwareId?: unknown
+    softwareIds?: unknown
     parceiroId?: unknown
     modulo?: unknown
     menuFuncionalidade?: unknown
@@ -313,6 +336,9 @@ export function validarChamada(
     impacto?: unknown
     situacao?: unknown
     descricaoCompleta?: unknown
+    descricaoHtml?: unknown
+    solucao?: unknown
+    solucaoHtml?: unknown
     manualTitulo?: unknown
     linkManual?: unknown
     linkVideo?: unknown
@@ -346,15 +372,25 @@ export function validarChamada(
     erros.vinculo = 'Selecione ao menos uma release, projeto ou manual.'
   }
 
-  if (!texto(dados.softwareId)) erros.softwareId = 'Selecione o software.'
+  if (!normalizarSoftwareIds(dados.softwareIds).length) {
+    erros.softwareIds = 'Selecione ao menos um software.'
+  }
   if (!texto(dados.parceiroId)) erros.parceiroId = 'Selecione o parceiro.'
 
   const modulo = texto(dados.modulo)
   if (!modulo) erros.modulo = 'Informe o menu.'
   else if (modulo.length > 100) erros.modulo = 'O menu deve ter no máximo 100 caracteres.'
 
-  if (!texto(dados.descricaoCompleta)) {
+  const descricaoCompleta = texto(dados.descricaoCompleta)
+  if (!descricaoCompleta) {
     erros.descricaoCompleta = 'Informe a descrição completa da chamada.'
+  } else if (descricaoCompleta.length > MAX_TEXTO_RICO) {
+    erros.descricaoCompleta = `A descrição completa deve ter no máximo ${MAX_TEXTO_RICO} caracteres.`
+  }
+
+  const solucao = texto(dados.solucao)
+  if (solucao.length > MAX_TEXTO_RICO) {
+    erros.solucao = `A solução deve ter no máximo ${MAX_TEXTO_RICO} caracteres.`
   }
 
   const manualTitulo = texto(dados.manualTitulo)
@@ -410,10 +446,11 @@ export function validarChamada(
     'chamada',
     'titulo',
     'vinculo',
-    'softwareId',
+    'softwareIds',
     'parceiroId',
     'modulo',
     'descricaoCompleta',
+    'solucao',
     'manualTitulo',
     'dataLancamento',
     'dataLiberacao',
@@ -439,7 +476,11 @@ export function filtrarChamadas(
     .filter((chamada) => !filtros.situacao || chamada.situacao === filtros.situacao)
     .filter((chamada) => !filtros.tipo || chamada.tipo === filtros.tipo)
     .filter((chamada) => !filtros.impacto || chamada.impacto === filtros.impacto)
-    .filter((chamada) => !filtros.softwareId || chamada.softwareId === filtros.softwareId)
+    .filter(
+      (chamada) =>
+        !filtros.softwareIds.length ||
+        chamada.softwareIds.some((id) => filtros.softwareIds.includes(id))
+    )
     .filter((chamada) => !filtros.parceiroId || chamada.parceiroId === filtros.parceiroId)
     .filter((chamada) => !filtros.origem || chamada.origem === filtros.origem)
     .filter(
@@ -471,7 +512,8 @@ export function buscarChamadas(chamadas: ChamadaModelo[], termo: string): Chamad
       chamada.chamada,
       chamada.titulo,
       chamada.descricaoCompleta,
-      chamada.software,
+      chamada.solucao,
+      chamada.softwares.join(' '),
       chamada.modulo,
       chamada.menuFuncionalidade,
       chamada.parceiro,

@@ -24,7 +24,8 @@ const mensagemErro = (erro: unknown, padrao: string): string => {
 
 onMounted(async () => {
   carregando.value = true
-  const ok = await carregarEscopos()
+  // Entrar na página sempre rebusca os escopos e invalida o cache de itens.
+  const ok = await carregarEscopos(true)
   carregando.value = false
   if (!ok) {
     toast.danger(

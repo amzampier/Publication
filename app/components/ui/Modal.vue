@@ -54,7 +54,7 @@ const previousFocus = ref<HTMLElement | null>(null)
 let scrollLocked = false
 
 const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [contenteditable="true"], [tabindex]:not([tabindex="-1"])'
 
 const sizeClass = computed(() => {
   switch (props.size) {

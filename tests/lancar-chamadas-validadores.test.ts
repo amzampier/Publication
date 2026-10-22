@@ -30,7 +30,7 @@ const chamadaBase = (over: Partial<ChamadaModelo> = {}): ChamadaModelo => ({
   releaseId: 'rw-1',
   projetoId: '',
   manualId: '',
-  softwareId: 'SFT-001',
+  softwareIds: ['SFT-001'],
   parceiroId: 'par-1',
   autorId: 'user-1',
   autorNome: 'Ana Carolina Ribeiro',
@@ -40,13 +40,16 @@ const chamadaBase = (over: Partial<ChamadaModelo> = {}): ChamadaModelo => ({
   release: 'RW-43/2026',
   titulo: 'Ajuste no cálculo de impostos',
   parceiro: 'Grupo Andrade',
-  software: 'Teorema ERP',
+  softwares: ['Teorema ERP'],
   modulo: 'Fiscal',
   menuFuncionalidade: 'Notas fiscais',
   tipo: 'Correção',
   impacto: 'Médio',
   situacao: 'Desenvolvimento',
   descricaoCompleta: 'Correção do cálculo de impostos na emissão da nota.',
+  descricaoHtml: '',
+  solucao: '',
+  solucaoHtml: '',
   manualTitulo: '',
   linkManual: '',
   linkVideo: '',
@@ -67,7 +70,7 @@ const entradaValida = (over: Partial<EntradaChamada> = {}): EntradaChamada => ({
   releaseId: 'rw-1',
   projetoId: '',
   manualId: '',
-  softwareId: 'SFT-001',
+  softwareIds: ['SFT-001'],
   parceiroId: 'par-1',
   modulo: 'Fiscal',
   menuFuncionalidade: 'Notas fiscais',
@@ -75,6 +78,9 @@ const entradaValida = (over: Partial<EntradaChamada> = {}): EntradaChamada => ({
   impacto: 'Médio',
   situacao: 'Desenvolvimento',
   descricaoCompleta: 'Correção do cálculo de impostos na emissão da nota.',
+  descricaoHtml: '',
+  solucao: '',
+  solucaoHtml: '',
   linkManual: 'https://exemplo.com/manual',
   linkVideo: '',
   imagens: [],
@@ -95,7 +101,7 @@ describe('validarChamada', () => {
     expect(resultado.erros.chamada).toBeTruthy()
     expect(resultado.erros.titulo).toBeTruthy()
     expect(resultado.erros.vinculo).toBeTruthy()
-    expect(resultado.erros.softwareId).toBeTruthy()
+    expect(resultado.erros.softwareIds).toBeTruthy()
     expect(resultado.erros.parceiroId).toBeTruthy()
     expect(resultado.erros.modulo).toBeTruthy()
     expect(resultado.erros.descricaoCompleta).toBeTruthy()
@@ -170,6 +176,22 @@ describe('validarChamada', () => {
     const imagens = Array.from({ length: 21 }, (_, i) => `/uploads/chamadas/2026/10/${i}.png`)
     expect(validarChamada(entradaValida({ imagens })).erros.imagens).toMatch(/20/)
   })
+
+  it('exige a Descrição completa e aceita a Solução vazia', () => {
+    const semDescricao = validarChamada(entradaValida({ descricaoCompleta: '   ' }))
+    expect(semDescricao.erros.descricaoCompleta).toBeTruthy()
+    expect(semDescricao.primeiroErro).toBe('descricaoCompleta')
+    expect(validarChamada(entradaValida({ solucao: '' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ solucao: 'Aplicado o ajuste.' })).valido).toBe(true)
+  })
+
+  it('limita o tamanho da Descrição e da Solução em texto puro', () => {
+    const longa = 'a'.repeat(20001)
+    expect(validarChamada(entradaValida({ descricaoCompleta: longa })).erros.descricaoCompleta).toMatch(
+      /20000/
+    )
+    expect(validarChamada(entradaValida({ solucao: longa })).erros.solucao).toMatch(/20000/)
+  })
 })
 
 describe('derivarOrigem', () => {
@@ -221,7 +243,7 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       situacao: 'Desenvolvimento',
       tipo: 'Correção',
       impacto: 'Baixo',
-      softwareId: 'SFT-001',
+      softwareIds: ['SFT-001'],
       parceiroId: 'par-1',
       origem: 'Release',
       dataLancamento: '2026-10-19',
@@ -234,7 +256,7 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       situacao: 'Homologação',
       tipo: 'Melhoria',
       impacto: 'Alto',
-      softwareId: 'SFT-002',
+      softwareIds: ['SFT-002'],
       parceiroId: 'par-2',
       origem: 'Projeto',
       releaseId: '',
@@ -252,7 +274,7 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       situacao: 'Implantado',
       tipo: 'Nova Funcionalidade',
       impacto: 'Crítico',
-      softwareId: 'SFT-003',
+      softwareIds: ['SFT-003'],
       parceiroId: 'par-1',
       origem: 'Manual',
       releaseId: '',
@@ -270,7 +292,7 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
     situacao: '',
     tipo: '',
     impacto: '',
-    softwareId: '',
+    softwareIds: [],
     parceiroId: '',
     origem: '',
     dataLancamentoDe: '',
@@ -302,7 +324,7 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       'c'
     ])
     expect(
-      filtrarChamadas(chamadas, { ...semFiltro, softwareId: 'SFT-002' }).map((c) => c.id)
+      filtrarChamadas(chamadas, { ...semFiltro, softwareIds: ['SFT-002'] }).map((c) => c.id)
     ).toEqual(['b'])
     expect(
       filtrarChamadas(chamadas, { ...semFiltro, parceiroId: 'par-1' }).map((c) => c.id)
@@ -343,6 +365,47 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
     expect(buscarChamadas(chamadas, 'B-2').map((c) => c.id)).toEqual(['b'])
     expect(buscarChamadas(chamadas, 'estoque').map((c) => c.id)).toEqual(['c'])
     expect(buscarChamadas(chamadas, 'RW-43/2026').map((c) => c.id)).toEqual(['a'])
+  })
+
+  it('busca pelo texto da Solução', () => {
+    const comSolucao = [
+      chamadaBase({
+        id: 'a',
+        chamada: 'A-1',
+        titulo: 'Base.',
+        descricaoCompleta: 'Base.',
+        solucao: 'Ajuste no cálculo aplicado.'
+      }),
+      chamadaBase({
+        id: 'b',
+        chamada: 'B-2',
+        titulo: 'Base.',
+        descricaoCompleta: 'Base.',
+        solucao: 'Nova rotina entregue.'
+      })
+    ]
+    expect(buscarChamadas(comSolucao, 'cálculo').map((c) => c.id)).toEqual(['a'])
+    expect(buscarChamadas(comSolucao, 'entregue').map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('busca e filtra por softwares secundários', () => {
+    const multi = [
+      chamadaBase({
+        id: 'a',
+        chamada: 'A-1',
+        titulo: 'Base.',
+        descricaoCompleta: 'Base.',
+        softwareIds: ['SFT-001', 'SFT-900'],
+        softwares: ['Teorema ERP', 'Arquivos Digitais - SPED']
+      })
+    ]
+    expect(buscarChamadas(multi, 'sped').map((c) => c.id)).toEqual(['a'])
+    expect(filtrarChamadas(multi, { ...semFiltro, softwareIds: ['SFT-900'] }).map((c) => c.id)).toEqual([
+      'a'
+    ])
+    expect(filtrarChamadas(multi, { ...semFiltro, softwareIds: ['SFT-999'] }).map((c) => c.id)).toEqual(
+      []
+    )
   })
 
   it('calcula os KPIs por status', () => {

@@ -22,7 +22,8 @@ const {
 const carregando = ref(true)
 
 onMounted(async () => {
-  const ok = await carregarManuais()
+  // Entrar na página sempre rebusca os manuais e invalida o cache de itens.
+  const ok = await carregarManuais(true)
   carregando.value = false
   if (!ok) {
     toast.danger(

@@ -3,11 +3,13 @@ import { unlink } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { createError } from 'h3'
 import { getTransaction, query } from './db'
+import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
 import {
   LIMITE_IMPORTACAO_CHAMADAS,
   derivarOrigem,
   normalizarImagensChamada,
+  normalizarSoftwareIds,
   normalizarTagsChamada,
   validarChamada,
   type CatalogosChamada,
@@ -80,19 +82,52 @@ const listaJson = (valor: unknown): unknown[] => {
 const COLUNAS = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, e.software_id,
   e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
   e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
-  e.impacto, e.situacao, e.descricao_completa, e.manual_titulo, e.link_manual, e.link_video,
+  e.impacto, e.situacao, e.descricao_completa, e.descricao_html, e.solucao, e.solucao_html,
+  e.manual_titulo, e.link_manual, e.link_video,
   e.imagens, e.status, e.tags, e.criado_em, e.atualizado_em,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
 
-const montarChamada = (row: Row): ChamadaModelo => {
+interface SoftwareItem {
+  codigo: string
+  nome: string
+}
+
+/** Carrega, por chamada, os softwares da junção (ordem de seleção). */
+async function carregarSoftwaresPorItem(ids: string[]): Promise<Map<string, SoftwareItem[]>> {
+  const mapa = new Map<string, SoftwareItem[]>()
+  if (!ids.length) return mapa
+  const placeholders = ids.map(() => '?').join(', ')
+  const linhas = await query<Row[]>(
+    `SELECT entrega_item_id, software_codigo, software_nome
+       FROM entregas_itens_softwares
+      WHERE entrega_item_id IN (${placeholders})
+      ORDER BY ordem ASC, software_nome ASC`,
+    ids
+  )
+  for (const linha of linhas) {
+    const itemId = texto(linha.entrega_item_id)
+    const lista = mapa.get(itemId) ?? []
+    lista.push({ codigo: texto(linha.software_codigo), nome: texto(linha.software_nome) })
+    mapa.set(itemId, lista)
+  }
+  return mapa
+}
+
+const montarChamada = (row: Row, softwares?: SoftwareItem[]): ChamadaModelo => {
   const status = (texto(row.status) || 'Revisar') as StatusChamada
+  const listaSoftwares =
+    softwares && softwares.length
+      ? softwares
+      : texto(row.software_id)
+        ? [{ codigo: texto(row.software_id), nome: texto(row.software) }]
+        : []
   return {
     id: texto(row.id),
     origem: (texto(row.origem) || 'Release') as OrigemChamada,
     releaseId: texto(row.release_id),
     projetoId: texto(row.projeto_id),
     manualId: texto(row.manual_id),
-    softwareId: texto(row.software_id),
+    softwareIds: listaSoftwares.map((software) => software.codigo),
     parceiroId: texto(row.parceiro_id),
     autorId: texto(row.autor_id),
     autorNome: texto(row.autor_nome),
@@ -102,13 +137,16 @@ const montarChamada = (row: Row): ChamadaModelo => {
     release: texto(row.release),
     titulo: texto(row.titulo),
     parceiro: texto(row.parceiro),
-    software: texto(row.software),
+    softwares: listaSoftwares.map((software) => software.nome),
     modulo: texto(row.modulo),
     menuFuncionalidade: texto(row.menu_funcionalidade),
     tipo: (texto(row.tipo) || 'Correção') as TipoChamada,
     impacto: (texto(row.impacto) || 'Médio') as ImpactoChamada,
     situacao: (texto(row.situacao) || 'Desenvolvimento') as SituacaoChamada,
     descricaoCompleta: texto(row.descricao_completa),
+    descricaoHtml: texto(row.descricao_html),
+    solucao: texto(row.solucao),
+    solucaoHtml: texto(row.solucao_html),
     manualTitulo: texto(row.manual_titulo),
     linkManual: texto(row.link_manual),
     linkVideo: texto(row.link_video),
@@ -131,7 +169,8 @@ export async function listarChamadas(): Promise<ChamadaModelo[]> {
   const linhas = await query<Row[]>(
     `SELECT ${COLUNAS} FROM entregas_itens e ORDER BY e.chamada ASC`
   )
-  return linhas.map(montarChamada)
+  const softwares = await carregarSoftwaresPorItem(linhas.map((linha) => texto(linha.id)))
+  return linhas.map((linha) => montarChamada(linha, softwares.get(texto(linha.id))))
 }
 
 export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
@@ -140,7 +179,9 @@ export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
     [id]
   )
   const linha = linhas[0]
-  return linha ? montarChamada(linha) : null
+  if (!linha) return null
+  const softwares = await carregarSoftwaresPorItem([texto(linha.id)])
+  return montarChamada(linha, softwares.get(texto(linha.id)))
 }
 
 export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
@@ -204,6 +245,8 @@ export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
 }
 
 function montarEntrada(dados: Record<string, unknown>): EntradaChamada {
+  const descricaoHtml = sanitizarRichText(dados.descricaoHtml)
+  const solucaoHtml = sanitizarRichText(dados.solucaoHtml)
   return {
     chamada: texto(dados.chamada),
     titulo: texto(dados.titulo),
@@ -212,14 +255,19 @@ function montarEntrada(dados: Record<string, unknown>): EntradaChamada {
     releaseId: texto(dados.releaseId),
     projetoId: texto(dados.projetoId),
     manualId: texto(dados.manualId),
-    softwareId: texto(dados.softwareId),
+    softwareIds: normalizarSoftwareIds(dados.softwareIds),
     parceiroId: texto(dados.parceiroId),
     modulo: texto(dados.modulo),
     menuFuncionalidade: texto(dados.menuFuncionalidade),
     tipo: texto(dados.tipo) as TipoChamada,
     impacto: texto(dados.impacto) as ImpactoChamada,
     situacao: texto(dados.situacao) as SituacaoChamada,
-    descricaoCompleta: texto(dados.descricaoCompleta),
+    descricaoCompleta: descricaoHtml
+      ? richTextParaTexto(descricaoHtml)
+      : texto(dados.descricaoCompleta),
+    descricaoHtml,
+    solucao: solucaoHtml ? richTextParaTexto(solucaoHtml) : texto(dados.solucao),
+    solucaoHtml,
     manualTitulo: texto(dados.manualTitulo),
     linkManual: texto(dados.linkManual),
     linkVideo: texto(dados.linkVideo),
@@ -259,7 +307,7 @@ interface VinculosResolvidos {
   release: Row | null
   projeto: Row | null
   manual: Row | null
-  software: Row | null
+  softwares: Row[]
   parceiro: Row | null
   dataLiberacao: string
   origem: OrigemChamada
@@ -296,14 +344,21 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
     erro400('Manual não encontrado.', { erros: { vinculo: 'Selecione um manual válido.' } })
   }
 
-  const software = entrada.softwareId
-    ? (await query<Row[]>(
-        'SELECT codigo, descricao FROM softwares WHERE codigo = ? LIMIT 1',
-        [entrada.softwareId]
-      ))[0] ?? null
-    : null
-  if (entrada.softwareId && !software) {
-    erro400('Software não encontrado.', { erros: { softwareId: 'Selecione um software válido.' } })
+  const softwares = entrada.softwareIds.length
+    ? await query<Row[]>(
+        `SELECT codigo, descricao FROM softwares
+          WHERE codigo IN (${entrada.softwareIds.map(() => '?').join(', ')})`,
+        entrada.softwareIds
+      )
+    : []
+  const porCodigo = new Map(softwares.map((linha) => [texto(linha.codigo), linha]))
+  const softwaresOrdenados = entrada.softwareIds
+    .map((codigo) => porCodigo.get(codigo))
+    .filter((linha): linha is Row => Boolean(linha))
+  if (softwaresOrdenados.length !== entrada.softwareIds.length) {
+    erro400('Software não encontrado.', {
+      erros: { softwareIds: 'Selecione softwares válidos.' }
+    })
   }
 
   const parceiro = entrada.parceiroId
@@ -331,7 +386,7 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
     release,
     projeto,
     manual,
-    software,
+    softwares: softwaresOrdenados,
     parceiro,
     dataLiberacao: entrada.dataLiberacao,
     origem
@@ -355,12 +410,16 @@ interface ChamadaPreparada {
   titulo: string
   parceiro: string
   software: string
+  softwares: SoftwareItem[]
   modulo: string
   menuFuncionalidade: string | null
   tipo: TipoChamada
   impacto: ImpactoChamada
   situacao: SituacaoChamada
   descricaoCompleta: string
+  descricaoHtml: string | null
+  solucao: string | null
+  solucaoHtml: string | null
   manualTitulo: string | null
   linkManual: string | null
   linkVideo: string | null
@@ -376,13 +435,17 @@ function prepararChamada(
   autor: AutorChamada,
   status: StatusChamada
 ): ChamadaPreparada {
+  const softwares = vinculos.softwares.map((linha) => ({
+    codigo: texto(linha.codigo),
+    nome: texto(linha.descricao)
+  }))
   return {
     id,
     origem: vinculos.origem,
     releaseId: entrada.releaseId || null,
     projetoId: entrada.projetoId || null,
     manualId: entrada.manualId || null,
-    softwareId: entrada.softwareId || null,
+    softwareId: softwares[0]?.codigo ?? null,
     parceiroId: entrada.parceiroId || null,
     autorId: autor.id,
     autorNome: (autor.nome ?? '').slice(0, 150),
@@ -392,13 +455,17 @@ function prepararChamada(
     release: vinculos.release ? texto(vinculos.release.codigo) : null,
     titulo: entrada.titulo,
     parceiro: vinculos.parceiro ? texto(vinculos.parceiro.nome_fantasia) : '',
-    software: vinculos.software ? texto(vinculos.software.descricao) : '',
+    software: softwares[0]?.nome ?? '',
+    softwares,
     modulo: entrada.modulo,
     menuFuncionalidade: entrada.menuFuncionalidade || null,
     tipo: entrada.tipo,
     impacto: entrada.impacto,
     situacao: entrada.situacao,
     descricaoCompleta: entrada.descricaoCompleta,
+    descricaoHtml: entrada.descricaoHtml || null,
+    solucao: entrada.solucao || null,
+    solucaoHtml: entrada.solucaoHtml || null,
     manualTitulo: entrada.manualTitulo || null,
     linkManual: entrada.linkManual || null,
     linkVideo: entrada.linkVideo || null,
@@ -411,9 +478,10 @@ function prepararChamada(
 const SQL_INSERT = `INSERT INTO entregas_itens
   (id, origem, release_id, projeto_id, manual_id, software_id, parceiro_id, autor_id,
    autor_nome, chamada, data_lancamento, data_liberacao, \`release\`, titulo, parceiro, software,
-   modulo, menu_funcionalidade, tipo, impacto, situacao, descricao_completa, manual_titulo,
+   modulo, menu_funcionalidade, tipo, impacto, situacao, descricao_completa, descricao_html,
+   solucao, solucao_html, manual_titulo,
    link_manual, link_video, imagens, status, tags)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.id,
@@ -438,6 +506,9 @@ const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.impacto,
   p.situacao,
   p.descricaoCompleta,
+  p.descricaoHtml,
+  p.solucao,
+  p.solucaoHtml,
   p.manualTitulo,
   p.linkManual,
   p.linkVideo,
@@ -445,6 +516,23 @@ const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.status,
   p.tags
 ]
+
+type ExecutorSql = { query: (sql: string, valores?: unknown[]) => Promise<unknown> }
+
+/** Substitui os softwares da chamada na junção, preservando a ordem de seleção. */
+async function gravarSoftwares(
+  executor: ExecutorSql,
+  id: string,
+  softwares: SoftwareItem[]
+): Promise<void> {
+  await executor.query('DELETE FROM entregas_itens_softwares WHERE entrega_item_id = ?', [id])
+  if (!softwares.length) return
+  const valores = softwares.map((software, indice) => [id, software.codigo, software.nome, indice])
+  await executor.query(
+    'INSERT INTO entregas_itens_softwares (entrega_item_id, software_codigo, software_nome, ordem) VALUES ?',
+    [valores]
+  )
+}
 
 export async function criarChamada(
   dados: Record<string, unknown>,
@@ -454,9 +542,13 @@ export async function criarChamada(
   entrada.dataLiberacao = ''
   const vinculos = await resolverVinculos(entrada)
   const preparada = prepararChamada(randomUUID(), entrada, vinculos, autor, 'Revisar')
+  const tx = await getTransaction()
   try {
-    await query(SQL_INSERT, valoresInsert(preparada))
+    await tx.query(SQL_INSERT, valoresInsert(preparada))
+    await gravarSoftwares(tx, preparada.id, preparada.softwares)
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe uma chamada com este número.', {
         erros: { chamada: 'Já existe uma chamada com este número.' }
@@ -484,7 +576,7 @@ export async function atualizarChamada(
     releaseId: 'releaseId' in dados ? dados.releaseId : atual.releaseId,
     projetoId: 'projetoId' in dados ? dados.projetoId : atual.projetoId,
     manualId: 'manualId' in dados ? dados.manualId : atual.manualId,
-    softwareId: 'softwareId' in dados ? dados.softwareId : atual.softwareId,
+    softwareIds: 'softwareIds' in dados ? dados.softwareIds : atual.softwareIds,
     parceiroId: 'parceiroId' in dados ? dados.parceiroId : atual.parceiroId,
     modulo: 'modulo' in dados ? dados.modulo : atual.modulo,
     menuFuncionalidade:
@@ -494,6 +586,9 @@ export async function atualizarChamada(
     situacao: 'situacao' in dados ? dados.situacao : atual.situacao,
     descricaoCompleta:
       'descricaoCompleta' in dados ? dados.descricaoCompleta : atual.descricaoCompleta,
+    descricaoHtml: 'descricaoHtml' in dados ? dados.descricaoHtml : atual.descricaoHtml,
+    solucao: 'solucao' in dados ? dados.solucao : atual.solucao,
+    solucaoHtml: 'solucaoHtml' in dados ? dados.solucaoHtml : atual.solucaoHtml,
     manualTitulo: 'manualTitulo' in dados ? dados.manualTitulo : atual.manualTitulo,
     linkManual: 'linkManual' in dados ? dados.linkManual : atual.linkManual,
     linkVideo: 'linkVideo' in dados ? dados.linkVideo : atual.linkVideo,
@@ -508,14 +603,16 @@ export async function atualizarChamada(
     nome: atual.autorNome
   }, atual.status)
 
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       `UPDATE entregas_itens
           SET origem = ?, release_id = ?, projeto_id = ?, manual_id = ?, software_id = ?,
               parceiro_id = ?, chamada = ?, data_lancamento = ?, data_liberacao = ?,
               \`release\` = ?, titulo = ?, parceiro = ?, software = ?, modulo = ?,
               menu_funcionalidade = ?, tipo = ?, impacto = ?, situacao = ?,
-              descricao_completa = ?, manual_titulo = ?, link_manual = ?, link_video = ?,
+              descricao_completa = ?, descricao_html = ?, solucao = ?, solucao_html = ?,
+              manual_titulo = ?, link_manual = ?, link_video = ?,
               imagens = ?, tags = ?
         WHERE id = ?`,
       [
@@ -538,6 +635,9 @@ export async function atualizarChamada(
         preparada.impacto,
         preparada.situacao,
         preparada.descricaoCompleta,
+        preparada.descricaoHtml,
+        preparada.solucao,
+        preparada.solucaoHtml,
         preparada.manualTitulo,
         preparada.linkManual,
         preparada.linkVideo,
@@ -546,7 +646,10 @@ export async function atualizarChamada(
         id
       ]
     )
+    await gravarSoftwares(tx, id, preparada.softwares)
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe uma chamada com este número.', {
         erros: { chamada: 'Já existe uma chamada com este número.' }
@@ -693,7 +796,10 @@ export async function importarChamadas(
     const release = mapaReleases.get(texto(linha.releaseCodigo).toUpperCase())
     const projeto = mapaProjetos.get(texto(linha.projetoCodigo).toUpperCase())
     const manual = mapaManuais.get(texto(linha.manualCodigo).toUpperCase())
-    const software = mapaSoftwares.get(texto(linha.softwareCodigo).toUpperCase())
+    const softwareCodigos = normalizarSoftwareIds(linha.softwareCodigos)
+    const softwaresLinha = softwareCodigos
+      .map((codigo) => mapaSoftwares.get(codigo.toUpperCase()))
+      .filter((row): row is Row => Boolean(row))
     const parceiro = mapaParceiros.get(texto(linha.parceiroCodigo).toUpperCase())
 
     const erroCodigo = (campo: string, codigo: string): void => {
@@ -702,7 +808,9 @@ export async function importarChamadas(
     if (texto(linha.releaseCodigo) && !release) erroCodigo('release', texto(linha.releaseCodigo))
     if (texto(linha.projetoCodigo) && !projeto) erroCodigo('projeto', texto(linha.projetoCodigo))
     if (texto(linha.manualCodigo) && !manual) erroCodigo('manual', texto(linha.manualCodigo))
-    if (texto(linha.softwareCodigo) && !software) erroCodigo('software', texto(linha.softwareCodigo))
+    if (softwareCodigos.length && softwaresLinha.length !== softwareCodigos.length) {
+      erroCodigo('software', softwareCodigos.join('; '))
+    }
     if (texto(linha.parceiroCodigo) && !parceiro) erroCodigo('parceiro', texto(linha.parceiroCodigo))
 
     const dataLiberacao =
@@ -717,7 +825,7 @@ export async function importarChamadas(
       releaseId: release ? texto(release.id) : '',
       projetoId: projeto ? texto(projeto.id) : '',
       manualId: manual ? texto(manual.id) : '',
-      softwareId: software ? texto(software.codigo) : '',
+      softwareIds: softwareCodigos,
       parceiroId: parceiro ? texto(parceiro.id) : '',
       modulo: texto(linha.modulo),
       menuFuncionalidade: texto(linha.menuFuncionalidade),
@@ -725,6 +833,9 @@ export async function importarChamadas(
       impacto: texto(linha.impacto) as ImpactoChamada,
       situacao: 'Desenvolvimento',
       descricaoCompleta: texto(linha.descricaoCompleta),
+      descricaoHtml: '',
+      solucao: '',
+      solucaoHtml: '',
       manualTitulo: texto(linha.manualTitulo),
       linkManual: texto(linha.linkManual),
       linkVideo: texto(linha.linkVideo),
@@ -757,7 +868,7 @@ export async function importarChamadas(
       release: release ?? null,
       projeto: projeto ?? null,
       manual: manual ?? null,
-      software: software ?? null,
+      softwares: softwaresLinha,
       parceiro: parceiro ?? null,
       dataLiberacao,
       origem: derivarOrigem({
@@ -782,6 +893,7 @@ export async function importarChamadas(
   try {
     for (const preparada of preparadas) {
       await tx.query(SQL_INSERT, valoresInsert(preparada))
+      await gravarSoftwares(tx, preparada.id, preparada.softwares)
     }
     await tx.commit()
   } catch (erro) {

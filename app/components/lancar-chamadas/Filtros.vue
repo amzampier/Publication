@@ -26,7 +26,7 @@ const VAZIO: FiltrosChamada = {
   situacao: '',
   tipo: '',
   impacto: '',
-  softwareId: '',
+  softwareIds: [],
   parceiroId: '',
   origem: '',
   dataLancamentoDe: '',
@@ -35,12 +35,15 @@ const VAZIO: FiltrosChamada = {
   dataLiberacaoAte: ''
 }
 
-const rascunho = ref<FiltrosChamada>({ ...filtros.value })
+const rascunho = ref<FiltrosChamada>({
+  ...filtros.value,
+  softwareIds: [...filtros.value.softwareIds]
+})
 
 watch(
   () => props.modelValue,
   (aberto) => {
-    if (aberto) rascunho.value = { ...filtros.value }
+    if (aberto) rascunho.value = { ...filtros.value, softwareIds: [...filtros.value.softwareIds] }
   }
 )
 
@@ -155,12 +158,12 @@ const limpar = () => {
       </UiModalSection>
 
       <UiModalSection title="Software" :icon="Boxes">
-        <UiSelect
-          :model-value="rascunho.softwareId"
+        <UiMultiSelect
+          :model-value="rascunho.softwareIds"
           :options="opcoesSoftware"
-          aria-label="Filtrar por software"
+          aria-label="Filtrar por softwares"
           placeholder="Todos os softwares"
-          @update:model-value="rascunho.softwareId = String($event)"
+          @update:model-value="rascunho.softwareIds = $event as string[]"
         />
       </UiModalSection>
 

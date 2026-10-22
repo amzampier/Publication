@@ -8,7 +8,6 @@ import {
   Eye,
   FileText,
   ImagePlus,
-  Link2,
   Megaphone
 } from '@lucide/vue'
 import { useLancarChamadasModelo } from './useLancarChamadasModelo'
@@ -46,10 +45,13 @@ const vinculos = computed(() => {
   if (!props.chamada) return []
   const chamada = props.chamada
   return [
-    { rotulo: 'Release', valor: rotulo(catalogo.value.releases, chamada.releaseId) },
-    { rotulo: 'Projeto', valor: rotulo(catalogo.value.projetos, chamada.projetoId) },
-    { rotulo: 'Manual', valor: rotulo(catalogo.value.manuais, chamada.manualId) }
-  ].filter((vinculo) => vinculo.valor)
+    { rotulo: 'Release', valor: rotulo(catalogo.value.releases, chamada.releaseId) || '—' },
+    { rotulo: 'Manual', valor: rotulo(catalogo.value.manuais, chamada.manualId) || '—' },
+    {
+      rotulo: 'Escopo de Projetos',
+      valor: rotulo(catalogo.value.projetos, chamada.projetoId) || '—'
+    }
+  ]
 })
 
 const galeriaAberta = ref(false)
@@ -105,6 +107,12 @@ watch(
   >
     <div v-if="chamada" class="grid gap-4">
       <UiModalSection title="Identificação" :icon="ClipboardList">
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div v-for="vinculo in vinculos" :key="vinculo.rotulo">
+            <p class="text-[11px] font-medium text-slate-500">{{ vinculo.rotulo }}</p>
+            <p class="mt-1 text-xs text-slate-800">{{ vinculo.valor }}</p>
+          </div>
+        </div>
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div>
             <p class="text-[11px] font-medium text-slate-500">Chamada</p>
@@ -159,9 +167,18 @@ watch(
             <p class="text-[11px] font-medium text-slate-500">Parceiro</p>
             <p class="mt-1 text-xs text-slate-800">{{ chamada.parceiro || '—' }}</p>
           </div>
-          <div>
-            <p class="text-[11px] font-medium text-slate-500">Software</p>
-            <p class="mt-1 text-xs text-slate-800">{{ chamada.software || '—' }}</p>
+          <div class="sm:col-span-2 lg:col-span-3">
+            <p class="text-[11px] font-medium text-slate-500">Softwares</p>
+            <div v-if="chamada.softwares.length" class="mt-1.5 flex flex-wrap gap-1.5">
+              <span
+                v-for="software in chamada.softwares"
+                :key="software"
+                class="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-700"
+              >
+                {{ software }}
+              </span>
+            </div>
+            <p v-else class="mt-1 text-xs text-slate-500">—</p>
           </div>
           <div>
             <p class="text-[11px] font-medium text-slate-500">Módulo</p>
@@ -195,22 +212,18 @@ watch(
         </div>
       </UiModalSection>
 
-      <UiModalSection title="Vínculos" :icon="Link2">
-        <div v-if="vinculos.length" class="grid gap-4 sm:grid-cols-3">
-          <div v-for="vinculo in vinculos" :key="vinculo.rotulo">
-            <p class="text-[11px] font-medium text-slate-500">{{ vinculo.rotulo }}</p>
-            <p class="mt-1 text-xs text-slate-800">{{ vinculo.valor }}</p>
-          </div>
-        </div>
-        <p v-else class="text-xs text-slate-500">Nenhum vínculo informado.</p>
-      </UiModalSection>
-
       <UiModalSection title="Conteúdo" :icon="FileText">
         <div>
-          <p class="text-[11px] font-medium text-slate-500">Descrição completa</p>
-          <p class="mt-1 whitespace-pre-line text-xs leading-relaxed text-slate-800">
-            {{ chamada.descricaoCompleta || '—' }}
-          </p>
+          <p class="text-[11px] font-medium text-slate-500">Descrição do Resumo</p>
+          <div class="mt-1">
+            <UiRichTextViewer :html="chamada.descricaoHtml" :text="chamada.descricaoCompleta" />
+          </div>
+        </div>
+        <div>
+          <p class="text-[11px] font-medium text-slate-500">Solução</p>
+          <div class="mt-1">
+            <UiRichTextViewer :html="chamada.solucaoHtml" :text="chamada.solucao" />
+          </div>
         </div>
         <div>
           <p class="text-[11px] font-medium text-slate-500">Título do manual</p>

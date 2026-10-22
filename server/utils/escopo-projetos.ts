@@ -95,22 +95,32 @@ const COLUNAS = `p.id, p.codigo, p.nome, p.versao, p.ano,
 
 /**
  * Carrega os softwares distintos por projeto a partir de `entregas_itens`.
- * Prefere `softwares.descricao` (via `software_id`) e usa o texto do item como
- * fallback. A ordem é alfabética para a saída ser estável.
+ * Usa a junção `entregas_itens_softwares` (todos os softwares da chamada) e cai
+ * no vínculo único `software_id`/`software` para registros sem junção (legado).
+ * A ordem é alfabética para a saída ser estável.
  */
 async function carregarSoftwares(ids: string[]): Promise<Record<string, string[]>> {
   const mapa: Record<string, string[]> = {}
   if (!ids.length) return mapa
   const placeholders = ids.map(() => '?').join(', ')
   const linhas = await query<Row[]>(
-    `SELECT e.projeto_id,
+    `SELECT e.projeto_id AS projeto_id, TRIM(j.software_nome) AS nome
+       FROM entregas_itens e
+       JOIN entregas_itens_softwares j ON j.entrega_item_id = e.id
+      WHERE e.projeto_id IN (${placeholders})
+        AND TRIM(j.software_nome) <> ''
+     UNION
+     SELECT e.projeto_id AS projeto_id,
             COALESCE(NULLIF(TRIM(s.descricao), ''), NULLIF(TRIM(e.software), '')) AS nome
        FROM entregas_itens e
        LEFT JOIN softwares s ON s.codigo = e.software_id
       WHERE e.projeto_id IN (${placeholders})
+        AND NOT EXISTS (
+            SELECT 1 FROM entregas_itens_softwares x WHERE x.entrega_item_id = e.id
+        )
         AND COALESCE(NULLIF(TRIM(s.descricao), ''), NULLIF(TRIM(e.software), '')) IS NOT NULL
-      ORDER BY e.projeto_id ASC, nome ASC`,
-    ids
+      ORDER BY projeto_id ASC, nome ASC`,
+    [...ids, ...ids]
   )
   for (const linha of linhas) {
     const projeto = texto(linha.projeto_id)

@@ -35,8 +35,9 @@ telas administrativas.
 ### Requirement: A listagem apresenta as chamadas com busca, filtros, ordenação e paginação
 
 A tela SHALL listar as chamadas em `UiDataTable` com as colunas **Chamada**, **Título**, **Software**,
-**Módulo**, **Tipo**, **Impacto**, **Status**, **Data de lançamento** e **Data de liberação**. A busca SHALL operar sobre chamada, título, descrição, software, módulo, menu
-funcionalidade, parceiro, tags e código da release. A listagem SHALL ser ordenada por **chamada**
+**Módulo**, **Tipo**, **Impacto**, **Status**, **Data de lançamento** e **Data de liberação**. A busca SHALL operar sobre chamada, título, descrição, solução, software, módulo, menu
+funcionalidade, parceiro, tags e código da release. A busca SHALL operar somente sobre o texto puro das
+descrições, nunca sobre a marcação HTML. A listagem SHALL ser ordenada por **chamada**
 (crescente, com comparação numérica natural) e a paginação SHALL ocorrer no cliente. A tabela SHALL
 distinguir base vazia de conjunto filtrado sem resultados.
 
@@ -52,8 +53,13 @@ distinguir base vazia de conjunto filtrado sem resultados.
 
 #### Scenario: Busca textual
 
-- **WHEN** o usuário digita um termo que corresponde a chamada, título, software, módulo, parceiro, tag ou release
+- **WHEN** o usuário digita um termo que corresponde a chamada, título, descrição, solução, software, módulo, parceiro, tag ou release
 - **THEN** a tabela exibe apenas as chamadas correspondentes e recalcula os KPIs
+
+#### Scenario: Busca ignora a marcação
+
+- **WHEN** a descrição possui formatação (negrito, cor ou tamanho) e o usuário busca por uma palavra do texto
+- **THEN** a chamada é encontrada, e um termo de marcação como `strong` ou `span` não produz correspondência
 
 #### Scenario: Base vazia
 
@@ -70,7 +76,8 @@ distinguir base vazia de conjunto filtrado sem resultados.
 A tela SHALL oferecer um modal de filtros em **três colunas a partir de `sm`** com **Status**, **Situação**,
 **Tipo**, **Impacto**, **Software**, **Parceiro**, **Origem**, **Período de lançamento** (De/Até) e
 **Período de liberação** (De/Até), vazio = todos, além dos botões "Limpar Filtros", "Cancelar" e
-"Aplicar". Os períodos SHALL
+"Aplicar". O filtro **Software** SHALL aceitar um ou mais softwares e a chamada SHALL corresponder
+quando possuir ao menos um dos softwares selecionados. Os períodos SHALL
 ser inclusivos e comparados com as datas civis `AAAA-MM-DD`; chamadas sem data de liberação NÃO SHALL
 corresponder a um filtro de período de liberação. "Aplicar" SHALL refinar a listagem e os KPIs;
 "Limpar Filtros" SHALL zerar rascunho e estado. A toolbar SHALL indicar a quantidade de filtros
@@ -80,6 +87,11 @@ ativos.
 
 - **WHEN** o usuário seleciona filtros e aciona "Aplicar"
 - **THEN** a listagem e os KPIs passam a considerar apenas as chamadas correspondentes
+
+#### Scenario: Filtrar por múltiplos softwares
+
+- **WHEN** o usuário seleciona dois softwares no filtro e aciona "Aplicar"
+- **THEN** a listagem exibe as chamadas que possuem ao menos um dos softwares selecionados
 
 #### Scenario: Filtrar por período de lançamento
 
@@ -192,15 +204,16 @@ salvar apenas na última etapa. O indicador de etapas SHALL expor a etapa corren
 
 O formulário SHALL permitir informar **Chamada**, **Título**, **Data de lançamento**, **Data de
 liberação**, **Release**, **Projeto**, **Manual**, **Software**, **Parceiro**, **Módulo**, **Menu
-funcionalidade**, **Tipo**, **Impacto**, **Descrição completa**, **Título do manual**, **Link do
-manual**, **Link do vídeo**, **Tags** e **Imagens**. O campo **Situação**
+funcionalidade**, **Tipo**, **Impacto**, **Descrição completa**, **Solução**, **Título do manual**,
+**Link do manual**, **Link do vídeo**, **Tags** e **Imagens**. O campo **Situação**
 NÃO SHALL ser exibido no formulário; o valor existente é preservado e novas chamadas usam
 `Desenvolvimento` como valor interno. As tags SHALL ficar na etapa **Classificação**. O autor SHALL
 ser preenchido a partir da sessão e exibido somente leitura. Os campos de texto `release`, `software`
 e `parceiro` SHALL ser derivados dos catálogos selecionados, nunca digitados em paralelo. Ao
 selecionar uma Release, a **Data de liberação** SHALL ser preenchida com a `dataPublicacao` da release
 selecionada, permanecendo editável. Novas chamadas SHALL nascer com status `Revisar`; o status NÃO
-SHALL ser editável no formulário.
+SHALL ser editável no formulário. A **Descrição completa** e a **Solução** SHALL ficar na etapa
+**Conteúdo e mídias** e SHALL aceitar formatação de texto rico; a **Solução** SHALL ser opcional.
 
 #### Scenario: Nova chamada
 
@@ -230,7 +243,12 @@ SHALL ser editável no formulário.
 #### Scenario: Título do manual no conteúdo
 
 - **WHEN** o usuário abre a etapa Conteúdo e mídias
-- **THEN** o formulário exibe o campo "Título do manual" junto da descrição e dos links
+- **THEN** o formulário exibe os campos "Descrição completa", "Solução" e "Título do manual" junto dos links
+
+#### Scenario: Solução é opcional
+
+- **WHEN** o usuário preenche os demais campos obrigatórios e deixa a Solução vazia
+- **THEN** o formulário salva a chamada sem erro no campo Solução
 
 #### Scenario: Colar imagem da área de transferência
 
@@ -246,12 +264,20 @@ máximo 60 caracteres e sem duplicidade no conjunto carregado; **Título** obrig
 lançamento** obrigatória e **Data de liberação** opcional, ambas válidas e, quando preenchidas, em
 segunda-feira; links com URL `http(s)` quando informados; no máximo 12 tags, cada uma com até 30
 caracteres; imagens nos formatos PNG, JPG ou WebP, com até 5 MB por arquivo, tanto por seleção quanto
-por colagem. O primeiro erro SHALL receber foco e permanecer visível no campo.
+por colagem. A obrigatoriedade da **Descrição completa** SHALL considerar o texto puro derivado do
+conteúdo rico: uma descrição que renderiza vazia SHALL ser tratada como ausente. A **Solução**, quando
+informada, SHALL respeitar um teto de tamanho em texto puro. O primeiro erro SHALL receber foco e
+permanecer visível no campo.
 
 #### Scenario: Campos obrigatórios ausentes
 
 - **WHEN** o usuário tenta salvar sem chamada, título, software, parceiro, módulo, descrição, vínculo ou data de lançamento
 - **THEN** o formulário exibe os erros, foca o primeiro campo inválido e não grava
+
+#### Scenario: Descrição formatada vazia
+
+- **WHEN** o usuário aplica apenas formatação sem digitar texto na Descrição completa
+- **THEN** o formulário acusa a Descrição completa como obrigatória e não grava
 
 #### Scenario: Chamada duplicada
 
@@ -366,13 +392,25 @@ recalcular os KPIs.
 ### Requirement: Os detalhes exibem a chamada em modo somente leitura
 
 A tela SHALL oferecer a ação **Detalhes**, que abre um modal `xl` somente leitura com identificação,
-classificação, vínculos/origem, descrição completa, título do manual, links, tags, imagens, autor e
-timestamps. O modal SHALL fechar por `Escape`, pelo `X` ou por "Fechar".
+classificação, vínculos/origem, descrição completa, solução, título do manual, links, tags, imagens,
+autor e timestamps. A descrição e a solução SHALL ser exibidas com a formatação salva, a partir do
+HTML sanitizado, caindo para o texto puro quando não houver HTML. O modal SHALL fechar por `Escape`,
+pelo `X` ou por "Fechar".
 
 #### Scenario: Abrir detalhes
 
 - **WHEN** o usuário aciona "Detalhes" em uma chamada
 - **THEN** o modal exibe todos os dados da chamada sem campos editáveis
+
+#### Scenario: Detalhes com texto formatado
+
+- **WHEN** a chamada possui Descrição ou Solução com formatação rica
+- **THEN** o modal exibe o texto com negrito, cor e tamanho preservados
+
+#### Scenario: Detalhes de registro legado
+
+- **WHEN** a chamada não possui HTML salvo (registro anterior ou importado)
+- **THEN** o modal exibe o texto puro preservando as quebras de linha
 
 #### Scenario: Fechar detalhes
 
@@ -456,8 +494,11 @@ sem overflow horizontal na viewport.
 A tela SHALL ler e gravar as chamadas pela API, sem dataset em memória. A API SHALL listar as
 chamadas persistidas, criar com status inicial `Revisar`, editar, aprovar para `Aprovado`, recusar
 para `Recusado` e excluir somente quando o status permitir. A gravação SHALL preencher os campos de
-`entregas_itens`, incluindo `manual_titulo`, e SHALL manter os textos derivados de release, projeto,
-manual, software, parceiro, módulo e menu como snapshot da chamada. O valor de `chamada` SHALL ser
+`entregas_itens`, incluindo `manual_titulo`, `descricao_html`, `solucao` e `solucao_html`, e SHALL
+manter os textos derivados de release, projeto, manual, software, parceiro, módulo e menu como
+snapshot da chamada. O HTML recebido SHALL ser sanitizado no servidor e o texto puro de
+`descricao_completa` e `solucao` SHALL ser derivado desse HTML, preservando as quebras de linha; sem
+HTML, o servidor SHALL usar o texto puro recebido. O valor de `chamada` SHALL ser
 único; duplicatas SHALL ser rejeitadas com `409`, e registros inexistentes com `404`. Toda escrita
 SHALL gerar auditoria com o recurso e a ação correspondentes.
 
@@ -465,6 +506,16 @@ SHALL gerar auditoria com o recurso e a ação correspondentes.
 
 - **WHEN** o usuário cria uma chamada válida e recarrega a página
 - **THEN** a chamada aparece na listagem com os mesmos dados, status `Revisar` e a data de criação
+
+#### Scenario: Formatação persiste
+
+- **WHEN** o usuário salva uma chamada com Descrição ou Solução formatadas e recarrega a página
+- **THEN** o HTML sanitizado e o texto puro correspondente são relidos e a formatação é exibida novamente
+
+#### Scenario: Conteúdo malicioso é neutralizado
+
+- **WHEN** o payload de gravação contém marcação fora da allowlist (ex.: `script`, evento ou `style` não permitido)
+- **THEN** o servidor grava apenas a marcação permitida e o conteúdo executável é removido
 
 #### Scenario: Edição persiste
 
@@ -489,7 +540,8 @@ SHALL gerar auditoria com o recurso e a ação correspondentes.
 ### Requirement: O backend expõe catálogos e resolve os vínculos
 
 A API SHALL oferecer uma rota de opções com as releases, projetos, manuais, softwares e parceiros
-disponíveis. Ao criar ou editar, a API SHALL resolver os vínculos por id, derivar a origem
+disponíveis. Ao criar ou editar, a API SHALL resolver os vínculos por id, incluindo **um ou mais
+softwares por código**, derivar a origem
 (`Release`, `Projeto`, `Manual` ou `Ambos`) a partir dos vínculos, herdar a data de liberação da
 release quando ela não for informada, e rejeitar com `400` vínculos inexistentes ou incompatíveis. A resposta SHALL conter os dados necessários para a listagem, os KPIs, os detalhes e
 os relatórios.
@@ -503,6 +555,11 @@ os relatórios.
 
 - **WHEN** o usuário seleciona apenas um projeto
 - **THEN** a chamada é gravada com a origem derivada `Projeto`
+
+#### Scenario: Múltiplos softwares resolvidos
+
+- **WHEN** a chamada informa dois códigos de software existentes
+- **THEN** a API resolve ambos e grava a chamada com os dois vínculos
 
 #### Scenario: Data de liberação herdada
 
@@ -523,13 +580,18 @@ linha e coluna. O servidor SHALL revalidar as linhas e os vínculos, rejeitar pa
 contrato, limitar a importação a 500 linhas e gravar todas as linhas válidas em uma única transação.
 Linhas inválidas, duplicadas ou já cadastradas SHALL impedir a importação completa, sem gravação
 parcial. As chamadas importadas SHALL nascer com status `Revisar` e situação `Desenvolvimento`, SHALL resolver
-release, projeto, manual, software e parceiro pelos códigos da planilha, SHALL aceitar múltiplas tags
+release, projeto, manual, **um ou mais softwares separados por `;`** e parceiro pelos códigos da planilha, SHALL aceitar múltiplas tags
 separadas por `;` e NÃO SHALL importar imagens, status ou situação.
 
 #### Scenario: Importação válida
 
 - **WHEN** o usuário importa um arquivo com linhas válidas e confirma o preview
 - **THEN** todas as chamadas são criadas com status `Revisar`, situação `Desenvolvimento` e os vínculos resolvidos pelos códigos
+
+#### Scenario: Software múltiplo na planilha
+
+- **WHEN** a coluna Software da linha traz dois códigos separados por `;`
+- **THEN** a chamada é criada com os dois softwares vinculados
 
 #### Scenario: Linha já cadastrada
 
@@ -611,3 +673,78 @@ a exclusão da chamada for bloqueada pelo status ou histórico, nenhum arquivo S
 
 - **WHEN** a exclusão da chamada é recusada pelo backend
 - **THEN** nenhum arquivo de imagem é removido
+
+### Requirement: A Descrição e a Solução aceitam texto rico
+
+A etapa **Conteúdo e mídias** SHALL oferecer os campos **Descrição completa** e **Solução** com um
+editor de texto rico que permite aplicar **negrito**, **cor de fonte** e **tamanho de fonte** ao texto
+selecionado. A formatação SHALL usar somente a allowlist do design system (paleta de texto e escala de
+tamanhos); nenhuma cor ou tamanho fora da allowlist SHALL ser persistido. Ao carregar uma chamada
+existente, o editor SHALL apresentar o HTML salvo; quando não houver HTML, SHALL apresentar o texto
+puro convertido, preservando as quebras de linha. As duas representações SHALL permanecer coerentes: o
+texto puro corresponde ao conteúdo sem marcação e o HTML corresponde ao conteúdo formatado.
+
+#### Scenario: Aplicar negrito
+
+- **WHEN** o usuário seleciona um trecho da Descrição e aciona o botão de negrito
+- **THEN** o trecho passa a ser exibido em negrito e o valor salvo contém a marcação correspondente
+
+#### Scenario: Aplicar cor e tamanho
+
+- **WHEN** o usuário seleciona um trecho e escolhe uma cor ou um tamanho da lista permitida
+- **THEN** o trecho assume a cor ou o tamanho escolhidos
+
+#### Scenario: Cor fora da allowlist é descartada
+
+- **WHEN** um payload tenta gravar uma cor ou tamanho que não pertence à allowlist
+- **THEN** o valor não é persistido e a formatação inválida não é aplicada
+
+#### Scenario: Editar chamada com formatação
+
+- **WHEN** o usuário abre para editar uma chamada cuja Descrição ou Solução possui formatação
+- **THEN** o editor carrega o conteúdo formatado e uma nova edição preserva a formatação existente
+
+#### Scenario: Editar registro sem HTML
+
+- **WHEN** o usuário abre uma chamada sem HTML salvo
+- **THEN** o editor apresenta o texto puro com as quebras de linha preservadas, pronto para formatação
+
+#### Scenario: Solução vazia
+
+- **WHEN** o usuário não digita nada na Solução
+- **THEN** a Solução é gravada vazia e nenhum HTML de Solução é produzido
+
+### Requirement: A chamada vincula um ou mais softwares
+
+O cadastro e a edição SHALL permitir selecionar **um ou mais softwares** do catálogo ativo, com no
+mínimo um obrigatório. A seleção SHALL usar um campo de escolha múltipla com busca e chips. O sistema
+SHALL persistir todos os softwares da chamada em uma tabela de junção própria e SHALL manter, para
+compatibilidade, o **software principal** (o primeiro selecionado) nos campos de vínculo único
+existentes. A busca textual e a listagem SHALL considerar os nomes de **todos** os softwares da
+chamada, e os detalhes SHALL exibir a lista completa. Registros anteriores (um único software) SHALL
+ser lidos como uma lista de um item.
+
+#### Scenario: Selecionar múltiplos softwares
+
+- **WHEN** o usuário seleciona dois softwares e salva a chamada
+- **THEN** a chamada é gravada com os dois softwares e ambos aparecem na listagem e nos detalhes
+
+#### Scenario: Ao menos um software
+
+- **WHEN** o usuário tenta salvar sem nenhum software
+- **THEN** o formulário exibe o erro no campo de softwares e não grava a chamada
+
+#### Scenario: Software principal preservado
+
+- **WHEN** a chamada é gravada com mais de um software
+- **THEN** o primeiro software selecionado permanece nos campos de vínculo único, mantendo listas e relatórios existentes
+
+#### Scenario: Busca considera todos os softwares
+
+- **WHEN** o usuário busca pelo nome de um software que não é o principal da chamada
+- **THEN** a chamada correspondente é encontrada
+
+#### Scenario: Registro anterior com um software
+
+- **WHEN** uma chamada gravada antes desta mudança é aberta
+- **THEN** ela é exibida com o seu único software como uma lista de um item

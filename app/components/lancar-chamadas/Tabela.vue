@@ -45,8 +45,8 @@ const VARIANTE_STATUS: Record<
 const colunas: ColumnDef[] = [
   { id: 'chamada', header: 'Chamada', accessorKey: 'chamada', minWidth: 120 },
   { id: 'titulo', header: 'Título', accessorKey: 'titulo', minWidth: 250 },
-  { id: 'software', header: 'Software', accessorKey: 'software', minWidth: 140 },
-  { id: 'modulo', header: 'Módulo', accessorKey: 'modulo', minWidth: 120 },
+  { id: 'software', header: 'Softwares', accessorKey: 'software', minWidth: 160 },
+  { id: 'vinculo', header: 'Release', accessorKey: 'vinculo', minWidth: 150 },
   { id: 'tipo', header: 'Tipo', accessorKey: 'tipo', minWidth: 130 },
   { id: 'impacto', header: 'Impacto', accessorKey: 'impacto', minWidth: 100 },
   { id: 'status', header: 'Status', accessorKey: 'status', minWidth: 110 },
@@ -161,6 +161,20 @@ const acionar = (id: string, linha: LinhaChamada) => {
         <UiBadge :variant="VARIANTE_STATUS[value as StatusChamada]" size="sm" :show-icon="false">
           {{ value }}
         </UiBadge>
+      </template>
+
+      <template #cell(software)="{ row }">
+        <div class="flex flex-col gap-0.5 whitespace-normal">
+          <span v-for="nome in row.softwares" :key="nome">{{ nome }}</span>
+          <span v-if="!row.softwares.length" class="text-slate-400">—</span>
+        </div>
+      </template>
+
+      <template #cell(vinculo)="{ row }">
+        <div class="flex flex-col gap-0.5 whitespace-normal font-mono text-[10px] text-slate-600">
+          <span v-for="codigo in row.vinculos" :key="codigo">{{ codigo }}</span>
+          <span v-if="!row.vinculos.length" class="text-slate-400">—</span>
+        </div>
       </template>
 
       <template #cell(dataLancamentoIso)="{ row }">

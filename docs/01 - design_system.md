@@ -45,6 +45,8 @@
 - [5.22 UiPagination](#522-uipagination--seção-22-do-design) (seção 22)
 - [5.23 UiActionMenu](#523-uiactionmenu--seção-23-do-design) (seção 23)
 - [5.24 UiTagInput](#524-uitaginput--seção-24-do-design) (seção 24)
+- [5.25 UiRichText](#525-uirichtext--seção-25-do-design) (seção 25)
+- [5.26 UiMultiSelect](#526-uimultiselect--seção-26-do-design) (seção 26)
 
 ## 1. Princípios & Tipografia
 
@@ -103,6 +105,8 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 > **Regra:** componentes não introduzem hex divergente para estados compartilhados. O cabeçalho da `DataTable` usa o token `brand.primary` (`#112051`) — ver [5.11](#511-datatable--seção-13-do-design). O `Kpi` aceita `cor` livre mas recomenda-se um dos 8 tokens acima.
 >
 > **Accent em chrome escuro:** `#4ed813` é reservado a fundos escuros (chips e ícones sobre o navy da sidebar). Sobre superfícies claras use `#1a9e07` (foco, bordas e divisórias) e `#0f7a06` (texto) — nunca `#4ed813` puro sobre branco (1,88:1).
+>
+> **Texto rico (conteúdo):** os campos `UiRichText`/`UiRichTextViewer` (§5.25) usam uma allowlist de cores de **conteúdo** em `shared/rich-text.ts` (sem cor, `#112051`, `#0364f7`, `#0f7a06`, `#047857`, `#dc2626`, `#be123c`, `#92400e`, `#334155`) e tamanhos relativos (`0.9em`, `1em`, `1.15em`, `1.3em`). O **vermelho de conteúdo** `#dc2626` é distinto do vermelho de **erro** `#be123c` (`rose-700`) usado em validação.
 
 ### 2.2 Foco canônico verde `#1a9e07`
 
@@ -1039,6 +1043,8 @@ interface ColumnDef<T = any> {
 - **Teclado:** `Enter` insere quebra de linha (comportamento nativo do `<textarea>` — não
   avança campo nem submete formulário) e `Tab` sai do campo para o próximo focável.
 - **Sem emits próprios:** apenas `update:modelValue`. Sem slots além de `labelRight`.
+- **Texto rico:** para conteúdo com negrito, cor e tamanho de fonte, use `UiRichText` (§5.25), que
+  reproduz este mesmo DNA visual e é sanitizado no servidor.
 - **Espelhamento:** seção 19 do `/design` — um campo de demonstração com `v-model` e outro
   fixado em erro para conferir o recorte, o ícone e a mensagem acessível.
 
@@ -1202,3 +1208,65 @@ kit; espelhado em `docs/09`)
 - **Visual:** container `min-h-[34px]` com chips `rounded-md border-lime-300 bg-lime-50 text-lime-900`; foco com recorte inferior `brand-focus`; erro com recorte inferior `rose-700` e `AlertCircle`; sem contorno na borda superior/laterais.
 - **Acessibilidade:** lista de chips com rótulo, botões de remoção nomeados, mensagem de erro em `role="alert"` e `aria-describedby`; limite comunicado por `role="status"`.
 - **Espelhamento:** seção 24 do `/design` — exemplos habilitado, erro, limite e desabilitado.
+
+### 5.25 UiRichText — seção 25 do `/design`
+
+**Arquivos:** `app/components/ui/RichText.client.vue` (editor, auto-import `UiRichText`),
+`app/components/ui/RichTextViewer.vue` (leitor, auto-import `UiRichTextViewer`) e
+`app/components/rich-text/Toolbar.vue` (toolbar interna, não é componente do kit).
+**Allowlist:** `shared/rich-text.ts` — cores e tamanhos permitidos.
+
+| Prop (`UiRichText`) | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `string` | `''` | HTML do conteúdo (`v-model`) |
+| `label` | `string` | `''` | Rótulo acima do campo (associado por `useId()` → `for`) |
+| `placeholder` | `string` | `''` | Texto exibido apenas com o conteúdo vazio |
+| `disabled` | `boolean` | `false` | Campo não editável (fundo `slate-200`, `opacity-60`) |
+| `error` | `string` | `''` | Erro canônico (ícone + tooltip + `role="alert"`) |
+| `minHeight` | `number` | `70` | Altura mínima do conteúdo, em pixels |
+
+- **Emits:** `update:modelValue(html: string)` e `update:text(textoPuro: string)` — o texto puro é a base da validação do formulário.
+- **Formatação:** **negrito**, **cor de fonte** e **tamanho de fonte** (`StarterKit` restrito a
+  `bold`/`paragraph`/`hardBreak`/`undoRedo` + `TextStyle`/`Color`/`FontSize`). Atalho `Ctrl` + `B`.
+- **Toolbar:** aparece acoplada ao campo no hover/foco (sempre visível no toque) e em uma **bubble**
+  flutuante sobre a seleção, com nome acessível e `aria-pressed` no negrito.
+- **Visual:** mesmo DNA do `UiTextarea` (§5.18) — foco recortado `.ds-bottom-clip` em `brand-focus`,
+  erro `rose-700` com `AlertCircle` e mensagem `sr-only`. Conteúdo em `.ds-rich-text` (parágrafos
+  compactos), definido em `app/assets/css/main.css`.
+- **Segurança:** o HTML é **sanitizado no servidor** (`server/utils/richText.ts`) por allowlist antes
+  de persistir; o texto puro é derivado do HTML. O `UiRichTextViewer` renderiza o HTML sanitizado e
+  cai no texto puro quando não há HTML.
+- **Pendência de fallback:** registros antigos/importados não têm HTML — o viewer usa o texto puro com
+  `whitespace-pre-line`.
+- **Espelhamento:** seção 25 do `/design` — exemplos habilitado, erro/desabilitado e a leitura.
+
+### 5.26 UiMultiSelect — seção 26 do `/design`
+
+**Arquivo:** `app/components/ui/MultiSelect.vue`
+
+| Prop | Tipo | Default | Descrição |
+| :--- | :--- | :--- | :--- |
+| `modelValue` | `(string \| number)[]` | `[]` | Valores selecionados (`v-model`) |
+| `options` | `SelectOption[]` | `[]` | Catálogo (`value`, `label`, `badge?`, `description?`) |
+| `label` | `string` | `''` | Rótulo acima do campo (`useId()` → `for`) |
+| `placeholder` | `string` | `'Selecione uma ou mais opções...'` | Texto sem seleção |
+| `searchPlaceholder` | `string` | `'Digitar para pesquisar...'` | Placeholder da busca interna |
+| `disabled` | `boolean` | `false` | Fundo `slate-200`, opacidade reduzida, sem foco |
+| `leftIcon` | `Component` | `null` | Ícone à esquerda do campo |
+| `helperText` | `string` | `''` | Texto auxiliar abaixo do campo |
+| `error` | `string` | `''` | Erro canônico (ícone + tooltip + região viva) |
+| `ariaLabel` | `string` | `''` | Nome acessível quando não há label visível |
+
+- **Emits:** `update:modelValue(valores: Array<string | number>)` e `change(valores)`.
+- **Seleção:** os itens escolhidos viram **chips removíveis** dentro do campo; clicar numa opção
+  alterna a seleção e mantém a lista aberta.
+- **Busca:** filtra as opções por texto, insensível a acentos e maiúsculas; a lista informa quando não
+  há correspondência.
+- **Teclado:** `Enter`/`Space`/setas abrem; setas navegam; `Enter` alterna; `Escape` fecha;
+  `Backspace` com a busca vazia remove o último chip.
+- **Acessibilidade:** gatilho `role="combobox"` com `aria-expanded`/`aria-controls`/`aria-activedescendant`;
+  lista `role="listbox"` com `aria-multiselectable="true"` e opções `aria-selected`; erro em
+  `role="alert"` associado por `aria-describedby`.
+- **Visual:** mesmo DNA do `UiSelect` (§5.7) — foco recortado `.ds-bottom-clip` em `brand-focus`, erro
+  `rose-700` com `AlertCircle`; altura mínima `34px` com chips.
+- **Espelhamento:** seção 26 do `/design` — exemplo habilitado e outro desabilitado em erro.

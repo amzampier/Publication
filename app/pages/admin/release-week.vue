@@ -24,7 +24,9 @@ const {
 } = useReleaseWeekModelo()
 
 onMounted(async () => {
-  const ok = await carregarSemanas()
+  // Entrar na página sempre rebusca as releases e invalida o cache de itens:
+  // o status dos itens pode ter mudado em "Lançar as Chamadas" (aprovação/recusa).
+  const ok = await carregarSemanas(true)
   carregando.value = false
   if (!ok) {
     toast.danger(

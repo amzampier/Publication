@@ -13,6 +13,7 @@ import {
   type FiltrosChamada,
   type ImpactoChamada,
   type LinhaImportacaoChamada,
+  type OpcaoChamada,
   type OrigemChamada,
   type StatusChamada,
   type TipoChamada,
@@ -25,11 +26,18 @@ import {
 
 export * from './validadores'
 
+/** Código (sigla) de um vínculo a partir do catálogo carregado. */
+const codigoVinculo = (lista: OpcaoChamada[], id: string): string =>
+  lista.find((opcao) => opcao.id === id)?.sigla ?? ''
+
 export interface LinhaChamada {
   id: string
   chamada: string
   titulo: string
   software: string
+  softwares: string[]
+  vinculo: string
+  vinculos: string[]
   modulo: string
   tipo: TipoChamada
   impacto: ImpactoChamada
@@ -46,7 +54,7 @@ const FILTROS_VAZIOS: FiltrosChamada = {
   situacao: '',
   tipo: '',
   impacto: '',
-  softwareId: '',
+  softwareIds: [],
   parceiroId: '',
   origem: '',
   dataLancamentoDe: '',
@@ -109,21 +117,31 @@ export const useLancarChamadasModelo = () => {
   )
 
   const linhas = computed<LinhaChamada[]>(() =>
-    chamadasFiltradas.value.map((chamada) => ({
-      id: chamada.id,
-      chamada: chamada.chamada,
-      titulo: chamada.titulo,
-      software: chamada.software,
-      modulo: chamada.modulo,
-      tipo: chamada.tipo,
-      impacto: chamada.impacto,
-      status: chamada.status,
-      dataLancamento: formatarData(chamada.dataLancamento),
-      dataLiberacao: formatarData(chamada.dataLiberacao),
-      dataLancamentoIso: chamada.dataLancamento,
-      dataLiberacaoIso: chamada.dataLiberacao,
-      origem: chamada.origem
-    }))
+    chamadasFiltradas.value.map((chamada) => {
+      const vinculos = [
+        codigoVinculo(catalogo.value.releases, chamada.releaseId),
+        codigoVinculo(catalogo.value.manuais, chamada.manualId),
+        codigoVinculo(catalogo.value.projetos, chamada.projetoId)
+      ].filter(Boolean)
+      return {
+        id: chamada.id,
+        chamada: chamada.chamada,
+        titulo: chamada.titulo,
+        software: chamada.softwares.join(', '),
+        softwares: [...chamada.softwares],
+        vinculo: vinculos.join(' · '),
+        vinculos,
+        modulo: chamada.modulo,
+        tipo: chamada.tipo,
+        impacto: chamada.impacto,
+        status: chamada.status,
+        dataLancamento: formatarData(chamada.dataLancamento),
+        dataLiberacao: formatarData(chamada.dataLiberacao),
+        dataLancamentoIso: chamada.dataLancamento,
+        dataLiberacaoIso: chamada.dataLiberacao,
+        origem: chamada.origem
+      }
+    })
   )
 
   const kpis = computed(() => calcularKpis(chamadasFiltradas.value))
@@ -135,7 +153,7 @@ export const useLancarChamadasModelo = () => {
         filtros.value.situacao,
         filtros.value.tipo,
         filtros.value.impacto,
-        filtros.value.softwareId,
+        filtros.value.softwareIds.length,
         filtros.value.parceiroId,
         filtros.value.origem,
         filtros.value.dataLancamentoDe,

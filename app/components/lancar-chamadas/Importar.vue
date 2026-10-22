@@ -73,7 +73,7 @@ const paraImportacao = (linha: LinhaImportacaoChamadaPreview): LinhaImportacaoCh
   releaseCodigo: linha.releaseCodigo,
   projetoCodigo: linha.projetoCodigo,
   manualCodigo: linha.manualCodigo,
-  softwareCodigo: linha.softwareCodigo,
+  softwareCodigos: linha.softwareCodigos,
   parceiroCodigo: linha.parceiroCodigo,
   modulo: linha.modulo,
   menuFuncionalidade: linha.menuFuncionalidade,
@@ -138,7 +138,13 @@ const colunas: ColumnDef[] = [
     format: (valor) => formatarData(String(valor ?? ''))
   },
   { id: 'releaseCodigo', header: 'Release', accessorKey: 'releaseCodigo', minWidth: 120 },
-  { id: 'softwareCodigo', header: 'Software', accessorKey: 'softwareCodigo', minWidth: 110 },
+  {
+    id: 'softwareCodigos',
+    header: 'Softwares',
+    accessorKey: 'softwareCodigos',
+    minWidth: 140,
+    format: (val: string[]) => (Array.isArray(val) ? val.join('; ') : String(val ?? ''))
+  },
   { id: 'parceiroCodigo', header: 'Parceiro', accessorKey: 'parceiroCodigo', minWidth: 110 },
   { id: 'resultado', header: 'Resultado', accessorKey: 'situacaoImportacao', minWidth: 165 },
   { id: 'motivo', header: 'Motivo', accessorKey: 'motivo', minWidth: 220 }

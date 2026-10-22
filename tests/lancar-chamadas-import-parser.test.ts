@@ -13,7 +13,10 @@ const catalogos: CatalogosChamada = {
   ],
   projetos: [{ id: 'pe-1', label: 'PE-2026.01', sigla: 'PE-2026.01' }],
   manuais: [{ id: 'man-1', label: 'MAN-10/2026', sigla: 'MAN-10/2026' }],
-  softwares: [{ id: 'SFT-001', label: 'Teorema ERP', sigla: 'SFT-001' }],
+  softwares: [
+    { id: 'SFT-001', label: 'Teorema ERP', sigla: 'SFT-001' },
+    { id: 'SFT-002', label: 'Arquivos Digitais - SPED', sigla: 'SFT-002' }
+  ],
   parceiros: [{ id: 'par-1', label: 'Grupo Andrade', sigla: 'PAR-001' }]
 }
 
@@ -46,9 +49,27 @@ describe('classificarLinhasChamadas', () => {
     expect(resultado?.dataLancamento).toBe('2026-10-19')
     expect(resultado?.dataLiberacao).toBe('2026-10-26')
     expect(resultado?.releaseCodigo).toBe('RW-43/2026')
-    expect(resultado?.softwareCodigo).toBe('SFT-001')
+    expect(resultado?.softwareCodigos).toEqual(['SFT-001'])
     expect(resultado?.parceiroCodigo).toBe('PAR-001')
     expect(resultado?.tags).toEqual(['fiscal', 'nf-e'])
+  })
+
+  it('resolve múltiplos softwares separados por ponto e vírgula', () => {
+    const [multiplos] = classificarLinhasChamadas(
+      [linha({ software: 'SFT-001; SFT-002' })],
+      [],
+      catalogos
+    )
+    expect(multiplos?.situacaoImportacao).toBe('pronto')
+    expect(multiplos?.softwareCodigos).toEqual(['SFT-001', 'SFT-002'])
+
+    const [invalido] = classificarLinhasChamadas(
+      [linha({ software: 'SFT-001; SFT-999' })],
+      [],
+      catalogos
+    )
+    expect(invalido?.situacaoImportacao).toBe('invalido')
+    expect(invalido?.motivo).toMatch(/software/i)
   })
 
   it('marca chamada já cadastrada e repetida no arquivo', () => {

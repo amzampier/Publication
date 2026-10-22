@@ -127,7 +127,13 @@ export function classificarLinhasChamadas(
     const release = resolverOpcao(mapaReleases, bruta.release)
     const projeto = resolverOpcao(mapaProjetos, bruta.projeto)
     const manual = resolverOpcao(mapaManuais, bruta.manual)
-    const software = resolverOpcao(mapaSoftwares, bruta.software)
+    const codigosSoftware = bruta.software
+      .split(';')
+      .map((codigo) => codigo.trim())
+      .filter(Boolean)
+    const softwaresResolvidos = codigosSoftware.map((codigo) =>
+      resolverOpcao(mapaSoftwares, codigo)
+    )
     const parceiro = resolverOpcao(mapaParceiros, bruta.parceiro)
     const tipo = canonico(bruta.tipo, TIPOS_CHAMADA) as TipoChamada
     const impacto = canonico(bruta.impacto, IMPACTOS_CHAMADA) as ImpactoChamada
@@ -152,10 +158,12 @@ export function classificarLinhasChamadas(
     if (!release && bruta.release.trim()) motivos.push('Release não encontrada.')
     if (!projeto && bruta.projeto.trim()) motivos.push('Projeto não encontrado.')
     if (!manual && bruta.manual.trim()) motivos.push('Manual não encontrado.')
-    if (!software && bruta.software.trim()) motivos.push('Software não encontrado.')
+    if (codigosSoftware.length && softwaresResolvidos.some((opcao) => !opcao)) {
+      motivos.push('Software não encontrado.')
+    }
     if (!parceiro && bruta.parceiro.trim()) motivos.push('Parceiro não encontrado.')
     if (!release && !projeto && !manual) motivos.push('Selecione ao menos uma release, projeto ou manual.')
-    if (!software) motivos.push('Selecione o software.')
+    if (!codigosSoftware.length) motivos.push('Selecione o software.')
     if (!parceiro) motivos.push('Selecione o parceiro.')
     if (!bruta.modulo.trim()) motivos.push('Informe o menu.')
     else if (bruta.modulo.trim().length > 100) motivos.push('O menu deve ter no máximo 100 caracteres.')
@@ -178,7 +186,9 @@ export function classificarLinhasChamadas(
       releaseCodigo: codigoOpcao(release),
       projetoCodigo: codigoOpcao(projeto),
       manualCodigo: codigoOpcao(manual),
-      softwareCodigo: codigoOpcao(software),
+      softwareCodigos: softwaresResolvidos
+        .map((opcao) => codigoOpcao(opcao))
+        .filter(Boolean),
       parceiroCodigo: codigoOpcao(parceiro),
       modulo: bruta.modulo.trim(),
       menuFuncionalidade: bruta.menuFuncionalidade.trim(),

@@ -83,6 +83,7 @@ export const useReleaseWeekModelo = () => {
     if (carregado.value && !forcar) return true
     if (carregando.value) return false
     carregando.value = true
+    if (forcar) itensPorRelease.value = {}
     try {
       const lista = await useApiFetch<ReleaseWeekModelo[]>('/api/release-week')
       semanas.value = Array.isArray(lista) ? lista : []
