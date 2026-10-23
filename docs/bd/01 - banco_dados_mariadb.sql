@@ -531,10 +531,12 @@ CREATE TABLE anexos_midias (
         ON UPDATE CASCADE,
     KEY idx_midias_entrega_item (entrega_item_id),
     KEY idx_midias_manual (manual_id),
+    UNIQUE KEY uk_midias_item_url (entrega_item_id, url_arquivo),
+    KEY idx_midias_url (url_arquivo(191)),
     KEY idx_midias_ordem_item (entrega_item_id, ordem_exibicao),
     KEY idx_midias_ordem_manual (manual_id, ordem_exibicao),
     KEY idx_midias_criado_em (criado_em DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci COMMENT='Tabela relacional de imagens com CASCADE para exclusão limpa';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci COMMENT='Tabela relacional de imagens (chamadas e manuais) com CASCADE para exclusão limpa';
 
 -- =========================================================================
 -- 18. LOGS DE AUDITORIA IMUTÁVEIS (COM FK PARA USUÁRIOS)

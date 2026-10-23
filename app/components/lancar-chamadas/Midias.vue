@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { ImagePlus, Trash2 } from '@lucide/vue'
+import { MAX_IMAGENS_CHAMADA } from './validadores'
 
 interface Props {
   imagens: string[]
@@ -88,14 +89,20 @@ const incorporarArquivos = async (
     aviso.value = `Não foi possível adicionar: ${invalidos.join(', ')}. Use PNG, JPG ou WebP com até 5 MB.`
   }
 
-  if (validos.length > 0) {
+  const disponiveis = Math.max(0, MAX_IMAGENS_CHAMADA - props.imagens.length)
+  const aceitos = validos.slice(0, disponiveis)
+  if (validos.length > aceitos.length) {
+    aviso.value = `Limite de ${MAX_IMAGENS_CHAMADA} imagens por chamada.`
+  }
+
+  if (aceitos.length > 0) {
     try {
-      const novas = await Promise.all(validos.map(lerComoDataUrl))
+      const novas = await Promise.all(aceitos.map(lerComoDataUrl))
       emit('update:imagens', [...props.imagens, ...novas])
       sucesso.value =
         origem === 'colagem'
-          ? `${validos.length} imagem(ns) colada(s) da área de transferência.`
-          : `${validos.length} imagem(ns) selecionada(s) para inclusão.`
+          ? `${aceitos.length} imagem(ns) colada(s) da área de transferência.`
+          : `${aceitos.length} imagem(ns) selecionada(s) para inclusão.`
     } catch {
       aviso.value = 'Não foi possível ler uma das imagens.'
     }
@@ -194,7 +201,8 @@ const remover = (indice: number) => {
         <ImagePlus class="h-4 w-4 text-brand-structure" aria-hidden="true" />
         <p class="text-xs font-medium text-slate-700">Imagens de evidência</p>
         <span class="text-[10px] text-slate-400">
-          {{ imagens.length }} {{ imagens.length === 1 ? 'imagem' : 'imagens' }}
+          {{ imagens.length }}/{{ MAX_IMAGENS_CHAMADA }}
+          {{ imagens.length === 1 ? 'imagem' : 'imagens' }}
         </span>
       </div>
 
@@ -237,7 +245,7 @@ const remover = (indice: number) => {
         ref="uploadRef"
         :key="uploadKey"
         rotulo="Adicionar imagens de evidência"
-        dica="PNG, JPG ou WebP — até 5 MB por arquivo"
+        dica="PNG, JPG ou WebP — até 5 MB por arquivo e 100 imagens por chamada"
         aceitar="image/png,image/jpeg,image/webp"
         multiple
         :mostrar-camera="false"

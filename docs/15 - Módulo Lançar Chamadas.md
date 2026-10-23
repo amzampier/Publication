@@ -47,8 +47,8 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 - **Visibilidade no portal:** uma chamada em `Publicado` só aparece na Área Pública quando ao menos
   um vínculo aponta para conteúdo pai com status `Publicado` e não arquivado. A Esteira mostra
   **Aguardando pai** para `Publicar` e habilita "No Portal" para `Publicado`.
-- **Fora de escopo:** Arquivar, Área Pública, `anexos_midias`, importação de imagens pela planilha e
-  limpeza de uploads órfãos de writes cancelados.
+- **Fora de escopo:** Arquivar, Área Pública, importação de imagens pela planilha e limpeza de uploads
+  órfãos de writes cancelados.
 
 ## 2. Estrutura da página
 
@@ -203,6 +203,7 @@ interface ChamadaModelo {
   linkManual: string
   linkVideo: string
   imagens: string[]
+  midias: { id: string; url: string; alt: string; ordem: number; capa: boolean; mime: string; bytes: number | null }[]
   status: 'Revisar' | 'Aprovado' | 'Recusado' | 'Publicar' | 'Publicado'
   tags: string[]
   temHistorico: boolean
@@ -230,7 +231,7 @@ interface ChamadaModelo {
 | `solucao` / `solucao_html` | Solução opcional: texto puro + HTML sanitizado |
 | `manual_titulo` | Texto opcional, ≤255 |
 | `link_manual` / `link_video` | URL http(s) opcional |
-| `tags` / `imagens` | JSON arrays |
+| `tags` / `imagens` | `tags` em JSON; imagens em `anexos_midias` (a coluna JSON `imagens` permanece como snapshot legado nesta fase) |
 | `status` | `Revisar` na criação; `Aprovado`/`Recusado` nas ações; `Publicar`/`Publicado` na publicação pela Esteira/cascata do pai |
 | `criado_em` / `atualizado_em` | Timestamps do banco |
 
@@ -278,12 +279,16 @@ interface ChamadaModelo {
   derivados de `data_lancamento`.
 - Destino físico: `uploads/chamadas/<ano>/<mes>/`; URL pública:
   `/uploads/chamadas/<ano>/<mes>/<arquivo>`.
-- Formatos PNG/JPEG/WebP/GIF, até 5 MB; o servidor valida magic bytes e deriva a extensão segura.
-- As URLs são persistidas em `entregas_itens.imagens` (JSON) e permanecem após o F5.
-- Na edição, imagens retiradas do array têm o arquivo removido após o commit; na exclusão, as
-  imagens da chamada são removidas após o commit.
+- Formatos PNG/JPEG/WebP/GIF, até 5 MB e no máximo 100 imagens por chamada; o servidor valida magic
+  bytes e deriva a extensão segura.
+- As imagens são persistidas em `anexos_midias` (uma linha por imagem, com ordem, capa, nome e MIME);
+  a API devolve `midias` e mantém `imagens` como lista derivada de URLs. O JSON
+  `entregas_itens.imagens` permanece como snapshot legado até a change de limpeza.
+- Na edição, imagens retiradas do array têm a linha removida e o arquivo apagado após o commit; na
+  exclusão, as linhas são removidas por `ON DELETE CASCADE` e os arquivos após o commit.
 - A limpeza é best-effort, só atua em `/uploads/chamadas/`, preserva arquivos referenciados por outra
-  chamada e não remove nada quando a exclusão é bloqueada.
+  chamada (consulta indexada em `anexos_midias.url_arquivo`) e não remove nada quando a exclusão é
+  bloqueada.
 - Uploads cancelados/falhos podem deixar arquivos órfãos; a limpeza não faz parte desta change.
 
 ## 8. Fluxos
@@ -330,7 +335,7 @@ interface ChamadaModelo {
   e a desaprovação a limpa.
 - Links: `http(s)` quando informados.
 - Tags: até 12, cada uma até 30 caracteres, sem duplicatas.
-- Imagens: até 20 URLs, PNG/JPG/WebP/GIF até 5 MB cada.
+- Imagens: até 100, PNG/JPG/WebP/GIF até 5 MB cada.
 - Novo status `Revisar`; status não editável no formulário.
 - Exclusão bloqueada quando `status !== 'Revisar'` ou houver histórico na esteira.
 - Aprovação/recusa bloqueadas quando o status não é `Revisar` (incluindo `Publicar` e `Publicado`);
@@ -376,6 +381,6 @@ como legado e não é usada pela UI.
 
 - Ação **Arquivar** e coluna correspondente (decisão de schema).
 - **Área Pública** e exposição das chamadas.
-- **`anexos_midias`** e galeria rica (a tabela existe, mas o módulo usa `imagens` JSON).
+- **Galeria rica** (edição de legenda/capa e miniaturas) e a UI da Área Pública.
 - Limpeza de uploads órfãos de chamadas canceladas/falhas após o upload.
 - Evolução para filtros/paginação server-side se o volume crescer.

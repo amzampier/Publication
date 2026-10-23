@@ -13,6 +13,11 @@ import {
 } from './historico-esteira'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import {
+  carregarMidiasPorItem,
+  sincronizarMidias,
+  urlReferenciadaPorOutraChamada
+} from './midias'
+import {
   statusRevisaoDoPai,
   validarParecer,
   type TipoVinculo
@@ -27,6 +32,7 @@ import {
   type CatalogosChamada,
   type ChamadaModelo,
   type EntradaChamada,
+  type ImagemChamada,
   type ImpactoChamada,
   type OpcaoChamada,
   type OrigemChamada,
@@ -131,7 +137,11 @@ async function carregarSoftwaresPorItem(ids: string[]): Promise<Map<string, Soft
   return mapa
 }
 
-const montarChamada = (row: Row, softwares?: SoftwareItem[]): ChamadaModelo => {
+const montarChamada = (
+  row: Row,
+  softwares?: SoftwareItem[],
+  midias?: ImagemChamada[]
+): ChamadaModelo => {
   const status = (texto(row.status) || 'Revisar') as StatusChamada
   const listaSoftwares =
     softwares && softwares.length
@@ -167,7 +177,10 @@ const montarChamada = (row: Row, softwares?: SoftwareItem[]): ChamadaModelo => {
     manualTitulo: texto(row.manual_titulo),
     linkManual: texto(row.link_manual),
     linkVideo: texto(row.link_video),
-    imagens: normalizarImagensChamada(listaJson(row.imagens)),
+    imagens: midias && midias.length
+      ? midias.map((midia) => midia.url)
+      : normalizarImagensChamada(listaJson(row.imagens)),
+    midias: midias ?? [],
     status,
     tags: normalizarTagsChamada(listaJson(row.tags)),
     temHistorico: Number(row.tem_historico ?? 0) === 1 || status !== 'Revisar',
@@ -186,8 +199,14 @@ export async function listarChamadas(): Promise<ChamadaModelo[]> {
   const linhas = await query<Row[]>(
     `SELECT ${COLUNAS} FROM entregas_itens e ORDER BY e.chamada ASC`
   )
-  const softwares = await carregarSoftwaresPorItem(linhas.map((linha) => texto(linha.id)))
-  return linhas.map((linha) => montarChamada(linha, softwares.get(texto(linha.id))))
+  const ids = linhas.map((linha) => texto(linha.id))
+  const [softwares, midias] = await Promise.all([
+    carregarSoftwaresPorItem(ids),
+    carregarMidiasPorItem(ids)
+  ])
+  return linhas.map((linha) =>
+    montarChamada(linha, softwares.get(texto(linha.id)), midias.get(texto(linha.id)))
+  )
 }
 
 export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
@@ -197,8 +216,15 @@ export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
   )
   const linha = linhas[0]
   if (!linha) return null
-  const softwares = await carregarSoftwaresPorItem([texto(linha.id)])
-  return montarChamada(linha, softwares.get(texto(linha.id)))
+  const [softwares, midias] = await Promise.all([
+    carregarSoftwaresPorItem([texto(linha.id)]),
+    carregarMidiasPorItem([texto(linha.id)])
+  ])
+  return montarChamada(
+    linha,
+    softwares.get(texto(linha.id)),
+    midias.get(texto(linha.id))
+  )
 }
 
 export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
@@ -605,7 +631,8 @@ export async function criarChamada(
   try {
     await tx.query(SQL_INSERT, valoresInsert(preparada))
     await gravarSoftwares(tx, preparada.id, preparada.softwares)
-      await sincronizarStatusPais(tx, paisDosVinculos(vinculos), atorDeAutor(autor))
+    await sincronizarMidias(tx, preparada.id, entrada.imagens)
+    await sincronizarStatusPais(tx, paisDosVinculos(vinculos), atorDeAutor(autor))
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
@@ -710,8 +737,9 @@ export async function atualizarChamada(
       ]
     )
     await gravarSoftwares(tx, id, preparada.softwares)
+    await sincronizarMidias(tx, id, entrada.imagens)
     if (mudouVinculos) {
-    await sincronizarStatusPais(tx, paisDosVinculos(vinculos), atorDeAutor(autor))
+      await sincronizarStatusPais(tx, paisDosVinculos(vinculos), atorDeAutor(autor))
     }
     await tx.commit()
   } catch (erro) {
@@ -918,14 +946,8 @@ export async function removerImagensChamadas(urls: string[], idAtual: string): P
     if (!caminho.startsWith(`${raiz}${sep}`)) continue
 
     try {
-      const referencias = await query<Row[]>(
-        `SELECT id FROM entregas_itens
-          WHERE id <> ? AND imagens IS NOT NULL
-            AND JSON_CONTAINS(imagens, JSON_QUOTE(?))
-          LIMIT 1`,
-        [idAtual, url]
-      )
-      if (referencias.length > 0) continue
+      const referenciada = await urlReferenciadaPorOutraChamada(url, idAtual)
+      if (referenciada) continue
       await unlink(caminho)
     } catch (erro) {
       if ((erro as { code?: string } | null)?.code !== 'ENOENT') {

@@ -35,7 +35,7 @@ export const VARIANTE_STATUS_CHAMADA: Record<
 
 export const MAX_TAGS_CHAMADA = 12
 export const MAX_TAG_CHAMADA = 30
-export const MAX_IMAGENS_CHAMADA = 20
+export const MAX_IMAGENS_CHAMADA = 100
 export const LIMITE_IMPORTACAO_CHAMADAS = 500
 
 export interface OpcaoChamada {
@@ -56,6 +56,16 @@ export interface CatalogosChamada {
   manuais: OpcaoChamada[]
   softwares: OpcaoChamada[]
   parceiros: OpcaoChamada[]
+}
+
+export interface ImagemChamada {
+  id: string
+  url: string
+  alt: string
+  ordem: number
+  capa: boolean
+  mime: string
+  bytes: number | null
 }
 
 export interface ChamadaModelo {
@@ -87,6 +97,7 @@ export interface ChamadaModelo {
   linkManual: string
   linkVideo: string
   imagens: string[]
+  midias: ImagemChamada[]
   status: StatusChamada
   tags: string[]
   temHistorico: boolean
@@ -218,6 +229,22 @@ export function normalizarImagensChamada(valor: unknown): string[] {
     imagens.push(url)
   }
   return imagens
+}
+
+/** Último segmento da URL, usado como nome do arquivo na mídia. */
+export function nomeArquivoDaUrl(url: string): string {
+  const caminho = texto(url).split(/[?#]/)[0] ?? ''
+  const nome = caminho.split('/').pop() ?? ''
+  return nome || 'imagem'
+}
+
+/** MIME canônico derivado da extensão da URL (fallback PNG). */
+export function mimeDaUrl(url: string): string {
+  const nome = nomeArquivoDaUrl(url).toLowerCase()
+  if (nome.endsWith('.jpg') || nome.endsWith('.jpeg')) return 'image/jpeg'
+  if (nome.endsWith('.webp')) return 'image/webp'
+  if (nome.endsWith('.gif')) return 'image/gif'
+  return 'image/png'
 }
 
 /** Normaliza códigos de software: trim, remove vazios e deduplica. */

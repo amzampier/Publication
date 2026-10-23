@@ -201,7 +201,7 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   - **Vínculos:** Release Week, Manual e Escopo de Projetos com código, nome e status do pai;
   - **Classificação:** parceiro, softwares, módulo, menu, tipo, impacto e tags;
   - **Conteúdo:** descrição e solução com `UiRichTextViewer`, título do manual e links;
-  - **Imagens:** grade de miniaturas com link para a imagem;
+  - **Imagens:** grade de miniaturas com link para a imagem, a partir de `imagens` (lista derivada de `anexos_midias`, com fallback ao JSON legado);
   - **Histórico da esteira:** `<EsteiraHistorico>`;
   - **Informações de cadastro:** criado/atualizado.
 - Ao abrir, carrega `GET /api/esteira-revisao/:id/historico` (cache por item no modelo; invalidado

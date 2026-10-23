@@ -59,6 +59,7 @@ const base = (): ChamadaModelo => ({
   linkManual: '',
   linkVideo: '',
   imagens: [],
+  midias: [],
   status: 'Revisar',
   tags: ['fiscal'],
   temHistorico: false,

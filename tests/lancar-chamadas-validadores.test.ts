@@ -7,6 +7,9 @@ import {
   filtrarChamadas,
   formatarData,
   formatarNumero,
+  MAX_IMAGENS_CHAMADA,
+  mimeDaUrl,
+  nomeArquivoDaUrl,
   normalizarImagensChamada,
   normalizarTagsChamada,
   motivoBloqueioAprovacao,
@@ -53,6 +56,7 @@ const chamadaBase = (over: Partial<ChamadaModelo> = {}): ChamadaModelo => ({
   linkManual: '',
   linkVideo: '',
   imagens: [],
+  midias: [],
   status: 'Revisar',
   tags: ['fiscal'],
   temHistorico: false,
@@ -171,8 +175,8 @@ describe('validarChamada', () => {
     expect(normalizarImagensChamada([' /uploads/chamadas/2026/10/a.png ', '/uploads/chamadas/2026/10/a.png'])).toEqual([
       '/uploads/chamadas/2026/10/a.png'
     ])
-    const imagens = Array.from({ length: 21 }, (_, i) => `/uploads/chamadas/2026/10/${i}.png`)
-    expect(validarChamada(entradaValida({ imagens })).erros.imagens).toMatch(/20/)
+    const imagens = Array.from({ length: 101 }, (_, i) => `/uploads/chamadas/2026/10/${i}.png`)
+    expect(validarChamada(entradaValida({ imagens })).erros.imagens).toMatch(/100/)
   })
 
   it('exige a Descrição completa e aceita a Solução vazia', () => {
@@ -478,5 +482,30 @@ describe('guarda de recusa', () => {
     expect(motivoBloqueioRecusa(chamadaBase({ status: 'Publicar' }))).toMatch(/aguardando|publica/i)
     expect(podeRecusar(chamadaBase({ status: 'Publicado' }))).toBe(false)
     expect(motivoBloqueioRecusa(chamadaBase({ status: 'Publicado' }))).toMatch(/publicada/i)
+  })
+})
+
+describe('mídias da chamada', () => {
+  it('deriva nome e MIME da URL', () => {
+    expect(nomeArquivoDaUrl('/uploads/chamadas/2026/10/foto.png')).toBe('foto.png')
+    expect(nomeArquivoDaUrl('https://exemplo/foto.jpg?x=1')).toBe('foto.jpg')
+    expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.png')).toBe('image/png')
+    expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.jpg')).toBe('image/jpeg')
+    expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.jpeg')).toBe('image/jpeg')
+    expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.webp')).toBe('image/webp')
+    expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.gif')).toBe('image/gif')
+    expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.bin')).toBe('image/png')
+  })
+
+  it('aceita 100 imagens e rejeita 101', () => {
+    const urls = Array.from(
+      { length: MAX_IMAGENS_CHAMADA },
+      (_, indice) => `/uploads/chamadas/2026/10/foto-${indice}.png`
+    )
+    expect(validarChamada(entradaValida({ imagens: urls })).valido).toBe(true)
+    const excedente = [...urls, '/uploads/chamadas/2026/10/foto-100.png']
+    const resultado = validarChamada(entradaValida({ imagens: excedente }))
+    expect(resultado.valido).toBe(false)
+    expect(resultado.erros.imagens).toMatch(/100/)
   })
 })
