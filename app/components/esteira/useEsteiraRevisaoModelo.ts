@@ -51,7 +51,6 @@ export interface LinhaEsteira {
   softwares: string[]
   tipo: string
   impacto: string
-  situacao: string
   status: StatusChamada
   revisor: string
   atualizadoEm: string
@@ -181,7 +180,6 @@ export const useEsteiraRevisaoModelo = () => {
       softwares: [...item.softwares],
       tipo: item.tipo,
       impacto: item.impacto,
-      situacao: item.situacao,
       status: item.status,
       revisor: item.revisorNome || '—',
       atualizadoEm: item.atualizadoEm,

@@ -142,7 +142,7 @@ admin/manuais.vue                                   (page - definePageMeta + com
 
 - Recebe `manualId`/`codigo` e busca `GET /api/manuais/:id/itens` **sob demanda** (cache por
   manual). Exibe loading/erro (com "Tentar novamente" usando `forcar`) e estado vazio ("Nenhum item
-  vinculado a este manual."). Colunas: Chamada, Título, Software, Módulo, Tipo, Impacto, Situação,
+  vinculado a este manual."). Colunas: Chamada, Título, Software, Módulo, Tipo, Impacto,
   Status (`UiBadge`) e Data de liberação — somente leitura.
 - A API inclui `entregas_itens` com `manual_id = :id` (origem `Manual` ou `Ambos`).
 

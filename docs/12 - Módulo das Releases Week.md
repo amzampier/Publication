@@ -128,7 +128,7 @@ admin/release-week.vue                              (page - definePageMeta + com
 
 - Recebe `releaseId`/`codigo` e busca `GET /api/release-week/:id/itens` **sob demanda** (cache por
   release). Exibe loading/erro (com "Tentar novamente") e estado vazio ("Nenhum item vinculado a
-  esta release."). Colunas: Chamada, Título, Software, Módulo, Tipo, Impacto, Situação, Status
+  esta release."). Colunas: Chamada, Título, Software, Módulo, Tipo, Impacto, Status
   (`UiBadge`) e Data de liberação — somente leitura.
 
 ### 3.5 `Filtros.vue` → `<ReleaseWeekFiltros>`

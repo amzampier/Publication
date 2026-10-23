@@ -113,7 +113,7 @@ const acionar = (id: string, linha: LinhaChamada) => {
     <UiDataTable
       ref="tabelaRef"
       title="Chamadas"
-      subtitle="Itens lançados, seus vínculos e a situação de cada entrega"
+      subtitle="Itens lan&#231;ados, seus v&#237;nculos e o status de cada entrega"
       :data="linhas"
       :columns="colunas"
       :default-page-size="10"

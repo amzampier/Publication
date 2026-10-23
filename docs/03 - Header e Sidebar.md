@@ -234,12 +234,13 @@ Observações:
   `/admin/esteira-revisao`, e Lançar as Chamadas, em `/admin/lancar-chamadas`), **cadastros de apoio**
   e **administração/governança**.
 - **Itens com rota:** todos os itens desta árvore declaram `to` e navegam ao clique. A Esteira de
-  Revisão passou a navegar para `/admin/esteira-revisao` (change `construir-esteira-revisao`),
-  encerrando o último item sem rota da sidebar. O comportamento genérico de item sem rota
-  (`toast.info` "Módulo em construção.", spec `design-system/layout-navigation`) permanece disponível
-  para itens futuros, mas nenhum item atual o utiliza. O menu da conta fica fora do aviso:
-  "Meu Perfil" navega para `/admin/meu-perfil` (como os itens com rota) e "Encerrar Sessão" mantém
-  seu comportamento próprio (fecho de sessão).
+  Revisão passou a navegar para `/admin/esteira-revisao` (change `construir-esteira-revisao`) e o
+  item raiz **Painel Executivo** passou a navegar para `/admin` (change
+  `construir-painel-executivo`), encerrando os itens sem rota da sidebar. O comportamento genérico
+  de item sem rota (`toast.info` "Módulo em construção.", spec
+  `design-system/layout-navigation`) permanece disponível para itens futuros, mas nenhum item atual
+  o utiliza. O menu da conta fica fora do aviso: "Meu Perfil" navega para `/admin/meu-perfil` (como
+  os itens com rota) e "Encerrar Sessão" mantém seu comportamento próprio (fecho de sessão).
 - **Cores dos ícones (`SidebarItem.cor`)** — o ícone fica colorido sempre e o hover da opção pinta
   rótulo/ícone com a mesma cor (`.ds-item-hover` + `--item-cor` em
   [`app/assets/css/main.css`](../app/assets/css/main.css)). As cores no config são **cheias** (mesma

@@ -51,7 +51,6 @@ const base = (): ChamadaModelo => ({
   menuFuncionalidade: 'Notas',
   tipo: 'Correção',
   impacto: 'Médio',
-  situacao: 'Desenvolvimento',
   descricaoCompleta: 'Descrição da chamada',
   descricaoHtml: '',
   solucao: '',

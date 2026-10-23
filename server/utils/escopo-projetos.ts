@@ -222,7 +222,7 @@ export async function listarItensEscopo(id: string): Promise<ItemProjeto[]> {
 
   const linhas = await query<Row[]>(
     `SELECT id, projeto_id, chamada, titulo, software, modulo, tipo, impacto,
-            situacao, status, data_liberacao
+            status, data_liberacao
        FROM entregas_itens
       WHERE projeto_id = ?
       ORDER BY chamada ASC`,
@@ -237,7 +237,6 @@ export async function listarItensEscopo(id: string): Promise<ItemProjeto[]> {
     modulo: texto(row.modulo),
     tipo: texto(row.tipo) as ItemProjeto['tipo'],
     impacto: texto(row.impacto) as ItemProjeto['impacto'],
-    situacao: texto(row.situacao) as ItemProjeto['situacao'],
     status: texto(row.status) as ItemProjeto['status'],
     dataLiberacao: dataDia(row.data_liberacao)
   }))

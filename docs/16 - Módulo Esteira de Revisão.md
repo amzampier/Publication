@@ -195,7 +195,7 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   - **Identificação:** chamada, título, status, origem, lançamento, liberação, autor, revisor e
     última decisão;
   - **Vínculos:** Release Week, Manual e Escopo de Projetos com código, nome e status do pai;
-  - **Classificação:** parceiro, softwares, módulo, menu, tipo, impacto, situação e tags;
+  - **Classificação:** parceiro, softwares, módulo, menu, tipo, impacto e tags;
   - **Conteúdo:** descrição e solução com `UiRichTextViewer`, título do manual e links;
   - **Imagens:** grade de miniaturas com link para a imagem;
   - **Histórico da esteira:** `<EsteiraHistorico>`;

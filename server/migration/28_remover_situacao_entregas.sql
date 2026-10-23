@@ -1,0 +1,27 @@
+-- =========================================================================
+-- PUBLICATION ENTERPRISE PLATFORM - MIGRATION 28_remover_situacao_entregas.sql
+-- (change remover-situacao-entregas) Remove a coluna `situacao` de
+-- entregas_itens, que nunca foi editavel na UI e nao alimenta nenhum fluxo:
+-- o formulario nao a expoe, a importacao sempre grava 'Desenvolvimento' e o
+-- fluxo real usa `status` (Revisar/Aprovado/Recusado/Publicar).
+--
+-- Excecao registrada na spec migracoes-banco: a remocao de uma coluna
+-- declarada obsoleta so e permitida com auditoria previa (apenas o valor
+-- default), `DROP COLUMN IF EXISTS` (idempotente) e rollback documentado.
+-- O indice idx_entregas_situacao cai junto com a coluna.
+-- Nao usa DROP TABLE/VIEW/DATABASE. SEM `USE` (o pool conecta em DB_NAME).
+-- =========================================================================
+ALTER TABLE entregas_itens
+    DROP COLUMN IF EXISTS situacao;
+-- =========================================================================
+-- REVERTER (ROLLBACK) - executar MANUALMENTE; remova os "-- ".
+-- Apos reverter, apague o registro:
+-- DELETE FROM _migrations WHERE nome = '28_remover_situacao_entregas.sql';
+-- =========================================================================
+-- ALTER TABLE entregas_itens
+--     ADD COLUMN IF NOT EXISTS situacao ENUM('Desenvolvimento', 'Homologação', 'Implantado')
+--     NOT NULL DEFAULT 'Desenvolvimento'
+--     COMMENT 'Fase de execução do escopo'
+--     AFTER impacto;
+-- CREATE INDEX IF NOT EXISTS idx_entregas_situacao ON entregas_itens (situacao);
+-- =========================================================================

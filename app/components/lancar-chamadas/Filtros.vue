@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import {
-  Activity,
   AlertTriangle,
   Boxes,
   CalendarDays,
@@ -23,7 +22,6 @@ const { filtros, opcoes, limparFiltros } = useLancarChamadasModelo()
 
 const VAZIO: FiltrosChamada = {
   status: '',
-  situacao: '',
   tipo: '',
   impacto: '',
   softwareIds: [],
@@ -49,9 +47,6 @@ watch(
 
 const opcoesStatus = computed(() =>
   opcoes.value.status.map((valor) => ({ value: valor, label: valor }))
-)
-const opcoesSituacao = computed(() =>
-  opcoes.value.situacoes.map((valor) => ({ value: valor, label: valor }))
 )
 const opcoesTipo = computed(() =>
   opcoes.value.tipos.map((valor) => ({ value: valor, label: valor }))
@@ -112,7 +107,7 @@ const limpar = () => {
     :model-value="modelValue"
     size="lg"
     title="Filtros de Chamadas"
-    subtitle="Status, situação, classificação, software, parceiro, origem e períodos"
+    subtitle="Status, classifica&#231;&#227;o, software, parceiro, origem e per&#237;odos"
     :icon="Funnel"
     @update:model-value="emit('update:modelValue', $event)"
   >
@@ -124,16 +119,6 @@ const limpar = () => {
           aria-label="Filtrar por status"
           placeholder="Todos os status"
           @update:model-value="rascunho.status = String($event)"
-        />
-      </UiModalSection>
-
-      <UiModalSection title="Situação" :icon="Activity">
-        <UiSelect
-          :model-value="rascunho.situacao"
-          :options="opcoesSituacao"
-          aria-label="Filtrar por situação"
-          placeholder="Todas as situações"
-          @update:model-value="rascunho.situacao = String($event)"
         />
       </UiModalSection>
 

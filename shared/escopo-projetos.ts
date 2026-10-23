@@ -6,7 +6,6 @@
 export type StatusEscopo = 'Em Andamento' | 'Homologação' | 'Concluído' | 'Publicado'
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type SituacaoItem = 'Desenvolvimento' | 'Homologação' | 'Implantado'
 export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar'
 
 export const STATUS_ESCOPO: StatusEscopo[] = [
@@ -70,7 +69,6 @@ export interface ItemProjeto {
   modulo: string
   tipo: TipoItem
   impacto: ImpactoItem
-  situacao: SituacaoItem
   status: StatusItem
   dataLiberacao: string
 }

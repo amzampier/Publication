@@ -86,7 +86,6 @@ const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done'> = {
             <th class="px-3 py-1.5 font-semibold">Módulo</th>
             <th class="px-3 py-1.5 font-semibold">Tipo</th>
             <th class="px-3 py-1.5 font-semibold">Impacto</th>
-            <th class="px-3 py-1.5 font-semibold">Situação</th>
             <th class="px-3 py-1.5 font-semibold">Status</th>
             <th class="px-3 py-1.5 font-semibold">Liberação</th>
           </tr>
@@ -99,7 +98,6 @@ const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done'> = {
             <td class="whitespace-nowrap px-3 py-1.5">{{ item.modulo }}</td>
             <td class="whitespace-nowrap px-3 py-1.5">{{ item.tipo }}</td>
             <td class="whitespace-nowrap px-3 py-1.5">{{ item.impacto }}</td>
-            <td class="whitespace-nowrap px-3 py-1.5">{{ item.situacao }}</td>
             <td class="whitespace-nowrap px-3 py-1.5">
               <UiBadge :variant="VARIANTE_STATUS[item.status]" size="sm" :show-icon="false">
                 {{ item.status }}

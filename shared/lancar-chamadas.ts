@@ -9,17 +9,11 @@ import { MAX_TEXTO_RICO } from './rich-text'
 export type OrigemChamada = 'Release' | 'Projeto' | 'Manual' | 'Ambos'
 export type TipoChamada = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoChamada = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type SituacaoChamada = 'Desenvolvimento' | 'Homologação' | 'Implantado'
 export type StatusChamada = 'Revisar' | 'Aprovado' | 'Recusado' | 'Publicar'
 
 export const ORIGENS_CHAMADA: OrigemChamada[] = ['Release', 'Projeto', 'Manual', 'Ambos']
 export const TIPOS_CHAMADA: TipoChamada[] = ['Correção', 'Melhoria', 'Nova Funcionalidade']
 export const IMPACTOS_CHAMADA: ImpactoChamada[] = ['Baixo', 'Médio', 'Alto', 'Crítico']
-export const SITUACOES_CHAMADA: SituacaoChamada[] = [
-  'Desenvolvimento',
-  'Homologação',
-  'Implantado'
-]
 export const STATUS_CHAMADA: StatusChamada[] = [
   'Revisar',
   'Aprovado',
@@ -83,7 +77,6 @@ export interface ChamadaModelo {
   menuFuncionalidade: string
   tipo: TipoChamada
   impacto: ImpactoChamada
-  situacao: SituacaoChamada
   descricaoCompleta: string
   descricaoHtml: string
   solucao: string
@@ -113,7 +106,6 @@ export interface EntradaChamada {
   menuFuncionalidade: string
   tipo: TipoChamada
   impacto: ImpactoChamada
-  situacao: SituacaoChamada
   descricaoCompleta: string
   descricaoHtml: string
   solucao: string
@@ -148,7 +140,6 @@ export interface LinhaImportacaoChamada {
 
 export interface FiltrosChamada {
   status: string
-  situacao: string
   tipo: string
   impacto: string
   softwareIds: string[]
@@ -181,7 +172,6 @@ export type CampoChamada =
   | 'dataLiberacao'
   | 'tipo'
   | 'impacto'
-  | 'situacao'
   | 'linkManual'
   | 'linkVideo'
   | 'imagens'
@@ -336,7 +326,6 @@ export function validarChamada(
     menuFuncionalidade?: unknown
     tipo?: unknown
     impacto?: unknown
-    situacao?: unknown
     descricaoCompleta?: unknown
     descricaoHtml?: unknown
     solucao?: unknown
@@ -417,11 +406,6 @@ export function validarChamada(
     erros.impacto = 'Selecione um impacto válido.'
   }
 
-  const situacao = texto(dados.situacao)
-  if (!SITUACOES_CHAMADA.includes(situacao as SituacaoChamada)) {
-    erros.situacao = 'Selecione uma situação válida.'
-  }
-
   const linkManual = texto(dados.linkManual)
   if (linkManual && !URL_HTTP.test(linkManual)) {
     erros.linkManual = 'Informe uma URL http(s) válida.'
@@ -458,7 +442,6 @@ export function validarChamada(
     'dataLiberacao',
     'tipo',
     'impacto',
-    'situacao',
     'linkManual',
     'linkVideo',
     'imagens',
@@ -475,7 +458,6 @@ export function filtrarChamadas(
 ): ChamadaModelo[] {
   return chamadas
     .filter((chamada) => !filtros.status || chamada.status === filtros.status)
-    .filter((chamada) => !filtros.situacao || chamada.situacao === filtros.situacao)
     .filter((chamada) => !filtros.tipo || chamada.tipo === filtros.tipo)
     .filter((chamada) => !filtros.impacto || chamada.impacto === filtros.impacto)
     .filter(

@@ -268,7 +268,7 @@ Release Week, Manual ou Escopo de Projetos.
 
 A tela SHALL oferecer a ação **Inspecionar**, que abre um modal `xl` somente leitura com identificação
 (chamada, título, status, origem), conteúdo (descrição completa com formatação, solução, links,
-imagens e tags), classificação (tipo, impacto, situação, módulo, software e parceiro), vínculos
+imagens e tags), classificação (tipo, impacto, módulo, software e parceiro), vínculos
 (código, nome/título e status do conteúdo pai), autor e timestamps, além do **histórico da esteira**
 do mais recente para o mais antigo, com o atual primeiro. O histórico SHALL exibir, para cada transição, o status anterior, o novo
 status, o responsável, o perfil, o parecer, os critérios de aceite, a data/hora e o tempo no estágio.

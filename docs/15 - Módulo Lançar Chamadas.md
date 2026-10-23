@@ -44,8 +44,6 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 - **Visibilidade no portal:** uma chamada em `Publicar` só aparece na Área Pública quando ao menos um
   vínculo aponta para conteúdo pai com status `Publicado`. A Esteira mostra **Aguardando pai** e
   desabilita "No Portal" enquanto o pai não estiver publicado.
-- **Situação:** `Desenvolvimento`, `Homologação` ou `Implantado`; novas chamadas usam
-  `Desenvolvimento` e o formulário não expõe o campo.
 - **Fora de escopo:** Arquivar, Área Pública, `anexos_midias`, importação de imagens pela planilha e
   limpeza de uploads órfãos de writes cancelados.
 
@@ -103,7 +101,7 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 
 ### 3.4 `Filtros.vue` → `<LancarChamadasFiltros>`
 
-- Status, Situação, Tipo, Impacto, Softwares (um ou mais), Parceiro, Origem, período de lançamento e de liberação.
+- Status, Tipo, Impacto, Softwares (um ou mais), Parceiro, Origem, período de lançamento e de liberação.
 - Rascunho isolado; “Aplicar” reflete em tabela/KPIs; “Limpar Filtros” zera; “Cancelar” descarta.
 
 ### 3.5 `Formulario.vue` → `<LancarChamadasFormulario>`
@@ -194,7 +192,6 @@ interface ChamadaModelo {
   menuFuncionalidade: string
   tipo: 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
   impacto: 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-  situacao: 'Desenvolvimento' | 'Homologação' | 'Implantado'
   descricaoCompleta: string
   descricaoHtml: string
   solucao: string
@@ -224,7 +221,7 @@ interface ChamadaModelo {
 | `titulo` | Obrigatório, ≤255 |
 | `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação vazia até a aprovação, quando herda a publicação da release **somente se estiver vazia** (a data existente é preservada); a recusa não altera e a desaprovação limpa |
 | `modulo` / `menu_funcionalidade` | Texto livre |
-| `tipo` / `impacto` / `situacao` | Enums do banco |
+| `tipo` / `impacto` | Enums do banco |
 | `descricao_completa` | Obrigatória (texto puro derivado do HTML) |
 | `descricao_html` | HTML sanitizado da Descrição (allowlist do design system) |
 | `solucao` / `solucao_html` | Solução opcional: texto puro + HTML sanitizado |
@@ -267,10 +264,10 @@ interface ChamadaModelo {
 - Vínculos por código: release/projeto/manual por `codigo`; softwares por `codigo` (um ou mais
   separados por `;`); parceiro por `codigo` (`RW-...`, `PE-...`, `MAN-...`, `SFT-...`, `PAR-...`).
 - Tags separadas por `;`, com os mesmos limites do formulário.
-- Novas chamadas entram com status `Revisar`, situação `Desenvolvimento` e origem derivada.
+- Novas chamadas entram com status `Revisar` e origem derivada.
 - Limite de 500 linhas; qualquer linha inválida, repetida ou já cadastrada bloqueia a importação
   inteira (rollback total).
-- Não importa imagens, status ou situação.
+- Não importa imagens ou status.
 
 ## 7. Upload e imagens
 
@@ -331,7 +328,6 @@ interface ChamadaModelo {
 - Links: `http(s)` quando informados.
 - Tags: até 12, cada uma até 30 caracteres, sem duplicatas.
 - Imagens: até 20 URLs, PNG/JPG/WebP/GIF até 5 MB cada.
-- `situacao`: não editável; default `Desenvolvimento`.
 - Novo status `Revisar`; status não editável no formulário.
 - Exclusão bloqueada quando `status !== 'Revisar'` ou houver histórico na esteira.
 - Aprovação/recusa bloqueadas quando o status não é `Revisar`; desaprovação permitida em `Aprovado`

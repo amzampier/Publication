@@ -88,14 +88,6 @@ const colunas: ColumnDef[] = [
     groupable: true
   },
   {
-    id: 'situacao',
-    header: 'Situação',
-    accessorKey: 'situacao',
-    minWidth: 120,
-    sortable: true,
-    groupable: true
-  },
-  {
     id: 'status',
     header: 'Status',
     accessorKey: 'status',

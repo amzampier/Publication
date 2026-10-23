@@ -513,6 +513,11 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
 5. **Seeds e Dados Iniciais**:
    - Insira os dados necessários para o funcionamento inicial do sistema (Perfis padrão, usuário Administrador inicial, configurações globais) em arquivos de migration específicos ou na migration `01`.
 
+6. **Remoção de coluna obsoleta (exceção)**:
+   - Uma migration só PODE remover uma coluna quando uma change registrada a declara obsoleta, nenhum código a lê ou escreve e a auditoria prévia comprova que todos os valores são o default/semanticamente vazios (ex.: `SELECT situacao, COUNT(*) FROM entregas_itens GROUP BY situacao`).
+   - Use sempre `ALTER TABLE ... DROP COLUMN IF EXISTS <coluna>` para manter a idempotência; o rollback documentado MUST recriar a coluna e os índices removidos, e o registro correspondente deve ser apagado de `_migrations` após a reversão manual.
+   - A proibição de `DROP TABLE`, `DROP VIEW` e `DROP DATABASE` continua valendo; a exceção é exclusiva para colunas obsoletas comprovadas.
+
 ### 4.6. Integridade referencial do conteúdo público
 
 O schema já declara as tabelas do conteúdo público (`release_week`, `projetos_escopo`,

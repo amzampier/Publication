@@ -28,7 +28,6 @@ import {
   type ImpactoChamada,
   type OpcaoChamada,
   type OrigemChamada,
-  type SituacaoChamada,
   type StatusChamada,
   type TipoChamada
 } from '#shared/lancar-chamadas'
@@ -92,7 +91,7 @@ const listaJson = (valor: unknown): unknown[] => {
 const COLUNAS = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, e.software_id,
   e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
   e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
-  e.impacto, e.situacao, e.descricao_completa, e.descricao_html, e.solucao, e.solucao_html,
+  e.impacto, e.descricao_completa, e.descricao_html, e.solucao, e.solucao_html,
   e.manual_titulo, e.link_manual, e.link_video,
   e.imagens, e.status, e.tags, e.criado_em, e.atualizado_em,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
@@ -152,7 +151,6 @@ const montarChamada = (row: Row, softwares?: SoftwareItem[]): ChamadaModelo => {
     menuFuncionalidade: texto(row.menu_funcionalidade),
     tipo: (texto(row.tipo) || 'Correção') as TipoChamada,
     impacto: (texto(row.impacto) || 'Médio') as ImpactoChamada,
-    situacao: (texto(row.situacao) || 'Desenvolvimento') as SituacaoChamada,
     descricaoCompleta: texto(row.descricao_completa),
     descricaoHtml: texto(row.descricao_html),
     solucao: texto(row.solucao),
@@ -274,7 +272,6 @@ function montarEntrada(dados: Record<string, unknown>): EntradaChamada {
     menuFuncionalidade: texto(dados.menuFuncionalidade),
     tipo: texto(dados.tipo) as TipoChamada,
     impacto: texto(dados.impacto) as ImpactoChamada,
-    situacao: texto(dados.situacao) as SituacaoChamada,
     descricaoCompleta: descricaoHtml
       ? richTextParaTexto(descricaoHtml)
       : texto(dados.descricaoCompleta),
@@ -469,7 +466,6 @@ interface ChamadaPreparada {
   menuFuncionalidade: string | null
   tipo: TipoChamada
   impacto: ImpactoChamada
-  situacao: SituacaoChamada
   descricaoCompleta: string
   descricaoHtml: string | null
   solucao: string | null
@@ -515,7 +511,6 @@ function prepararChamada(
     menuFuncionalidade: entrada.menuFuncionalidade || null,
     tipo: entrada.tipo,
     impacto: entrada.impacto,
-    situacao: entrada.situacao,
     descricaoCompleta: entrada.descricaoCompleta,
     descricaoHtml: entrada.descricaoHtml || null,
     solucao: entrada.solucao || null,
@@ -532,10 +527,10 @@ function prepararChamada(
 const SQL_INSERT = `INSERT INTO entregas_itens
   (id, origem, release_id, projeto_id, manual_id, software_id, parceiro_id, autor_id,
    autor_nome, chamada, data_lancamento, data_liberacao, \`release\`, titulo, parceiro, software,
-   modulo, menu_funcionalidade, tipo, impacto, situacao, descricao_completa, descricao_html,
+   modulo, menu_funcionalidade, tipo, impacto, descricao_completa, descricao_html,
    solucao, solucao_html, manual_titulo,
    link_manual, link_video, imagens, status, tags)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.id,
@@ -558,7 +553,6 @@ const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.menuFuncionalidade,
   p.tipo,
   p.impacto,
-  p.situacao,
   p.descricaoCompleta,
   p.descricaoHtml,
   p.solucao,
@@ -638,7 +632,6 @@ export async function atualizarChamada(
       'menuFuncionalidade' in dados ? dados.menuFuncionalidade : atual.menuFuncionalidade,
     tipo: 'tipo' in dados ? dados.tipo : atual.tipo,
     impacto: 'impacto' in dados ? dados.impacto : atual.impacto,
-    situacao: 'situacao' in dados ? dados.situacao : atual.situacao,
     descricaoCompleta:
       'descricaoCompleta' in dados ? dados.descricaoCompleta : atual.descricaoCompleta,
     descricaoHtml: 'descricaoHtml' in dados ? dados.descricaoHtml : atual.descricaoHtml,
@@ -669,7 +662,7 @@ export async function atualizarChamada(
           SET origem = ?, release_id = ?, projeto_id = ?, manual_id = ?, software_id = ?,
               parceiro_id = ?, chamada = ?, data_lancamento = ?, data_liberacao = ?,
               \`release\` = ?, titulo = ?, parceiro = ?, software = ?, modulo = ?,
-              menu_funcionalidade = ?, tipo = ?, impacto = ?, situacao = ?,
+              menu_funcionalidade = ?, tipo = ?, impacto = ?,
               descricao_completa = ?, descricao_html = ?, solucao = ?, solucao_html = ?,
               manual_titulo = ?, link_manual = ?, link_video = ?,
               imagens = ?, tags = ?
@@ -692,7 +685,6 @@ export async function atualizarChamada(
         preparada.menuFuncionalidade,
         preparada.tipo,
         preparada.impacto,
-        preparada.situacao,
         preparada.descricaoCompleta,
         preparada.descricaoHtml,
         preparada.solucao,
@@ -989,7 +981,6 @@ export async function importarChamadas(
       menuFuncionalidade: texto(linha.menuFuncionalidade),
       tipo: texto(linha.tipo) as TipoChamada,
       impacto: texto(linha.impacto) as ImpactoChamada,
-      situacao: 'Desenvolvimento',
       descricaoCompleta: texto(linha.descricaoCompleta),
       descricaoHtml: '',
       solucao: '',

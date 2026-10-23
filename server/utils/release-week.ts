@@ -194,7 +194,7 @@ export async function buscarReleaseWeek(id: string): Promise<ReleaseWeekModelo |
 export async function listarItensRelease(id: string): Promise<ItemRelease[]> {
   const linhas = await query<Row[]>(
     `SELECT id, release_id, chamada, titulo, software, modulo, tipo, impacto,
-            situacao, status, data_liberacao
+            status, data_liberacao
        FROM entregas_itens
       WHERE release_id = ?
       ORDER BY chamada ASC`,
@@ -209,7 +209,6 @@ export async function listarItensRelease(id: string): Promise<ItemRelease[]> {
     modulo: texto(row.modulo),
     tipo: texto(row.tipo) as ItemRelease['tipo'],
     impacto: texto(row.impacto) as ItemRelease['impacto'],
-    situacao: texto(row.situacao) as ItemRelease['situacao'],
     status: texto(row.status) as ItemRelease['status'],
     dataLiberacao: dataDia(row.data_liberacao)
   }))

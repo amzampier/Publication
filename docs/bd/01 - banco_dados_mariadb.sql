@@ -432,11 +432,6 @@ CREATE TABLE entregas_itens (
         'Alto',
         'Crítico'
     ) NOT NULL DEFAULT 'Médio' COMMENT 'Nível de impacto da alteração técnica (Baixo, Médio, Alto, Crítico)',
-    situacao ENUM(
-        'Desenvolvimento',
-        'Homologação',
-        'Implantado'
-    ) NOT NULL DEFAULT 'Desenvolvimento' COMMENT 'Fase de execução do escopo',
     descricao_completa MEDIUMTEXT NOT NULL COMMENT 'Detalhamento do impacto, causas, manual e validação',
     manual_titulo VARCHAR(255) NULL COMMENT 'Título do manual vinculado à chamada (campo textual do formulário)',
     link_manual TEXT NULL COMMENT 'URL do manual de apoio ou documento passo a passo',
@@ -498,7 +493,6 @@ CREATE TABLE entregas_itens (
     KEY idx_entregas_parceiro (parceiro),
     KEY idx_entregas_tipo (tipo),
     KEY idx_entregas_impacto (impacto),
-    KEY idx_entregas_situacao (situacao),
     KEY idx_entregas_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci COMMENT='Tabela única e unificada de itens para Releases Week, Projetos e Manuais';
 

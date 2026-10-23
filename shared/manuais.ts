@@ -10,7 +10,6 @@ export type StatusManual =
 
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type SituacaoItem = 'Desenvolvimento' | 'Homologação' | 'Implantado'
 export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar'
 export type DestaqueFiltro = '' | 'mes' | 'semana'
 
@@ -69,7 +68,6 @@ export interface ItemManual {
   modulo: string
   tipo: TipoItem
   impacto: ImpactoItem
-  situacao: SituacaoItem
   status: StatusItem
   dataLiberacao: string
 }

@@ -45,7 +45,6 @@ const itemBase = (over: Partial<ItemRelease> = {}): ItemRelease => ({
   modulo: 'Publicações',
   tipo: 'Correção',
   impacto: 'Baixo',
-  situacao: 'Implantado',
   status: 'Publicar',
   dataLiberacao: '2026-09-28',
   ...over

@@ -203,7 +203,7 @@ vigente e fechar o modal com aviso de sucesso. A ação SHALL respeitar a permis
 A tabela SHALL oferecer um **controle no cabeçalho** que habilita a visualização dos itens. Enquanto
 habilitado, cada Release Week SHALL exibir um sinal **"+"**; ao acioná-lo, a linha SHALL expandir e
 revelar os **itens da release** (`entregas_itens` vinculados) em modo somente leitura, com Chamada,
-Título, Software, Módulo, Tipo, Impacto, Situação, Status e Data de liberação, obtidos de
+Título, Software, Módulo, Tipo, Impacto, Status e Data de liberação, obtidos de
 `GET /api/release-week/:id/itens` sob demanda. Acionar novamente recolhe a linha. Release sem itens
 SHALL exibir um estado vazio próprio dentro da expansão. A coluna de expansão não SHALL afetar
 ordenação, busca ou paginação. A flag, a expansão e o endpoint de itens SHALL exigir a permissão

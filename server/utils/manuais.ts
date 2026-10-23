@@ -205,7 +205,7 @@ export async function buscarManual(id: string): Promise<ManuaisModelo | null> {
 export async function listarItensManual(id: string): Promise<ItemManual[]> {
   const linhas = await query<Row[]>(
     `SELECT id, manual_id, chamada, titulo, software, modulo, tipo, impacto,
-            situacao, status, data_liberacao
+            status, data_liberacao
        FROM entregas_itens
       WHERE manual_id = ?
       ORDER BY chamada ASC`,
@@ -220,7 +220,6 @@ export async function listarItensManual(id: string): Promise<ItemManual[]> {
     modulo: texto(row.modulo),
     tipo: texto(row.tipo) as ItemManual['tipo'],
     impacto: texto(row.impacto) as ItemManual['impacto'],
-    situacao: texto(row.situacao) as ItemManual['situacao'],
     status: texto(row.status) as ItemManual['status'],
     dataLiberacao: dataDia(row.data_liberacao)
   }))

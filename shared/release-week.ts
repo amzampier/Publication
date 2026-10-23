@@ -8,7 +8,6 @@ export { dataPublicacaoValida } from './feriados'
 export type StatusRelease = 'Aberta' | 'Em Revisão' | 'Aprovado' | 'Publicado'
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type SituacaoItem = 'Desenvolvimento' | 'Homologação' | 'Implantado'
 export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar'
 
 export const STATUS_RELEASE: StatusRelease[] = ['Aberta', 'Em Revisão', 'Aprovado', 'Publicado']
@@ -61,7 +60,6 @@ export interface ItemRelease {
   modulo: string
   tipo: TipoItem
   impacto: ImpactoItem
-  situacao: SituacaoItem
   status: StatusItem
   dataLiberacao: string
 }

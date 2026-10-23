@@ -234,7 +234,7 @@ ação SHALL respeitar a permissão de `excluir`.
 A tabela SHALL oferecer um **controle no cabeçalho** que habilita a visualização dos itens. Enquanto
 habilitado, cada catálogo mensal SHALL exibir um sinal **"+"**; ao acioná-lo, a linha SHALL expandir
 e revelar os **itens do manual** (`entregas_itens` com `manual_id` vinculado) em modo somente
-leitura, com Chamada, Título, Software, Módulo, Tipo, Impacto, Situação, Status e Data de liberação,
+leitura, com Chamada, Título, Software, Módulo, Tipo, Impacto, Status e Data de liberação,
 obtidos sob demanda de `GET /api/manuais/:id/itens`. Acionar novamente recolhe a linha. Catálogo sem
 itens SHALL exibir um estado vazio próprio dentro da expansão. A coluna de expansão não SHALL afetar
 ordenação, busca ou paginação. A flag, a expansão e o endpoint de itens SHALL exigir a permissão

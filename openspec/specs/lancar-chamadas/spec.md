@@ -73,7 +73,7 @@ distinguir base vazia de conjunto filtrado sem resultados.
 
 ### Requirement: O modal de filtros refina a listagem e os KPIs
 
-A tela SHALL oferecer um modal de filtros em **três colunas a partir de `sm`** com **Status**, **Situação**,
+A tela SHALL oferecer um modal de filtros em **três colunas a partir de `sm`** com **Status**,
 **Tipo**, **Impacto**, **Software**, **Parceiro**, **Origem**, **Período de lançamento** (De/Até) e
 **Período de liberação** (De/Até), vazio = todos, além dos botões "Limpar Filtros", "Cancelar" e
 "Aplicar". O filtro **Software** SHALL aceitar um ou mais softwares e a chamada SHALL corresponder
@@ -205,9 +205,8 @@ salvar apenas na última etapa. O indicador de etapas SHALL expor a etapa corren
 O formulário SHALL permitir informar **Chamada**, **Título**, **Data de lançamento**, **Data de
 liberação**, **Release**, **Projeto**, **Manual**, **Software**, **Parceiro**, **Módulo**, **Menu
 funcionalidade**, **Tipo**, **Impacto**, **Descrição completa**, **Solução**, **Título do manual**,
-**Link do manual**, **Link do vídeo**, **Tags** e **Imagens**. O campo **Situação**
-NÃO SHALL ser exibido no formulário; o valor existente é preservado e novas chamadas usam
-`Desenvolvimento` como valor interno. As tags SHALL ficar na etapa **Classificação**. O autor SHALL
+**Link do manual**, **Link do vídeo**, **Tags** e **Imagens**. O campo **Situação** NÃO SHALL ser
+exibido nem enviado no formulário. As tags SHALL ficar na etapa **Classificação**. O autor SHALL
 ser preenchido a partir da sessão e exibido somente leitura. Os campos de texto `release`, `software`
 e `parceiro` SHALL ser derivados dos catálogos selecionados, nunca digitados em paralelo. Ao
 selecionar uma Release, a **Data de liberação** SHALL ser preenchida com a `dataPublicacao` da release
@@ -218,12 +217,12 @@ SHALL ser editável no formulário. A **Descrição completa** e a **Solução**
 #### Scenario: Nova chamada
 
 - **WHEN** o usuário abre "Nova Chamada" e preenche os dados obrigatórios
-- **THEN** o formulário inicia com status `Revisar`, tipo `Correção` e impacto `Médio`, sem campo Situação
+- **THEN** o formulário inicia com status `Revisar`, tipo `Correção` e impacto `Médio`
 
 #### Scenario: Edição
 
 - **WHEN** o usuário abre uma chamada existente para editar
-- **THEN** o formulário vem preenchido, preserva a situação existente, o status aparece somente leitura e a seção de cadastro exibe autor, criação e atualização
+- **THEN** o formulário vem preenchido, o status aparece somente leitura e a seção de cadastro exibe autor, criação e atualização
 
 #### Scenario: Textos derivados dos catálogos
 
@@ -579,14 +578,14 @@ classificar cada linha como `pronto`, `já cadastrado`, `repetido` ou `inválido
 linha e coluna. O servidor SHALL revalidar as linhas e os vínculos, rejeitar payload fora do
 contrato, limitar a importação a 500 linhas e gravar todas as linhas válidas em uma única transação.
 Linhas inválidas, duplicadas ou já cadastradas SHALL impedir a importação completa, sem gravação
-parcial. As chamadas importadas SHALL nascer com status `Revisar` e situação `Desenvolvimento`, SHALL resolver
+parcial. As chamadas importadas SHALL nascer com status `Revisar`, SHALL resolver
 release, projeto, manual, **um ou mais softwares separados por `;`** e parceiro pelos códigos da planilha, SHALL aceitar múltiplas tags
 separadas por `;` e NÃO SHALL importar imagens, status ou situação.
 
 #### Scenario: Importação válida
 
 - **WHEN** o usuário importa um arquivo com linhas válidas e confirma o preview
-- **THEN** todas as chamadas são criadas com status `Revisar`, situação `Desenvolvimento` e os vínculos resolvidos pelos códigos
+- **THEN** todas as chamadas são criadas com status `Revisar` e os vínculos resolvidos pelos códigos
 
 #### Scenario: Software múltiplo na planilha
 

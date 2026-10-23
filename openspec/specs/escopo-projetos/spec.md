@@ -335,7 +335,7 @@ de sucesso. A ação SHALL respeitar a permissão de `excluir`.
 ### Requirement: Itens do projeto em modal somente leitura
 O ícone **Itens** do card SHALL abrir um `UiModal` de largura `xl`, sem criar rota ou página nova,
 com os itens do projeto (`entregas_itens` com `projeto_id` vinculado) em modo somente leitura no
-componente **`UiDataTable`**: Chamada, Título, Software, Módulo, Tipo, Impacto, Situação, Status
+componente **`UiDataTable`**: Chamada, Título, Software, Módulo, Tipo, Impacto, Status
 (`UiBadge`) e Data de liberação. Os itens SHALL ser carregados sob demanda por
 `GET /api/escopo-projetos/:id/itens`, com estados de carregamento, erro e vazio. A grade SHALL
 oferecer as funcionalidades do kit — busca, agrupamento por até três colunas, ordenação

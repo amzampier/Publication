@@ -19,7 +19,6 @@ import {
   type TipoChamada,
   IMPACTOS_CHAMADA as CATALOGOS_CHAMADAS_IMPACTOS,
   ORIGENS_CHAMADA as CATALOGOS_CHAMADAS_ORIGENS,
-  SITUACOES_CHAMADA as CATALOGOS_CHAMADAS_SITUACOES,
   STATUS_CHAMADA as CATALOGOS_CHAMADAS_STATUS,
   TIPOS_CHAMADA as CATALOGOS_CHAMADAS_TIPOS
 } from './validadores'
@@ -51,7 +50,6 @@ export interface LinhaChamada {
 
 const FILTROS_VAZIOS: FiltrosChamada = {
   status: '',
-  situacao: '',
   tipo: '',
   impacto: '',
   softwareIds: [],
@@ -150,7 +148,6 @@ export const useLancarChamadasModelo = () => {
     () =>
       [
         filtros.value.status,
-        filtros.value.situacao,
         filtros.value.tipo,
         filtros.value.impacto,
         filtros.value.softwareIds.length,
@@ -169,7 +166,6 @@ export const useLancarChamadasModelo = () => {
 
   const opcoes = computed(() => ({
     status: [...CATALOGOS_CHAMADAS_STATUS],
-    situacoes: [...CATALOGOS_CHAMADAS_SITUACOES],
     tipos: [...CATALOGOS_CHAMADAS_TIPOS],
     impactos: [...CATALOGOS_CHAMADAS_IMPACTOS],
     origens: [...CATALOGOS_CHAMADAS_ORIGENS],

@@ -46,7 +46,6 @@ const item = (overrides: Partial<ItemManual> = {}): ItemManual => ({
   modulo: 'Integrações',
   tipo: 'Melhoria',
   impacto: 'Médio',
-  situacao: 'Implantado',
   status: 'Publicar',
   dataLiberacao: '2026-10-12',
   ...overrides

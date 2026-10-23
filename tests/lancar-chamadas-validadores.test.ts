@@ -45,7 +45,6 @@ const chamadaBase = (over: Partial<ChamadaModelo> = {}): ChamadaModelo => ({
   menuFuncionalidade: 'Notas fiscais',
   tipo: 'Correção',
   impacto: 'Médio',
-  situacao: 'Desenvolvimento',
   descricaoCompleta: 'Correção do cálculo de impostos na emissão da nota.',
   descricaoHtml: '',
   solucao: '',
@@ -76,7 +75,6 @@ const entradaValida = (over: Partial<EntradaChamada> = {}): EntradaChamada => ({
   menuFuncionalidade: 'Notas fiscais',
   tipo: 'Correção',
   impacto: 'Médio',
-  situacao: 'Desenvolvimento',
   descricaoCompleta: 'Correção do cálculo de impostos na emissão da nota.',
   descricaoHtml: '',
   solucao: '',
@@ -240,7 +238,6 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       id: 'a',
       chamada: 'A-1',
       status: 'Revisar',
-      situacao: 'Desenvolvimento',
       tipo: 'Correção',
       impacto: 'Baixo',
       softwareIds: ['SFT-001'],
@@ -253,7 +250,6 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       id: 'b',
       chamada: 'B-2',
       status: 'Aprovado',
-      situacao: 'Homologação',
       tipo: 'Melhoria',
       impacto: 'Alto',
       softwareIds: ['SFT-002'],
@@ -271,7 +267,6 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
       id: 'c',
       chamada: 'C-3',
       status: 'Publicar',
-      situacao: 'Implantado',
       tipo: 'Nova Funcionalidade',
       impacto: 'Crítico',
       softwareIds: ['SFT-003'],
@@ -289,7 +284,6 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
 
   const semFiltro: FiltrosChamada = {
     status: '',
-    situacao: '',
     tipo: '',
     impacto: '',
     softwareIds: [],
@@ -314,9 +308,6 @@ describe('filtrarChamadas, buscarChamadas e KPIs', () => {
     expect(filtrarChamadas(chamadas, { ...semFiltro, status: 'Aprovado' }).map((c) => c.id)).toEqual([
       'b'
     ])
-    expect(
-      filtrarChamadas(chamadas, { ...semFiltro, situacao: 'Implantado' }).map((c) => c.id)
-    ).toEqual(['c'])
     expect(filtrarChamadas(chamadas, { ...semFiltro, tipo: 'Melhoria' }).map((c) => c.id)).toEqual([
       'b'
     ])

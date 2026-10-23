@@ -131,7 +131,7 @@ admin/escopo-projetos.vue                            (page - definePageMeta + co
   itens; o CRUD pertence a "Lançar as Chamadas".
 - Carrega `GET /api/escopo-projetos/:id/itens` **sob demanda**, com estados de carregamento, erro
   (com "Tentar novamente") e vazio ("Nenhum item vinculado a este projeto.").
-- `UiDataTable` com **Chamada, Título, Software, Módulo, Tipo, Impacto, Situação, Status e Data de
+- `UiDataTable` com **Chamada, Título, Software, Módulo, Tipo, Impacto, Status e Data de
   liberação**; busca, agrupamento em até três níveis, ordenação multi-coluna, redimensionamento,
   paginação e totalizadores. Status em `UiBadge`: `Revisar`→`pending`, `Aprovado`→`reconciled`,
   `Publicar`→`done`.

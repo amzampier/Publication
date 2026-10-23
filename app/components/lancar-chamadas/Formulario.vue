@@ -28,7 +28,6 @@ import {
   type EntradaChamada,
   type ImpactoChamada,
   type OpcaoChamada,
-  type SituacaoChamada,
   type TipoChamada
 } from './validadores'
 import { textoParaRichText } from '#shared/rich-text'
@@ -97,7 +96,6 @@ interface Rascunho {
   menuFuncionalidade: string
   tipo: TipoChamada
   impacto: ImpactoChamada
-  situacao: SituacaoChamada
   descricaoCompleta: string
   descricaoHtml: string
   solucao: string
@@ -123,7 +121,6 @@ const rascunhoVazio = (): Rascunho => ({
   menuFuncionalidade: '',
   tipo: 'Correção',
   impacto: 'Médio',
-  situacao: 'Desenvolvimento',
   descricaoCompleta: '',
   descricaoHtml: '',
   solucao: '',
@@ -149,7 +146,6 @@ const deChamada = (chamada: ChamadaModelo): Rascunho => ({
   menuFuncionalidade: chamada.menuFuncionalidade,
   tipo: chamada.tipo,
   impacto: chamada.impacto,
-  situacao: chamada.situacao,
   descricaoCompleta: chamada.descricaoCompleta,
   descricaoHtml: chamada.descricaoHtml || textoParaRichText(chamada.descricaoCompleta),
   solucao: chamada.solucao,
@@ -370,7 +366,6 @@ const salvar = async () => {
     menuFuncionalidade: rascunho.value.menuFuncionalidade.trim(),
     tipo: rascunho.value.tipo,
     impacto: rascunho.value.impacto,
-    situacao: rascunho.value.situacao,
     descricaoCompleta: rascunho.value.descricaoCompleta.trim(),
     descricaoHtml: rascunho.value.descricaoHtml,
     solucao: rascunho.value.solucao.trim(),

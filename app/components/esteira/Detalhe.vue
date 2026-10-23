@@ -228,10 +228,6 @@ watch(
             <p class="text-[11px] font-medium text-slate-500">Impacto</p>
             <p class="mt-1 text-xs text-slate-800">{{ item.impacto }}</p>
           </div>
-          <div>
-            <p class="text-[11px] font-medium text-slate-500">Situação</p>
-            <p class="mt-1 text-xs text-slate-800">{{ item.situacao }}</p>
-          </div>
           <div class="sm:col-span-2 lg:col-span-3">
             <p class="text-[11px] font-medium text-slate-500">Tags</p>
             <div v-if="item.tags.length" class="mt-1.5 flex flex-wrap gap-1.5">

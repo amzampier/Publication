@@ -1345,3 +1345,51 @@ estágios vem abaixo.
 - **Espelhamento:** a referência visual é a própria tela `/admin/esteira-revisao`; a seção 5 do
   `/design` cobre os controles do kit usados nela (Segmented, Select, Input, Modal, Badge, Button).
   O padrão documentado aqui é o contrato para futuras telas de board/progresso.
+
+### 5.28 Gr?ficos (UiChartBars, UiChartLine, UiChartHorizontalBars) - se??o 27 do `/design`
+
+Componentes de visualiza??o do Painel Executivo (`/admin`), sem biblioteca externa. Todos s?o
+somente leitura, usam os tokens do design system e exp?em `role="img"` com `aria-label` textual
+(lista de s?ries/valores) al?m da legenda vis?vel.
+
+**Estrutura comum**
+
+- Card `rounded-xl border border-slate-200 bg-white p-4 shadow-xs`, com t?tulo `text-sm font-bold`
+  e descri??o `text-[11px] text-slate-500`.
+- Estado vazio: caixa tracejada `border-dashed` com mensagem centralizada, sem quebrar o layout.
+- Cores s?lidas; sem degrad? (exce??o: o `UiButton variant="primary"` e o header de modal j?
+  documentados).
+
+**UiChartBars**
+
+- Barras verticais empilhadas por categoria (ex.: 12 meses), com `series: { nome, cor, valores }[]`.
+- Altura padr?o de 220px; cada segmento usa `height: valor / m?ximo` e `title` com
+  `categoria ? s?rie: valor`.
+- Legenda com pontos coloridos; o cabe?alho aceita o slot `actions` (usado pelo `UiSegmented`
+  Mensal/Anual do painel).
+- Uso no painel: publica??es mensais por status e publica??es anuais.
+
+**UiChartLine**
+
+- Linha SVG com pontos por categoria e duas ou mais s?ries (`series`), eixo X textual abaixo do SVG.
+- `viewBox` fixo e `w-full`; `polyline` com `stroke-width="2.5"` e c?rculos com `title`.
+- Uso no painel: chamadas lan?adas x liberadas.
+- A data de libera??o ? herdada do conte?do pai; o texto de descri??o do gr?fico registra que ela
+  pode ser prevista.
+
+**UiChartHorizontalBars**
+
+- Ranking horizontal com r?tulo truncado, valor em `font-mono tabular-nums` e trilha `h-1.5`
+  preenchida na cor do item (ou na cor padr?o `#0364f7`).
+- Uso no painel: softwares mais atendidos, tipo, impacto e tempo m?dio por est?gio.
+
+**Acessibilidade**
+
+- Cada gr?fico ? `role="img"` com `aria-label` contendo o t?tulo e os valores das s?ries; a
+  legenda e os r?tulos vis?veis permanecem no DOM.
+- O fluxo da esteira usa `role="progressbar"` com `aria-valuenow`, `aria-valuemin`,
+  `aria-valuemax` e `aria-label` com as contagens.
+- Controles (`UiSelect`, `UiSegmented`, `UiButton`) mant?m foco/teclado nativos do kit.
+
+**Espelhamento:** se??o 27 do `/design` com exemplos reais de barras empilhadas, linha e ranking
+horizontal; a tela `/admin` ? a refer?ncia de composi??o.

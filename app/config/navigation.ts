@@ -61,7 +61,8 @@ export interface Conta {
 export const itemRaiz: SidebarItem = {
   id: 'painel-executivo',
   label: 'Painel Executivo',
-  icon: LayoutDashboard
+  icon: LayoutDashboard,
+  to: '/admin'
 }
 
 // Cores cheias da sidebar, na mesma intensidade do menu suspenso (accountMenuItens) e do
