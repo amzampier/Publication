@@ -1334,7 +1334,7 @@ estágios vem abaixo.
 
 **Board (`Board.vue` + `ChamadaCard.vue`)**
 
-- **Três colunas:** **1. Em Revisão** (amber `#f59e0b`), **2. Homologados** (verde `#1a9e07`) e
+- **Três colunas:** **1. Em Revisão** (amber `#f59e0b`), **2. Aprovado** (verde `#1a9e07`) e
   **3. Publicados** (azul `#0364f7`). Em telas estreitas as colunas empilham.
 - **Cabeçalho das colunas:** usa o **mesmo background do header dos modais**
   (`bg-gradient-to-r from-brand-primary to-brand-structure`) com texto branco, borda esquerda de
@@ -1346,7 +1346,7 @@ estágios vem abaixo.
   título, resumo da descrição (`line-clamp-3`), tags (até três + `+N`) e contador de imagens de
   evidência. As ações são **somente ícones alinhados à direita**, com tooltip e `aria-label`:
   - Em Revisão: `Eye` (Inspecionar), `ShieldCheck` (Aprovar) e `XCircle` (Recusar);
-  - Homologados: `Undo2` (Voltar p/ Revisão) e `UploadCloud` (Publicar Item);
+  - Aprovado: `Undo2` (Voltar p/ Revisão) e `UploadCloud` (Publicar Item);
   - Publicados: `ArchiveRestore` (Suspender p/ Homologado) e `ExternalLink` (No Portal);
   - Recusadas: `Eye` (Inspecionar) e `Undo2` (Reabrir).
 - **Degradês:** além do `UiButton variant="primary"`, esta tela usa o degradê do header de modal nos

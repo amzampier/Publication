@@ -60,7 +60,7 @@ const configuracao = computed(() => {
   if (props.acao === 'suspender') {
     return {
       titulo: 'Suspender para homologado',
-      subtitulo: 'O item volta para Homologados e deixa o portal público.',
+      subtitulo: 'O item volta para Aprovado e deixa o portal público.',
       rotuloBotao: 'Suspender',
       icone: ArchiveRestore,
       variante: 'outline' as const

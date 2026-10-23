@@ -68,7 +68,8 @@ homologar, publicar ou recusar cada chamada com parecer e trilha imutável.
   na coluna Publicados com "No Portal" habilitado.
 - **Navegação:** item **Esteira de Revisão** na sessão **Movimentos** da sidebar
   (`app/config/navigation.ts`), com `to: '/admin/esteira-revisao'` e `aria-current="page"`.
-- **Ver Portal Público:** botão no cabeçalho abre a Área Pública (`/`) em nova aba.
+- **Ver Portal Público:** ícone `Globe` no header global (ao lado esquerdo das notificações), visível
+  na rota da Esteira, abre a Área Pública (`/`) em nova aba.
 - **Fora de escopo (fase 2):** bloquear a publicação do conteúdo pai enquanto houver chamada em
   `Revisar`/`Recusado`; definir a semântica de `arquivar` na esteira; preencher
   `revisor_id`/`revisor_feedback` no pai; seleção/ações em lote; notificações; exportação PDF/CSV.
@@ -77,8 +78,7 @@ homologar, publicar ou recusar cada chamada com parecer e trilha imutável.
 
 ```text
 admin/esteira-revisao.vue                       (page — definePageMeta + coordenação)
-├── <EsteiraCabecalho />                          → tile Workflow #8b5cf6 + título + chip do usuário
-│                                                   + "Ver Portal Público"
+├── <EsteiraCabecalho />                          → tile Workflow #8b5cf6 + título + subtítulo
 ├── <EsteiraKpis class="mt-4" />                  → 4 UiKpi do conjunto filtrado
 ├── <EsteiraBoard
 │       @detalhes @aprovar @recusar @reabrir
@@ -106,8 +106,8 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 
 - Cabeçalho sem container: tile `bg-brand-primary` com `Workflow` em `#8b5cf6`, título
   "Esteira de Revisão" e subtítulo com o processo `1. Revisar → 2. Aprovado → 3. Publicar/Publicado`.
-- À direita: chip do usuário (avatar ou iniciais, nome e perfil via `useAuth`/`useAvatarUsuario`) e
-  o botão **Ver Portal Público** (`ExternalLink`), que abre `/` em nova aba.
+  O bloco de usuário e o botão "Ver Portal Público" não ficam mais aqui; o acesso ao portal é o
+  ícone `Globe` do header global.
 - O cabeçalho não renderiza mais o progresso nem as origens; eles ficam na barra de ferramentas do
   board.
 
@@ -149,7 +149,7 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   Status, Origem, Tipo, Impacto, vínculos e períodos.
 - **Três colunas:**
   - **1. Em Revisão** (`Revisar`) — "Chamadas aguardando homologação do Revisor / QA";
-  - **2. Homologados** (`Aprovado`) — "Validadas pelo QA, prontas para publicação";
+  - **2. Aprovado** (`Aprovado`) — "Validadas pelo QA, prontas para publicação";
   - **3. Publicados** (`Publicar` e `Publicado`) — "Aguardando o pai ou já visíveis no portal; filtre
     o vínculo para consultar". Por padrão, mostra só o que aguarda o pai; ao filtrar um vínculo
     publicado, inclui as chamadas já visíveis no portal (`Publicado`), com "No Portal" habilitado.
@@ -172,7 +172,7 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   - título, resumo da descrição (`line-clamp-3`) e tags (até três + `+N`);
   - **ações somente com ícones, alinhadas à direita** no rodapé, com tooltip e `aria-label`:
     - **Em Revisão:** `Eye` (Inspecionar), `ShieldCheck` (Aprovar) e `XCircle` (Recusar);
-    - **Homologados:** `Undo2` (Voltar p/ Revisão) e `UploadCloud` (Publicar Item);
+    - **Aprovado:** `Undo2` (Voltar p/ Revisão) e `UploadCloud` (Publicar Item);
     - **Publicados:** `ArchiveRestore` (Suspender p/ Homologado) e `ExternalLink` (No Portal); o card
       em `Publicar` mantém "Aguardando pai" e "No Portal" desabilitado; o card em `Publicado` habilita
       "No Portal".
@@ -407,7 +407,7 @@ avançou        = aprovado + publicar
   suspender 200; id inexistente `404`; status incompatível `409`; sem permissão `403`; sem sessão
   `401`.
 - **Manual:** criar chamada em Lançar as Chamadas → abrir a esteira → conferir o painel, as abas de
-  origem e a coluna Em Revisão → aprovar → conferir Homologados → publicar Item → conferir Publicados
+  origem e a coluna Em Revisão → aprovar → conferir Aprovado → publicar Item → conferir Publicados
   com "Aguardando pai" e "No Portal" desabilitado → publicar o Manual/Release Week → confirmar que a
   cascata promove a chamada a `Publicado`, ela sai do board e aparece na Área Pública → selecionar o
   vínculo publicado no Pacote de Origem e confirmar que a chamada reaparece em Publicados com "No

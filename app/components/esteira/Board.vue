@@ -56,7 +56,7 @@ const colunas = computed(() => [
   {
     id: 'Aprovado',
     numero: '2.',
-    titulo: 'Homologados',
+    titulo: 'Aprovado',
     descricao: 'Validadas pelo QA, prontas para publicação',
     cor: '#1a9e07',
     itens: linhas.value.filter((linha) => linha.status === 'Aprovado')

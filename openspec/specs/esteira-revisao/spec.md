@@ -116,7 +116,7 @@ sem divisão por zero. A barra SHALL expor `role="progressbar"` com `aria-valuen
 ### Requirement: O board organiza as chamadas em estágios do fluxo
 
 A tela SHALL organizar as chamadas do ciclo ativo em um board com três colunas principais:
-**1. Em Revisão** (`Revisar`), **2. Homologados** (`Aprovado`) e **3. Publicados** (`Publicar` e
+**1. Em Revisão** (`Revisar`), **2. Aprovado** (status `Aprovado`) e **3. Publicados** (`Publicar` e
 `Publicado`). Cada coluna SHALL exibir título, descrição, contagem do conjunto filtrado e os cards
 das chamadas. A coluna **Publicados** SHALL conter, por padrão, apenas chamadas em `Publicar` que
 ainda aguardam a publicação do conteúdo pai; quando o pai é publicado, a chamada é promovida a
@@ -141,7 +141,7 @@ sem resultados.
 #### Scenario: Colunas do fluxo
 
 - **WHEN** a tela é aberta
-- **THEN** o board exibe as colunas Em Revisão, Homologados e Publicados, cada uma com sua contagem e seus cards
+- **THEN** o board exibe as colunas Em Revisão, Aprovado e Publicados, cada uma com sua contagem e seus cards
 
 #### Scenario: Abas de origem
 
@@ -212,7 +212,7 @@ sem resultados.
 Cada card SHALL exibir a origem, o código do vínculo, a chamada, o software, o parceiro, o título, um
 resumo da descrição, as tags (até três, com contador do excedente) e, quando houver, a quantidade de
 imagens de evidência. As ações SHALL variar pelo estágio: **Em Revisão** — Inspecionar, Aprovar
-Chamada e Recusar; **Homologados** — Voltar p/ Revisão e Publicar Item; **Publicados** — Suspender p/
+Chamada e Recusar; **Aprovado** — Voltar p/ Revisão e Publicar Item; **Publicados** — Suspender p/
 Homologado e No Portal; **Recusadas** — Inspecionar e Reabrir. Na coluna Publicados, o card em
 `Publicar` SHALL exibir **Aguardando pai** e No Portal desabilitada; o card em `Publicado` SHALL
 exibir **No Portal** habilitada. As ações SHALL ser exibidas **somente como ícones, alinhados à
@@ -376,7 +376,7 @@ transição SHALL ser recusada com conflito e o board SHALL ser atualizado.
 #### Scenario: Suspender item
 
 - **WHEN** o usuário confirma "Suspender" em uma chamada `Publicar` ou `Publicado`
-- **THEN** o status volta a `Aprovado`, a `data_liberacao` é preservada, o histórico registra a transição e o card aparece em Homologados
+- **THEN** o status volta a `Aprovado`, a `data_liberacao` é preservada, o histórico registra a transição e o card aparece em Aprovado
 
 #### Scenario: Transição inválida para o status
 
@@ -401,7 +401,7 @@ transição SHALL ser recusada com conflito e o board SHALL ser atualizado.
 #### Scenario: Suspender item publicado
 
 - **WHEN** o usuário confirma "Suspender" em uma chamada `Publicado`
-- **THEN** o status volta a `Aprovado`, a `data_liberacao` é preservada, o histórico registra a transição e o card aparece em Homologados
+- **THEN** o status volta a `Aprovado`, a `data_liberacao` é preservada, o histórico registra a transição e o card aparece em Aprovado
 
 #### Scenario: Cascata do conteúdo pai
 

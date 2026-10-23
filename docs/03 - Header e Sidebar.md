@@ -85,8 +85,12 @@ Fundo `bg-white` · `border-b border-slate-200` · textos herdados do container 
 **Não existe** seletor, texto ou badge de empresa/filial: o sistema tem **escopo único** (docs/02 §2.1) e a
 área atual (Pública/Administrativa) é evidente pela rota e pelo layout.
 
-### 2.2 Zona direita: notificações + Account
+### 2.2 Zona direita: portal (Esteira) + notificações + Account
 
+- **Portal Público** (`Globe`): link `p-1.5 rounded-lg hover:bg-slate-100` com
+  `aria-label="Abrir Portal Público"` e tooltip "Abrir Portal Público" (`UiTooltip`, posição
+  `bottom`), imediatamente à esquerda do sino. Visível somente na rota `/admin/esteira-revisao`;
+  abre `/` em nova aba (`target="_blank"` + `rel="noopener noreferrer"`).
 - **Sino de notificações** (`Bell`): botão `p-1.5 rounded-lg hover:bg-slate-100`, ponto `bg-rose-500` quando
   há itens; painel `absolute right-0 top-full mt-1 w-72 bg-white border border-slate-200 rounded-lg`
   com **cabeçalho `px-3 py-2 bg-brand-primary`** (banda navy: título `text-white`, contador
@@ -361,7 +365,7 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
 
 | Arquivo | Mudança |
 |---|---|
-| `app/components/layout/AppHeader.vue` | header claro (`bg-white border-b border-slate-200 text-slate-900`), badge do logo `brand-primary/10`, menu Account branco e sino/painel (cabeçalho navy com escrita branca, lista `bg-[#f9feee]`, "Limpar tudo" verde `#0f7a06`) |
+| `app/components/layout/AppHeader.vue` | header claro (`bg-white border-b border-slate-200 text-slate-900`), badge do logo `brand-primary/10`, menu Account branco e sino/painel (cabeçalho navy com escrita branca, lista `bg-[#f9feee]`, "Limpar tudo" verde `#0f7a06`); na Esteira, link `Globe` para o Portal Público à esquerda do sino |
 | `app/components/layout/AppSidebar.vue` | sidebar navy (`bg-brand-primary border-r border-white/10`), ativo `bg-white/10 text-lime-300`, inativo `slate-300`, tintas D9 via `tinta()` |
 | `app/composables/shellTintas.ts` (novo) | mapa das 10 tintas D9 + `tinta(hex)` (compartilhado com a demo §14) |
 | `app/assets/css/main.css` | semântica de hover invertida: base = modelo novo, `.ds-shell-antigo` só na demo |

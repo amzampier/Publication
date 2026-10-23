@@ -4,6 +4,7 @@ import {
   Bell,
   Building2,
   ChevronDown as ChevronDownIcon,
+  Globe,
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
@@ -44,6 +45,11 @@ const accountMenuVisiveis = computed(() =>
 
 const props = withDefaults(defineProps<{ sidebarOpen: boolean }>(), { sidebarOpen: true })
 const emit = defineEmits<{ 'update:sidebarOpen': [value: boolean] }>()
+
+const route = useRoute()
+const mostrarPortal = computed(
+  () => route.path.replace(/\/+$/, '') === '/admin/esteira-revisao'
+)
 
 const contaRef = ref<HTMLElement | null>(null)
 const notificacoesRef = ref<HTMLElement | null>(null)
@@ -198,8 +204,20 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Zona direita: notificações + conta -->
+    <!-- Zona direita: portal (Esteira) + notificações + conta -->
     <div class="flex items-center gap-2.5 shrink-0">
+      <UiTooltip v-if="mostrarPortal" content="Abrir Portal Público" position="bottom">
+        <a
+          href="/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Abrir Portal Público"
+          class="p-1.5 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+        >
+          <Globe class="h-4 w-4" aria-hidden="true" />
+        </a>
+      </UiTooltip>
+
       <!-- Central de notificações -->
       <div ref="notificacoesRef" class="relative">
         <button
