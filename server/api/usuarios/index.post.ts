@@ -1,6 +1,7 @@
 // POST /api/usuarios — criação (201; 400 validações; 409 e-mail duplicado)
 import { criarUsuario } from '../../utils/usuarios'
 import { registrarAuditoria } from '../../utils/audit'
+import { validarHierarquiaPerfil } from '../../utils/hierarquia'
 import { requirePermission } from '../../utils/permission'
 
 export default defineEventHandler(async (event) => {

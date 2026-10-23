@@ -252,6 +252,10 @@ const definirData = (campo: 'dataLancamento' | 'dataLiberacao', data: Date | nul
 
 const selecionarRelease = (valor: string) => {
   rascunho.value.releaseId = valor
+  const release = catalogo.value.releases.find((opcao) => opcao.id === valor)
+  if (release?.dataPublicacao) {
+    rascunho.value.dataLiberacao = release.dataPublicacao
+  }
 }
 
 const focarCampo = (campo: string) => {
@@ -539,9 +543,9 @@ watch(
             <UiDatePicker
               :model-value="paraData(rascunho.dataLiberacao)"
               label="Data de liberação"
-              helper-text="Preenchida automaticamente na aprovação com a publicação da Release vinculada."
+              helper-text="Preenchida com a publicação da Release vinculada; pode ser ajustada."
               :error="erros.dataLiberacao"
-              disabled
+              @update:model-value="definirData('dataLiberacao', $event)"
             />
           </div>
           <UiInput label="Status" :model-value="statusAtual" disabled />

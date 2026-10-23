@@ -47,6 +47,9 @@ usados (`UiInput`, `UiCheckbox`, `UiButton`, `useToast`) e tokens `brand.*` do c
 
 ## 1. Visão geral e rota
 
+> **RL06-2:** `TRUSTED_PROXIES` é validado por IP/CIDR contra o peer da conexão; o `X-Forwarded-For` só é aceito quando a conexão vem de um proxy da lista.
+
+
 O Login é a porta de entrada da Área Administrativa:
 
 - **Rotas de autenticação:** `/admin/login` (`app/pages/admin/login.vue`),
@@ -231,6 +234,7 @@ sessão (`ensureSessao`) com redirect para `/admin/login?redirect=`.
 - **Guarda/retorno:** rota livre sem sessão; com sessão redireciona para `/admin`;
   "Voltar ao login" navega para `/admin/login`.
 
+> **Revogação no reset (RL06):** quando o e-mail de recuperação é entregue e a senha provisória é gravada, o servidor revoga na mesma transação todas as sessões anteriores da conta (`token_version` + `revogado_em` em `sessoes`). Um access ou refresh capturado antes do reset deixa de autenticar; a nova sessão só nasce no login com a provisória. Se o envio falhar, a senha anterior e as sessões vigentes permanecem válidas.
 ## 6. Credenciais e contas
 
 > **QA e demonstração:** com o backend real, **apenas as contas existentes no banco**

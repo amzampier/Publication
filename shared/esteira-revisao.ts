@@ -170,9 +170,11 @@ export function itemNoCicloAtivo(item: Pick<ItemEsteira, 'status' | 'contexto'>)
  */
 export function itemVisivelNoBoard(
   item: Pick<ItemEsteira, 'status' | 'contexto'>,
-  filtros: Pick<FiltrosEsteira, 'releaseId' | 'manualId' | 'projetoId'>
+  filtros: Pick<FiltrosEsteira, 'releaseId' | 'manualId' | 'projetoId' | 'status'>
 ): boolean {
   if (!itemComVinculoAtivo(item)) return false
+  // Filtro explícito de status inclui itens fora do ciclo ativo (ex.: Publicado).
+  if (filtros.status) return true
   if (itemNoCicloAtivo(item)) return true
   return Boolean(filtros.releaseId || filtros.manualId || filtros.projetoId)
 }

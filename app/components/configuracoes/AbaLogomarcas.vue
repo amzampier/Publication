@@ -56,7 +56,7 @@ const enviarParaServidor = async (
   form.append('pasta', 'logomarcas')
   form.append('file', arquivo)
   try {
-    const { url } = await useApiFetch<{ url: string }>('/api/uploads', { method: 'POST', body: form })
+    const { url } = await useApiFetch<{ url: string }>('/api/uploads?pasta=logomarcas', { method: 'POST', body: form })
     destino.value = url
     veioUpload.value = true
     lerDataUrl(arquivo, preview)

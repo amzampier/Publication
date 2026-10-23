@@ -3,6 +3,7 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { Rocket, CalendarDays, FileText, Clock } from '@lucide/vue'
 import type { SegmentedOption } from '../ui/Segmented.vue'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
 import {
   MESES,
   formatarData,
@@ -36,6 +37,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const { can } = usePermissions()
 const { adicionar, atualizar } = useReleaseWeekModelo()
 
 interface Rascunho {
@@ -85,12 +87,19 @@ const titulo = computed(() => {
 })
 
 const opcoesMes = MESES.map((mes) => ({ value: mes, label: mes }))
-const statusOpcoes: SegmentedOption[] = [
-  { value: 'Aberta', label: 'Aberta', tone: 'sky' },
-  { value: 'Em Revisão', label: 'Em Revisão', tone: 'indigo' },
-  { value: 'Aprovado', label: 'Aprovado', tone: 'emerald' },
-  { value: 'Publicado', label: 'Publicado', tone: 'navy' }
-]
+const statusOpcoes = computed<SegmentedOption[]>(() => {
+  const opcoes: SegmentedOption[] = [
+    { value: 'Aberta', label: 'Aberta', tone: 'sky' },
+    { value: 'Em Revisão', label: 'Em Revisão', tone: 'indigo' },
+    { value: 'Aprovado', label: 'Aprovado', tone: 'emerald' }
+  ]
+  // Publicar é uma ação própria: sem a permissão, a opção só aparece para
+  // exibir o status atual de um registro já publicado (somente leitura).
+  if (can('release-week', 'publicar') || rascunho.value.status === 'Publicado') {
+    opcoes.push({ value: 'Publicado', label: 'Publicado', tone: 'navy' })
+  }
+  return opcoes
+})
 
 const paraIso = (data: Date | null): string => {
   if (!data) return ''

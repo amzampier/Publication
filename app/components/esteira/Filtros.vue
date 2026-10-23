@@ -88,7 +88,6 @@ const cancelar = () => emit('update:modelValue', false)
 
 const limpar = () => {
   rascunho.value = { ...FILTROS_ESTEIRA_VAZIOS }
-  limparFiltros()
 }
 </script>
 

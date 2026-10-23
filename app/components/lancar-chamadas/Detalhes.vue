@@ -15,6 +15,7 @@ import {
   VARIANTE_STATUS_CHAMADA,
   formatarData,
   formatarDataHora,
+  urlMiniatura,
   type ChamadaModelo,
   type OpcaoChamada
 } from './validadores'
@@ -272,7 +273,9 @@ watch(
               @click="abrirGaleria(indice)"
             >
               <img
-                :src="imagem"
+                :src="urlMiniatura(imagem)"
+                loading="lazy"
+                decoding="async"
                 :alt="`Imagem de evidência ${indice + 1}`"
                 class="h-24 w-full object-cover transition-transform group-hover:scale-105"
               >
@@ -357,7 +360,7 @@ watch(
         :class="indice === indiceImagem ? 'border-brand-focus' : 'border-transparent opacity-70 hover:opacity-100'"
         @click="indiceImagem = indice"
       >
-        <img :src="imagem" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover">
+        <img :src="urlMiniatura(imagem)" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover" loading="lazy" decoding="async">
       </button>
     </div>
 

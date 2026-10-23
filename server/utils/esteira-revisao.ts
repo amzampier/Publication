@@ -3,9 +3,10 @@
 // para consulta quando o vínculo é filtrado), com o contexto, a última decisão e
 // o progresso do ciclo ativo. A transição em si vem de `lancar-chamadas.ts`.
 import { query } from './db'
+import { cacheado } from './cache'
 import {
   buscarChamada,
-  listarChamadas,
+  listarChamadasParaEsteira,
   listarOpcoesChamadas
 } from './lancar-chamadas'
 import { listarHistoricoItem } from './historico-esteira'
@@ -140,11 +141,10 @@ export interface RespostaEsteira {
 
 /** Fila do ciclo ativo + opções de filtro + progresso global. */
 export async function listarEsteira(): Promise<RespostaEsteira> {
-  const [chamadas, mapas, opcoesBase] = await Promise.all([
-    listarChamadas(),
-    carregarPais(),
-    listarOpcoesChamadas()
-  ])
+  const [chamadas, mapas] = await Promise.all([listarChamadasParaEsteira(), carregarPais()])
+  // Os catálogos de filtro mudam pouco e são caros (5 consultas). O TTL curto
+  // absorve picos do board; as escritas de chamadas invalidam a chave.
+  const opcoesBase = await cacheado('chamadas-opcoes', 10_000, listarOpcoesChamadas)
   const decisoes = await listarUltimasDecisoes(chamadas.map((chamada) => chamada.id))
   const itens = chamadas
     .map((chamada) => montarItem(chamada, mapas, decisoes))

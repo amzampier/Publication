@@ -16,6 +16,7 @@ import { query, getTransaction } from '../../utils/db'
 import { enviarEmail } from '../../utils/mailer'
 import { exigirRateLimit } from '../../utils/rateLimit'
 import { registrarAuditoria } from '../../utils/audit'
+import { validarHierarquiaPerfil } from '../../utils/hierarquia'
 import { requirePermission } from '../../utils/permission'
 import { invalidarCache } from '../../utils/cache'
 

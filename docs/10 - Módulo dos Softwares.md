@@ -251,7 +251,6 @@ resolve `criado_em`/`atualizado_em`. Escritas registram auditoria com recurso **
 
 ## 10. Pendências e próximos passos
 
-- **RBAC na interface:** gate de rota/botões por permissão do módulo `softwares` no cliente (hoje a
-  autorização é server-side; a UI mostra a tela a qualquer sessão válida).
+- **RBAC na interface:** gate de rota/botões por permissão do módulo `softwares` no cliente (o gate é aplicado no cliente com `.can()` e reaplicado no servidor; a exportação usa `?exportar=1`).
 - **Escala:** migrar busca/filtros/paginação para server-side se o catálogo crescer.
 - **Releases/Projetos:** as telas que consomem softwares passam a usar `codigo` (FK já reapontado).

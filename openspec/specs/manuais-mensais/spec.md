@@ -313,10 +313,17 @@ validar título, mês, ano e status; derivar `autorNome`/`revisorNome` de `usuar
 com itens ou com anexos → `409`); e registrar a operação na trilha de auditoria com recurso
 **"Manuais Mensais"**.
 
+A transição de status para `Publicado` SHALL exigir a permissão `publicar` em **qualquer** caminho:
+no endpoint dedicado, na criação com `status=Publicado` e na edição que altere o status para
+`Publicado`. Sem essa permissão, a operação SHALL ser recusada com `403` e nenhum dado SHALL ser
+alterado — mesmo que o perfil possua `criar` ou `alterar`. Quando a transição para `Publicado` for
+autorizada pela edição ou criação, o servidor SHALL preencher `data_publicacao` (preservando uma
+data histórica existente) e SHALL auditar a operação como **"Homologação"**, não como simples
+"Alteração".
+
 #### Scenario: Criar gera código e registra auditoria
 - **WHEN** um usuário com `manuais`/`criar` cria um catálogo válido
-- **THEN** o registro é gravado com `codigo` derivado de `mes`/`ano`, a resposta é `201` e a trilha
-  registra uma Inclusão do recurso "Manuais Mensais"
+- **THEN** o registro é gravado com `codigo` derivado de `mes`/`ano`, a resposta é `201` e a trilha registra uma Inclusão do recurso "Manuais Mensais"
 
 #### Scenario: Mês/ano duplicado responde 409
 - **WHEN** a criação ou edição tenta usar um `(ano, mes_numero)` já existente
@@ -328,8 +335,7 @@ com itens ou com anexos → `409`); e registrar a operação na trilha de audito
 
 #### Scenario: Publicar e arquivar
 - **WHEN** o usuário publica ou arquiva um catálogo
-- **THEN** o status/`arquivada` são gravados, a data histórica é preservada e a trilha registra a
-  operação
+- **THEN** o status/`arquivada` são gravados, a data histórica é preservada e a trilha registra a operação
 
 #### Scenario: Exclusão bloqueada no servidor
 - **WHEN** `DELETE /api/manuais/:id` é chamado para um catálogo arquivado ou com itens/anexos
@@ -339,6 +345,17 @@ com itens ou com anexos → `409`); e registrar a operação na trilha de audito
 - **WHEN** um perfil sem a funcionalidade exigida chama a rota de escrita
 - **THEN** a API responde `403` e nenhum dado é alterado
 
+#### Scenario: Edição não publica sem a permissão publicar
+- **WHEN** um perfil com `manuais`/`alterar` e sem `publicar` envia `PUT /api/manuais/:id` com `status=Publicado`
+- **THEN** a API responde `403`, o status permanece inalterado e nenhuma chamada filha é publicada
+
+#### Scenario: Criação não publica sem a permissão publicar
+- **WHEN** um perfil com `manuais`/`criar` e sem `publicar` envia `POST /api/manuais` com `status=Publicado`
+- **THEN** a API responde `403` e nenhum catálogo é criado
+
+#### Scenario: Edição autorizada publica e homologa
+- **WHEN** um perfil com `publicar` envia `PUT /api/manuais/:id` mudando o status para `Publicado`
+- **THEN** o status passa a `Publicado`, `data_publicacao` é preenchida se vazia, a cascata publica as filhas em `Publicar` e a trilha registra "Homologação"
 ### Requirement: Importação de Manuais por planilha
 O sistema SHALL importar catálogos mensais de uma planilha `.xlsx` com as colunas **Título, Mês,
 Ano, Descrição, Status, Data de Criação, Data de Publicação, Destaque do mês e Destaque da semana**

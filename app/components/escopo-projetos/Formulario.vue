@@ -3,6 +3,7 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { ClipboardList, CalendarDays, Boxes, Clock } from '@lucide/vue'
 import type { SegmentedOption } from '../ui/Segmented.vue'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
 import {
   formatarDataHora,
   validarEscopo,
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const { can } = usePermissions()
 const { escopos, adicionar, atualizar } = useEscopoProjetosModelo()
 
 interface Rascunho {
@@ -64,12 +66,19 @@ const erros = ref<Partial<Record<CampoEscopo, string>>>({})
 
 const titulo = computed(() => (props.modo === 'editar' ? 'Editar Escopo' : 'Novo Escopo'))
 
-const statusOpcoes: SegmentedOption[] = [
-  { value: 'Em Andamento', label: 'Em Andamento', tone: 'sky' },
-  { value: 'Homologação', label: 'Homologação', tone: 'indigo' },
-  { value: 'Concluído', label: 'Concluído', tone: 'emerald' },
-  { value: 'Publicado', label: 'Publicado', tone: 'navy' }
-]
+const statusOpcoes = computed<SegmentedOption[]>(() => {
+  const opcoes: SegmentedOption[] = [
+    { value: 'Em Andamento', label: 'Em Andamento', tone: 'sky' },
+    { value: 'Homologação', label: 'Homologação', tone: 'indigo' },
+    { value: 'Concluído', label: 'Concluído', tone: 'emerald' }
+  ]
+  // Publicar é uma ação própria: sem a permissão, a opção só aparece para
+  // exibir o status atual de um registro já publicado (somente leitura).
+  if (can('escopo-projetos', 'publicar') || rascunho.value.status === 'Publicado') {
+    opcoes.push({ value: 'Publicado', label: 'Publicado', tone: 'navy' })
+  }
+  return opcoes
+})
 
 // Softwares contemplados NÃO são escolhidos no formulário: a API devolve os
 // nomes das chamadas e eles só aparecem quando existir pelo menos um item.

@@ -274,6 +274,8 @@ interface ManuaisModelo {
 - **Frontend:** `useManuaisModelo` mantém a lista da API, itens lazy/cache, filtros em sessão e os
   derivados `linhas`/`kpis`/`opcoes`; as escritas chamam a API e atualizam a lista local.
 
+> **Permissão de publicação (RL06):** a transição para `Publicado` pela criação ou edição exige `manuais`/`publicar` (não basta `criar`/`alterar`). Sem ela, a API responde `403` sem efeito; a transição autorizada preenche `data_publicacao` quando vazia (preservando a histórica), executa a cascata e audita **Homologação**.
+
 ## 5. Fluxos
 
 - **Listagem:** `GET /api/manuais` no `onMounted`; overlay no voo; falha → toast + lista vazia;
@@ -305,8 +307,8 @@ interface ManuaisModelo {
   `publicar`, `arquivar`, `download`, `exportar`, `importar`, `filtrar`, `buscar`, `clonar` e
   `visualizar_itens`. A clonagem exige `clonar` na UI e `criar` na gravação; a matriz recusa
   `clonar` sem `criar`.
-- **Catálogo RBAC:** total **90**; Administrador `90/90`, Editor `65/90`, Revisor `39/90`, Leitor
-  `14/90`; total `208` e denominador `4 × 90 = 360` (`docs/07`).
+- **Catálogo RBAC:** catálogo **92**; Administrador `92/92`, Editor `67/92`, Revisor `41/92`, Leitor
+  `14/92`; total `214` e denominador `4 × 92 = 368` (`docs/07`).
 - **Auditoria:** o recurso **"Manuais Mensais"** aparece automaticamente no filtro de recursos;
   as rotas mapeadas estão em `docs/05` §6.2.
 

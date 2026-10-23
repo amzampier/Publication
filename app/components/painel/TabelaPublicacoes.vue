@@ -2,9 +2,9 @@
 import { computed, ref } from 'vue'
 import { formatarData } from '#shared/lancar-chamadas'
 import type { PublicacaoPainel, PublicacoesPainel } from '#shared/painel-executivo'
+import { varianteStatus as varianteCanonica } from '#shared/status-badge'
 
 type AbaPublicacao = 'releases' | 'manuais' | 'escopos'
-type VarianteBadge = 'done' | 'reconciled' | 'inReview' | 'blocked' | 'pending' | 'neutral'
 
 interface Props {
   porPublicacao: PublicacoesPainel
@@ -24,13 +24,11 @@ const tituloAba = computed(() =>
   aba.value === 'releases' ? 'Release Week' : aba.value === 'manuais' ? 'Manuais' : 'Escopo de Projetos'
 )
 
-const varianteStatus = (status: string): VarianteBadge => {
-  if (status === 'Publicado') return 'done'
-  if (status === 'Aprovado') return 'reconciled'
-  if (status === 'Em Revisão' || status === 'Homologação') return 'inReview'
-  if (status === 'Alterações Solicitadas' || status === 'Inativo') return 'blocked'
-  return 'pending'
-}
+const dominio = computed<'release' | 'manual' | 'escopo'>(() =>
+  aba.value === 'releases' ? 'release' : aba.value === 'manuais' ? 'manual' : 'escopo'
+)
+
+const varianteStatus = (status: string) => varianteCanonica(dominio.value, status)
 
 const corProgresso = (percentual: number): string =>
   percentual >= 100 ? '#1a9e07' : percentual > 0 ? '#0364f7' : '#94a3b8'

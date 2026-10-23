@@ -262,6 +262,12 @@ export function normalizarSoftwareIds(valor: unknown): string[] {
 }
 
 /** `true` quando a string é uma data civil `AAAA-MM-DD` válida. */
+/** URL da variante reduzida (320 px WebP) de uma imagem de chamada. */
+export function urlMiniatura(url: string): string {
+  if (!url) return url
+  const m = /^(.*)\.(png|jpe?g|webp|gif)$/i.exec(url)
+  return m ? `${m[1]}-320.webp` : url
+}
 export function ehDataIso(valor: string): boolean {
   if (!ISO_DATE.test(valor)) return false
   const [ano = 0, mes = 0, dia = 0] = valor.split('-').map(Number)
@@ -421,10 +427,13 @@ export function validarChamada(
   const dataLancamento = texto(dados.dataLancamento)
   if (!dataLancamento) erros.dataLancamento = 'Informe a data de lançamento.'
   else if (!ehDataIso(dataLancamento)) erros.dataLancamento = 'A data de lançamento é inválida.'
+  else if (!ehSegundaFeira(dataLancamento)) erros.dataLancamento = 'A data de lançamento deve ser uma segunda-feira.'
 
   const dataLiberacao = texto(dados.dataLiberacao)
   if (dataLiberacao && !ehDataIso(dataLiberacao)) {
     erros.dataLiberacao = 'A data de liberação é inválida.'
+  } else if (dataLiberacao && !ehSegundaFeira(dataLiberacao)) {
+    erros.dataLiberacao = 'A data de liberação deve ser uma segunda-feira.'
   }
 
   const tipo = texto(dados.tipo)

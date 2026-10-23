@@ -64,7 +64,7 @@ watch(
       <strong class="text-slate-900">{{ total }}</strong> {{ rotulo }} exibidas
     </div>
 
-    <div class="flex items-center gap-2.5 text-[11px]">
+    <div class="flex max-w-full flex-wrap items-center gap-2.5 text-[11px]">
       <div class="flex items-center gap-1.5 text-slate-600">
         <label :for="pageSizeId">Linhas por página:</label>
         <select

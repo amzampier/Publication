@@ -2,6 +2,7 @@
 // A pasta uploads/ na raiz é servida em runtime via nitro.publicAssets (nuxt.config.ts).
 import { mkdir, stat, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import sharp from 'sharp'
 
 /** Destinos permitidos — whitelist fechada (spec uploads: destino fora → 400). */
 export const UPLOAD_DESTINOS = ['logomarcas', 'avatares', 'logos', 'chamadas'] as const
@@ -110,5 +111,18 @@ export async function gravarUpload(
     }
   }
   await writeFile(join(dir, final), dados)
+  if (destino === 'chamadas') {
+    // Variante leve para a galeria (fallback silencioso: o original continua válido).
+    try {
+      const baseMiniatura = baseSemExtensao(final)
+      const miniatura = await sharp(dados)
+        .resize({ width: 320, withoutEnlargement: true })
+        .webp({ quality: 75 })
+        .toBuffer()
+      await writeFile(join(dir, `${baseMiniatura}-320.webp`), miniatura)
+    } catch {
+      // Sem binário de imagem para resize: a galeria usa o original.
+    }
+  }
   return `/uploads/${partes.join('/')}/${final}`
 }

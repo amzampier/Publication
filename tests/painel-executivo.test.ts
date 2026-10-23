@@ -170,8 +170,8 @@ describe('fluxo da esteira', () => {
     const noCiclo = itens.filter(itemNoCicloAtivo).map(comoItemEsteira)
     const progresso = calcularProgresso(noCiclo)
 
-    expect(fluxo.total).toBe(progresso.total)
-    expect(fluxo.percentualFluxo).toBe(progresso.percentualRevisado)
+    expect(fluxo.total).toBe(progresso.total + fluxo.noPortal)
+    expect(fluxo.percentualFluxo).toBe(Math.round(((progresso.aprovado + progresso.publicar + fluxo.noPortal) / fluxo.total) * 100))
     expect(fluxo.aprovado).toBe(progresso.aprovado)
     expect(fluxo.publicar).toBe(progresso.publicar)
     expect(fluxo.recusado).toBe(progresso.recusado)
@@ -185,10 +185,10 @@ describe('fluxo da esteira', () => {
     expect(fluxo.publicar).toBe(1)
     expect(fluxo.aguardandoPai).toBe(1)
     expect(fluxo.noPortal).toBe(1)
-    expect(fluxo.total).toBe(5)
+    expect(fluxo.total).toBe(6)
     expect(fluxo.aging7).toBe(2)
     expect(fluxo.aging15).toBe(1)
-    expect(fluxo.percentualFluxo).toBe(40)
+    expect(fluxo.percentualFluxo).toBe(50)
   })
 
   it('não divide por zero sem chamadas no ciclo', () => {

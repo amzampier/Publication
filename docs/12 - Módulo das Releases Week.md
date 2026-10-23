@@ -240,6 +240,8 @@ interface ReleaseWeekModelo {
   `filtros` (sessão) e os derivados `linhas`/`kpis`/`opcoes`; as escritas chamam a API e atualizam a
   lista local.
 
+> **Permissão de publicação (RL06):** a transição para `Publicado` pela criação ou edição exige `release-week`/`publicar` (não basta `criar`/`alterar`). Sem ela, a API responde `403` sem efeito; a transição autorizada grava `data_aprovacao`, executa a cascata e audita **Homologação**. Reabrir limpa `data_aprovacao` e a auditoria volta a ser **Alteração**.
+
 ## 5. Fluxos
 
 - **Listagem:** `GET /api/release-week` no `onMounted`; loading no voo; falha → toast + lista vazia;

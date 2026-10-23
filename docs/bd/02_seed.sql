@@ -2,7 +2,7 @@
 -- PUBLICATION ENTERPRISE PLATFORM - SEEDS INICIAIS (MARIADB 11.8+ LTS)
 -- Arquivo: 02_seed.sql — executar APÓS 01_create_tables.sql no banco publications.
 -- Fonte da matriz de permissões: docs/07 §7 / app usePerfisModelo MATRIZ_SEED
--- (4 perfis × 11 módulos × 9 ações = 99 permissões possíveis por perfil).
+-- (4 perfis × 11 módulos × 92 funcionalidades no catálogo).
 -- Re-execução: as UNIQUE keys (uk_perfil_modulo, uk_usuarios_email, PKs de
 -- config) evitam duplicidade — o runner tolera erros 1062 (docs/qa/03).
 -- =========================================================================

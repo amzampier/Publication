@@ -3,6 +3,7 @@ import { unlink } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { createError } from 'h3'
 import { getTransaction, query } from './db'
+import { invalidarCache } from './cache'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
 import {
@@ -12,6 +13,7 @@ import {
   type OpcoesTransicao
 } from './historico-esteira'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
+import { escaparLike } from './sql'
 import {
   carregarMidiasPorItem,
   sincronizarMidias,
@@ -209,6 +211,151 @@ export async function listarChamadas(): Promise<ChamadaModelo[]> {
   )
 }
 
+export interface FiltrosListaChamadas {
+  busca?: string
+  status?: string
+  tipo?: string
+  impacto?: string
+  origem?: string
+  parceiroId?: string
+  softwareIds?: string[]
+  dataLancamentoDe?: string
+  dataLancamentoAte?: string
+  dataLiberacaoDe?: string
+  dataLiberacaoAte?: string
+}
+
+export interface PaginaChamadas {
+  itens: ChamadaModelo[]
+  total: number
+  pagina: number
+  porPagina: number
+  kpis: { total: number; revisar: number; aprovado: number; recusado: number }
+}
+
+const COLUNAS_LISTA = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, e.software_id,
+  e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
+  e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
+  e.impacto, e.status, e.tags, e.criado_em, e.atualizado_em,
+  EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
+
+function whereChamadas(filtros: FiltrosListaChamadas): { sql: string; params: unknown[] } {
+  const condicoes: string[] = []
+  const params: unknown[] = []
+  const igual = (coluna: string, valor: unknown) => {
+    const textoValor = typeof valor === 'string' ? valor.trim() : ''
+    if (!textoValor) return
+    condicoes.push(`${coluna} = ?`)
+    params.push(textoValor)
+  }
+  igual('e.status', filtros.status)
+  igual('e.tipo', filtros.tipo)
+  igual('e.impacto', filtros.impacto)
+  igual('e.origem', filtros.origem)
+  igual('e.parceiro_id', filtros.parceiroId)
+  if (filtros.dataLancamentoDe) {
+    condicoes.push('e.data_lancamento >= ?')
+    params.push(filtros.dataLancamentoDe)
+  }
+  if (filtros.dataLancamentoAte) {
+    condicoes.push('e.data_lancamento <= ?')
+    params.push(filtros.dataLancamentoAte)
+  }
+  if (filtros.dataLiberacaoDe) {
+    condicoes.push('e.data_liberacao >= ?')
+    params.push(filtros.dataLiberacaoDe)
+  }
+  if (filtros.dataLiberacaoAte) {
+    condicoes.push('e.data_liberacao <= ?')
+    params.push(filtros.dataLiberacaoAte)
+  }
+  const softwares = (filtros.softwareIds ?? []).filter(Boolean)
+  if (softwares.length) {
+    condicoes.push(
+      `EXISTS (SELECT 1 FROM entregas_itens_softwares es
+                WHERE es.entrega_item_id = e.id
+                  AND es.software_codigo IN (${softwares.map(() => '?').join(', ')}))`
+    )
+    params.push(...softwares)
+  }
+  const busca = (filtros.busca ?? '').trim()
+  if (busca) {
+    const termo = `%${escaparLike(busca)}%`
+    condicoes.push(
+      `(e.chamada LIKE ? OR e.titulo LIKE ? OR e.descricao_completa LIKE ?
+        OR e.solucao LIKE ? OR e.software LIKE ? OR e.modulo LIKE ?
+        OR e.menu_funcionalidade LIKE ? OR e.parceiro LIKE ? OR e.tags LIKE ?
+        OR e.release LIKE ?)`
+    )
+    params.push(termo, termo, termo, termo, termo, termo, termo, termo, termo, termo)
+  }
+  return { sql: condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '', params }
+}
+
+/** Listagem paginada e filtrada no servidor; sem HTML/mídias (detalhe sob demanda). */
+export async function listarChamadasPaginadas(opts: {
+  pagina?: number
+  porPagina?: number
+  filtros?: FiltrosListaChamadas
+}): Promise<PaginaChamadas> {
+  const pagina = Math.max(1, Math.trunc(opts.pagina ?? 1))
+  const porPagina = Math.min(200, Math.max(1, Math.trunc(opts.porPagina ?? 20)))
+  const { sql, params } = whereChamadas(opts.filtros ?? {})
+  const offset = (pagina - 1) * porPagina
+  const [totalRows, kpiRows, linhas] = await Promise.all([
+    query<Row[]>(`SELECT COUNT(*) AS total FROM entregas_itens e ${sql}`, params),
+    query<Row[]>(
+      `SELECT COUNT(*) AS total,
+              COALESCE(SUM(e.status = 'Revisar'), 0) AS revisar,
+              COALESCE(SUM(e.status = 'Aprovado'), 0) AS aprovado,
+              COALESCE(SUM(e.status = 'Recusado'), 0) AS recusado
+         FROM entregas_itens e ${sql}`,
+      params
+    ),
+    query<Row[]>(
+      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e ${sql}
+        ORDER BY e.chamada ASC LIMIT ? OFFSET ?`,
+      [...params, porPagina, offset]
+    )
+  ])
+  const ids = linhas.map((linha) => texto(linha.id))
+  const softwares = await carregarSoftwaresPorItem(ids)
+  return {
+    itens: linhas.map((linha) =>
+      montarChamada(linha, softwares.get(texto(linha.id)), undefined)
+    ),
+    total: Number(totalRows[0]?.total ?? 0),
+    pagina,
+    porPagina,
+    kpis: {
+      total: Number(kpiRows[0]?.total ?? 0),
+      revisar: Number(kpiRows[0]?.revisar ?? 0),
+      aprovado: Number(kpiRows[0]?.aprovado ?? 0),
+      recusado: Number(kpiRows[0]?.recusado ?? 0)
+    }
+  }
+}
+
+/** Projeção enxuta e filtrada, sem limite, para exportação/board. */
+export async function listarChamadasFiltradas(
+  filtros: FiltrosListaChamadas = {}
+): Promise<ChamadaModelo[]> {
+  const { sql, params } = whereChamadas(filtros)
+  const linhas = await query<Row[]>(
+    `SELECT ${COLUNAS_LISTA} FROM entregas_itens e ${sql} ORDER BY e.chamada ASC`,
+    params
+  )
+  const ids = linhas.map((linha) => texto(linha.id))
+  const softwares = await carregarSoftwaresPorItem(ids)
+  return linhas.map((linha) =>
+    montarChamada(linha, softwares.get(texto(linha.id)), undefined)
+  )
+}
+
+/** Projeção enxuta para o board da Esteira (sem HTML/mídias, todos os itens). */
+export async function listarChamadasParaEsteira(): Promise<ChamadaModelo[]> {
+  return listarChamadasFiltradas()
+}
 export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
   const linhas = await query<Row[]>(
     `SELECT ${COLUNAS} FROM entregas_itens e WHERE e.id = ? LIMIT 1`,
@@ -433,7 +580,9 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
     manual,
     softwares: softwaresOrdenados,
     parceiro,
-    dataLiberacao: entrada.dataLiberacao,
+    dataLiberacao:
+      entrada.dataLiberacao ||
+      (release?.data_publicacao ? dataDia(release.data_publicacao) : ''),
     origem
   }
 }
@@ -623,8 +772,8 @@ export async function criarChamada(
   dados: Record<string, unknown>,
   autor: AutorChamada
 ): Promise<ChamadaModelo> {
+  invalidarCache('chamadas-opcoes')
   const entrada = await validarEntrada(dados)
-  entrada.dataLiberacao = ''
   const vinculos = await resolverVinculos(entrada)
   const preparada = prepararChamada(randomUUID(), entrada, vinculos, autor, 'Revisar')
   const tx = await getTransaction()
@@ -653,6 +802,7 @@ export async function atualizarChamada(
   dados: Record<string, unknown>,
   autor: AutorChamada
 ): Promise<ChamadaModelo> {
+  invalidarCache('chamadas-opcoes')
   const atual = await buscarChamada(id)
   if (!atual) erro404()
 
@@ -768,6 +918,7 @@ async function transicionarChamada(
   ator: AtorTransicao,
   opcoes: OpcoesTransicao
 ): Promise<ChamadaModelo> {
+  invalidarCache('chamadas-opcoes')
   const tx = await getTransaction()
   try {
     const resultado = await tx.query<{ affectedRows: number }>(
@@ -925,6 +1076,7 @@ export async function suspenderChamada(
 }
 
 export async function excluirChamada(id: string): Promise<ChamadaModelo> {
+  invalidarCache('chamadas-opcoes')
   const atual = await buscarChamada(id)
   if (!atual) erro404()
   if (atual.status !== 'Revisar') {
@@ -964,6 +1116,7 @@ export async function importarChamadas(
   linhas: unknown,
   autor: AutorChamada
 ): Promise<{ importados: number }> {
+  invalidarCache('chamadas-opcoes')
   if (!Array.isArray(linhas) || linhas.length === 0) {
     erro400('Envie ao menos uma linha para importar.')
   }

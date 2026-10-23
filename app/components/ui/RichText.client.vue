@@ -82,10 +82,12 @@ onMounted(() => {
     ],
     editorProps: {
       attributes: {
+        id: campoId,
         class:
           'ds-rich-text w-full px-3.5 py-2.5 text-xs leading-relaxed text-slate-900 outline-none',
         style: `min-height: ${props.minHeight}px`,
-        'aria-describedby': props.error ? erroId : ''
+        'aria-describedby': props.error ? erroId : '',
+        'aria-label': props.label || 'Editor de texto rico'
       }
     },
     onUpdate: emitirConteudo,

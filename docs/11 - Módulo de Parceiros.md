@@ -262,8 +262,7 @@ auditoria com recurso **"Parceiros"**.
 
 ## 10. Pendências e próximos passos
 
-- **RBAC na interface:** gate de rota/botões por permissão do módulo `parceiros` no cliente (hoje a
-  autorização é server-side; a UI mostra a tela a qualquer sessão válida).
+- **RBAC na interface:** gate de rota/botões por permissão do módulo `parceiros` no cliente (o gate é aplicado no cliente com `.can()` e reaplicado no servidor; a exportação usa `?exportar=1`).
 - **Escala:** migrar busca/filtros/paginação para server-side se o cadastro crescer.
 - **Relacionamentos:** "Operadores Ativos"/entrega por parceiro e campos da referência visual
   (CNPJ, endereço completo, segmento, matriz/filial) ficam fora desta versão.

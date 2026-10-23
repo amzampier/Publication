@@ -35,7 +35,7 @@ export async function enviarAvatar(dataUrl: string): Promise<string> {
   const form = new FormData()
   form.append('pasta', 'avatares')
   form.append('file', new Blob([bytes], { type: mime }), `avatar.${extensao}`)
-  const resp = await useApiFetch<{ url: string }>('/api/uploads', {
+  const resp = await useApiFetch<{ url: string }>('/api/uploads?pasta=avatares', {
     method: 'POST',
     body: form
   })

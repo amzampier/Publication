@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   await registrarAuditoria(event, {
     acao: 'Alteração',
     recurso: 'Release Week',
-    entidadeId: arquivada.codigo,
+    entidadeId: arquivada.id,
     detalhes: `Arquivou a Release Week '${arquivada.nome}' (${arquivada.codigo})`
   })
   return arquivada

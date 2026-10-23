@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { ImagePlus, Trash2 } from '@lucide/vue'
-import { MAX_IMAGENS_CHAMADA } from './validadores'
+import { MAX_IMAGENS_CHAMADA, urlMiniatura } from './validadores'
 
 interface Props {
   imagens: string[]
@@ -213,7 +213,9 @@ const remover = (indice: number) => {
           class="group relative overflow-hidden rounded-lg border border-slate-200 bg-white"
         >
           <img
-            :src="imagem"
+            :src="urlMiniatura(imagem)"
+            loading="lazy"
+            decoding="async"
             :alt="`Imagem de evidência ${indice + 1}`"
             class="h-24 w-full object-cover"
           >

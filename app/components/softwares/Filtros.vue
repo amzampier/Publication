@@ -45,7 +45,6 @@ const cancelar = () => {
 // completa volta — comportamento espelhado de PerfisFiltros).
 const limpar = () => {
   rascunho.value = { ...VAZIO }
-  limparFiltros()
 }
 </script>
 

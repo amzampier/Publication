@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useState } from '#app'
 import { useApiFetch } from '../../composables/useApiFetch'
 import { useAuth } from '../../composables/useAuth'
@@ -75,6 +75,11 @@ export const useLancarChamadasModelo = () => {
     ...CATALOGO_VAZIO
   }))
   const carregando = useState<boolean>('lancar-chamadas-carregando', () => false)
+  const pagina = useState<number>('lancar-chamadas-pagina', () => 1)
+  const porPagina = useState<number>('lancar-chamadas-por-pagina', () => 20)
+  const total = useState<number>('lancar-chamadas-total', () => 0)
+  const kpisServidor = useState('lancar-chamadas-kpis', () => ({ total: 0, revisar: 0, aprovado: 0, recusado: 0 }))
+  const erro = useState<string | null>('lancar-chamadas-erro', () => null)
   const carregado = useState<boolean>('lancar-chamadas-carregado', () => false)
   const busca = useState<string>('lancar-chamadas-busca', () => '')
   const filtros = useState<FiltrosChamada>('lancar-chamadas-filtros', () => ({
@@ -87,21 +92,66 @@ export const useLancarChamadasModelo = () => {
     nome: usuario.value?.nome ?? 'Sistema'
   }))
 
+  const parametrosLista = (): string => {
+    const params = new URLSearchParams()
+    params.set('pagina', String(pagina.value))
+    params.set('porPagina', String(porPagina.value))
+    if (busca.value.trim()) params.set('busca', busca.value.trim())
+    const f = filtros.value
+    for (const chave of [
+      'status',
+      'tipo',
+      'impacto',
+      'origem',
+      'parceiroId',
+      'dataLancamentoDe',
+      'dataLancamentoAte',
+      'dataLiberacaoDe',
+      'dataLiberacaoAte'
+    ] as const) {
+      if (f[chave]) params.set(chave, String(f[chave]))
+    }
+    if (f.softwareIds.length) params.set('softwareIds', f.softwareIds.join(','))
+    return params.toString()
+  }
+
   const carregarChamadas = async (forcar = false): Promise<boolean> => {
     if (carregado.value && !forcar) return true
     if (carregando.value) return false
     carregando.value = true
+    erro.value = null
     try {
       const [lista, opcoes] = await Promise.all([
-        useApiFetch<{ chamadas: ChamadaModelo[] }>('/api/lancar-chamadas'),
+        useApiFetch<{
+          itens: ChamadaModelo[]
+          chamadas?: ChamadaModelo[]
+          total: number
+          pagina: number
+          porPagina: number
+          kpis: { total: number; revisar: number; aprovado: number; recusado: number }
+        }>(`/api/lancar-chamadas?${parametrosLista()}`),
         useApiFetch<CatalogosChamada>('/api/lancar-chamadas/opcoes')
       ])
-      chamadas.value = lista.chamadas
+      chamadas.value = lista.itens ?? lista.chamadas ?? []
+      total.value = lista.total ?? chamadas.value.length
+      pagina.value = lista.pagina ?? pagina.value
+      porPagina.value = lista.porPagina ?? porPagina.value
+      kpisServidor.value = lista.kpis ?? {
+        total: total.value,
+        revisar: 0,
+        aprovado: 0,
+        recusado: 0
+      }
       catalogo.value = opcoes
       carregado.value = true
       return true
-    } catch {
+    } catch (falha) {
+      const e = falha as { statusMessage?: string; data?: { statusMessage?: string } }
+      erro.value =
+        e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível carregar as chamadas.'
       chamadas.value = []
+      total.value = 0
+      kpisServidor.value = { total: 0, revisar: 0, aprovado: 0, recusado: 0 }
       catalogo.value = { ...CATALOGO_VAZIO }
       carregado.value = false
       return false
@@ -110,39 +160,49 @@ export const useLancarChamadasModelo = () => {
     }
   }
 
+  const definirPagina = async (valor: number) => {
+    pagina.value = Math.max(1, valor)
+    await carregarChamadas(true)
+  }
+
+  const definirPorPagina = async (valor: number) => {
+    porPagina.value = Math.max(1, valor)
+    pagina.value = 1
+    await carregarChamadas(true)
+  }
+
   const chamadasFiltradas = computed(() =>
-    buscarChamadas(filtrarChamadas(chamadas.value, filtros.value), busca.value)
+    chamadas.value
   )
 
-  const linhas = computed<LinhaChamada[]>(() =>
-    chamadasFiltradas.value.map((chamada) => {
-      const vinculos = [
-        codigoVinculo(catalogo.value.releases, chamada.releaseId),
-        codigoVinculo(catalogo.value.manuais, chamada.manualId),
-        codigoVinculo(catalogo.value.projetos, chamada.projetoId)
-      ].filter(Boolean)
-      return {
-        id: chamada.id,
-        chamada: chamada.chamada,
-        titulo: chamada.titulo,
-        software: chamada.softwares.join(', '),
-        softwares: [...chamada.softwares],
-        vinculo: vinculos.join(' · '),
-        vinculos,
-        modulo: chamada.modulo,
-        tipo: chamada.tipo,
-        impacto: chamada.impacto,
-        status: chamada.status,
-        dataLancamento: formatarData(chamada.dataLancamento),
-        dataLiberacao: formatarData(chamada.dataLiberacao),
-        dataLancamentoIso: chamada.dataLancamento,
-        dataLiberacaoIso: chamada.dataLiberacao,
-        origem: chamada.origem
-      }
-    })
-  )
+  const mapearLinha = (chamada: ChamadaModelo): LinhaChamada => {
+    const vinculos = [
+      codigoVinculo(catalogo.value.releases, chamada.releaseId),
+      codigoVinculo(catalogo.value.manuais, chamada.manualId),
+      codigoVinculo(catalogo.value.projetos, chamada.projetoId)
+    ].filter(Boolean)
+    return {
+      id: chamada.id,
+      chamada: chamada.chamada,
+      titulo: chamada.titulo,
+      software: chamada.softwares.join(', '),
+      softwares: [...chamada.softwares],
+      vinculo: vinculos.join(' · '),
+      vinculos,
+      modulo: chamada.modulo,
+      tipo: chamada.tipo,
+      impacto: chamada.impacto,
+      status: chamada.status,
+      dataLancamento: formatarData(chamada.dataLancamento),
+      dataLiberacao: formatarData(chamada.dataLiberacao),
+      dataLancamentoIso: chamada.dataLancamento,
+      dataLiberacaoIso: chamada.dataLiberacao,
+      origem: chamada.origem
+    }
+  }
 
-  const kpis = computed(() => calcularKpis(chamadasFiltradas.value))
+  const linhas = computed<LinhaChamada[]>(() => chamadasFiltradas.value.map(mapearLinha))
+  const kpis = computed(() => kpisServidor.value ?? calcularKpis(chamadasFiltradas.value))
 
   const filtrosAtivosCount = computed(
     () =>
@@ -253,15 +313,45 @@ export const useLancarChamadasModelo = () => {
     return resultado
   }
 
+  const buscarDetalhe = (id: string): Promise<ChamadaModelo> =>
+    useApiFetch<ChamadaModelo>(`/api/lancar-chamadas/${id}`)
+
+  const exportarLinhas = async (): Promise<LinhaChamada[]> => {
+    const resposta = await useApiFetch<{ chamadas: ChamadaModelo[] }>(
+      `/api/lancar-chamadas?download=1&${parametrosLista()}`
+    )
+    return (resposta.chamadas ?? []).map(mapearLinha)
+  }
+
+  let debounceBusca: ReturnType<typeof setTimeout> | null = null
+  watch(
+    [busca, filtros],
+    () => {
+      if (debounceBusca) clearTimeout(debounceBusca)
+      debounceBusca = setTimeout(() => {
+        pagina.value = 1
+        void carregarChamadas(true)
+      }, 300)
+    },
+    { deep: true }
+  )
   return {
     chamadas,
     catalogo,
     carregando,
     carregado,
+    erro,
+    pagina,
+    porPagina,
+    total,
     busca,
     filtros,
     autorAtual,
     carregarChamadas,
+    definirPagina,
+    definirPorPagina,
+    buscarDetalhe,
+    exportarLinhas,
     chamadasFiltradas,
     linhas,
     kpis,

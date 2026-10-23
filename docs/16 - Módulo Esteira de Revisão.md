@@ -40,6 +40,9 @@ aprovar, recusar, reabrir, publicar e suspender com parecer e critérios.
 
 ## 1. Visão geral e rota
 
+> **RL06-2:** o filtro de status inclui itens fora do ciclo ativo (ex.: `Publicado`), o histórico de id inexistente responde `404` e o board usa projeção enxuta com cache curto das opções.
+
+
 A Esteira de Revisão é a **dona do fluxo de homologação** das chamadas de `entregas_itens`. Ela
 reúne, em um board visual, os itens cujo conteúdo pai (Release Week, Manual ou Escopo de Projetos)
 ainda está ativo — **não arquivado** —, exceto os itens em `Publicado` (ocultos por padrão, pois já

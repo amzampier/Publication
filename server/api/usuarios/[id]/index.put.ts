@@ -1,6 +1,7 @@
 // PUT /api/usuarios/:id — edição (200; 404; 409 e-mail duplicado; 400 validações)
 import { atualizarUsuario, buscarUsuarioTelaPorId } from '../../../utils/usuarios'
 import { registrarAuditoria } from '../../../utils/audit'
+import { validarHierarquiaPerfil } from '../../../utils/hierarquia'
 import { requirePermission } from '../../../utils/permission'
 
 export default defineEventHandler(async (event) => {

@@ -278,10 +278,17 @@ datas não têm essa restrição), aplicar a guarda de exclusão (arquivada ou c
 registrar a operação na trilha de auditoria com recurso **"Release Week"**. A listagem e os itens
 SHALL refletir o banco, e a release arquivada SHALL deixar de aparecer na listagem.
 
+A transição de status para `Publicado` SHALL exigir a permissão `publicar` em **qualquer** caminho:
+no endpoint dedicado, na criação com `status=Publicado` e na edição que altere o status para
+`Publicado`. Sem essa permissão, a operação SHALL ser recusada com `403` e nenhum dado SHALL ser
+alterado — mesmo que o perfil possua `criar` ou `alterar`. Quando a transição para `Publicado` for
+autorizada pela edição ou criação, o servidor SHALL gravar `data_aprovacao` e SHALL auditar a
+operação como **"Homologação"**, não como simples "Alteração". Quando a release deixar de estar
+`Publicado`, o servidor SHALL limpar `data_aprovacao`.
+
 #### Scenario: Criar gera código e registra auditoria
 - **WHEN** um usuário com `release-week`/`criar` cria uma release válida
-- **THEN** o registro é gravado com `codigo` derivado de `semana`/`ano`, a resposta é `201` e a
-  trilha registra uma Inclusão do recurso "Release Week"
+- **THEN** o registro é gravado com `codigo` derivado de `semana`/`ano`, a resposta é `201` e a trilha registra uma Inclusão do recurso "Release Week"
 
 #### Scenario: Semana duplicada responde 409
 - **WHEN** a criação ou edição tenta usar um `(ano, semana)` já existente
@@ -307,6 +314,21 @@ SHALL refletir o banco, e a release arquivada SHALL deixar de aparecer na listag
 - **WHEN** um perfil sem a funcionalidade exigida chama a rota de escrita
 - **THEN** a API responde `403` e nenhum dado é alterado
 
+#### Scenario: Edição não publica sem a permissão publicar
+- **WHEN** um perfil com `release-week`/`alterar` e sem `publicar` envia `PUT /api/release-week/:id` com `status=Publicado`
+- **THEN** a API responde `403`, o status permanece inalterado e nenhuma chamada filha é publicada
+
+#### Scenario: Criação não publica sem a permissão publicar
+- **WHEN** um perfil com `release-week`/`criar` e sem `publicar` envia `POST /api/release-week` com `status=Publicado`
+- **THEN** a API responde `403` e nenhuma release é criada
+
+#### Scenario: Edição autorizada publica e homologa
+- **WHEN** um perfil com `publicar` envia `PUT /api/release-week/:id` mudando o status para `Publicado`
+- **THEN** o status passa a `Publicado`, `data_aprovacao` é gravada, a cascata publica as filhas em `Publicar` e a trilha registra "Homologação"
+
+#### Scenario: Reabrir limpa a aprovação
+- **WHEN** uma release `Publicado` é editada para outro status
+- **THEN** `data_aprovacao` é limpa e as filhas em `Publicado` sem outro pai publicado voltam para `Publicar`
 ### Requirement: Importação de Release Weeks por planilha
 O sistema SHALL importar Release Weeks de uma planilha `.xlsx` com as colunas **Nome, Semana, Ano,
 Mês, Data Início, Data Finaliza, Data Publicação, Status, Versão, Release, Descrição e Destaque** por

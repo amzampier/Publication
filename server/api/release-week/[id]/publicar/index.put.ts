@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   await registrarAuditoria(event, {
     acao: 'Homologação',
     recurso: 'Release Week',
-    entidadeId: publicado.codigo,
+    entidadeId: publicado.id,
     detalhes: `Publicou a Release Week '${publicado.nome}' (${publicado.codigo}); ${publicado.chamadasPublicadas} chamada(s) publicada(s) em cascata`
   })
   return publicado

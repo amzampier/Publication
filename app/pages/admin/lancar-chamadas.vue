@@ -19,6 +19,7 @@ const carregando = ref(true)
 const { toast } = useToast()
 const {
   carregarChamadas,
+  buscarDetalhe,
   resolver,
   aprovar,
   desaprovar,
@@ -58,22 +59,27 @@ const abrirNovo = () => {
   formAberto.value = true
 }
 
-const abrirEdicao = (linha: LinhaChamada) => {
-  const registro = resolver(linha.id)
-  if (!registro) return
-  modo.value = 'editar'
-  chamadaEditar.value = registro
-  formAberto.value = true
+const abrirEdicao = async (linha: LinhaChamada) => {
+  try {
+    const registro = await buscarDetalhe(linha.id)
+    modo.value = 'editar'
+    chamadaEditar.value = registro
+    formAberto.value = true
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
+  }
 }
 
 const detalhesAberto = ref(false)
 const chamadaDetalhes = ref<ChamadaModelo | null>(null)
 
-const abrirDetalhes = (linha: LinhaChamada) => {
-  const registro = resolver(linha.id)
-  if (!registro) return
-  chamadaDetalhes.value = registro
-  detalhesAberto.value = true
+const abrirDetalhes = async (linha: LinhaChamada) => {
+  try {
+    chamadaDetalhes.value = await buscarDetalhe(linha.id)
+    detalhesAberto.value = true
+  } catch (erro) {
+    toast.danger('Lançar as Chamadas', mensagemErro(erro))
+  }
 }
 
 const aprovarAberto = ref(false)

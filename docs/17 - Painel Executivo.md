@@ -40,13 +40,18 @@ publicações, chamadas lançadas x liberadas, tabela de chamadas por publicaç�
 
 ## 1. Visão geral e rota
 
+> **RL06-2:** `Publicado` conta como fluxo concluído (numerador e denominador) e as agregações usam índices de data/consulta agregada, sem materializar todas as chamadas.
+
+
 - **Rota:** `/admin` → [`app/pages/admin/index.vue`](../app/pages/admin/index.vue) com
   `definePageMeta({ layout: 'admin' })` — herda o shell (header + sidebar).
 - **Navegação:** item raiz **Painel Executivo** da sidebar (`app/config/navigation.ts`) declara
   `to: '/admin'`; o clique navega (sem toast de "Módulo em construção") e o item fica ativo com
   `aria-current="page"`.
-- **Público:** qualquer sessão autenticada. Não há módulo RBAC novo para o painel; o endpoint exige
-  sessão e o middleware global responde `401` sem ela.
+- **Público:** usuários autenticados com `visualizar` em ao menos um dos módulos agregados
+  (`release-week`, `manuais`, `escopo-projetos`, `lancar-chamadas`, `softwares` ou `parceiros`).
+  Não há módulo RBAC novo, mas cada bloco exige a permissão do módulo de origem; sem nenhum módulo
+  permitido, a API responde `403`.
 - **Somente leitura:** o painel não cria, edita nem exclui registros; toda escrita continua nos
   módulos donos.
 - **Período:** seletor de ano e ação **Atualizar**. O seletor lista apenas anos com ao menos uma
@@ -169,7 +174,9 @@ e a tela não renderiza números. O bloco de fluxo da esteira não faz parte do 
 
 `GET /api/painel-executivo?ano=AAAA`
 
-- **Sessão:** obrigatória (`401` sem sessão). Não exige módulo RBAC novo.
+- **Sessão:** obrigatória (`401` sem sessão). Acesso com `visualizar` em ao menos um módulo
+  agregado; sem nenhum, `403`. Cada bloco respeita o módulo de origem. Sob saturação da fila do
+  pool, responde `503` com `Retry-After` em vez de `500`.
 - **`ano`:** opcional; ausente = ano corrente quando ele tem chamadas, senão o mais recente com
   chamadas (sem chamadas, o ano corrente). Precisa ter quatro dígitos (`1900`–`2999`); inválido →
   `400` sem consultar o banco. A resposta devolve o ano efetivamente usado em `periodo.ano` e a lista
@@ -232,10 +239,11 @@ quando existirem.
 
 - O item raiz da sidebar (`itemRaiz`) declara `to: '/admin'`; o `AppSidebar` já navega e marca
   `aria-current="page"`.
-- O painel é visível a qualquer sessão autenticada (item raiz sem módulo, conforme
-  `design-system/layout-navigation`).
-- A API exige apenas sessão; não há permissão por indicador. Se no futuro for necessário restringir,
-  entra como change própria (12º módulo RBAC), sem alterar o v1.
+- O item raiz continua sem módulo próprio (conforme `design-system/layout-navigation`), mas o
+  conteúdo é filtrado por bloco: publicações exigem `visualizar` do módulo correspondente;
+  chamadas, séries e dimensões exigem `lancar-chamadas`/`visualizar`; softwares exigem
+  `softwares`/`visualizar`.
+- Sem nenhum módulo agregado, a API responde `403` e a tela exibe o estado de acesso negado.
 
 ## 8. Estados: carregamento, erro e vazio
 

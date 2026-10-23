@@ -33,7 +33,7 @@ raiz-do-projeto/
 │   ├── app.vue                    # Ponto de entrada (NuxtRouteAnnouncer + NuxtLayout + NuxtPage + UiToastContainer)
 │   ├── components/
 │   │   ├── layout/                # Shell (AppHeader, AppSidebar)
-│   │   ├── ui/                    # Design System interno (26 componentes atômicos)
+│   │   ├── ui/                    # Design System interno (36 componentes atômicos)
 │   │   └── [modulo]/              # Componentes de domínio (usuarios, perfis, auditoria, configuracoes, perfil, auth)
 │   ├── composables/               # Regras de negócio e hooks reativos reutilizáveis
 │   ├── config/
@@ -66,7 +66,7 @@ O Publications possui **duas áreas** com natureza e proteção distintas (escop
 
 | Área | Roteamento | Acesso | Conteúdo |
 |---|---|---|---|
-| **Área Pública** | rotas raiz de `app/pages/` (hoje apenas `/`) | anônimo, sem autenticação | **Roadmap:** leitura das publicações (Releases Week Semanal, Manuais e Escopo de Projetos). Hoje só existe o placeholder `app/pages/index.vue` — não há páginas `/releases`, `/manuais` nem `/escopos` na Área Pública (a sidebar exibe "Módulo em construção"). |
+| **Área Pública** | rotas raiz de `app/pages/` (hoje apenas `/`) | anônimo, sem autenticação | **Roadmap:** leitura das publicações (Releases Week Semanal, Manuais e Escopo de Projetos). Hoje só existe o placeholder `app/pages/index.vue` — não há páginas `/releases`, `/manuais` nem `/escopos` na Área Pública (a todos os itens atuais da sidebar têm rota). |
 | **Área Administrativa** | `app/pages/admin/**` (ex.: `/admin/login`, `/admin/gestao-usuarios`) | autenticação (JWT + cookie) e permissões RBAC | cadastros, edição e publicação dos conteúdos acima, usuários, perfis, auditoria e configurações |
 
 - No servidor, toda requisição sob `/api/` exige sessão válida (middleware `server/middleware/auth-api.ts`,
@@ -112,8 +112,8 @@ export function getDbPool() {
       database: config.dbName as string,
       charset: 'utf8mb4',
       waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 50,
+      connectionLimit: 20,
+      queueLimit: 100,
       timezone: process.env.DB_TIMEZONE || 'local', // fuso explicito do pool (RL04 OBS-05)
       ...(process.env.DB_SSL === 'true' ? {
         ssl: {
@@ -164,6 +164,8 @@ export async function getTransaction(): Promise<Transaction> {
 3. **Resiliência de conexão**: pool automático de conexões com fila de espera e suporte nativo a SSL para produção.
 
 ---
+
+> **Menor privilégio (RL06-2):** o usuário de banco da aplicação deve ter apenas DML no schema `publications` + `EVENT`, sem `GRANT OPTION`/DDL. Use `scripts/db-least-privilege.sql` e ajuste `DB_USER`/`DB_PASSWORD` no `.env`.
 
 ### 3.2. Estrutura Padrão de um Endpoint de API
 
@@ -349,11 +351,15 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `GET /api/seguranca/estado` (visualizar) e `POST /api/seguranca/liberar` (alterar) — aba Segurança (rate limit/lockout).
 - `GET /api/configuracoes/identidade` — **público**; devolve apenas `logo_login_url` para as telas de autenticação.
 - `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`|`logos`|`chamadas`); `logomarcas` exige `configuracoes-globais`/`alterar`, `logos` exige `parceiros`/`alterar`, `avatares` é session-only e `chamadas` exige `lancar-chamadas`/`criar` ou `alterar`, com `ano`/`mes` e destino `uploads/chamadas/<ano>/<mes>/`.
+- `GET /uploads/chamadas/<ano>/<mes>/<arquivo>` — servimento autorizado das mídias de chamadas (não é ativo estático): exige sessão com `lancar-chamadas`/`visualizar` ou, para anônimo, chamada `Publicado` com ao menos um vínculo ativo para conteúdo pai `Publicado` e não arquivado. Logomarcas, avatares e logos continuam públicos em `/uploads/<destino>/**`.
 - `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
 - `GET/POST/PUT/DELETE /api/release-week`, `PUT /api/release-week/:id/publicar|arquivar`, `GET /api/release-week/:id/itens` e `POST /api/release-week/importar` — Release Week (código `RW-XX/AAAA` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `release-week`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/manuais`, `PUT /api/manuais/:id/publicar|arquivar`, `GET /api/manuais/:id/itens` e `POST /api/manuais/importar` — Manuais Mensais (código `MAN-XX/AAAA` gerado pelo servidor, `arquivada` soft, datas históricas, itens somente leitura e importação `.xlsx`); exigem `manuais`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`. As transições gravam `historico_esteira_revisao` com parecer e critérios.
 - `GET /api/esteira-revisao`, `GET /api/esteira-revisao/:id`, `GET /api/esteira-revisao/:id/historico` e `PUT /api/esteira-revisao/:id/aprovar|recusar|reabrir|publicar|suspender` — board do ciclo ativo (Release Week, Manuais e Escopo de Projetos não arquivados e não publicados), progresso do fluxo, detalhe, histórico e transições com parecer; exigem `esteira-revisao`/`visualizar|buscar|filtrar|publicar|alterar` e registram auditoria com o recurso "Esteira de Revisão".
+> **Publicação (RL06):** a transição para `Publicado` em Release Week, Manuais e Escopo de Projetos exige a funcionalidade `publicar` em qualquer caminho (endpoint dedicado, criação ou edição). Sem ela, a API responde `403` sem efeito, e a operação autorizada é auditada como “Homologação”. A Release grava `data_aprovacao` ao entrar em `Publicado` e a limpa ao sair.
+>
+> **Painel Executivo (RL06):** `GET /api/painel-executivo` exige sessão e `visualizar` em ao menos um módulo agregado; cada bloco respeita o módulo de origem (publicações, chamadas, softwares). Sem nenhum módulo permitido, responde `403`. Sob saturação da fila do pool, responde `503` com `Retry-After` em vez de `500`. Os defaults do pool passam a `20` conexões / `100` de fila (`DB_POOL_LIMIT`/`DB_POOL_QUEUE_LIMIT`). A criação de escopo com cascata é atômica (insert + reconciliação na mesma transação).
 
 ---
 
@@ -539,6 +545,8 @@ releases/manuais**, atenção à interação de chaves estrangeiras:
 - `historico_esteira_revisao.entrega_item_id → entregas_itens(id)` é `ON DELETE RESTRICT`: enquanto
   houver histórico daquele item, o `CASCADE` dos itens é **bloqueado** (erro `1451`).
 
+
+> **Migration 31 (RL06-2):** recria as views de itens sem `situacao`, adiciona índices de data em `entregas_itens`, limpa `data_aprovacao` fora de `Publicado` e substitui a unicidade de Release/Manual/Escopo por colunas geradas `chave_ativa` (um ativo + vários arquivados). O rollback está documentado no próprio arquivo.
 A partir da change `construir-esteira-revisao`, as transições de aprovação, recusa, reabertura,
 publicação e suspensão gravam `historico_esteira_revisao` (status anterior/novo, responsável, perfil,
 parecer, critérios, tempo no estágio e data/hora). A FK `ON DELETE RESTRICT` foi mantida de propósito:
@@ -583,7 +591,7 @@ O composable `useApiFetch` encapsula o `$fetch` nativo do Nuxt, trazendo:
    - Middleware global de rota: intercepta todas as navegações.
    - Área Pública e as telas de autenticação (`/admin/login`, `/admin/esqueci-senha`) são liberadas; as demais rotas `/admin/**` exigem sessão (`ensureSessao`) e, sem ela, vão para `/admin/login?redirect=`. Sessões com senha provisória são conduzidas a `/admin/primeiro-acesso`.
 3. **`usePermissions.ts`**:
-   - Fornece o helper reativo `.can(modulo, acao)` (busca a matriz do próprio usuário em `GET /api/usuarios/eu/permissoes`). Nesta etapa está **disponível** para uso incremental da UI.
+   - Fornece o helper reativo `.can(modulo, acao)` (busca a matriz do próprio usuário em `GET /api/usuarios/eu/permissoes`). É usado pelos módulos para ocultar ações sem permissão.
    - Permite controlar a renderização de botões e links no frontend:
    ```vue
 <UiButton v-if="can('publicacoes', 'criar')" @click="abrirModal">

@@ -540,6 +540,7 @@ reconciliação para as bases existentes, mantendo contagens, KPI e este documen
 > Revisão para todos os perfis que o enxergam e `publicar` ao Revisor nesse módulo. Em banco novo,
 > o `02_seed.sql` e as migrations de reconciliação formam a matriz vigente.
 
+> **Painel Executivo (RL06):** não é um 12º módulo RBAC. O acesso exige `visualizar` em ao menos um módulo agregado e cada bloco respeita o módulo de origem (publicações, chamadas, softwares). Sem nenhum, a API responde `403`; os blocos não permitidos voltam vazios/zerados.
 ## 8. Navegação até a tela
 
 - **Sidebar:** sessão "Administração" → item "Perfis de Acesso (RBAC)" com

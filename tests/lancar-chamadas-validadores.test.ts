@@ -143,14 +143,15 @@ describe('validarChamada', () => {
     ).toBe(true)
   })
 
-  it('aceita data de lançamento em qualquer dia', () => {
-    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).valido).toBe(true)
-    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-21' })).valido).toBe(true)
+  it('exige segunda-feira na data de lancamento', () => {
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).erros.dataLancamento).toMatch(/segunda/)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-21' })).erros.dataLancamento).toMatch(/segunda/)
   })
 
-  it('aceita data de liberação em qualquer dia e aceita vazia', () => {
-    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).valido).toBe(true)
+  it('exige segunda-feira na data de liberacao e aceita vazia', () => {
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).erros.dataLiberacao).toMatch(/segunda/)
     expect(validarChamada(entradaValida({ dataLiberacao: '' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-26' })).valido).toBe(true)
   })
 
   it('recusa links que não sejam http(s)', () => {

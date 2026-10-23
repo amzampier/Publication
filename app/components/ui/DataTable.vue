@@ -64,6 +64,8 @@ interface Props {
   rowKey?: string
   /** Rótulo acessível do controle de expansão. */
   expandLabel?: string
+  error?: boolean | string
+  errorMessage?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -85,7 +87,9 @@ const props = withDefaults(defineProps<Props>(), {
   expandable: false,
   expanded: () => [],
   rowKey: 'id',
-  expandLabel: 'Expandir itens'
+  expandLabel: 'Expandir itens',
+  error: false,
+  errorMessage: ''
 })
 
 const emit = defineEmits<{
@@ -95,6 +99,7 @@ const emit = defineEmits<{
   (e: 'sort-change', regras: SortRule[]): void
   (e: 'search', termo: string): void
   (e: 'update:expanded', chaves: string[]): void
+  (e: 'retry'): void
 }>()
 
 const slots = useSlots()
@@ -668,6 +673,7 @@ onUnmounted(() => {
         <div v-if="showHeaderTop && showSearch" ref="buscaRef" class="w-full min-w-0 sm:w-64 shrink-0">
           <UiInput
             v-model="searchQuery"
+            aria-label="Buscar na tabela"
             placeholder="Filtrar dados da tabela..."
             :left-icon="Search"
             :right-icon="searchQuery ? X : undefined"
@@ -1033,11 +1039,24 @@ onUnmounted(() => {
             </template>
 
             <tr v-if="paginatedData.length === 0">
-              <td
-                :colspan="colSpanTotal"
-                class="py-12 text-center text-slate-400"
-              >
-                {{ (filtersCount > 0 || searchQuery.trim() !== '') ? 'Nenhum resultado encontrado para o filtro.' : 'Nenhum registro encontrado.' }}
+              <td :colspan="colSpanTotal" class="py-10 text-center">
+                <div v-if="error" class="mx-auto flex max-w-md flex-col items-center gap-2 px-4">
+                  <AlertCircle class="h-6 w-6 text-rose-700" aria-hidden="true" />
+                  <p class="text-xs font-medium text-rose-700" role="alert">
+                    {{ typeof error === 'string' ? error : (errorMessage || 'Não foi possível carregar os dados.') }}
+                  </p>
+                  <button
+                    type="button"
+                    class="mt-1 inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition-colors hover:border-brand-focus hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+                    @click="emit('retry')"
+                  >
+                    <RotateCw class="h-3.5 w-3.5" aria-hidden="true" />
+                    Tentar novamente
+                  </button>
+                </div>
+                <span v-else class="text-slate-500">
+                  {{ (filtersCount > 0 || searchQuery.trim() !== '') ? 'Nenhum resultado encontrado para o filtro.' : 'Nenhum registro encontrado.' }}
+                </span>
               </td>
             </tr>
           </template>
@@ -1089,7 +1108,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Controles de Navegação à Direita -->
-      <div class="flex items-center gap-2.5 text-[11px]">
+      <div class="flex max-w-full flex-wrap items-center gap-2.5 text-[11px]">
         <!-- Linhas por Página -->
         <div class="flex items-center gap-1.5 text-slate-600">
           <label :for="pageSizeId">Linhas por página:</label>

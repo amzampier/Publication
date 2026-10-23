@@ -254,7 +254,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   `entidade_id` = id da entidade afetada (`''` quando não aplicável); `acao` guarda o **tipo**
   (é o que mantém o badge da tabela íntegro); o texto humano vai em `detalhes`.
 
-### 6.2 Rotas auditadas (42 pontos)
+### 6.2 Rotas auditadas (59 pontos)
 
 | Rota | acao | recurso |
 | :--- | :--- | :--- |

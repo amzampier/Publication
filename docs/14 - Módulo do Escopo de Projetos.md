@@ -259,6 +259,8 @@ interface ProjetoEscopoModelo {
 
 **Migration 23:** `arquivada`, `idx_projetos_arquivada` e `uk_projetos_ano_versao` (sem `INSERT`).
 
+> **Permissão de publicação e atomicidade (RL06):** a transição para `Publicado` pela criação ou edição exige `escopo-projetos`/`publicar` (não basta `criar`/`alterar`). Sem ela, a API responde `403` sem efeito. A criação com cascata é atômica: insert do escopo e reconciliação das filhas ocorrem na mesma transação; falha não deixa registro parcial.
+
 ## 5. Fluxos
 
 - **Listagem:** `GET /api/escopo-projetos` no `onMounted`; `UiLoading` cobre o F5; falha → toast e

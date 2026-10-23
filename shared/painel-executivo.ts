@@ -284,7 +284,8 @@ export const calcularFluxoPainel = (
     }
   }
 
-  const total = revisar + aprovado + recusado + publicar
+  // Publicado conta como concluído no numerador e no denominador do fluxo.
+  const total = revisar + aprovado + recusado + publicar + noPortal
   return {
     total,
     revisar,
@@ -295,7 +296,7 @@ export const calcularFluxoPainel = (
     noPortal,
     aging7,
     aging15,
-    percentualFluxo: calcularPercentual(aprovado + publicar, total)
+    percentualFluxo: calcularPercentual(aprovado + publicar + noPortal, total)
   }
 }
 

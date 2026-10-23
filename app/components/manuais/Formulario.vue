@@ -3,6 +3,7 @@ import { ref, watch, nextTick, computed } from 'vue'
 import { BookOpen, FileText, Clock, Star } from '@lucide/vue'
 import type { SegmentedOption } from '../ui/Segmented.vue'
 import { useToast } from '../../composables/useToast'
+import { usePermissions } from '../../composables/usePermissions'
 import {
   MESES,
   formatarData,
@@ -37,6 +38,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const { can } = usePermissions()
 const { manuais, adicionar, atualizar } = useManuaisModelo()
 
 interface Rascunho {
@@ -79,13 +81,20 @@ const titulo = computed(() => {
 })
 
 const opcoesMes = MESES.map((mes) => ({ value: mes, label: mes }))
-const statusOpcoes: SegmentedOption[] = [
-  { value: 'Rascunho', label: 'Rascunho', tone: 'slate' },
-  { value: 'Em Revisão', label: 'Em Revisão', tone: 'indigo' },
-  { value: 'Alterações Solicitadas', label: 'Alterações', tone: 'rose' },
-  { value: 'Aprovado', label: 'Aprovado', tone: 'emerald' },
-  { value: 'Publicado', label: 'Publicado', tone: 'navy' }
-]
+const statusOpcoes = computed<SegmentedOption[]>(() => {
+  const opcoes: SegmentedOption[] = [
+    { value: 'Rascunho', label: 'Rascunho', tone: 'slate' },
+    { value: 'Em Revisão', label: 'Em Revisão', tone: 'indigo' },
+    { value: 'Alterações Solicitadas', label: 'Alterações', tone: 'rose' },
+    { value: 'Aprovado', label: 'Aprovado', tone: 'emerald' }
+  ]
+  // Publicar é uma ação própria: sem a permissão, a opção só aparece para
+  // exibir o status atual de um registro já publicado (somente leitura).
+  if (can('manuais', 'publicar') || rascunho.value.status === 'Publicado') {
+    opcoes.push({ value: 'Publicado', label: 'Publicado', tone: 'navy' })
+  }
+  return opcoes
+})
 
 const formatarDataHora = (iso: string): string => {
   if (!iso) return '-'

@@ -81,7 +81,7 @@ export async function enviarLogo(dataUrl: string): Promise<string> {
   const form = new FormData()
   form.append('pasta', 'logos')
   form.append('file', new Blob([bytes], { type: mime }), `logo.${extensao}`)
-  const resp = await useApiFetch<{ url: string }>('/api/uploads', { method: 'POST', body: form })
+  const resp = await useApiFetch<{ url: string }>('/api/uploads?pasta=logos', { method: 'POST', body: form })
   return resp.url
 }
 

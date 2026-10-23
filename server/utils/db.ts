@@ -21,8 +21,8 @@ export function getDbPool(): mysql.Pool {
       database: config.dbName as string,
       charset: 'utf8mb4',
       waitForConnections: true,
-      connectionLimit: Number(config.dbPoolLimit) || 10,
-      queueLimit: Number(config.dbPoolQueueLimit) || 50,
+      connectionLimit: Number(config.dbPoolLimit) || 20,
+      queueLimit: Number(config.dbPoolQueueLimit) || 100,
       connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT) || 10000,
       // Fuso explícito (RL04 OBS-05): default 'local' preserva o comportamento
       // atual; produção pode fixar DB_TIMEZONE (ex.: '-03:00').

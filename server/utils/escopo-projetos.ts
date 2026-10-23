@@ -278,8 +278,11 @@ export async function criarEscopo(
 
   for (let tentativa = 0; tentativa < 3; tentativa += 1) {
     const codigo = await proximoCodigoDoAno(validada.ano)
+    // A criação é atômica: insert + reconciliação das filhas na MESMA transação
+    // (RL06-A-03). Uma falha na cascata não pode deixar o pai gravado sozinho.
+    const tx = await getTransaction()
     try {
-      await query(
+      await tx.query(
         `INSERT INTO projetos_escopo
           (id, codigo, nome, versao, ano, data_inicio, data_final, data_previsao,
            data_publicacao, status, softwares_contemplados, descricao_geral)
@@ -300,19 +303,11 @@ export async function criarEscopo(
         ]
       )
       if (validada.status === 'Publicado') {
-        const tx = await getTransaction()
-        try {
-          await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
-          await tx.commit()
-        } catch (erroCascata) {
-          await tx.rollback().catch(() => {})
-          throw erroCascata
-        }
+        await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
       }
-      const criado = await buscarEscopo(id)
-      if (!criado) erro404('Falha ao criar o escopo.')
-      return criado
+      await tx.commit()
     } catch (erro) {
+      await tx.rollback().catch(() => {})
       if ((erro as { errno?: number } | null)?.errno === 1062) {
         const mensagem = String((erro as { message?: string }).message ?? '')
         if (/uk_projetos_ano_versao|ano_versao/i.test(mensagem)) {
@@ -325,6 +320,10 @@ export async function criarEscopo(
       }
       throw erro
     }
+
+    const criado = await buscarEscopo(id)
+    if (!criado) erro404('Falha ao criar o escopo.')
+    return criado
   }
 
   erro409('Não foi possível gerar um código livre para o escopo. Tente novamente.')

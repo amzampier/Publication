@@ -23,7 +23,7 @@ const emit = defineEmits<{
 }>()
 
 const { can } = usePermissions()
-const { linhas } = useLancarChamadasModelo()
+const { total, exportarLinhas } = useLancarChamadasModelo()
 const { toast } = useToast()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
@@ -50,31 +50,23 @@ onUnmounted(() => {
 })
 
 const semDados = (): boolean => {
-  if (linhas.value.length > 0) return false
+  if (total.value > 0) return false
   toast.info('Exportação', 'Não há chamadas para exportar com os filtros atuais.')
   return true
 }
 
-const autorizarDownload = async (): Promise<boolean> => {
-  try {
-    await useApiFetch('/api/lancar-chamadas?download=1')
-    return true
-  } catch (erro) {
-    const e = erro as { statusMessage?: string; data?: { statusMessage?: string } }
-    toast.danger(
-      'Exportação',
-      e?.data?.statusMessage ?? e?.statusMessage ?? 'Você não tem permissão para exportar chamadas.'
-    )
-    return false
-  }
-}
+
 
 const exportarCsv = async () => {
   menuAberto.value = false
   if (semDados()) return
-  if (!(await autorizarDownload())) return
   try {
-    gerarCsvLancarChamadas(linhas.value)
+    const dados = await exportarLinhas()
+    if (!dados.length) {
+      toast.info('Exportação', 'Não há chamadas para exportar com os filtros atuais.')
+      return
+    }
+    gerarCsvLancarChamadas(dados)
   } catch (erro) {
     console.error('[csv] falha ao exportar chamadas:', erro)
     toast.danger('Exportação', 'Não foi possível exportar as chamadas. Tente novamente.')
@@ -84,11 +76,15 @@ const exportarCsv = async () => {
 const gerarPdf = async () => {
   menuAberto.value = false
   if (semDados()) return
-  if (!(await autorizarDownload())) return
   exportando.value = true
   try {
+    const dados = await exportarLinhas()
+    if (!dados.length) {
+      toast.info('Exportação', 'Não há chamadas para exportar com os filtros atuais.')
+      return
+    }
     await gerarPdfLancarChamadas({
-      chamadas: linhas.value,
+      chamadas: dados,
       logoPreview: previewLoginGlobal.value
     })
   } catch (erro) {

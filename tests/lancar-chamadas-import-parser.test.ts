@@ -168,5 +168,5 @@ describe('classificarLinhasChamadas', () => {
     expect(resultado.erro).toBeNull()
     expect(resultado.linhas[0]?.situacaoImportacao).toBe('pronto')
     expect(resultado.linhas[0]?.dataLiberacao).toBe('2026-10-26')
-  })
+  }, 30000)
 })

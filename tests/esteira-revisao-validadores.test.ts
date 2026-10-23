@@ -261,6 +261,17 @@ describe('filtrarItensEsteira', () => {
     expect(filtrarItensEsteira(itens, { ...FILTROS_ESTEIRA_VAZIOS, projetoId: 'proj-1' }, '').map((i) => i.chamada)).toEqual(['100'])
   })
 
+  it('inclui publicado quando o status e explicito', () => {
+    const publicado = {
+      ...itens[0]!,
+      chamada: '900',
+      status: 'Publicado' as StatusChamada,
+      contexto: { release: contexto('rel-9', 'RW-9/2026', 'Publicado'), manual: null, projeto: null }
+    }
+    expect(itemVisivelNoBoard(publicado, FILTROS_ESTEIRA_VAZIOS)).toBe(false)
+    expect(itemVisivelNoBoard(publicado, { ...FILTROS_ESTEIRA_VAZIOS, status: 'Publicado' })).toBe(true)
+  })
+
   it('combina vínculos específicos por união', () => {
     const filtros = {
       ...FILTROS_ESTEIRA_VAZIOS,

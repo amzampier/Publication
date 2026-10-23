@@ -11,8 +11,8 @@ import {
   renderTextoRecuperacao,
   ASSUNTO_RECUPERACAO
 } from '#shared/utils/emails'
-import { buscarUsuarioPorEmail } from '../../../utils/auth'
-import { query } from '../../../utils/db'
+import { buscarUsuarioPorEmail, revogarSessoesDoUsuario } from '../../../utils/auth'
+import { getTransaction } from '../../../utils/db'
 import { enviarEmail } from '../../../utils/mailer'
 import { exigirRateLimit } from '../../../utils/rateLimit'
 import { registrarAuditoria } from '../../../utils/audit'
@@ -63,10 +63,20 @@ export default defineEventHandler(async (event) => {
         html: renderHtmlRecuperacao({ nome: usuario.nome, senha, link }),
         text: renderTextoRecuperacao({ nome: usuario.nome, senha, link })
       })
-      await query('UPDATE usuarios SET hash_senha = ?, senha_provisoria = 1 WHERE id = ?', [
-        hashSenha,
-        usuario.id
-      ])
+      // Grava a provisória e revoga access/refresh na MESMA transação (RL06-A-01).
+      // Só chega aqui depois de o e-mail ser entregue com sucesso.
+      const tx = await getTransaction()
+      try {
+        await tx.query('UPDATE usuarios SET hash_senha = ?, senha_provisoria = 1 WHERE id = ?', [
+          hashSenha,
+          usuario.id
+        ])
+        await revogarSessoesDoUsuario(usuario.id, (sql, values) => tx.query(sql, values))
+        await tx.commit()
+      } catch (erroTransacao) {
+        await tx.rollback().catch(() => {})
+        throw erroTransacao
+      }
       enviado = true
     } catch (erro) {
       // Detalhe só no servidor (a resposta genérica já foi emitida).

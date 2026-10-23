@@ -1,9 +1,10 @@
 // PUT /api/escopo-projetos/:id — edição (200 | 400 | 404 | 409). O código é
-// imutável; (ano, versão) é revalidado.
+// imutável; (ano, versão) é revalidado. A transição para Publicado exige a
+// permissão `publicar`, mesmo pela edição genérica.
 import { atualizarEscopo, buscarEscopo, validarIdEscopo } from '../../../utils/escopo-projetos'
 import { registrarAuditoria } from '../../../utils/audit'
 import { getSessionUser } from '../../../utils/auth'
-import { requirePermission } from '../../../utils/permission'
+import { exigePermissaoPublicar, pode, requirePermission } from '../../../utils/permission'
 
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'escopo-projetos', 'alterar')
@@ -16,16 +17,24 @@ export default defineEventHandler(async (event) => {
   if (!sessao) throw createError({ statusCode: 401, statusMessage: 'Sem sessão ativa.' })
 
   const antes = await buscarEscopo(id)
+  if (antes && exigePermissaoPublicar(antes.status, body.status)) {
+    if (!(await pode(event, 'escopo-projetos', 'publicar'))) {
+      throw createError({ statusCode: 403, statusMessage: 'Você não tem permissão para publicar.' })
+    }
+  }
   const atualizado = await atualizarEscopo(id, body, {
     id: sessao.id,
     nome: sessao.nome,
     perfil: sessao.perfil
   })
+  const homologou = antes?.status !== 'Publicado' && atualizado.status === 'Publicado'
   await registrarAuditoria(event, {
-    acao: 'Alteração',
+    acao: homologou ? 'Homologação' : 'Alteração',
     recurso: 'Escopo de Projetos',
-    entidadeId: atualizado.codigo,
-    detalhes: `Alterou o escopo '${atualizado.nome}' (${antes?.codigo ?? atualizado.codigo})`
+    entidadeId: atualizado.id,
+    detalhes: homologou
+      ? `Publicou o escopo '${atualizado.nome}' (${antes?.codigo ?? atualizado.codigo} → ${atualizado.codigo}) pela edição`
+      : `Alterou o escopo '${atualizado.nome}' (${antes?.codigo ?? atualizado.codigo} → ${atualizado.codigo})`
   })
   return atualizado
 })

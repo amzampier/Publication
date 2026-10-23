@@ -235,8 +235,9 @@ export async function criarReleaseWeek(
       `INSERT INTO release_week
         (id, codigo, nome, versao, \`release\`, semana, ano, mes,
          data_inicio, data_finaliza, data_publicacao, status, descricao,
-         destaque_semana, autor_id, autor_nome)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         destaque_semana, autor_id, autor_nome, data_aprovacao)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+               CASE WHEN ? = 'Publicado' THEN CURRENT_TIMESTAMP(6) ELSE NULL END)`,
       [
         id,
         codigo,
@@ -253,7 +254,8 @@ export async function criarReleaseWeek(
         validada.descricao,
         validada.destaqueSemana ? 1 : 0,
         autor.id,
-        autor.nome
+        autor.nome,
+        validada.status
       ]
     )
     if (validada.status === 'Publicado') {
@@ -303,7 +305,11 @@ export async function atualizarReleaseWeek(
       `UPDATE release_week
           SET codigo = ?, nome = ?, versao = ?, \`release\` = ?, semana = ?, ano = ?, mes = ?,
               data_inicio = ?, data_finaliza = ?, data_publicacao = ?, status = ?,
-              descricao = ?, destaque_semana = ?
+              descricao = ?, destaque_semana = ?,
+              data_aprovacao = CASE
+                WHEN ? = 'Publicado' THEN COALESCE(data_aprovacao, CURRENT_TIMESTAMP(6))
+                ELSE NULL
+              END
         WHERE id = ?`,
       [
         codigo,
@@ -319,6 +325,7 @@ export async function atualizarReleaseWeek(
         validada.status,
         validada.descricao,
         validada.destaqueSemana ? 1 : 0,
+        validada.status,
         id
       ]
     )

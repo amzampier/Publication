@@ -33,7 +33,6 @@ const cancelar = () => emit('update:modelValue', false)
 
 const limpar = () => {
   rascunho.value = { ...VAZIO }
-  limparFiltros()
 }
 </script>
 

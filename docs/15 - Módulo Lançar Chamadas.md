@@ -20,6 +20,9 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 
 ## 1. Visão geral e rota
 
+> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, as datas de lançamento/liberação exigem segunda-feira e a Data de liberação é herdada da Release selecionada (editável). A galeria usa miniaturas WebP com fallback e cache.
+
+
 - **Rota:** `/admin/lancar-chamadas` → `app/pages/admin/lancar-chamadas.vue` com
   `definePageMeta({ layout: 'admin' })`.
 - **Navegação:** item **Lançar as Chamadas** na sessão **Movimentos**, com `aria-current="page"`.
@@ -277,10 +280,13 @@ interface ChamadaModelo {
 
 - As imagens são enviadas no **salvar**, via `POST /api/uploads` com `pasta=chamadas`, `ano` e `mes`
   derivados de `data_lancamento`.
-- Destino físico: `uploads/chamadas/<ano>/<mes>/`; URL pública:
+- Destino físico: `uploads/chamadas/<ano>/<mes>/`; URL de acesso controlado:
   `/uploads/chamadas/<ano>/<mes>/<arquivo>`.
 - Formatos PNG/JPEG/WebP/GIF, até 5 MB e no máximo 100 imagens por chamada; o servidor valida magic
   bytes e deriva a extensão segura.
+- A mídia de chamada **não** é ativo estático público. O servimento passa por rota autorizada: exige `lancar-chamadas`/`visualizar` para a leitura administrativa ou, para anônimo, chamada `Publicado` com ao menos um vínculo ativo para conteúdo pai `Publicado` e não arquivado. Logomarcas, avatares e logos continuam públicos.
+
+- O destino `logos` (marca do parceiro) e o `413` do envelope multipart estão cobertos pela spec `uploads`; a autorização é validada antes do parse (query `pasta`/`ano`/`mes`).
 - As imagens são persistidas em `anexos_midias` (uma linha por imagem, com ordem, capa, nome e MIME);
   a API devolve `midias` e mantém `imagens` como lista derivada de URLs. O JSON
   `entregas_itens.imagens` permanece como snapshot legado até a change de limpeza.

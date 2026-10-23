@@ -657,5 +657,9 @@ CREATE OR REPLACE VIEW manuais AS
 --   - 11: índices `auditoria(data_hora, id)`, `seguranca_eventos_login(ocorrido_em, id)` e
 --     `usuarios(nome_completo)` + EVENTs `ev_expurgo_sessoes`/`ev_expurgo_token_blacklist`/`ev_expurgo_seguranca_login`
 --   - 12: índices `usuarios(bloqueado_ate)` e `auditoria(usuario_nome)`
+--   - 14–18: Softwares (PK `codigo`), Parceiros (codigo/região/logo), reconciliações de matriz e remoção do seed de auditoria
+--   - 19–23: `release_week.arquivada`, `manuais_mensal.arquivada`, `projetos_escopo.arquivada` + unicidade (ano, versão), reconciliações RBAC
+--   - 24–30: Lançar as Chamadas (`status Recusado`, `manual_titulo`, `uk_entregas_chamada`), texto rico (`descricao_html`, `solucao`, `solucao_html`), `entregas_itens_softwares`, RBAC da esteira, remoção de `situacao` e `anexos_midias`
+--   - 31: views de itens recriadas sem `situacao`, índices de data do Painel, limpeza de `data_aprovacao`, colunas geradas `chave_ativa` + unicidade que admite um ativo e vários arquivados
 -- A fonte da verdade do schema é `server/migration/*.sql` (aplicado no boot).
 -- =========================================================================

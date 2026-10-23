@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Copy, Pencil, Send, Archive, Trash2, Import } from '@lucide/vue'
 import type { ColumnDef } from '../../utils/dataGrid'
+import { VARIANTE_RELEASE as VARIANTE_STATUS } from '#shared/status-badge'
 import type { ActionMenuItem } from '../ui/ActionMenu.vue'
 import { usePermissions } from '../../composables/usePermissions'
 import { useReleaseWeekModelo, type LinhaReleaseWeek, type StatusRelease } from './useReleaseWeekModelo'
@@ -31,13 +32,7 @@ const alternarExibirItens = (e: Event) => {
   if (!exibirItens.value) linhasExpandidas.value = []
 }
 
-const VARIANTE_STATUS: Record<StatusRelease, 'aberta' | 'inReview' | 'reconciled' | 'publicado'> =
-  {
-    Aberta: 'aberta',
-    'Em Revisão': 'inReview',
-    Aprovado: 'reconciled',
-    Publicado: 'publicado'
-  }
+
 
 const colunas: ColumnDef[] = [
   { id: 'codigo', header: 'Código', accessorKey: 'codigo', minWidth: 110 },

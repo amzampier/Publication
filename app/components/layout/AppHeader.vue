@@ -53,6 +53,8 @@ const mostrarPortal = computed(
 
 const contaRef = ref<HTMLElement | null>(null)
 const notificacoesRef = ref<HTMLElement | null>(null)
+const botaoNotificacoes = ref<HTMLButtonElement | null>(null)
+const botaoConta = ref<HTMLButtonElement | null>(null)
 const contaAberto = ref(false)
 const notificacoesAberto = ref(false)
 const notificacoes = ref<Notificacao[]>([...notificacoesIniciais])
@@ -153,7 +155,16 @@ const fecharMenuSeFora = (evento: PointerEvent) => {
 }
 
 const fecharMenuComEscape = (evento: KeyboardEvent) => {
-  if (evento.key === 'Escape') fecharMenus()
+  if (evento.key !== 'Escape') return
+  if (contaAberto.value) {
+    contaAberto.value = false
+    nextTick(() => botaoConta.value?.focus())
+    return
+  }
+  if (notificacoesAberto.value) {
+    notificacoesAberto.value = false
+    nextTick(() => botaoNotificacoes.value?.focus())
+  }
 }
 
 onMounted(() => {
@@ -221,6 +232,7 @@ onUnmounted(() => {
       <!-- Central de notificações -->
       <div ref="notificacoesRef" class="relative">
         <button
+          ref="botaoNotificacoes"
           type="button"
           class="relative p-1.5 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
           aria-label="Central de notificações"
@@ -294,6 +306,7 @@ onUnmounted(() => {
       <!-- Bloco Account -->
       <div ref="contaRef" class="relative">
         <button
+          ref="botaoConta"
           type="button"
           class="flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-slate-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
           aria-label="Menu da conta"

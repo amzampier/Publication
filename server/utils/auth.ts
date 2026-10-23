@@ -7,6 +7,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { createHash, randomBytes } from 'node:crypto'
 import { query, getTransaction } from './db'
+import { resolverIpCliente } from './ip'
 
 export interface UsuarioSessao {
   id: string
@@ -153,7 +154,7 @@ const ipDe = (event: any): string => {
   try {
     // RL02 A-03: só confia no X-Forwarded-For quando há proxies confiáveis.
     const confiaveis = String(useRuntimeConfig().trustedProxies || '').trim()
-    return getRequestIP(event, { xForwardedFor: confiaveis.length > 0 }) ?? '0.0.0.0'
+    return resolverIpCliente(event, confiaveis)
   } catch {
     return '0.0.0.0'
   }

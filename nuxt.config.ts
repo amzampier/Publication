@@ -51,10 +51,21 @@ export default defineNuxtConfig({
         }
       }
     },
+    // RL06-C-01: somente os destinos de identidade são estáticos públicos.
+    // Chamadas são servidas por server/routes/uploads/chamadas/[...arquivo].get.ts,
+    // que aplica sessão + RBAC ou o gate de conteúdo publicado.
     publicAssets: [
       {
-        baseURL: '/uploads',
-        dir: join(process.cwd(), 'uploads')
+        baseURL: '/uploads/logomarcas',
+        dir: join(process.cwd(), 'uploads', 'logomarcas')
+      },
+      {
+        baseURL: '/uploads/avatares',
+        dir: join(process.cwd(), 'uploads', 'avatares')
+      },
+      {
+        baseURL: '/uploads/logos',
+        dir: join(process.cwd(), 'uploads', 'logos')
       }
     ],
     hooks: {

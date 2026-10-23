@@ -4,6 +4,7 @@
 // configuracoes_limite_requisicao (cache de 60s, default 120). 429 com
 // mensagem genérica quando excedido.
 import { query } from './db'
+import { resolverIpCliente } from './ip'
 
 interface Janela {
   inicio: number
@@ -56,7 +57,7 @@ async function limitePorMinuto(): Promise<{ ativo: boolean; valor: number }> {
 export function ipDoCliente(event: any): string {
   try {
     const confiaveis = String(useRuntimeConfig().trustedProxies || '').trim()
-    return getRequestIP(event, { xForwardedFor: confiaveis.length > 0 }) ?? '0.0.0.0'
+    return resolverIpCliente(event, confiaveis)
   } catch {
     return '0.0.0.0'
   }

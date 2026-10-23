@@ -1,4 +1,4 @@
-// POST /api/uploads — multipart: file + pasta (logomarcas|avatares) → { url }
+// POST /api/uploads — multipart: file + pasta (logomarcas|avatares|logos|chamadas) → { url }
 import {
   UPLOAD_DESTINOS,
   UPLOAD_LIMITE_BYTES,
@@ -12,17 +12,65 @@ import { registrarAuditoria } from '../../utils/audit'
 import { pode, requirePermission } from '../../utils/permission'
 import { exigirRateLimit } from '../../utils/rateLimit'
 
+const ehDestino = (valor: string): valor is UploadDestino =>
+  (UPLOAD_DESTINOS as readonly string[]).includes(valor)
+
+const autorizarDestino = async (event: any, destino: UploadDestino): Promise<void> => {
+  if (destino === 'chamadas') {
+    const podeCriar = await pode(event, 'lancar-chamadas', 'criar')
+    const podeAlterar = await pode(event, 'lancar-chamadas', 'alterar')
+    if (!podeCriar && !podeAlterar) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Você não tem permissão para enviar imagens de chamadas.'
+      })
+    }
+    return
+  }
+  if (destino === 'logomarcas') {
+    await requirePermission(event, 'configuracoes-globais', 'alterar')
+  }
+  if (destino === 'logos') {
+    await requirePermission(event, 'parceiros', 'alterar')
+  }
+}
+
 export default defineEventHandler(async (event) => {
   await exigirRateLimit(event)
-  // RL05-M-02: recusa antes de bufferizar o multipart. O limite de 5 MB é do
-  // arquivo; a folga abaixo cobre o overhead do envelope multipart.
+
+  // Limite de corpo antes do parse (RL05-M-02/RL06-M-06). O limite de 5 MB é do
+  // arquivo; a folga abaixo cobre o overhead do envelope multipart. Requisições
+  // chunked sem Content-Length são recusadas para não bufferizar sem teto.
+  const transferEncoding = String(getRequestHeader(event, 'transfer-encoding') || '').toLowerCase()
   const tamanhoDeclarado = Number(getRequestHeader(event, 'content-length') || 0)
+  if (!tamanhoDeclarado && transferEncoding.includes('chunked')) {
+    throw createError({
+      statusCode: 413,
+      statusMessage: 'Envie o upload com Content-Length; o limite de 5 MB não pode ser aplicado a chunked.'
+    })
+  }
   if (tamanhoDeclarado > UPLOAD_LIMITE_BYTES + 1024 * 1024) {
     throw createError({
       statusCode: 413,
       statusMessage: 'Requisição acima do limite de upload (5 MB).'
     })
   }
+
+  // A aplicação envia `pasta` (e ano/mês de chamadas) na query para que a
+  // autorização ocorra ANTES de consumir o multipart. O campo no corpo continua
+  // aceito para compatibilidade, mas a checagem prévia é obrigatória na query.
+  const consulta = getQuery(event)
+  const destinoQuery = String(consulta.pasta ?? '').trim()
+  if (destinoQuery && !ehDestino(destinoQuery)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Destino inválido. Permitidos: ${UPLOAD_DESTINOS.join(', ')}.`
+    })
+  }
+  if (destinoQuery && ehDestino(destinoQuery)) {
+    await autorizarDestino(event, destinoQuery)
+  }
+
   const partes = await readMultipartFormData(event)
   if (!partes || partes.length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Requisição sem dados multipart.' })
@@ -34,12 +82,16 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Campo de arquivo ausente ou vazio.' })
   }
 
-  const destinoTexto = campoPasta ? Buffer.from(campoPasta.data).toString('utf8').trim() : ''
-  if (!(UPLOAD_DESTINOS as readonly string[]).includes(destinoTexto)) {
+  const destinoTexto = destinoQuery || (campoPasta ? Buffer.from(campoPasta.data).toString('utf8').trim() : '')
+  if (!ehDestino(destinoTexto)) {
     throw createError({
       statusCode: 400,
       statusMessage: `Destino inválido. Permitidos: ${UPLOAD_DESTINOS.join(', ')}.`
     })
+  }
+
+  if (!destinoQuery) {
+    await autorizarDestino(event, destinoTexto)
   }
 
   const campoTexto = (nome: string): string => {
@@ -49,33 +101,15 @@ export default defineEventHandler(async (event) => {
 
   let subpastas: string[] = []
   if (destinoTexto === 'chamadas') {
-    const ano = campoTexto('ano')
-    const mes = campoTexto('mes')
+    const ano = String(consulta.ano ?? campoTexto('ano'))
+    const mes = String(consulta.mes ?? campoTexto('mes'))
     if (!/^\d{4}$/.test(ano) || !/^(0[1-9]|1[0-2])$/.test(mes)) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Informe ano (AAAA) e mês (01-12) válidos para o upload de chamadas.'
       })
     }
-    const podeCriar = await pode(event, 'lancar-chamadas', 'criar')
-    const podeAlterar = await pode(event, 'lancar-chamadas', 'alterar')
-    if (!podeCriar && !podeAlterar) {
-      throw createError({
-        statusCode: 403,
-        statusMessage: 'Você não tem permissão para enviar imagens de chamadas.'
-      })
-    }
     subpastas = [ano, mes]
-  }
-
-  // Logomarcas alimentam as Configurações Globais (RBAC); avatares são o
-  // retrato do próprio perfil (autoatendimento, só sessão — D3 do design);
-  // logos são a marca do parceiro (exige a permissão de escrita em Parceiros).
-  if (destinoTexto === 'logomarcas') {
-    await requirePermission(event, 'configuracoes-globais', 'alterar')
-  }
-  if (destinoTexto === 'logos') {
-    await requirePermission(event, 'parceiros', 'alterar')
   }
 
   if (!UPLOAD_MIMES.includes(campoArquivo.type ?? '')) {
@@ -89,9 +123,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Arquivo acima do limite de 5 MB.' })
   }
 
-  // Conteúdo real (magic bytes) — RL04-C-01: o tipo canônico detectado governa a
-  // extensão final do arquivo (nunca a extensão enviada pelo cliente), de modo que
-  // HTML/JS disfarçados de imagem nunca sejam gravados/servidos como documento.
   const tipo = detectarTipoImagem(campoArquivo.data)
   if (!tipo) {
     throw createError({
@@ -102,7 +133,7 @@ export default defineEventHandler(async (event) => {
 
   const nome = sanitizarNomeArquivo(campoArquivo.filename ?? 'arquivo')
   const url = await gravarUpload(
-    destinoTexto as UploadDestino,
+    destinoTexto,
     nome,
     campoArquivo.data,
     tipo,

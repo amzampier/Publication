@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   await registrarAuditoria(event, {
     acao: 'Homologação',
     recurso: 'Escopo de Projetos',
-    entidadeId: publicado.codigo,
+    entidadeId: publicado.id,
     detalhes: `Publicou o escopo '${publicado.nome}' (${publicado.codigo}); ${publicado.chamadasPublicadas} chamada(s) publicada(s) em cascata`
   })
   return publicado

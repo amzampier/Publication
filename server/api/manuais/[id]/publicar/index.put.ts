@@ -1,5 +1,4 @@
-// PUT /api/manuais/:id/publicar — status Publicado + data_publicacao
-// (preserva a data histórica quando já existir).
+// PUT /api/manuais/:id/publicar — status Publicado + data_publicacao.
 import { publicarManual, validarIdManual } from '../../../../utils/manuais'
 import { registrarAuditoria } from '../../../../utils/audit'
 import { getSessionUser } from '../../../../utils/auth'
@@ -18,7 +17,7 @@ export default defineEventHandler(async (event) => {
   await registrarAuditoria(event, {
     acao: 'Homologação',
     recurso: 'Manuais Mensais',
-    entidadeId: publicado.codigo,
+    entidadeId: publicado.id,
     detalhes: `Publicou o manual '${publicado.titulo}' (${publicado.codigo}); ${publicado.chamadasPublicadas} chamada(s) publicada(s) em cascata`
   })
   return publicado

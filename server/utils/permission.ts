@@ -101,3 +101,12 @@ export function funcionalidadesDeConsulta(consulta: {
   if (consulta.filtros) acoes.push('filtrar')
   return acoes
 }
+
+/**
+ * A transição para `Publicado` exige a funcionalidade `publicar`, mesmo quando
+ * a rota genérica já exigiu `criar`/`alterar`. Permanecer em `Publicado` ao
+ * editar outros campos não conta como nova publicação.
+ */
+export function exigePermissaoPublicar(statusAtual: unknown, statusNovo: unknown): boolean {
+  return statusNovo === 'Publicado' && statusAtual !== 'Publicado'
+}

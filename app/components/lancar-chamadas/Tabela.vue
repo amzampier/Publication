@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Eye, Import, Pencil, Search, ShieldCheck, Trash2, Undo2, XCircle } from '@lucide/vue'
 import type { ColumnDef } from '../../utils/dataGrid'
+import { VARIANTE_CHAMADA as VARIANTE_STATUS } from '#shared/status-badge'
 import type { ActionMenuItem } from '../ui/ActionMenu.vue'
 import { usePermissions } from '../../composables/usePermissions'
 import {
@@ -27,21 +28,22 @@ const emit = defineEmits<{
 }>()
 
 const { can } = usePermissions()
-const { linhas, busca, criteriosAtivosCount, resolver } = useLancarChamadasModelo()
+const {
+  linhas,
+  busca,
+  criteriosAtivosCount,
+  resolver,
+  pagina,
+  porPagina,
+  total,
+  definirPagina,
+  definirPorPagina
+} = useLancarChamadasModelo()
 
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
-const VARIANTE_STATUS: Record<
-  StatusChamada,
-  'pending' | 'reconciled' | 'done' | 'blocked' | 'publicado'
-> = {
-  Revisar: 'pending',
-  Aprovado: 'reconciled',
-  Recusado: 'blocked',
-  Publicar: 'done',
-  Publicado: 'publicado'
-}
+
 
 const colunas: ColumnDef[] = [
   { id: 'chamada', header: 'Chamada', accessorKey: 'chamada', minWidth: 120 },
@@ -119,10 +121,16 @@ const acionar = (id: string, linha: LinhaChamada) => {
       :columns="colunas"
       :default-page-size="10"
       :page-size-options="[10, 20, 50]"
+      server-mode
+      :page="pagina"
+      :per-page="porPagina"
+      :total="total"
       show-header-top
       :show-search="false"
       :show-filters="can('lancar-chamadas', 'filtrar')"
       :filters-count="criteriosAtivosCount"
+      @page-change="definirPagina"
+      @per-page-change="definirPorPagina"
       @open-filters="emit('open-filters')"
     >
       <template #filtersLeft>
