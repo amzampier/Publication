@@ -7,6 +7,8 @@ import { criarPainelVazio } from '#shared/painel-executivo'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const {
   dados,
   ano,
@@ -26,7 +28,12 @@ const avisarFalha = () => {
 }
 
 const atualizar = async () => {
-  if (!(await carregar(true, Boolean(dados.value)))) avisarFalha()
+  erroCarga.value = ''
+  if (!(await carregar(true, Boolean(dados.value)))) {
+    avisarFalha()
+    return
+  }
+  limpar()
 }
 
 const trocarAno = async (novo: number) => {
@@ -57,6 +64,15 @@ onMounted(async () => {
         @atualizar="atualizar"
       />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-6"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="atualizar"
+      />
+
+      <template v-else>
       <PainelKpis class="mt-6" :kpis="painel.kpis" />
 
       <div class="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
@@ -75,6 +91,7 @@ onMounted(async () => {
         :por-tipo="painel.porTipo"
         :por-impacto="painel.porImpacto"
       />
+      </template>
 
     </div>
   </div>

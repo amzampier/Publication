@@ -54,9 +54,9 @@ const marcarAtalho = (valor: number, marcado: boolean) => {
         Política de Retenção &amp; Expurgo de Logs de Auditoria
       </h2>
     </div>
-    <p class="text-xs text-slate-500 mt-0.5">
+    <p class="text-xs text-slate-600 mt-0.5">
       Registros com mais de <strong class="font-semibold text-slate-700">{{ dias }} dias</strong> são
-      marcados para expurgo
+      removidos pela rotina de expurgo
     </p>
 
     <!-- Card interno: janela de retenção -->
@@ -64,8 +64,8 @@ const marcarAtalho = (valor: number, marcado: boolean) => {
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="min-w-0">
           <p class="text-xs font-semibold text-slate-700">Janela de Retenção Ativa</p>
-          <p class="text-[11px] text-slate-500 mt-0.5">
-            Registros com mais de {{ dias }} dias são marcados para expurgo
+          <p class="text-[11px] text-slate-600 mt-0.5">
+            Registros com mais de {{ dias }} dias são removidos pela rotina de expurgo
           </p>
         </div>
         <div class="flex items-baseline gap-1.5 shrink-0">
@@ -105,7 +105,7 @@ const marcarAtalho = (valor: number, marcado: boolean) => {
           da janela:
         </p>
         <code
-          class="mt-2 block overflow-x-auto rounded border border-blue-100 bg-white px-2 py-1 font-mono text-[9px] leading-relaxed text-slate-800"
+          class="mt-2 block overflow-x-auto rounded border border-blue-100 bg-white px-2 py-1 font-mono text-[10px] leading-relaxed text-slate-800 tabular-nums"
         >{{ query }}</code>
       </div>
     </div>

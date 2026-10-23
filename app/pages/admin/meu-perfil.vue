@@ -91,6 +91,7 @@ const rascunho = ref<Rascunho>({
 const aba = ref('dados')
 // Botão "Salvar alterações" fica desabilitado até qualquer painel alterar o rascunho
 const alterado = ref(false)
+const salvando = ref(false)
 
 const abaDadosRef = ref<{ validar: () => boolean } | null>(null)
 
@@ -99,7 +100,7 @@ const aoAlterar = () => {
 }
 
 const salvar = async () => {
-  if (!registro.value) return
+  if (!registro.value || salvando.value) return
   // Validação de dados pessoais acontece na aba dela — volta para lá se preciso
   if (aba.value !== 'dados') {
     aba.value = 'dados'
@@ -107,6 +108,7 @@ const salvar = async () => {
   }
   if (!abaDadosRef.value?.validar()) return
 
+  salvando.value = true
   try {
     // Avatar: dataURL nova vira ARQUIVO (upload em 'avatares') antes do PATCH;
     // '' remove a foto; caminho existente é enviado igual (sem re-upload — D6).
@@ -136,6 +138,8 @@ const salvar = async () => {
       'Meu Perfil',
       mensagem ?? 'Não foi possível salvar as alterações. Tente novamente.'
     )
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -215,6 +219,7 @@ const aoFotoCapturada = (dataUrl: string) => {
         <PerfilAbas
           v-model="aba"
           :desabilitado="!alterado"
+          :salvando="salvando"
           @salvar="salvar"
           @cancelar="cancelar"
         >

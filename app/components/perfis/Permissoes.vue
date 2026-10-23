@@ -33,6 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const salvando = ref(false)
 const { perfis } = usePerfisModelo()
 
 /** Mensagem do servidor (ex.: 409 de anti-lockout); fallback quando ausente. */
@@ -124,9 +125,10 @@ const modulosDaAba = computed(() =>
 )
 
 const salvar = async () => {
-  if (!props.perfil) return
+  if (!props.perfil || salvando.value) return
   // Gravação via API (spec perfis-acesso): substituição integral da matriz no
   // servidor; a linha e os KPIs recalculam a partir da resposta.
+  salvando.value = true
   try {
     const { base } = await salvarPermissoes(perfis.value, props.perfil.id, rascunho.value)
     perfis.value = base
@@ -137,6 +139,8 @@ const salvar = async () => {
       'Perfis de Acesso (RBAC)',
       mensagemErro(erro, 'Não foi possível salvar as permissões. Tente novamente.')
     )
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -363,7 +367,7 @@ const confirmarCopia = async () => {
         </UiTooltip>
       </div>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 

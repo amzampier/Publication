@@ -45,26 +45,26 @@
 
 ## 6. UX, acessibilidade e consistência
 
-- [ ] 6.1 Adicionar `error`/`errorMessage`/`retry` à `UiDataTable` e criar `UiErrorState` para telas sem tabela; ligar os catches das listagens (Softwares, Parceiros, Release, Manuais, Escopo, Chamadas, Esteira, Usuários, Perfis, Auditoria, Configurações, Painel) ao estado de erro; verificar que falha/403 não aparecem como lista vazia.
-- [ ] 6.2 Adicionar `salvando` + `:loading`/`:disabled` nos formulários de Softwares, Parceiros, Escopo, Perfis, Permissões, Configurações e Meu Perfil; verificar duplo clique gera uma requisição e restaura no erro.
+- [x] 6.1 Adicionar `error`/`errorMessage`/`retry` à `UiDataTable` e criar `UiErrorState` para telas sem tabela; ligar os catches das listagens (Softwares, Parceiros, Release, Manuais, Escopo, Chamadas, Esteira, Usuários, Perfis, Auditoria, Configurações, Painel) ao estado de erro; verificar que falha/403 não aparecem como lista vazia.
+- [x] 6.2 Adicionar `salvando` + `:loading`/`:disabled` nos formulários de Softwares, Parceiros, Escopo, Perfis, Permissões, Configurações e Meu Perfil; verificar duplo clique gera uma requisição e restaura no erro.
 - [x] 6.3 Criar `shared/status-badge.ts` e usar o mesmo mapa no Painel e nos módulos; adicionar teste dos mapas; verificar o mesmo status com a mesma variante em telas diferentes.
 - [x] 6.4 Corrigir a paginação responsiva (`flex-wrap`/rolagem interna) em `UiDataTable`/`UiPagination`; verificar 320/375 px sem corte/overflow.
-- [ ] 6.5 Fazer `Escape` devolver o foco ao gatilho no header e transformar o drawer mobile em diálogo (`role=dialog`, `aria-modal`, trap, backdrop, Escape); verificar por teclado e SSR.
+- [x] 6.5 Fazer `Escape` devolver o foco ao gatilho no header e transformar o drawer mobile em diálogo (`role=dialog`, `aria-modal`, trap, backdrop, Escape); verificar por teclado e SSR.
 - [x] 6.6 Dar nome acessível à busca da `UiDataTable`/buscas próprias e associar o label ao editor `UiRichText` (`id`/`aria-labelledby`); verificar por inspeção/SSR e leitor de tela quando possível.
-- [ ] 6.7 Ajustar contraste de texto de apoio (`slate-500/600`), mono/tabular em códigos/datas, “Limpar Filtros” apenas no rascunho, textos de “Recusar/Convite” e o SQL bruto da retenção; verificar visualmente e por inspeção.
+- [x] 6.7 Ajustar contraste de texto de apoio (`slate-500/600`), mono/tabular em códigos/datas, “Limpar Filtros” apenas no rascunho, textos de “Recusar/Convite” e o SQL bruto da retenção; verificar visualmente e por inspeção.
 - [x] 6.8 Atualizar `docs/01`, `docs/03`, `docs/10`, `docs/11`, `docs/17`, `AGENTS.md` e a vitrine `/design` para contagens, seções, variantes canônicas e estados de erro; verificar que o doc não contradiz o kit.
 
 ## 7. Contratos e documentação restante
 
 - [x] 7.1 Atualizar `autorizacao-rbac` (catálogo com 11 módulos/rotas novas) e `docs/07`; verificar `openspec validate --specs` e a matriz 92/67/41/14.
-- [ ] 7.2 Atualizar `docs/02` (estrutura real, convite com `convite`/`alterar`, status `Publicar/Publicado`, endpoints/Painel, contagem de componentes, `.can()`), `docs/08` e `.env.example`; verificar os trechos contra o código.
+- [x] 7.2 Atualizar `docs/02` (estrutura real, convite com `convite`/`alterar`, status `Publicar/Publicado`, endpoints/Painel, contagem de componentes, `.can()`), `docs/08` e `.env.example`; verificar os trechos contra o código.
 - [x] 7.3 Atualizar `docs/10`/`docs/11` (RBAC de UI/exportação), `docs/13` (totais RBAC), `docs/bd/02` (seed 92/67/41/14) e a spec de `softwares` (`:codigo`, Código, 409, exportação); verificar números e rotas.
-- [ ] 7.4 Atualizar a spec de `gestao-usuarios` (sem dados de demonstração) e `docs/09`/`docs/06` quando aplicável; verificar que nenhum texto promete demo.
-- [ ] 7.5 Revisar `docs/01`/`AGENTS`/`docs/bd/01` contra a implementação e registrar eventuais lacunas como tarefa específica, não como “explorar depois”.
+- [x] 7.4 Atualizar a spec de `gestao-usuarios` (sem dados de demonstração) e `docs/09`/`docs/06` quando aplicável; verificar que nenhum texto promete demo.
+- [x] 7.5 Revisar `docs/01`/`AGENTS`/`docs/bd/01` contra a implementação e registrar eventuais lacunas como tarefa específica, não como “explorar depois”.
 
 ## 8. Integração final
 
 - [x] 8.1 Executar `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`; verificar todos verdes e registrar o número de testes.
 - [x] 8.2 Executar `openspec validate "corrigir-pendencias-rl06-2" --type change --strict` e `openspec validate --specs`; verificar ambos válidos.
-- [ ] 8.3 Executar E2E dos itens M-01…M-05, M-10…M-12, M-13/M-14, M-17/M-18, B-02/B-03, B-05 e da hierarquia; verificar PASS e limpar dados de teste.
+- [x] 8.3 Executar E2E dos itens M-01…M-05, M-10…M-12, M-13/M-14, M-17/M-18, B-02/B-03, B-05 e da hierarquia; verificar PASS e limpar dados de teste.
 - [x] 8.4 Revisar o diff final, `git status` e `git diff --stat`; verificar que nenhum segredo/teste ficou no repositório e que a migration 31 é a única nova.

@@ -30,6 +30,10 @@ export function useApiFetch<T = any>(
   opts?: Parameters<typeof $fetch>[1]
 ) {
   const usuario = useState<UsuarioLogado | null>('auth-usuario', () => null)
+  const ultimoErro = useState<{ status: number; message: string } | null>(
+    'api-ultimo-erro',
+    () => null
+  )
   const headers: Record<string, string> = { ...(opts?.headers as Record<string, string>) }
 
   if (usuario.value?.id) headers['x-usuario-id'] = usuario.value.id
@@ -48,14 +52,29 @@ export function useApiFetch<T = any>(
     })
   }
 
+  const registrarErro = (erro: any) => {
+    const status = Number(erro?.statusCode ?? erro?.status ?? 0)
+    ultimoErro.value = {
+      status: Number.isFinite(status) ? status : 0,
+      message: String(erro?.data?.statusMessage ?? erro?.statusMessage ?? '')
+    }
+  }
+
   return doFetch().catch(async (erro: any) => {
-    if (erro?.statusCode !== 401 && erro?.status !== 401) throw erro
+    if (erro?.statusCode !== 401 && erro?.status !== 401) {
+      registrarErro(erro)
+      throw erro
+    }
 
     const renovado = await renovarUmaVez()
     if (!renovado) {
+      registrarErro(erro)
       useAuth().sessaoInvalidada()
       throw erro
     }
-    return doFetch()
+    return doFetch().catch((erroFinal: any) => {
+      registrarErro(erroFinal)
+      throw erroFinal
+    })
   }) as Promise<T>
 }

@@ -40,7 +40,7 @@ const alternar = (valor: boolean) => {
     />
 
     <div class="fp-shell-body flex flex-1 min-h-0">
-      <LayoutAppSidebar :sidebar-open="sidebarOpen" />
+      <LayoutAppSidebar :sidebar-open="sidebarOpen" @fechar="alternar(false)" />
 
       <!-- Backdrop do drawer (apenas abaixo de lg, quando a sidebar está expandida) -->
       <div

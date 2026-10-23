@@ -13,6 +13,8 @@ definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
 const { softwares, carregarSoftwares } = useSoftwaresModelo()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 
 // Loading no F5 (padrão Perfis/Usuários): `carregando` nasce true — o SSR
 // renderiza só o overlay e o conteúdo só monta via v-else após a resposta, sem
@@ -21,16 +23,21 @@ const { softwares, carregarSoftwares } = useSoftwaresModelo()
 // ser persistida.
 const carregando = ref(true)
 
-onMounted(async () => {
+const recarregar = async () => {
   carregando.value = true
-  const ok = await carregarSoftwares()
+  erroCarga.value = ''
+  const ok = await carregarSoftwares(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Softwares',
-      'Não foi possível carregar os softwares. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os softwares')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Softwares', erroCarga.value)
 })
 
 // Coordenação do modal de filtros: a página é dona do estado (molde Perfis/Usuários).
@@ -98,7 +105,16 @@ const importarAberto = ref(false)
 
       <SoftwaresKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <SoftwaresTabela
+        v-else
         ref="tabelaRef"
         class="mt-5"
         @editar="abrirEdicao"

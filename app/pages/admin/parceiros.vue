@@ -12,22 +12,29 @@ definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
 const { parceiros, carregarParceiros } = useParceirosModelo()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 
 // Loading no F5 (padrão Softwares/Perfis/Usuários): `carregando` nasce true — o
 // SSR renderiza só o overlay e o conteúdo só monta via v-else após a resposta,
 // sem flash de KPIs/grade vazios. Em falha → toast de erro + lista vazia.
 const carregando = ref(true)
 
-onMounted(async () => {
+const recarregar = async () => {
   carregando.value = true
-  const ok = await carregarParceiros()
+  erroCarga.value = ''
+  const ok = await carregarParceiros(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Parceiros',
-      'Não foi possível carregar os parceiros. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os parceiros')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Parceiros', erroCarga.value)
 })
 
 // Coordenação do modal de filtros: a página é dona do estado.
@@ -96,7 +103,16 @@ const importarAberto = ref(false)
 
       <ParceirosKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <ParceirosGrade
+        v-else
         class="mt-5"
         @editar="abrirEdicao"
         @excluir="abrirExclusao"

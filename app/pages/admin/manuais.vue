@@ -10,6 +10,8 @@ import {
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const {
   manuais,
   carregarManuais,
@@ -21,16 +23,21 @@ const {
 
 const carregando = ref(true)
 
-onMounted(async () => {
-  // Entrar na página sempre rebusca os manuais e invalida o cache de itens.
+const recarregar = async () => {
+  carregando.value = true
+  erroCarga.value = ''
   const ok = await carregarManuais(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Manuais Mensais',
-      'Não foi possível carregar os manuais. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os manuais')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Manuais Mensais', erroCarga.value)
 })
 
 // Coordenação da página (molde Release Week): a página é dona do estado dos
@@ -163,7 +170,16 @@ const importarAberto = ref(false)
 
       <ManuaisKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <ManuaisTabela
+        v-else
         ref="tabelaRef"
         class="mt-5"
         @editar="abrirEdicao"

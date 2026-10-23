@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const { toast } = useToast()
 const { parceiros } = useParceirosModelo()
+const salvando = ref(false)
 
 /** Rascunho do modal: o registro completo do parceiro. */
 const rascunhoVazio = (): ParceiroModelo => ({
@@ -104,6 +105,7 @@ const aoEnter = (e: KeyboardEvent) => {
 }
 
 const salvar = async () => {
+  if (salvando.value) return
   erros.value = validar(rascunho.value)
   const primeiro = ORDEM_FOCO.find((campo) => erros.value[campo])
   if (primeiro) {
@@ -112,6 +114,7 @@ const salvar = async () => {
   }
   if (erros.value.situacao) return
 
+  salvando.value = true
   try {
     const { base } = await salvarParceiro(parceiros.value, rascunho.value, props.modo)
     parceiros.value = base
@@ -132,6 +135,8 @@ const salvar = async () => {
       return
     }
     toast.danger('Parceiros', 'Não foi possível salvar o parceiro. Tente novamente.')
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -300,7 +305,7 @@ const atualizadoTexto = computed(() => formatarDataHora(rascunho.value.atualizad
 
     <template #footer>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 </template>

@@ -12,6 +12,8 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const { perfis, carregarPerfis } = usePerfisModelo()
 
 // Loading no F5 (padrão Meu Perfil/Configurações): `carregando` nasce true — o SSR
@@ -21,16 +23,21 @@ const { perfis, carregarPerfis } = usePerfisModelo()
 // persistida.
 const carregando = ref(true)
 
-onMounted(async () => {
+const recarregar = async () => {
   carregando.value = true
+  erroCarga.value = ''
   const ok = await carregarPerfis()
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Perfis de Acesso (RBAC)',
-      'Não foi possível carregar os perfis. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os perfis')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Perfis de Acesso (RBAC)', erroCarga.value)
 })
 
 // Coordenação do modal de permissões: a página é dona do estado (mesmo padrão dos
@@ -128,7 +135,16 @@ const confirmarExclusao = async () => {
 
       <PerfisKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <PerfisTabela
+        v-else
         ref="tabelaRef"
         class="mt-5"
         @permissoes="abrirPermissoes"

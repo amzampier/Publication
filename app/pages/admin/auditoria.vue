@@ -6,6 +6,8 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const { carregarAuditoria } = useAuditoriaModelo()
 
 // Coordenação entre painéis (state dos filtros fica no composable)
@@ -23,16 +25,21 @@ const abrirDetalhe = (registro: RegistroAuditoria) => {
 // (a demo antiga nunca aparece fingindo ser persistida).
 const carregando = ref(true)
 
-onMounted(async () => {
+const recarregar = async () => {
   carregando.value = true
+  erroCarga.value = ''
   const ok = await carregarAuditoria()
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Gestão de Auditoria',
-      'Não foi possível carregar os registros de auditoria. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os registros de auditoria')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Gestão de Auditoria', erroCarga.value)
 })
 </script>
 
@@ -46,7 +53,16 @@ onMounted(async () => {
 
       <AuditoriaKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <AuditoriaTabela
+        v-else
         class="mt-5"
         @open-filters="filtrosAbertos = true"
         @open-details="abrirDetalhe"

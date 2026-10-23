@@ -15,6 +15,8 @@ definePageMeta({ layout: 'admin' })
 
 const carregando = ref(true)
 const { toast } = useToast()
+const { mensagem: mensagemCarga, limpar } = useErroCarga()
+const erroCarga = ref('')
 const {
   carregar,
   resolver,
@@ -33,15 +35,21 @@ const mensagemErro = (erro: unknown): string => {
   return e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível concluir a operação.'
 }
 
-onMounted(async () => {
+const recarregar = async () => {
+  carregando.value = true
+  erroCarga.value = ''
   const ok = await carregar(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Esteira de Revisão',
-      'Não foi possível carregar a esteira. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagemCarga('a esteira de revisão')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Esteira de Revisão', erroCarga.value)
 })
 
 const filtrosAbertos = ref(false)
@@ -126,7 +134,16 @@ const confirmarDecisao = async (payload: {
 
       <EsteiraKpis class="mt-4" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-4"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <EsteiraBoard
+        v-else
         class="mt-4"
         @detalhes="abrirDetalhes"
         @aprovar="abrirDecisao($event, 'aprovar')"

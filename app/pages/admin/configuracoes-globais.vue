@@ -16,6 +16,8 @@ import { CHAVES_SIDEBAR, labelPorChave } from '../../config/sidebar-keys'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 
 // Retenção: v-model do slider (a hidratação substitui o default por GET)
 const diasRetencao = ref(180)
@@ -29,6 +31,7 @@ const aba = ref('logomarcas')
 
 // Botão "Salvar" fica desabilitado até qualquer painel alterar seu estado
 const alterado = ref(false)
+const salvando = ref(false)
 
 // Loading no F5 (padrão Meu Perfil): sem flash dos defaults enquanto o GET voa
 const carregando = ref(true)
@@ -39,24 +42,30 @@ const { caminho: caminhoLogin } = useLogomarcaLogin()
 const { expandida: sidebarExpandida } = useSidebarExpandida()
 const { abertas: sessoesAbertas } = useSessoesAbertas()
 
-onMounted(async () => {
-  // Mesma carga do layout admin (idempotente) — a página também precisa dos
-  // valores para montar o payload do Salvar.
+const carregar = async () => {
+  carregando.value = true
+  erroCarga.value = ''
   try {
     const cfg = await carregarConfiguracoesGlobais()
-    if (cfg) {
-      diasRetencao.value = cfg.dias_retencao_auditoria
-      rateLimite.value = cfg.rate_limit.limite_requisicoes_minuto
-      rateAtivo.value = cfg.rate_limit.ativo
+    if (!cfg) {
+      erroCarga.value = mensagem('as configurações')
+      return
     }
-    // Hidratação não é alteração do usuário — o Salvar permanece desabilitado.
+    diasRetencao.value = cfg.dias_retencao_auditoria
+    rateLimite.value = cfg.rate_limit.limite_requisicoes_minuto
+    rateAtivo.value = cfg.rate_limit.ativo
     alterado.value = false
+    limpar()
   } finally {
     carregando.value = false
   }
-})
+}
+
+onMounted(carregar)
 
 const salvar = async () => {
+  if (salvando.value) return
+  salvando.value = true
   try {
     const sidebarGrupos = Object.fromEntries(
       CHAVES_SIDEBAR.map((chave) => [chave, sessoesAbertas.value[labelPorChave(chave)] ?? true])
@@ -87,6 +96,8 @@ const salvar = async () => {
       'Configurações Globais',
       'Não foi possível salvar as alterações. Tente novamente.'
     )
+  } finally {
+    salvando.value = false
   }
 }
 </script>
@@ -97,9 +108,17 @@ const salvar = async () => {
     <UiLoading v-if="carregando" message="Carregando configurações…" />
 
     <div v-else class="mx-auto max-w-5xl">
-      <ConfiguracoesCabecalho :desabilitado="!alterado" @salvar="salvar" />
+      <ConfiguracoesCabecalho :desabilitado="!alterado" :salvando="salvando" @salvar="salvar" />
 
-      <ConfiguracoesAbas v-model="aba" class="mt-10">
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-10"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="carregar"
+      />
+
+      <ConfiguracoesAbas v-else v-model="aba" class="mt-10">
         <ConfiguracoesAbaLogomarcas
           v-if="aba === 'logomarcas'"
           @change="alterado = true"

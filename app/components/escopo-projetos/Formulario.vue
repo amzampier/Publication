@@ -28,6 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const salvando = ref(false)
 const { can } = usePermissions()
 const { escopos, adicionar, atualizar } = useEscopoProjetosModelo()
 
@@ -129,6 +130,7 @@ const validar = (): boolean => {
 }
 
 const salvar = async () => {
+  if (salvando.value) return
   if (!validar()) return
   const dados = {
     nome: rascunho.value.nome,
@@ -142,6 +144,7 @@ const salvar = async () => {
     descricaoGeral: rascunho.value.descricaoGeral
   }
 
+  salvando.value = true
   try {
     if (props.modo === 'editar' && props.escopo) {
       await atualizar(props.escopo.id, dados)
@@ -170,6 +173,8 @@ const salvar = async () => {
       'Escopo de Projetos',
       e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível salvar o escopo.'
     )
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -343,7 +348,7 @@ watch(
 
     <template #footer>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 </template>

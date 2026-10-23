@@ -12,6 +12,8 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const { usuarios, carregarUsuarios } = useUsuarios()
 
 // Loading no F5 (padrão Meu Perfil/Configurações): `carregando` nasce true — o SSR
@@ -20,16 +22,21 @@ const { usuarios, carregarUsuarios } = useUsuarios()
 // falha → toast de erro + lista vazia — nada de simular dados.
 const carregando = ref(true)
 
-onMounted(async () => {
+const recarregar = async () => {
   carregando.value = true
-  const ok = await carregarUsuarios()
+  erroCarga.value = ''
+  const ok = await carregarUsuarios(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Gestão de Usuários',
-      'Não foi possível carregar os usuários. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os usuários')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Gestão de Usuários', erroCarga.value)
 })
 
 // Coordenação dos modais: a página é dona do estado
@@ -143,7 +150,16 @@ const confirmarBloqueio = async () => {
 
       <UsuariosKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <UsuariosTabela
+        v-else
         ref="tabelaRef"
         class="mt-5"
         @filtros="filtrosAbertos = true"

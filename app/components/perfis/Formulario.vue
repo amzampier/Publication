@@ -26,6 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
+const salvando = ref(false)
 const { perfis } = usePerfisModelo()
 
 /** Rascunho do modal: o registro completo do perfil (mesmo contrato do Formulario de usuários). */
@@ -100,6 +101,7 @@ const aoEnter = (e: KeyboardEvent) => {
 }
 
 const salvar = async () => {
+  if (salvando.value) return
   erros.value = validar(rascunho.value)
   const primeiro = ORDEM_FOCO.find((campo) => erros.value[campo])
   if (primeiro) {
@@ -109,6 +111,7 @@ const salvar = async () => {
 
   // Gravação via API (spec perfis-acesso): o servidor gera o UUID na criação e
   // resolve criado_em/atualizado_em — o cliente envia só os campos editáveis.
+  salvando.value = true
   try {
     const { base: novaBase } = await salvarPerfil(perfis.value, rascunho.value, props.modo)
     perfis.value = novaBase
@@ -140,6 +143,8 @@ const salvar = async () => {
       'Perfis de Acesso (RBAC)',
       'Não foi possível salvar o perfil. Tente novamente.'
     )
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -254,7 +259,7 @@ const atualizadoTexto = () => formatarData(rascunho.value.atualizado_em || null)
 
     <template #footer>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 </template>

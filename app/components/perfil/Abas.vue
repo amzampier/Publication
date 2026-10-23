@@ -6,6 +6,7 @@ interface Props {
   modelValue: string
   /** Passa `disabled` ao "Salvar alterações" (flag `alterado` da página) */
   desabilitado?: boolean
+  salvando?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -62,6 +63,7 @@ const selecionar = (id: string) => {
         size="md"
         class="w-full sm:w-auto"
         :disabled="desabilitado"
+        :loading="salvando"
         @click="emit('salvar')"
       >
         Salvar alterações

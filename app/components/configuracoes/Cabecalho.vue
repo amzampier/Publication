@@ -4,8 +4,9 @@ import { Save, Settings } from '@lucide/vue'
 withDefaults(
   defineProps<{
     desabilitado?: boolean
+    salvando?: boolean
   }>(),
-  { desabilitado: false }
+  { desabilitado: false, salvando: false }
 )
 
 defineEmits<{
@@ -36,6 +37,7 @@ defineEmits<{
       size="md"
       class="shrink-0 w-full sm:w-auto"
       :disabled="desabilitado"
+      :loading="salvando"
       @click="$emit('salvar')"
     >
       <template #leftIcon><Save class="h-4 w-4 text-brand-accent" /></template>

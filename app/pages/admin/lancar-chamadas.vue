@@ -17,6 +17,8 @@ definePageMeta({ layout: 'admin' })
 
 const carregando = ref(true)
 const { toast } = useToast()
+const { mensagem: mensagemCarga, limpar } = useErroCarga()
+const erroCarga = ref('')
 const {
   carregarChamadas,
   buscarDetalhe,
@@ -35,15 +37,21 @@ const mensagemErro = (erro: unknown): string => {
   return e?.data?.statusMessage ?? e?.statusMessage ?? 'Não foi possível concluir a operação.'
 }
 
-onMounted(async () => {
+const recarregar = async () => {
+  carregando.value = true
+  erroCarga.value = ''
   const ok = await carregarChamadas(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Lançar as Chamadas',
-      'Não foi possível carregar as chamadas. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagemCarga('as chamadas')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Lançar as Chamadas', erroCarga.value)
 })
 
 const filtrosAbertos = ref(false)
@@ -210,7 +218,16 @@ const confirmarExclusao = async () => {
 
       <LancarChamadasKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <LancarChamadasTabela
+        v-else
         class="mt-5"
         @detalhes="abrirDetalhes"
         @editar="abrirEdicao"

@@ -14,6 +14,8 @@ definePageMeta({ layout: 'admin' })
 const carregando = ref(true)
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const {
   semanas,
   carregarSemanas,
@@ -23,17 +25,21 @@ const {
   excluir
 } = useReleaseWeekModelo()
 
-onMounted(async () => {
-  // Entrar na página sempre rebusca as releases e invalida o cache de itens:
-  // o status dos itens pode ter mudado em "Lançar as Chamadas" (aprovação/recusa).
+const recarregar = async () => {
+  carregando.value = true
+  erroCarga.value = ''
   const ok = await carregarSemanas(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Release Week',
-      'Não foi possível carregar as Release Weeks. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('as Release Weeks')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Release Week', erroCarga.value)
 })
 
 // Coordenação da página (molde Softwares/Parceiros): a página é dona do estado
@@ -161,7 +167,16 @@ const importarAberto = ref(false)
 
       <ReleaseWeekKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <ReleaseWeekTabela
+        v-else
         ref="tabelaRef"
         class="mt-5"
         @editar="abrirEdicao"

@@ -10,6 +10,8 @@ import { useToast } from '../../composables/useToast'
 definePageMeta({ layout: 'admin' })
 
 const { toast } = useToast()
+const { mensagem, limpar } = useErroCarga()
+const erroCarga = ref('')
 const { escopos, carregarEscopos, publicar, arquivar, excluir } =
   useEscopoProjetosModelo()
 
@@ -22,17 +24,21 @@ const mensagemErro = (erro: unknown, padrao: string): string => {
   return e?.data?.statusMessage ?? e?.statusMessage ?? padrao
 }
 
-onMounted(async () => {
+const recarregar = async () => {
   carregando.value = true
-  // Entrar na página sempre rebusca os escopos e invalida o cache de itens.
+  erroCarga.value = ''
   const ok = await carregarEscopos(true)
   carregando.value = false
   if (!ok) {
-    toast.danger(
-      'Escopo de Projetos',
-      'Não foi possível carregar os escopos. Recarregue a página e tente novamente.'
-    )
+    erroCarga.value = mensagem('os escopos')
+    return
   }
+  limpar()
+}
+
+onMounted(async () => {
+  await recarregar()
+  if (erroCarga.value) toast.danger('Escopo de Projetos', erroCarga.value)
 })
 
 // Coordenação dos modais: a página é dona do estado.
@@ -144,7 +150,16 @@ const importarAberto = ref(false)
 
       <EscopoProjetosKpis class="mt-6" />
 
+      <UiErrorState
+        v-if="erroCarga"
+        class="mt-5"
+        :message="erroCarga"
+        :retrying="carregando"
+        @retry="recarregar"
+      />
+
       <EscopoProjetosGrade
+        v-else
         class="mt-5"
         @editar="abrirEdicao"
         @excluir="abrirExclusao"

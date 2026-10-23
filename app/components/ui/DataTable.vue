@@ -659,7 +659,7 @@ onUnmounted(() => {
           >
             {{ title }}
           </h3>
-          <p v-if="subtitle" class="text-xs text-slate-500 mt-0.5">
+          <p v-if="subtitle" class="text-xs text-slate-600 mt-0.5">
             {{ subtitle }}
           </p>
         </div>
@@ -863,17 +863,17 @@ onUnmounted(() => {
                     <div class="flex items-center gap-2">
                       <div class="h-5 w-5 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 shadow-2xs shrink-0 transition-colors">
                         <ChevronDown v-if="isNodeExpanded(row.node!.id, 1)" class="h-3 w-3 text-slate-600" />
-                        <ChevronRight v-else class="h-3 w-3 text-slate-500" />
+                        <ChevronRight v-else class="h-3 w-3 text-slate-600" />
                       </div>
 
                       <span class="bg-lime-50 border border-lime-300 text-lime-800 font-bold font-mono text-[8.5px] px-1.5 py-0.5 rounded leading-none shadow-2xs">
                         1º NÍVEL
                       </span>
 
-                      <span class="text-slate-500 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
+                      <span class="text-slate-600 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
                       <span class="text-slate-900 font-bold text-[11px]">{{ getGroupValueLabel(row.node!) }}</span>
 
-                      <span class="text-[10px] text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans shadow-2xs">
+                      <span class="text-[10px] text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans shadow-2xs">
                         {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}
                       </span>
                     </div>
@@ -900,17 +900,17 @@ onUnmounted(() => {
                     <div class="flex items-center gap-2">
                       <div class="h-4.5 w-4.5 rounded border border-slate-300 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 shadow-2xs shrink-0">
                         <ChevronDown v-if="isNodeExpanded(row.node!.id, 2)" class="h-2.5 w-2.5 text-slate-600" />
-                        <ChevronRight v-else class="h-2.5 w-2.5 text-slate-500" />
+                        <ChevronRight v-else class="h-2.5 w-2.5 text-slate-600" />
                       </div>
 
                       <span class="bg-sky-50 border border-sky-300 text-sky-800 font-bold font-mono text-[8.5px] px-1.5 py-0.5 rounded leading-none shadow-2xs">
                         2º NÍVEL
                       </span>
 
-                      <span class="text-slate-500 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
+                      <span class="text-slate-600 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
                       <span class="text-slate-900 font-bold text-[11px]">{{ getGroupValueLabel(row.node!) }}</span>
 
-                      <span class="text-[10px] text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans shadow-2xs">
+                      <span class="text-[10px] text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans shadow-2xs">
                         {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}
                       </span>
                     </div>
@@ -932,14 +932,14 @@ onUnmounted(() => {
                   <div class="flex items-center gap-2">
                     <div class="h-4.5 w-4.5 rounded border border-slate-300 bg-white flex items-center justify-center text-slate-600 shadow-2xs shrink-0">
                       <ChevronDown v-if="isNodeExpanded(row.node!.id, 3)" class="h-2.5 w-2.5 text-slate-600" />
-                      <ChevronRight v-else class="h-2.5 w-2.5 text-slate-500" />
+                      <ChevronRight v-else class="h-2.5 w-2.5 text-slate-600" />
                     </div>
                     <span class="bg-indigo-50 border border-indigo-300 text-indigo-800 font-bold font-mono text-[8.5px] px-1.5 py-0.5 rounded leading-none shadow-2xs">
                       3º NÍVEL
                     </span>
-                    <span class="text-slate-500 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
+                    <span class="text-slate-600 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
                     <span class="text-slate-900 font-bold text-[11px]">{{ getGroupValueLabel(row.node!) }}</span>
-                    <span class="text-[10px] text-slate-500 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans">
+                    <span class="text-[10px] text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans">
                       {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}
                     </span>
                   </div>
@@ -972,7 +972,9 @@ onUnmounted(() => {
                     'py-1 px-2.5 text-[11px] text-slate-800 truncate',
                     cIdx === 0 ? (row.level === 3 ? 'pl-20' : row.level === 2 ? 'pl-14' : 'pl-10') : '',
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
-                    col.isNumeric || col.align === 'right' ? 'tabular-nums' : ''
+                    col.isNumeric || col.align === 'right' ? 'tabular-nums' : '',
+                    /data|codigo|chamada|semana|ano|mes|Em$/i.test(col.id) ? 'tabular-nums' : '',
+                    /codigo|chamada/i.test(col.id) ? 'font-mono' : ''
                   ]"
                 >
                   <slot :name="`cell(${col.id})`" :row="row.item" :value="row.item[col.accessorKey]">
@@ -1019,7 +1021,9 @@ onUnmounted(() => {
                   :class="[
                     'py-1.5 px-2.5 text-[11px] text-slate-800 truncate',
                     col.align === 'right' ? 'text-right' : col.align === 'center' ? 'text-center' : 'text-left',
-                    col.isNumeric || col.align === 'right' ? 'tabular-nums' : ''
+                    col.isNumeric || col.align === 'right' ? 'tabular-nums' : '',
+                    /data|codigo|chamada|semana|ano|mes|Em$/i.test(col.id) ? 'tabular-nums' : '',
+                    /codigo|chamada/i.test(col.id) ? 'font-mono' : ''
                   ]"
                 >
                   <slot :name="`cell(${col.id})`" :row="row" :value="row[col.accessorKey]">
@@ -1054,7 +1058,7 @@ onUnmounted(() => {
                     Tentar novamente
                   </button>
                 </div>
-                <span v-else class="text-slate-500">
+                <span v-else class="text-slate-600">
                   {{ (filtersCount > 0 || searchQuery.trim() !== '') ? 'Nenhum resultado encontrado para o filtro.' : 'Nenhum registro encontrado.' }}
                 </span>
               </td>
@@ -1226,7 +1230,7 @@ onUnmounted(() => {
         <div class="border-t border-slate-100 my-1"></div>
         <button
           type="button"
-          class="w-full text-left px-3 py-1.5 hover:bg-rose-50 hover:text-rose-700 flex items-center justify-between text-slate-500 cursor-pointer"
+          class="w-full text-left px-3 py-1.5 hover:bg-rose-50 hover:text-rose-700 flex items-center justify-between text-slate-600 cursor-pointer"
           @click="selectAggregate('NONE')"
         >
           <span>Nenhum (Limpar)</span>

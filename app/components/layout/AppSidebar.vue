@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ChevronDown as ChevronDownIcon } from '@lucide/vue'
 import type { SidebarItem, SidebarSession } from '../../config/navigation'
 import { itemRaiz, sessoes as sessoesDefinidas } from '../../config/navigation'
@@ -8,11 +8,73 @@ import { useSessoesAbertas } from '../../composables/useSessoesAbertas'
 import { usePermissions } from '../../composables/usePermissions'
 import { useToast } from '../../composables/useToast'
 
-defineProps<{ sidebarOpen: boolean }>()
+const props = defineProps<{ sidebarOpen: boolean }>()
+const emit = defineEmits<{ (e: 'fechar'): void }>()
 
 // RBAC: item de módulo só aparece quando o perfil concede `visualizar` (o item
 // raiz e itens sem módulo — ex.: Painel Executivo — ficam sempre visíveis).
 const { podeVisualizar } = usePermissions()
+
+const asideRef = ref<HTMLElement | null>(null)
+const ehMobile = ref(false)
+let mediaQuery: MediaQueryList | null = null
+let focoAnterior: HTMLElement | null = null
+
+const atualizarViewport = () => {
+  ehMobile.value = mediaQuery?.matches ?? false
+}
+
+const drawerAtivo = computed(() => ehMobile.value && props.sidebarOpen)
+
+const focaveis = () =>
+  Array.from(
+    asideRef.value?.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    ) ?? []
+  ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null)
+
+const aoTeclado = (evento: KeyboardEvent) => {
+  if (!drawerAtivo.value) return
+  if (evento.key === 'Escape') {
+    evento.preventDefault()
+    emit('fechar')
+    return
+  }
+  if (evento.key !== 'Tab') return
+  const itens = focaveis()
+  if (!itens.length) return
+  const primeiro = itens[0]
+  const ultimo = itens[itens.length - 1]
+  if (evento.shiftKey && document.activeElement === primeiro) {
+    evento.preventDefault()
+    ultimo?.focus()
+  } else if (!evento.shiftKey && document.activeElement === ultimo) {
+    evento.preventDefault()
+    primeiro?.focus()
+  }
+}
+
+watch(drawerAtivo, async (aberto) => {
+  if (aberto) {
+    focoAnterior = document.activeElement as HTMLElement | null
+    await nextTick()
+    focaveis()[0]?.focus()
+    return
+  }
+  focoAnterior?.focus()
+  focoAnterior = null
+})
+
+onMounted(() => {
+  mediaQuery = window.matchMedia('(max-width: 1023px)')
+  atualizarViewport()
+  mediaQuery.addEventListener('change', atualizarViewport)
+})
+
+onBeforeUnmount(() => {
+  mediaQuery?.removeEventListener('change', atualizarViewport)
+})
+
 const itemVisivel = (item: SidebarItem) => {
   const modulo = item.modulo ?? item.id
   return !(modulo in FUNCIONALIDADES_POR_MODULO) || podeVisualizar(modulo)
@@ -73,6 +135,11 @@ const alternarSessao = (sessao: SidebarSession) => {
 <template>
   <aside
     id="app-sidebar"
+    ref="asideRef"
+    :role="drawerAtivo ? 'dialog' : undefined"
+    :aria-modal="drawerAtivo ? 'true' : undefined"
+    :aria-label="drawerAtivo ? 'Menu de navegação' : undefined"
+    @keydown="aoTeclado"
     :class="[
       'shrink-0 bg-brand-primary border-r border-white/10 flex flex-col transition-all duration-200',
       // Abaixo de lg: expandida vira drawer sobre o conteúdo (sob o header z-40),

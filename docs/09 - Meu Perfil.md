@@ -265,8 +265,8 @@ o acesso é exclusivamente pelo menu da conta (`docs/03` §3).
 
 ## 9. Verificação
 
-- `npm run build` (único gate automatizado — não existe lint/test no projeto).
-- Percurso manual em `http://localhost:3000` (credenciais demo: `admin@empresa.com.br`
+- `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build` (gates automatizados).
+- Percurso manual em `http://localhost:3000` (credenciais de desenvolvimento: `admin@empresa.com.br`
   / `Public@2026`):
   1. Login → menu da conta → "Meu Perfil" navega e fecha o menu; URL `/admin/meu-perfil`.
   2. Resumo: fundo em degradê suave (navy no topo → branco na base), iniciais no avatar (sem

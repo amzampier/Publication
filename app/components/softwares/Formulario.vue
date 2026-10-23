@@ -30,6 +30,7 @@ const emit = defineEmits<{
 
 const { toast } = useToast()
 const { softwares } = useSoftwaresModelo()
+const salvando = ref(false)
 
 /** Rascunho do modal: o registro completo do software (mesmo contrato dos demais). */
 const rascunhoVazio = (): SoftwareModelo => ({
@@ -98,6 +99,7 @@ const aoEnter = (e: KeyboardEvent) => {
 }
 
 const salvar = async () => {
+  if (salvando.value) return
   erros.value = validar(rascunho.value)
   const primeiro = ORDEM_FOCO.find((campo) => erros.value[campo])
   if (primeiro) {
@@ -109,6 +111,7 @@ const salvar = async () => {
   // Gravação via API (contrato da capability `softwares`): o servidor gera o
   // código na criação e resolve criado_em/atualizado_em — o cliente envia só os
   // campos editáveis (o código é imutável).
+  salvando.value = true
   try {
     const { base } = await salvarSoftware(softwares.value, rascunho.value, props.modo)
     softwares.value = base
@@ -129,6 +132,8 @@ const salvar = async () => {
       return
     }
     toast.danger('Softwares', 'Não foi possível salvar o software. Tente novamente.')
+  } finally {
+    salvando.value = false
   }
 }
 
@@ -244,7 +249,7 @@ const atualizadoTexto = () => formatarDataHora(rascunho.value.atualizado_em) || 
 
     <template #footer>
       <UiButton variant="outline" size="md" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" size="md" @click="salvar">Salvar</UiButton>
+      <UiButton variant="primary" size="md" :loading="salvando" @click="salvar">Salvar</UiButton>
     </template>
   </UiModal>
 </template>
