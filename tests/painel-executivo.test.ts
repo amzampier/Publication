@@ -161,7 +161,7 @@ describe('fluxo da esteira', () => {
     itemFluxo('Aprovado', { release: contexto('r3') }),
     itemFluxo('Recusado', { release: contexto('r4') }),
     itemFluxo('Publicar', { release: contexto('r5') }),
-    itemFluxo('Publicar', { release: contexto('r6', 'Publicado') }),
+    itemFluxo('Publicado', { release: contexto('r6', 'Publicado') }),
     itemFluxo('Revisar', { release: contexto('r7', 'Em Andamento', true) })
   ]
 

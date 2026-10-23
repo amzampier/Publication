@@ -70,6 +70,8 @@ export interface ProgressoVinculo {
   aprovado: number
   recusado: number
   publicar: number
+  aguardando: number
+  publicado: number
   revisado: number
   percentualRevisado: number
   percentualAprovado: number
@@ -101,8 +103,8 @@ export const FILTROS_ESTEIRA_VAZIOS: FiltrosEsteira = {
 
 /**
  * Contexto entra no board/progresso quando não está arquivado. O status
- * `Publicado` não exclui o vínculo por si só; a saída de itens em `Publicar`
- * com pai publicado é decidida por `itemPublicadoNoPortal`.
+ * `Publicado` não exclui o vínculo por si só; a saída de itens já publicados é
+ * decidida por `itemPublicadoNoPortal`.
  */
 export function contextoAtivo(contexto: ContextoVinculo | null): boolean {
   return Boolean(contexto && !contexto.arquivada)
@@ -120,17 +122,22 @@ export function contextoPublicado(contexto: ContextoVinculo | null): boolean {
   return Boolean(contexto && contexto.status === 'Publicado')
 }
 
+/** Ao menos um vínculo ativo aponta para conteúdo pai publicado. */
+export function temPaiPublicado(item: Pick<ItemEsteira, 'contexto'>): boolean {
+  return [item.contexto.release, item.contexto.manual, item.contexto.projeto].some(
+    (contexto) => contextoAtivo(contexto) && contextoPublicado(contexto)
+  )
+}
+
 /**
- * O item já está publicado no portal quando está em `Publicar` E ao menos um
+ * O item já está publicado no portal quando está em `Publicado` E ao menos um
  * vínculo ativo aponta para conteúdo pai com status `Publicado`.
  */
 export function itemPublicadoNoPortal(
   item: Pick<ItemEsteira, 'status' | 'contexto'>
 ): boolean {
-  if (item.status !== 'Publicar') return false
-  return [item.contexto.release, item.contexto.manual, item.contexto.projeto].some(
-    (contexto) => contextoAtivo(contexto) && contextoPublicado(contexto)
-  )
+  if (item.status !== 'Publicado') return false
+  return temPaiPublicado(item)
 }
 
 /** Alias de leitura para a visibilidade pública do item. */
@@ -145,11 +152,15 @@ export function itemComVinculoAtivo(item: Pick<ItemEsteira, 'contexto'>): boolea
 
 /**
  * Item do ciclo ativo: possui vínculo não arquivado e ainda não está publicado
- * no portal. Itens em `Publicar` com pai `Publicado` saem do ciclo; `Revisar`,
- * `Aprovado` e `Recusado` permanecem mesmo com o pai publicado.
+ * no portal. `Publicado` sai do ciclo; `Publicar` com pai já publicado também
+ * (estado transitório da cascata). `Revisar`, `Aprovado` e `Recusado`
+ * permanecem mesmo com o pai publicado.
  */
 export function itemNoCicloAtivo(item: Pick<ItemEsteira, 'status' | 'contexto'>): boolean {
-  return itemComVinculoAtivo(item) && !itemPublicadoNoPortal(item)
+  if (!itemComVinculoAtivo(item)) return false
+  if (item.status === 'Publicado') return false
+  if (item.status === 'Publicar' && temPaiPublicado(item)) return false
+  return true
 }
 
 /**
@@ -194,22 +205,33 @@ const vazio = (): ProgressoVinculo => ({
   aprovado: 0,
   recusado: 0,
   publicar: 0,
+  aguardando: 0,
+  publicado: 0,
   revisado: 0,
   percentualRevisado: 0,
   percentualAprovado: 0
 })
 
 const somarStatus = (alvo: ProgressoVinculo, status: StatusChamada): void => {
+  // `Publicado` é contagem informativa (no portal) e não entra no ciclo ativo
+  // usado pelo percentual do fluxo.
+  if (status === 'Publicado') {
+    alvo.publicado += 1
+    return
+  }
   alvo.total += 1
   if (status === 'Revisar') alvo.revisar += 1
   else if (status === 'Aprovado') alvo.aprovado += 1
   else if (status === 'Recusado') alvo.recusado += 1
-  else alvo.publicar += 1
+  else {
+    alvo.publicar += 1
+    alvo.aguardando += 1
+  }
 }
 
 const fecharPercentuais = (alvo: ProgressoVinculo): void => {
-  // "Revisado" aqui é o que avançou no fluxo: aprovado + publicado. Recusadas
-  // continuam pendentes de correção e não contam no percentual do processo.
+  // "Revisado" aqui é o que avançou no fluxo: aprovado + aguardando o pai.
+  // Recusadas continuam pendentes de correção e não contam no percentual.
   alvo.revisado = alvo.aprovado + alvo.publicar
   alvo.percentualRevisado = alvo.total ? Math.round((alvo.revisado / alvo.total) * 100) : 0
   alvo.percentualAprovado = alvo.total ? Math.round((alvo.aprovado / alvo.total) * 100) : 0
@@ -349,7 +371,7 @@ export function podeTransicionar(status: StatusChamada, acao: AcaoEsteira): bool
   if (acao === 'aprovar' || acao === 'recusar') return status === 'Revisar'
   if (acao === 'reabrir') return status === 'Aprovado' || status === 'Recusado'
   if (acao === 'publicar') return status === 'Aprovado'
-  return status === 'Publicar'
+  return status === 'Publicar' || status === 'Publicado'
 }
 
 /** Parecer é obrigatório na recusa; demais ações aceitam vazio. */

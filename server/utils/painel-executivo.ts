@@ -169,7 +169,7 @@ export async function obterPainelExecutivo(anoParam?: number): Promise<PainelExe
               COALESCE(SUM(e.status = 'Revisar'), 0) AS revisar,
               COALESCE(SUM(e.status = 'Aprovado'), 0) AS aprovado,
               COALESCE(SUM(e.status = 'Recusado'), 0) AS recusado,
-              COALESCE(SUM(e.status = 'Publicar'), 0) AS publicar
+              COALESCE(SUM(e.status IN ('Publicar', 'Publicado')), 0) AS publicar
          FROM release_week r
          LEFT JOIN entregas_itens e ON e.release_id = r.id
         WHERE r.data_publicacao >= ? AND r.data_publicacao < ?
@@ -183,7 +183,7 @@ export async function obterPainelExecutivo(anoParam?: number): Promise<PainelExe
               COALESCE(SUM(e.status = 'Revisar'), 0) AS revisar,
               COALESCE(SUM(e.status = 'Aprovado'), 0) AS aprovado,
               COALESCE(SUM(e.status = 'Recusado'), 0) AS recusado,
-              COALESCE(SUM(e.status = 'Publicar'), 0) AS publicar
+              COALESCE(SUM(e.status IN ('Publicar', 'Publicado')), 0) AS publicar
          FROM manuais_mensal m
          LEFT JOIN entregas_itens e ON e.manual_id = m.id
         WHERE m.ano = ?
@@ -197,7 +197,7 @@ export async function obterPainelExecutivo(anoParam?: number): Promise<PainelExe
               COALESCE(SUM(e.status = 'Revisar'), 0) AS revisar,
               COALESCE(SUM(e.status = 'Aprovado'), 0) AS aprovado,
               COALESCE(SUM(e.status = 'Recusado'), 0) AS recusado,
-              COALESCE(SUM(e.status = 'Publicar'), 0) AS publicar
+              COALESCE(SUM(e.status IN ('Publicar', 'Publicado')), 0) AS publicar
          FROM projetos_escopo p
          LEFT JOIN entregas_itens e ON e.projeto_id = p.id
         WHERE p.ano = ?

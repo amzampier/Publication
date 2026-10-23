@@ -10,7 +10,7 @@ export type StatusManual =
 
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar'
+export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar' | 'Publicado'
 export type DestaqueFiltro = '' | 'mes' | 'semana'
 
 export const STATUS_MANUAL: StatusManual[] = [

@@ -157,7 +157,7 @@ export const useEsteiraRevisaoModelo = () => {
     )
   )
 
-  const progresso = computed(() => calcularProgresso(itensCiclo.value))
+  const progresso = computed(() => calcularProgresso(itens.value))
 
   const kpis = computed<KpisEsteira>(() => {
     const conjunto = itensFiltrados.value
@@ -199,11 +199,12 @@ export const useEsteiraRevisaoModelo = () => {
     Revisar: itensCiclo.value.filter((item) => item.status === 'Revisar').length,
     Aprovado: itensCiclo.value.filter((item) => item.status === 'Aprovado').length,
     Recusado: itensCiclo.value.filter((item) => item.status === 'Recusado').length,
-    Publicar: itensCiclo.value.filter((item) => item.status === 'Publicar').length
+    Publicar: itensCiclo.value.filter((item) => item.status === 'Publicar').length,
+    Publicado: itens.value.filter((item) => item.status === 'Publicado').length
   }))
 
   const opcoesFiltro = computed<OpcoesEsteira>(() => ({
-    status: ['Revisar', 'Aprovado', 'Recusado', 'Publicar'],
+    status: ['Revisar', 'Aprovado', 'Recusado', 'Publicar', 'Publicado'],
     origens: ['Release', 'Manual', 'Projeto', 'Ambos'],
     tipos: ['Correção', 'Melhoria', 'Nova Funcionalidade'],
     impactos: ['Baixo', 'Médio', 'Alto', 'Crítico'],

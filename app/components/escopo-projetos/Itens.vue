@@ -43,10 +43,11 @@ watch(
   { immediate: true }
 )
 
-const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done'> = {
+const VARIANTE_STATUS: Record<StatusItem, 'pending' | 'reconciled' | 'done' | 'publicado'> = {
   Revisar: 'pending',
   Aprovado: 'reconciled',
-  Publicar: 'done'
+  Publicar: 'done',
+  Publicado: 'publicado'
 }
 
 const varianteStatus = (valor: string) =>

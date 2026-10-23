@@ -35,7 +35,7 @@ const abrirPortal = () => {
         <p class="mt-1 max-w-3xl text-xs text-slate-500">
           Faça a conferência de chamadas técnicas, releases vinculadas e evidências de forma
           visual e ágil. Acompanhe o fluxo de
-          <strong class="font-semibold text-slate-700">1. Revisar → 2. Aprovado → 3. Publicar</strong>
+          <strong class="font-semibold text-slate-700">1. Revisar → 2. Aprovado → 3. Publicar/Publicado</strong>
           para Releases Week, Manuais e Projetos de Escopo.
         </p>
       </div>

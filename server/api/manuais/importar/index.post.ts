@@ -13,7 +13,8 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ linhas?: unknown }>(event)
   const resultado = await importarManuais(body?.linhas, {
     id: sessao.id,
-    nome: sessao.nome
+    nome: sessao.nome,
+    perfil: sessao.perfil
   })
   await registrarAuditoria(event, {
     acao: 'Inclusão',

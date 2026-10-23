@@ -125,6 +125,29 @@ describe('calcularProgresso', () => {
     })
   })
 
+  it('conta Publicado como informativo e mantém o percentual no ciclo ativo', () => {
+    const progresso = calcularProgresso([
+      comStatus('Aprovado'),
+      comStatus('Publicar'),
+      comStatus('Publicado', {
+        contexto: {
+          release: contexto('rel-1', 'RW-39/2026', 'Publicado'),
+          manual: null,
+          projeto: null
+        }
+      })
+    ])
+    expect(progresso).toMatchObject({
+      total: 2,
+      aprovado: 1,
+      publicar: 1,
+      aguardando: 1,
+      publicado: 1,
+      revisado: 2,
+      percentualRevisado: 100
+    })
+  })
+
   it('quebra por vínculo e conta o multi-vínculo em cada origem', () => {
     const itens = [
       comStatus('Revisar'),
@@ -330,12 +353,14 @@ describe('transições e parecer', () => {
     expect(podeTransicionar('Publicar', 'reabrir')).toBe(false)
   })
 
-  it('publica apenas a partir de Aprovado e suspende apenas de Publicado', () => {
+  it('publica apenas a partir de Aprovado e suspende de Publicar ou Publicado', () => {
     expect(podeTransicionar('Aprovado', 'publicar')).toBe(true)
     expect(podeTransicionar('Revisar', 'publicar')).toBe(false)
     expect(podeTransicionar('Recusado', 'publicar')).toBe(false)
     expect(podeTransicionar('Publicar', 'suspender')).toBe(true)
+    expect(podeTransicionar('Publicado', 'suspender')).toBe(true)
     expect(podeTransicionar('Aprovado', 'suspender')).toBe(false)
+    expect(podeTransicionar('Publicado', 'reabrir')).toBe(false)
   })
 
   it('exige parecer apenas na recusa', () => {
@@ -453,7 +478,7 @@ describe('ciclo ativo do board', () => {
 
   it('revela item publicado no portal ao filtrar o vínculo', () => {
     const publicado = item({
-      status: 'Publicar',
+      status: 'Publicado',
       contexto: {
         release: contexto('rel-1', 'RW-39/2026', 'Publicado'),
         manual: null,
@@ -487,9 +512,9 @@ describe('status do conteúdo pai e visibilidade no portal', () => {
     expect(statusRevisaoDoPai('projeto')).toBe('Homologação')
   })
 
-  it('só é visível no portal com item Publicar e ao menos um pai Publicado', () => {
+  it('só é visível no portal com item Publicado e ao menos um pai Publicado', () => {
     const publicado = item({
-      status: 'Publicar',
+      status: 'Publicado',
       contexto: {
         release: contexto('rel-1', 'RW-39/2026', 'Publicado'),
         manual: null,
@@ -498,8 +523,18 @@ describe('status do conteúdo pai e visibilidade no portal', () => {
     })
     expect(itemVisivelNoPortal(publicado)).toBe(true)
 
-    const paiEmRevisao = item({
+    const aguardando = item({
       status: 'Publicar',
+      contexto: {
+        release: contexto('rel-1', 'RW-39/2026', 'Publicado'),
+        manual: null,
+        projeto: null
+      }
+    })
+    expect(itemVisivelNoPortal(aguardando)).toBe(false)
+
+    const paiEmRevisao = item({
+      status: 'Publicado',
       contexto: {
         release: contexto('rel-1', 'RW-39/2026', 'Em Revisão'),
         manual: null,
@@ -519,7 +554,7 @@ describe('status do conteúdo pai e visibilidade no portal', () => {
     expect(itemVisivelNoPortal(itemAprovado)).toBe(false)
 
     const multi = item({
-      status: 'Publicar',
+      status: 'Publicado',
       contexto: {
         release: contexto('rel-1', 'RW-39/2026', 'Em Revisão'),
         manual: contexto('man-1', 'MAN-10/2026', 'Publicado'),

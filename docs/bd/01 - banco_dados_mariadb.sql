@@ -441,8 +441,9 @@ CREATE TABLE entregas_itens (
         'Revisar',
         'Aprovado',
         'Recusado',
-        'Publicar'
-    ) NOT NULL DEFAULT 'Revisar' COMMENT 'Status de workflow na esteira: Revisar, Aprovado, Recusado ou Publicar',
+        'Publicar',
+        'Publicado'
+    ) NOT NULL DEFAULT 'Revisar' COMMENT 'Status de workflow na esteira: Revisar, Aprovado, Recusado, Publicar (aguardando pai) ou Publicado (no portal)',
     tags JSON NULL COMMENT 'Tags/assuntos em JSON para busca rápida por tema',
     ordem_apresentacao INT NOT NULL DEFAULT 0 COMMENT 'Ordem de ordenação na lista',
     criado_em DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -493,7 +494,10 @@ CREATE TABLE entregas_itens (
     KEY idx_entregas_parceiro (parceiro),
     KEY idx_entregas_tipo (tipo),
     KEY idx_entregas_impacto (impacto),
-    KEY idx_entregas_status (status)
+    KEY idx_entregas_status (status),
+    KEY idx_entregas_rel_status (release_id, status),
+    KEY idx_entregas_man_status (manual_id, status),
+    KEY idx_entregas_proj_status (projeto_id, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci COMMENT='Tabela única e unificada de itens para Releases Week, Projetos e Manuais';
 
 -- =========================================================================

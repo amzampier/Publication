@@ -6,6 +6,8 @@
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
 import { query, getTransaction } from './db'
+import { reconciliarFilhasPublicacao } from './publicacao-pais'
+import type { AtorTransicao } from './historico-esteira'
 import {
   chaveAnoVersao,
   gerarCodigo,
@@ -18,6 +20,7 @@ import {
 } from '#shared/escopo-projetos'
 
 const LIMITE_IMPORTACAO = 500
+const ATOR_SISTEMA: AtorTransicao = { nome: 'Sistema', perfil: 'Sistema' }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function erro400(mensagem: string, data?: unknown): never {
@@ -266,7 +269,10 @@ async function proximoCodigoDoAno(ano: number, ignorarId?: string): Promise<stri
 // Escritas
 // ---------------------------------------------------------------------------
 
-export async function criarEscopo(dados: EntradaEscopoApi): Promise<ProjetoEscopoModelo> {
+export async function criarEscopo(
+  dados: EntradaEscopoApi,
+  ator: AtorTransicao = ATOR_SISTEMA
+): Promise<ProjetoEscopoModelo> {
   const validada = validarEntradaEscopo(dados)
   const id = randomUUID()
 
@@ -293,6 +299,16 @@ export async function criarEscopo(dados: EntradaEscopoApi): Promise<ProjetoEscop
           validada.descricaoGeral
         ]
       )
+      if (validada.status === 'Publicado') {
+        const tx = await getTransaction()
+        try {
+          await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
+          await tx.commit()
+        } catch (erroCascata) {
+          await tx.rollback().catch(() => {})
+          throw erroCascata
+        }
+      }
       const criado = await buscarEscopo(id)
       if (!criado) erro404('Falha ao criar o escopo.')
       return criado
@@ -316,7 +332,8 @@ export async function criarEscopo(dados: EntradaEscopoApi): Promise<ProjetoEscop
 
 export async function atualizarEscopo(
   id: string,
-  dados: EntradaEscopoApi
+  dados: EntradaEscopoApi,
+  ator: AtorTransicao = ATOR_SISTEMA
 ): Promise<ProjetoEscopoModelo> {
   const atual = await buscarEscopo(id)
   if (!atual) erro404()
@@ -335,8 +352,9 @@ export async function atualizarEscopo(
 
   const validada = validarEntradaEscopo(mesclado)
 
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       `UPDATE projetos_escopo
           SET nome = ?, versao = ?, ano = ?, data_inicio = ?, data_final = ?,
               data_previsao = ?, data_publicacao = ?, status = ?,
@@ -356,7 +374,12 @@ export async function atualizarEscopo(
         id
       ]
     )
+    if (atual.status !== validada.status) {
+      await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
+    }
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe um escopo para este ano e versão.', {
         erros: { versao: 'Já existe um escopo para este ano e versão.' }
@@ -370,16 +393,29 @@ export async function atualizarEscopo(
   return atualizado
 }
 
-export async function publicarEscopo(id: string): Promise<ProjetoEscopoModelo> {
+export async function publicarEscopo(
+  id: string,
+  ator: AtorTransicao = ATOR_SISTEMA
+): Promise<ProjetoEscopoModelo & { chamadasPublicadas: number }> {
   const atual = await buscarEscopo(id)
   if (!atual) erro404()
-  await query("UPDATE projetos_escopo SET status = 'Publicado', data_publicacao = ? WHERE id = ?", [
-    hojeIso(),
-    id
-  ])
+  const tx = await getTransaction()
+  let publicadas = 0
+  try {
+    await tx.query("UPDATE projetos_escopo SET status = 'Publicado', data_publicacao = ? WHERE id = ?", [
+      hojeIso(),
+      id
+    ])
+    const resultado = await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
+    publicadas = resultado.publicadas
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
   const publicado = await buscarEscopo(id)
   if (!publicado) erro404()
-  return publicado
+  return { ...publicado, chamadasPublicadas: publicadas }
 }
 
 export async function arquivarEscopo(id: string): Promise<ProjetoEscopoModelo> {
@@ -411,7 +447,10 @@ export async function excluirEscopo(id: string): Promise<void> {
 // Importação
 // ---------------------------------------------------------------------------
 
-export async function importarEscopos(linhas: unknown): Promise<{ importados: number }> {
+export async function importarEscopos(
+  linhas: unknown,
+  ator: AtorTransicao = ATOR_SISTEMA
+): Promise<{ importados: number }> {
   if (!Array.isArray(linhas) || linhas.length === 0) {
     erro400('Envie ao menos uma linha para importar.')
   }
@@ -482,13 +521,14 @@ export async function importarEscopos(linhas: unknown): Promise<{ importados: nu
     for (const preparado of preparados) {
       const sequencia = (maiorPorAno.get(preparado.ano) ?? 0) + 1
       maiorPorAno.set(preparado.ano, sequencia)
+      const id = randomUUID()
       await tx.query(
         `INSERT INTO projetos_escopo
           (id, codigo, nome, versao, ano, data_inicio, data_final, data_previsao,
            data_publicacao, status, softwares_contemplados, descricao_geral)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          randomUUID(),
+          id,
           gerarCodigo(preparado.ano, sequencia),
           preparado.nome,
           preparado.versao,
@@ -502,6 +542,9 @@ export async function importarEscopos(linhas: unknown): Promise<{ importados: nu
           preparado.descricaoGeral
         ]
       )
+      if (preparado.status === 'Publicado') {
+        await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
+      }
     }
     await tx.commit()
   } catch (erro) {

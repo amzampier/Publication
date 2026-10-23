@@ -5,6 +5,8 @@
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
 import { query, getTransaction } from './db'
+import { reconciliarFilhasPublicacao } from './publicacao-pais'
+import type { AtorTransicao } from './historico-esteira'
 import {
   MESES,
   STATUS_MANUAL,
@@ -19,6 +21,13 @@ import {
 } from '#shared/manuais'
 
 const LIMITE_IMPORTACAO = 500
+const ATOR_SISTEMA: AtorTransicao = { nome: 'Sistema', perfil: 'Sistema' }
+
+const atorDeAutor = (autor: AutorManual): AtorTransicao => ({
+  id: autor.id,
+  nome: autor.nome ?? 'Sistema',
+  perfil: autor.perfil
+})
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function erro400(mensagem: string, data?: unknown): never {
@@ -115,6 +124,7 @@ export interface EntradaManual {
 export interface AutorManual {
   id: string
   nome?: string
+  perfil?: string
 }
 
 interface ManualValidado {
@@ -240,8 +250,9 @@ export async function criarManual(
   const dataPublicacao =
     validada.dataPublicacao || (validada.status === 'Publicado' ? hojeIso() : null)
 
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       `INSERT INTO manuais_mensal
         (id, codigo, ano, mes, mes_numero, titulo, descricao, status,
          destaque_mes, destaque_semana, autor_id, data_criacao, data_publicacao)
@@ -262,7 +273,12 @@ export async function criarManual(
         dataPublicacao
       ]
     )
+    if (validada.status === 'Publicado') {
+        await reconciliarFilhasPublicacao(tx, 'manual', id, atorDeAutor(autor))
+    }
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe um catálogo para este mês/ano.', {
         erros: { mes: 'Já existe um catálogo para este mês/ano.' }
@@ -278,7 +294,8 @@ export async function criarManual(
 
 export async function atualizarManual(
   id: string,
-  dados: EntradaManual
+  dados: EntradaManual,
+  ator: AtorTransicao = ATOR_SISTEMA
 ): Promise<ManuaisModelo> {
   const atual = await buscarManual(id)
   if (!atual) erro404()
@@ -300,8 +317,9 @@ export async function atualizarManual(
   const dataPublicacao =
     validada.dataPublicacao || (validada.status === 'Publicado' ? hojeIso() : null)
 
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       `UPDATE manuais_mensal
           SET codigo = ?, titulo = ?, descricao = ?, ano = ?, mes = ?, mes_numero = ?,
               status = ?, destaque_mes = ?, destaque_semana = ?, data_publicacao = ?
@@ -320,7 +338,12 @@ export async function atualizarManual(
         id
       ]
     )
+    if (atual.status !== validada.status) {
+      await reconciliarFilhasPublicacao(tx, 'manual', id, ator)
+    }
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe um catálogo para este mês/ano.', {
         erros: { mes: 'Já existe um catálogo para este mês/ano.' }
@@ -334,17 +357,30 @@ export async function atualizarManual(
   return atualizado
 }
 
-export async function publicarManual(id: string): Promise<ManuaisModelo> {
+export async function publicarManual(
+  id: string,
+  ator: AtorTransicao = ATOR_SISTEMA
+): Promise<ManuaisModelo & { chamadasPublicadas: number }> {
   const atual = await buscarManual(id)
   if (!atual) erro404()
   const dataPublicacao = dataPublicacaoAoPublicar(atual.dataPublicacao)
-  await query("UPDATE manuais_mensal SET status = 'Publicado', data_publicacao = ? WHERE id = ?", [
-    dataPublicacao,
-    id
-  ])
+  const tx = await getTransaction()
+  let publicadas = 0
+  try {
+    await tx.query("UPDATE manuais_mensal SET status = 'Publicado', data_publicacao = ? WHERE id = ?", [
+      dataPublicacao,
+      id
+    ])
+    const resultado = await reconciliarFilhasPublicacao(tx, 'manual', id, ator)
+    publicadas = resultado.publicadas
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
   const publicado = await buscarManual(id)
   if (!publicado) erro404()
-  return publicado
+  return { ...publicado, chamadasPublicadas: publicadas }
 }
 
 export async function arquivarManual(id: string): Promise<ManuaisModelo> {
@@ -443,13 +479,14 @@ export async function importarManuais(
   const tx = await getTransaction()
   try {
     for (const p of preparados) {
+      const id = randomUUID()
       await tx.query(
         `INSERT INTO manuais_mensal
           (id, codigo, ano, mes, mes_numero, titulo, descricao, status,
            destaque_mes, destaque_semana, autor_id, data_criacao, data_publicacao)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          randomUUID(),
+          id,
           gerarCodigo(p.mesNumero, p.ano),
           p.ano,
           p.mes,
@@ -464,6 +501,9 @@ export async function importarManuais(
           p.dataPublicacao || null
         ]
       )
+      if (p.status === 'Publicado') {
+      await reconciliarFilhasPublicacao(tx, 'manual', id, atorDeAutor(autor))
+      }
     }
     await tx.commit()
   } catch (erro) {

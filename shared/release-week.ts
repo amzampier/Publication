@@ -8,7 +8,7 @@ export { dataPublicacaoValida } from './feriados'
 export type StatusRelease = 'Aberta' | 'Em Revisão' | 'Aprovado' | 'Publicado'
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar'
+export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar' | 'Publicado'
 
 export const STATUS_RELEASE: StatusRelease[] = ['Aberta', 'Em Revisão', 'Aprovado', 'Publicado']
 

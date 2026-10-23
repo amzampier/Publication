@@ -13,7 +13,6 @@ import {
   calcularProgresso,
   contextoAtivo,
   itemComVinculoAtivo,
-  itemNoCicloAtivo,
   type ContextoVinculo,
   type HistoricoEsteira,
   type ItemEsteira,
@@ -154,7 +153,7 @@ export async function listarEsteira(): Promise<RespostaEsteira> {
   return {
     itens,
     opcoes: filtrarOpcoesAtivas(opcoesBase, mapas),
-    progresso: calcularProgresso(itens.filter(itemNoCicloAtivo))
+    progresso: calcularProgresso(itens)
   }
 }
 

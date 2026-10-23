@@ -354,6 +354,16 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | Publicado | `publicado` | Publicado |
 | Arquivado | `arquivado` | Arquivado (fora da listagem padrão) |
 
+**Mapeamento do status da chamada → variante** (`/admin/lancar-chamadas` e `/admin/esteira-revisao`):
+
+| Status | Variante | Badge exibido |
+| :--- | :--- | :--- |
+| Revisar | `pending` | Revisar (o rótulo vem do slot `default`) |
+| Aprovado | `reconciled` | Aprovado (o rótulo vem do slot `default`) |
+| Recusado | `blocked` | Recusado (o rótulo vem do slot `default`) |
+| Publicar | `done` | Publicar (aguardando o pai; o rótulo vem do slot `default`) |
+| Publicado | `publicado` | Publicado (no portal) |
+
 ```vue
 <UiBadge variant="done" />                      <!-- "Concluído" -->
 <UiBadge variant="blocked" size="sm" />          <!-- pulsante, sempre -->

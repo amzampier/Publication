@@ -16,6 +16,7 @@ const COR_APROVADO = '#1a9e07'
 const COR_REVISAR = '#f59e0b'
 const COR_RECUSADO = '#be123c'
 const COR_PUBLICAR = '#0364f7'
+const COR_PUBLICADO = '#112051'
 
 const total = computed(() => props.progresso.total)
 const vazio = computed(() => total.value === 0)
@@ -27,7 +28,8 @@ const descricaoAcessivel = computed(
   () =>
     `${props.progresso.percentualRevisado}% do fluxo concluído. ` +
     `${props.progresso.revisar} a revisar, ${props.progresso.aprovado} aprovados, ` +
-    `${props.progresso.publicar} publicados e ${props.progresso.recusado} recusados.`
+    `${props.progresso.aguardando} aguardando publicação, ` +
+    `${props.progresso.publicado} no portal e ${props.progresso.recusado} recusados.`
 )
 </script>
 
@@ -57,7 +59,14 @@ const descricaoAcessivel = computed(
         </span>
         <span class="inline-flex items-center gap-1">
           <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: COR_PUBLICAR }" />
-          {{ progresso.publicar }} publ.
+          {{ progresso.aguardando }} aguard.
+        </span>
+        <span
+          v-if="progresso.publicado"
+          class="inline-flex items-center gap-1 text-slate-500"
+        >
+          <span class="h-1.5 w-1.5 rounded-full" :style="{ backgroundColor: COR_PUBLICADO }" />
+          {{ progresso.publicado }} no portal
         </span>
       </div>
     </div>

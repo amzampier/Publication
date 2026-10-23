@@ -419,6 +419,8 @@ describe('guarda de exclusão', () => {
   it('bloqueia chamada aprovada/publicada', () => {
     expect(podeExcluir(chamadaBase({ status: 'Aprovado' }))).toBe(false)
     expect(motivoBloqueioExclusao(chamadaBase({ status: 'Publicar' }))).toMatch(/esteira/i)
+    expect(podeExcluir(chamadaBase({ status: 'Publicado' }))).toBe(false)
+    expect(motivoBloqueioExclusao(chamadaBase({ status: 'Publicado' }))).toMatch(/esteira/i)
   })
 
   it('bloqueia chamada com histórico', () => {
@@ -437,7 +439,9 @@ describe('guarda de aprovação', () => {
     expect(podeAprovar(chamadaBase({ status: 'Aprovado' }))).toBe(false)
     expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Aprovado' }))).toMatch(/aprovada/i)
     expect(podeAprovar(chamadaBase({ status: 'Publicar' }))).toBe(false)
-    expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Publicar' }))).toMatch(/publicada/i)
+    expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Publicar' }))).toMatch(/aguardando|publica/i)
+    expect(podeAprovar(chamadaBase({ status: 'Publicado' }))).toBe(false)
+    expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Publicado' }))).toMatch(/publicada/i)
     expect(podeAprovar(chamadaBase({ status: 'Recusado' }))).toBe(false)
     expect(motivoBloqueioAprovacao(chamadaBase({ status: 'Recusado' }))).toMatch(/recusada/i)
   })
@@ -455,6 +459,7 @@ describe('guarda de desaprovação', () => {
     expect(motivoBloqueioDesaprovacao(chamadaBase())).toMatch(/aprovadas/i)
     expect(podeDesaprovar(chamadaBase({ status: 'Recusado' }))).toBe(false)
     expect(podeDesaprovar(chamadaBase({ status: 'Publicar' }))).toBe(false)
+    expect(podeDesaprovar(chamadaBase({ status: 'Publicado' }))).toBe(false)
   })
 })
 
@@ -470,6 +475,8 @@ describe('guarda de recusa', () => {
     expect(podeRecusar(chamadaBase({ status: 'Recusado' }))).toBe(false)
     expect(motivoBloqueioRecusa(chamadaBase({ status: 'Recusado' }))).toMatch(/recusada/i)
     expect(podeRecusar(chamadaBase({ status: 'Publicar' }))).toBe(false)
-    expect(motivoBloqueioRecusa(chamadaBase({ status: 'Publicar' }))).toMatch(/publicada/i)
+    expect(motivoBloqueioRecusa(chamadaBase({ status: 'Publicar' }))).toMatch(/aguardando|publica/i)
+    expect(podeRecusar(chamadaBase({ status: 'Publicado' }))).toBe(false)
+    expect(motivoBloqueioRecusa(chamadaBase({ status: 'Publicado' }))).toMatch(/publicada/i)
   })
 })

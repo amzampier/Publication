@@ -6,6 +6,8 @@
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
 import { query, getTransaction } from './db'
+import { reconciliarFilhasPublicacao } from './publicacao-pais'
+import type { AtorTransicao } from './historico-esteira'
 import {
   STATUS_RELEASE,
   dataPublicacaoValida,
@@ -17,6 +19,7 @@ import {
 } from '#shared/release-week'
 
 const LIMITE_IMPORTACAO = 500
+const ATOR_SISTEMA: AtorTransicao = { nome: 'Sistema', perfil: 'Sistema' }
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function erro400(mensagem: string, data?: unknown): never {
@@ -113,6 +116,7 @@ interface EntradaReleaseWeek {
 export interface AutorReleaseWeek {
   id: string
   nome: string
+  perfil?: string
 }
 
 interface ReleaseWeekValidada {
@@ -225,8 +229,9 @@ export async function criarReleaseWeek(
   const validada = validarEntradaReleaseWeek(dados)
   const id = randomUUID()
   const codigo = gerarCodigo(validada.semana, validada.ano)
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       `INSERT INTO release_week
         (id, codigo, nome, versao, \`release\`, semana, ano, mes,
          data_inicio, data_finaliza, data_publicacao, status, descricao,
@@ -251,7 +256,12 @@ export async function criarReleaseWeek(
         autor.nome
       ]
     )
+    if (validada.status === 'Publicado') {
+      await reconciliarFilhasPublicacao(tx, 'release', id, autor)
+    }
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe uma Release Week para esta semana/ano.')
     }
@@ -264,7 +274,8 @@ export async function criarReleaseWeek(
 
 export async function atualizarReleaseWeek(
   id: string,
-  dados: EntradaReleaseWeek
+  dados: EntradaReleaseWeek,
+  ator: AtorTransicao = ATOR_SISTEMA
 ): Promise<ReleaseWeekModelo> {
   const atual = await buscarReleaseWeek(id)
   if (!atual) erro404()
@@ -286,8 +297,9 @@ export async function atualizarReleaseWeek(
   const validada = validarEntradaReleaseWeek(mesclado)
   // Edição com mudança de semana/ano regenera o código (D4).
   const codigo = gerarCodigo(validada.semana, validada.ano)
+  const tx = await getTransaction()
   try {
-    await query(
+    await tx.query(
       `UPDATE release_week
           SET codigo = ?, nome = ?, versao = ?, \`release\` = ?, semana = ?, ano = ?, mes = ?,
               data_inicio = ?, data_finaliza = ?, data_publicacao = ?, status = ?,
@@ -310,7 +322,12 @@ export async function atualizarReleaseWeek(
         id
       ]
     )
+    if (atual.status !== validada.status) {
+      await reconciliarFilhasPublicacao(tx, 'release', id, ator)
+    }
+    await tx.commit()
   } catch (erro) {
+    await tx.rollback().catch(() => {})
     if ((erro as { errno?: number } | null)?.errno === 1062) {
       erro409('Já existe uma Release Week para esta semana/ano.')
     }
@@ -321,16 +338,29 @@ export async function atualizarReleaseWeek(
   return atualizada
 }
 
-export async function publicarReleaseWeek(id: string): Promise<ReleaseWeekModelo> {
+export async function publicarReleaseWeek(
+  id: string,
+  ator: AtorTransicao = ATOR_SISTEMA
+): Promise<ReleaseWeekModelo & { chamadasPublicadas: number }> {
   const atual = await buscarReleaseWeek(id)
   if (!atual) erro404()
-  await query(
-    "UPDATE release_week SET status = 'Publicado', data_aprovacao = CURRENT_TIMESTAMP(6) WHERE id = ?",
-    [id]
-  )
+  const tx = await getTransaction()
+  let publicadas = 0
+  try {
+    await tx.query(
+      "UPDATE release_week SET status = 'Publicado', data_aprovacao = CURRENT_TIMESTAMP(6) WHERE id = ?",
+      [id]
+    )
+    const resultado = await reconciliarFilhasPublicacao(tx, 'release', id, ator)
+    publicadas = resultado.publicadas
+    await tx.commit()
+  } catch (erro) {
+    await tx.rollback().catch(() => {})
+    throw erro
+  }
   const publicado = await buscarReleaseWeek(id)
   if (!publicado) erro404()
-  return publicado
+  return { ...publicado, chamadasPublicadas: publicadas }
 }
 
 export async function arquivarReleaseWeek(id: string): Promise<ReleaseWeekModelo> {
@@ -417,6 +447,7 @@ export async function importarReleaseWeeks(
   const tx = await getTransaction()
   try {
     for (const p of preparados) {
+      const id = randomUUID()
       await tx.query(
         `INSERT INTO release_week
           (id, codigo, nome, versao, \`release\`, semana, ano, mes,
@@ -424,7 +455,7 @@ export async function importarReleaseWeeks(
            destaque_semana, autor_id, autor_nome)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          randomUUID(),
+          id,
           gerarCodigo(p.semana, p.ano),
           p.nome,
           p.versao,
@@ -442,6 +473,9 @@ export async function importarReleaseWeeks(
           autor.nome
         ]
       )
+      if (p.status === 'Publicado') {
+        await reconciliarFilhasPublicacao(tx, 'release', id, autor)
+      }
     }
     await tx.commit()
   } catch (erro) {

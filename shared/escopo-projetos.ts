@@ -6,7 +6,7 @@
 export type StatusEscopo = 'Em Andamento' | 'Homologação' | 'Concluído' | 'Publicado'
 export type TipoItem = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoItem = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar'
+export type StatusItem = 'Revisar' | 'Aprovado' | 'Publicar' | 'Publicado'
 
 export const STATUS_ESCOPO: StatusEscopo[] = [
   'Em Andamento',

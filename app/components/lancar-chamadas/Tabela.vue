@@ -34,12 +34,13 @@ defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
 
 const VARIANTE_STATUS: Record<
   StatusChamada,
-  'pending' | 'reconciled' | 'done' | 'blocked'
+  'pending' | 'reconciled' | 'done' | 'blocked' | 'publicado'
 > = {
   Revisar: 'pending',
   Aprovado: 'reconciled',
   Recusado: 'blocked',
-  Publicar: 'done'
+  Publicar: 'done',
+  Publicado: 'publicado'
 }
 
 const colunas: ColumnDef[] = [

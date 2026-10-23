@@ -161,9 +161,9 @@ const abrirPortal = () => {
         </UiTooltip>
       </template>
 
-      <template v-else-if="linha.status === 'Publicar'">
+      <template v-else-if="linha.status === 'Publicar' || linha.status === 'Publicado'">
         <span
-          v-if="!visivelNoPortal"
+          v-if="linha.status === 'Publicar'"
           class="mr-auto inline-flex items-center gap-1 text-[10px] font-medium text-amber-700"
         >
           <Clock class="h-3 w-3" aria-hidden="true" />

@@ -49,15 +49,16 @@ recusa**. As definições SHALL ser:
   `YEAR(data_publicacao)`/`MONTH(data_publicacao)`; releases arquivadas SHALL contar no histórico.
 - **Chamadas lançadas:** chamadas com `data_lancamento` no período.
 - **Chamadas liberadas:** chamadas com `data_liberacao` no período e não posterior a hoje.
-- **% do fluxo concluído:** `(Aprovado + Publicar) / total do ciclo ativo`, com o ciclo ativo
-  definido como as chamadas com ao menos um vínculo não arquivado, excluindo as em `Publicar` cujo
-  pai já está `Publicado`.
+- **% do fluxo concluído:** `(Aprovado + Publicar + Publicado) / total do universo do progresso`,
+  com o universo definido como as chamadas com ao menos um vínculo não arquivado, incluindo as
+  `Publicado`.
 - **Lead time médio:** média de `data_liberacao - data_lancamento` em dias, apenas para chamadas
   liberadas.
-- **Taxa de recusa:** `Recusado / total do ciclo ativo`.
+- **Taxa de recusa:** `Recusado / total do universo do progresso`.
 
-O percentual do fluxo e a taxa de recusa usam o **ciclo ativo global** (não filtrado pelo ano), a
-mesma regra da tela da Esteira; o seletor de ano afeta apenas publicações, chamadas e dimensões.
+O percentual do fluxo e a taxa de recusa usam o **universo do progresso global** (não filtrado pelo
+ano), a mesma regra da tela da Esteira; o seletor de ano afeta apenas publicações, chamadas e
+dimensões.
 
 #### Scenario: KPI de releases publicadas
 
@@ -69,11 +70,15 @@ mesma regra da tela da Esteira; o seletor de ano afeta apenas publicações, cha
 - **WHEN** uma chamada aprovada tem `data_liberacao` posterior a hoje
 - **THEN** ela não entra no KPI de chamadas liberadas, embora permaneça no fluxo
 
+#### Scenario: Percentual inclui publicados
+
+- **WHEN** o universo do progresso tem chamadas em `Aprovado`, `Publicar`, `Publicado` e `Recusado`
+- **THEN** o percentual do fluxo conta aprovados, aguardando e publicados no numerador, sem contar recusados
+
 #### Scenario: Fluxo sem chamadas
 
-- **WHEN** não há chamadas no ciclo ativo
+- **WHEN** não há chamadas com vínculo ativo
 - **THEN** o percentual do fluxo e a taxa de recusa exibem `0%` (ou estado vazio), sem divisão por zero
-
 ### Requirement: O painel exibe a série mensal e anual de publicações
 
 O painel SHALL exibir um gráfico de publicações com alternância **Mensal/Anual**. No modo mensal, o

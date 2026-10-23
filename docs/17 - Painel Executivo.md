@@ -81,11 +81,11 @@ Definições normativas. O `ANO` é o ano selecionado; `HOJE` é a data civil lo
 | **Releases publicadas** | `COUNT(release_week)` com `status='Publicado'` e `data_publicacao` no ano | Inclui releases arquivadas (histórico) |
 | **Chamadas lançadas** | `COUNT(entregas_itens)` com `data_lancamento` no ano | Independe de status |
 | **Chamadas liberadas** | `COUNT(entregas_itens)` com `data_liberacao` no ano e `data_liberacao <= HOJE` | A data é herdada do pai na aprovação; pode ser futura |
-| **% do fluxo concluído** | `(Aprovado + Publicar) / total do ciclo ativo` | Mesma regra de `#shared/esteira-revisao`; recusadas não entram no numerador |
+| **% do fluxo concluído** | `(Aprovado + Publicar + Publicado) / total do universo com vínculo ativo` | Mesma regra de `#shared/esteira-revisao`; recusadas não entram no numerador |
 | **Lead time médio** | `AVG(DATEDIFF(data_liberacao, data_lancamento))` das chamadas liberadas até hoje, com `data_liberacao >= data_lancamento` | Sem chamadas válidas, 0 |
-| **Taxa de recusa** | `Recusado / total do ciclo ativo` | Sem ciclo ativo, 0% |
+| **Taxa de recusa** | `Recusado / total do universo com vínculo ativo` | Sem universo ativo, 0% |
 | **Chamadas por publicação** | `COUNT(entregas_itens)` por `release_id`, `manual_id` e `projeto_id` | Ver ressalva de `Ambos` abaixo |
-| **Progresso da publicação** | `(aprovado + publicar) / chamadas` daquela publicação | 0% quando não há chamadas |
+| **Progresso da publicação** | `(aprovado + publicar + publicado) / chamadas` daquela publicação | `publicar` = aguardando o pai; `publicado` = no portal; 0% quando não há chamadas |
 | **Ranking de softwares** | `COUNT(DISTINCT chamada)` por software em `entregas_itens_softwares` (N:N), por `data_lancamento` no ano | Top 10 |
 | **Tipo / impacto** | `COUNT(*)` por `tipo` e por `impacto`, por `data_lancamento` no ano | Enums do banco |
 

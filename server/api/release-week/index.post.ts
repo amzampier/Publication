@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   const sessao = await getSessionUser(event)
   if (!sessao) throw createError({ statusCode: 401, statusMessage: 'Sem sessão ativa.' })
 
-  const criada = await criarReleaseWeek(body, { id: sessao.id, nome: sessao.nome })
+  const criada = await criarReleaseWeek(body, { id: sessao.id, nome: sessao.nome, perfil: sessao.perfil })
   setResponseStatus(event, 201)
   await registrarAuditoria(event, {
     acao: 'Inclusão',

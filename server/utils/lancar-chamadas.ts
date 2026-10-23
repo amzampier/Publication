@@ -8,8 +8,10 @@ import { uploadsDir } from './uploads'
 import {
   registrarTransicao,
   type AtorTransicao,
+  type ExecutorSql,
   type OpcoesTransicao
 } from './historico-esteira'
+import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import {
   statusRevisaoDoPai,
   validarParecer,
@@ -37,7 +39,14 @@ type Row = Record<string, unknown>
 export interface AutorChamada {
   id: string
   nome?: string
+  perfil?: string
 }
+
+const atorDeAutor = (autor: AutorChamada): AtorTransicao => ({
+  id: autor.id,
+  nome: autor.nome ?? 'Sistema',
+  perfil: autor.perfil
+})
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -429,7 +438,8 @@ function paisDosVinculos(vinculos: VinculosResolvidos): PaiRevisao[] {
  */
 async function sincronizarStatusPais(
   executor: ExecutorSql,
-  pais: PaiRevisao[]
+  pais: PaiRevisao[],
+  ator: AtorTransicao
 ): Promise<void> {
   const vistos = new Set<string>()
   for (const pai of pais) {
@@ -437,10 +447,13 @@ async function sincronizarStatusPais(
     if (vistos.has(chave)) continue
     vistos.add(chave)
     const status = statusRevisaoDoPai(pai.tipo)
-    await executor.query(
+    const resultado = await executor.query<{ affectedRows: number }>(
       `UPDATE ${TABELA_PAI[pai.tipo]} SET status = ? WHERE id = ? AND status <> ?`,
       [status, pai.id, status]
     )
+    if (Number(resultado.affectedRows) > 0) {
+      await reconciliarFilhasPublicacao(executor, pai.tipo, pai.id, ator)
+    }
   }
 }
 
@@ -565,8 +578,6 @@ const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.tags
 ]
 
-type ExecutorSql = { query: (sql: string, valores?: unknown[]) => Promise<unknown> }
-
 /** Substitui os softwares da chamada na junção, preservando a ordem de seleção. */
 async function gravarSoftwares(
   executor: ExecutorSql,
@@ -594,7 +605,7 @@ export async function criarChamada(
   try {
     await tx.query(SQL_INSERT, valoresInsert(preparada))
     await gravarSoftwares(tx, preparada.id, preparada.softwares)
-    await sincronizarStatusPais(tx, paisDosVinculos(vinculos))
+      await sincronizarStatusPais(tx, paisDosVinculos(vinculos), atorDeAutor(autor))
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})
@@ -612,7 +623,8 @@ export async function criarChamada(
 
 export async function atualizarChamada(
   id: string,
-  dados: Record<string, unknown>
+  dados: Record<string, unknown>,
+  autor: AutorChamada
 ): Promise<ChamadaModelo> {
   const atual = await buscarChamada(id)
   if (!atual) erro404()
@@ -699,7 +711,7 @@ export async function atualizarChamada(
     )
     await gravarSoftwares(tx, id, preparada.softwares)
     if (mudouVinculos) {
-      await sincronizarStatusPais(tx, paisDosVinculos(vinculos))
+    await sincronizarStatusPais(tx, paisDosVinculos(vinculos), atorDeAutor(autor))
     }
     await tx.commit()
   } catch (erro) {
@@ -825,6 +837,27 @@ export async function recusarChamada(
   })
 }
 
+async function temVinculoPublicado(chamada: ChamadaModelo): Promise<boolean> {
+  const linhas = await query<Row[]>(
+    `SELECT (
+        EXISTS (
+          SELECT 1 FROM release_week r
+           WHERE r.id = ? AND r.status = 'Publicado' AND r.arquivada = 0
+        )
+        OR EXISTS (
+          SELECT 1 FROM manuais_mensal m
+           WHERE m.id = ? AND m.status = 'Publicado' AND m.arquivada = 0
+        )
+        OR EXISTS (
+          SELECT 1 FROM projetos_escopo p
+           WHERE p.id = ? AND p.status = 'Publicado' AND p.arquivada = 0
+        )
+      ) AS publicado`,
+    [chamada.releaseId || null, chamada.manualId || null, chamada.projetoId || null]
+  )
+  return Number(linhas[0]?.publicado ?? 0) === 1
+}
+
 export async function publicarChamada(
   id: string,
   ator: AtorTransicao,
@@ -836,7 +869,11 @@ export async function publicarChamada(
     erro409('Somente chamadas aprovadas podem ser publicadas.')
   }
 
-  return transicionarChamada(atual, 'Publicar', atual.dataLiberacao || null, ator, {
+  const novoStatus: StatusChamada = (await temVinculoPublicado(atual))
+    ? 'Publicado'
+    : 'Publicar'
+
+  return transicionarChamada(atual, novoStatus, atual.dataLiberacao || null, ator, {
     ...opcoes,
     criterios: true
   })
@@ -849,8 +886,8 @@ export async function suspenderChamada(
 ): Promise<ChamadaModelo> {
   const atual = await buscarChamada(id)
   if (!atual) erro404()
-  if (atual.status !== 'Publicar') {
-    erro409('Somente chamadas publicadas podem ser suspensas.')
+  if (atual.status !== 'Publicar' && atual.status !== 'Publicado') {
+    erro409('Somente chamadas aguardando publicação ou publicadas podem ser suspensas.')
   }
 
   return transicionarChamada(atual, 'Aprovado', atual.dataLiberacao || null, ator, {
@@ -1045,7 +1082,7 @@ export async function importarChamadas(
       await tx.query(SQL_INSERT, valoresInsert(preparada))
       await gravarSoftwares(tx, preparada.id, preparada.softwares)
     }
-    await sincronizarStatusPais(tx, paisParaRevisao)
+    await sincronizarStatusPais(tx, paisParaRevisao, atorDeAutor(autor))
     await tx.commit()
   } catch (erro) {
     await tx.rollback().catch(() => {})

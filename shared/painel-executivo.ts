@@ -244,8 +244,8 @@ export const contarChamadasPorVinculo = (
 
 /**
  * Fluxo do ciclo ativo: as mesmas regras da Esteira (`itemNoCicloAtivo` e
- * `itemPublicadoNoPortal`). Itens em `Publicar` com pai publicado saem do
- * ciclo e entram em `noPortal`; os demais em `Publicar` aguardam o pai.
+ * `itemPublicadoNoPortal`). Itens em `Publicado` entram em `noPortal`; os itens
+ * em `Publicar` aguardam o pai e contam no percentual do fluxo.
  */
 export const calcularFluxoPainel = (
   itens: ItemFluxoPainel[],

@@ -9,7 +9,7 @@ import { MAX_TEXTO_RICO } from './rich-text'
 export type OrigemChamada = 'Release' | 'Projeto' | 'Manual' | 'Ambos'
 export type TipoChamada = 'Correção' | 'Melhoria' | 'Nova Funcionalidade'
 export type ImpactoChamada = 'Baixo' | 'Médio' | 'Alto' | 'Crítico'
-export type StatusChamada = 'Revisar' | 'Aprovado' | 'Recusado' | 'Publicar'
+export type StatusChamada = 'Revisar' | 'Aprovado' | 'Recusado' | 'Publicar' | 'Publicado'
 
 export const ORIGENS_CHAMADA: OrigemChamada[] = ['Release', 'Projeto', 'Manual', 'Ambos']
 export const TIPOS_CHAMADA: TipoChamada[] = ['Correção', 'Melhoria', 'Nova Funcionalidade']
@@ -18,17 +18,19 @@ export const STATUS_CHAMADA: StatusChamada[] = [
   'Revisar',
   'Aprovado',
   'Recusado',
-  'Publicar'
+  'Publicar',
+  'Publicado'
 ]
 
 export const VARIANTE_STATUS_CHAMADA: Record<
   StatusChamada,
-  'pending' | 'reconciled' | 'done' | 'blocked'
+  'pending' | 'reconciled' | 'done' | 'blocked' | 'publicado'
 > = {
   Revisar: 'pending',
   Aprovado: 'reconciled',
   Recusado: 'blocked',
-  Publicar: 'done'
+  Publicar: 'done',
+  Publicado: 'publicado'
 }
 
 export const MAX_TAGS_CHAMADA = 12
@@ -540,7 +542,8 @@ export function podeExcluir(chamada: ChamadaModelo): boolean {
 export function motivoBloqueioAprovacao(chamada: ChamadaModelo): string | null {
   if (chamada.status === 'Aprovado') return 'Chamada já aprovada.'
   if (chamada.status === 'Recusado') return 'Chamada já recusada.'
-  if (chamada.status === 'Publicar') return 'Chamada já publicada.'
+  if (chamada.status === 'Publicar') return 'Chamada aguardando a publicação do conteúdo pai.'
+  if (chamada.status === 'Publicado') return 'Chamada já publicada.'
   return null
 }
 
@@ -564,7 +567,8 @@ export function podeDesaprovar(chamada: ChamadaModelo): boolean {
 export function motivoBloqueioRecusa(chamada: ChamadaModelo): string | null {
   if (chamada.status === 'Recusado') return 'Chamada já recusada.'
   if (chamada.status === 'Aprovado') return 'Chamada já aprovada.'
-  if (chamada.status === 'Publicar') return 'Chamada já publicada.'
+  if (chamada.status === 'Publicar') return 'Chamada aguardando a publicação do conteúdo pai.'
+  if (chamada.status === 'Publicado') return 'Chamada já publicada.'
   return null
 }
 
