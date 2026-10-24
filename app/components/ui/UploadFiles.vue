@@ -156,12 +156,12 @@ defineExpose({
           <FileText class="h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
           <div class="min-w-0 flex-1">
             <p class="truncate text-xs font-semibold text-slate-700">{{ arquivo.name }}</p>
-            <p class="text-[11px] text-slate-400">{{ formatarTamanho(arquivo.size) }}</p>
+            <p class="text-[11px] text-slate-500">{{ formatarTamanho(arquivo.size) }}</p>
           </div>
           <button
             type="button"
             aria-label="Remover arquivo"
-            class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             @click="aoRemover"
           >
             <Trash2 class="h-4 w-4" />
@@ -179,15 +179,15 @@ defineExpose({
         @click="abrirPicker"
       >
         <span
-          class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:text-lime-700"
+          class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors group-hover:text-lime-700"
         >
           <Upload class="h-4 w-4" />
         </span>
         <span class="text-xs font-semibold text-lime-700">{{ props.rotulo }}</span>
-        <span class="text-[11px] text-slate-400">{{ props.dica }}</span>
+        <span class="text-[11px] text-slate-500">{{ props.dica }}</span>
         <span
           v-if="props.sugestao"
-          class="text-[11px] text-slate-400"
+          class="text-[11px] text-slate-500"
         >{{ props.sugestao }}</span>
       </button>
     </template>
@@ -221,16 +221,16 @@ defineExpose({
         @click="abrirPicker"
       >
         <span
-          class="flex items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:text-lime-700"
+          class="flex items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-colors group-hover:text-lime-700"
           :class="props.compacto ? 'h-6 w-6' : 'h-8 w-8'"
         >
           <Cloud :class="props.compacto ? 'h-3.5 w-3.5' : 'h-4 w-4'" />
         </span>
         <span class="text-xs font-semibold text-lime-700">{{ props.rotulo }}</span>
-        <span class="text-[11px] text-slate-400">{{ props.dica }}</span>
+        <span class="text-[11px] text-slate-500">{{ props.dica }}</span>
         <span
           v-if="props.sugestao"
-          class="text-[11px] text-slate-400"
+          class="text-[11px] text-slate-500"
         >{{ props.sugestao }}</span>
         <div
           v-if="nomesArquivos.length && (props.multiple || !previewAtual)"
@@ -245,7 +245,7 @@ defineExpose({
           </span>
           <span
             v-if="props.multiple"
-            class="text-[11px] text-slate-400"
+            class="text-[11px] text-slate-500"
           >
             {{ nomesArquivos.length }} arquivo{{ nomesArquivos.length > 1 ? 's' : '' }} selecionado{{ nomesArquivos.length > 1 ? 's' : '' }}
           </span>

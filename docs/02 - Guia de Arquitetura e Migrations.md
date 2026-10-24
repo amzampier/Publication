@@ -767,3 +767,12 @@ Na inicialização:
 ---
 
 *Documento gerado como referência técnica e arquitetural definitiva para replicação em novos ecossistemas e sistemas corporativos.*
+
+
+## 12. RL06-3: cache, lote e imutabilidade
+
+- **Bundle (B-06):** antes da RL06-3 a rota de Lançar as Chamadas gerava ~234 kB (gzip ~34 kB) e o editor TipTap entrava no caminho; após o wrapper `UiRichTextLazy`, a rota ficou em ~239 kB (gzip ~35 kB, incluindo o menu de relatórios) e o editor foi isolado em chunk próprio de ~445 kB (gzip ~139 kB), baixado apenas ao abrir o modal.
+- **Cache de SSR:** `server/utils/cache.ts` mantém TTL curto e single-flight por chave. `getConfiguracoes()` usa `config-globais` e `listarOpcoesChamadas()` usa `chamadas-opcoes`; o `PUT /api/configuracoes` invalida as chaves. O layout admin carrega shell e permissões em paralelo, e `getSessionUser` reutiliza `event.context.sessaoUsuario`.
+- **Importações em lote:** `inserirEmLotes` grava blocos de 100–200 linhas dentro da mesma transação. As mídias usam um upsert multi-row, preservando `ordem_exibicao` e capa. O conjunto continua atômico: falha em qualquer bloco faz rollback.
+- **Imutabilidade:** a migration `32_rl06_3_imutabilidade.sql` cria gatilhos que rejeitam `UPDATE` em `auditoria`/`historico_esteira_revisao` e `DELETE` comum; o expurgo da auditoria usa a variável de sessão `@rl06_permitir_auditoria` no EVENT diário. `scripts/db-least-privilege.sql` concede UPDATE/DELETE apenas nas tabelas operacionais e DELETE de auditoria somente para o expurgo controlado.
+- **Rollback:** remova os quatro gatilhos, recrie o EVENT da migration 10 se necessário e apague o registro `32_rl06_3_imutabilidade.sql` de `_migrations` (o bloco de rollback está no próprio SQL).

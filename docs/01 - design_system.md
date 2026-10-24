@@ -96,7 +96,7 @@ A classe utilitária `.tabular-nums` (aplicada em `app/assets/css/main.css` a `f
 | 3 | **Verde Esmeralda (Status Positivo)** | `#047857` | `bg-emerald-700` | Status "Publicado"/Concluído, confirmações, dia "Hoje" |
 | 4 | **Vermelho Rosa (Erro & Alerta)** | `#be123c` | `bg-rose-700` | Erros, validações falhas, alertas críticos |
 | 5 | **Índigo (Revisão & Auditoria)** | `#4338ca` | `bg-indigo-700` | Revisão aprovada, trilha de auditoria |
-| 6 | **Rate Limit (Bloqueio 30 Minutos)** | `#e11d48` | `bg-rose-600` | Cor semântica de bloqueio de segurança |
+| 6 | **Rate Limit (Bloqueio 15 Minutos)** | `#e11d48` | `bg-rose-600` | Cor semântica de bloqueio de segurança |
 | 7 | **Azul Estrutural (Estrutura Dark)** | `#0364f7` | `bg-brand-structure` | Estrutura dark: degradê de cabeçalho de modal/botão (com navy) e header da grid (texto nesses fundos em `#020617`); **card de resumo do Meu Perfil** em degradê vertical diluído `bg-gradient-to-b from-brand-structure/15 to-white` (§5.20, único degradê sobre superfície clara) — o item ativo da sidebar passou a `white/10` (§3.3) |
 | 8 | **Slate 50 (App Canvas)** | `#f8fafc` | `bg-slate-50` | Fundo principal das telas e do header de tabela |
 
@@ -386,12 +386,13 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `error` | `string` | `''` | Erro do campo: **sem texto visível abaixo** — só overlay vermelho + `AlertCircle` à direita com tooltip; a mensagem fica no DOM oculta (`sr-only`, `role="alert"` + `aria-describedby`) para leitores de tela |
 | `helperText` | `string` | `''` | Texto auxiliar abaixo (`11px slate-500`) |
 | `leftIcon` / `rightIcon` | `Component \| null` | `null` | Ícone interno esquerdo/direito |
+| `rightIconLabel` | `string` | `'Ação do campo'` | Nome acessível da ação de ícone à direita (botão focável por teclado) |
 | `mono` | `boolean` | `false` | `font-mono tabular-nums font-medium` (códigos/valores) |
 | `labelClass` / `inputClass` | `string` | `''` | Classes extras de label/input |
 | `forceFocus` | `boolean` | `false` | Simula o destaque de foco sem foco real |
 | `mask` | `string` | `''` | Máscara de digitação: `9` = dígito, `A` = alfanumérico, demais = literal fixo (ex.: `99999-999`, `(99) 99999-9999`) |
 
-- **Emits:** `update:modelValue(value: string)` · `rightIconClick()` (sem payload).
+- **Emits:** `update:modelValue(value: string)` · `rightIconClick()` (sem payload). O `rightIcon` é um botão com `type="button"`, foco visível, `aria-label` (`rightIconLabel`) e acionamento por `Enter`/`Space`.
 - **Slots:** `labelRight` (à direita do label), `leftIcon`, `rightIcon` (alternativa à prop).
 - **Máscara:** formata durante a digitação (deleção no meio desloca os caracteres seguintes, padrão de máscara) e **o `v-model` recebe sempre a string já formatada** — quem grava o valor leva o texto com os literais; `maxlength` assume o tamanho da máscara.
 - **Foco canônico:** overlay `border-2 border-brand-focus` com classe `.ds-bottom-clip` — apenas a borda inferior e os dois cantos arredondados inferiores (`h-[34px]`, `rounded-lg`).
@@ -421,7 +422,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | Prop | Tipo | Default | Descrição |
 | :--- | :--- | :--- | :--- |
 | `rotulo` | `string` | `'Arraste os arquivos aqui ou clique para adicionar'` | Rótulo do estado vazio |
-| `dica` | `string` | `'PNG, JPG ou SVG'` | Subtítulo de formatos |
+| `dica` | `string` | `'PNG, JPG, WebP ou GIF'` | Subtítulo de formatos |
 | `sugestao` | `string` | `''` | Dica opcional (ex.: dimensão) |
 | `aceitar` | `string` | `'*'` | `accept` do input de arquivo |
 | `multiple` | `boolean` | `false` | Seleção múltipla + lista de nomes |
@@ -1356,50 +1357,50 @@ estágios vem abaixo.
   `/design` cobre os controles do kit usados nela (Segmented, Select, Input, Modal, Badge, Button).
   O padrão documentado aqui é o contrato para futuras telas de board/progresso.
 
-### 5.28 Gr?ficos (UiChartBars, UiChartLine, UiChartHorizontalBars) - se??o 27 do `/design`
+### 5.28 Gráficos (UiChartBars, UiChartLine, UiChartHorizontalBars) - seção 27 do `/design`
 
-Componentes de visualiza??o do Painel Executivo (`/admin`), sem biblioteca externa. Todos s?o
-somente leitura, usam os tokens do design system e exp?em `role="img"` com `aria-label` textual
-(lista de s?ries/valores) al?m da legenda vis?vel.
+Componentes de visualização do Painel Executivo (`/admin`), sem biblioteca externa. Todos são
+somente leitura, usam os tokens do design system e expõem `role="img"` com `aria-label` textual
+(lista de séries/valores) além da legenda visível.
 
 **Estrutura comum**
 
-- Card `rounded-xl border border-slate-200 bg-white p-4 shadow-xs`, com t?tulo `text-sm font-bold`
-  e descri??o `text-[11px] text-slate-500`.
+- Card `rounded-xl border border-slate-200 bg-white p-4 shadow-xs`, com título `text-sm font-bold`
+  e descrição `text-[11px] text-slate-500`.
 - Estado vazio: caixa tracejada `border-dashed` com mensagem centralizada, sem quebrar o layout.
-- Cores s?lidas; sem degrad? (exce??o: o `UiButton variant="primary"` e o header de modal j?
+- Cores sólidas; sem degradê (exceção: o `UiButton variant="primary"` e o header de modal já
   documentados).
 
 **UiChartBars**
 
 - Barras verticais empilhadas por categoria (ex.: 12 meses), com `series: { nome, cor, valores }[]`.
-- Altura padr?o de 220px; cada segmento usa `height: valor / m?ximo` e `title` com
-  `categoria ? s?rie: valor`.
-- Legenda com pontos coloridos; o cabe?alho aceita o slot `actions` (usado pelo `UiSegmented`
+- Altura padrão de 220px; cada segmento usa `height: valor / máximo` e `title` com
+  `categoria — série: valor`.
+- Legenda com pontos coloridos; o cabeçalho aceita o slot `actions` (usado pelo `UiSegmented`
   Mensal/Anual do painel).
-- Uso no painel: publica??es mensais por status e publica??es anuais.
+- Uso no painel: publicações mensais por status e publicações anuais.
 
 **UiChartLine**
 
-- Linha SVG com pontos por categoria e duas ou mais s?ries (`series`), eixo X textual abaixo do SVG.
-- `viewBox` fixo e `w-full`; `polyline` com `stroke-width="2.5"` e c?rculos com `title`.
-- Uso no painel: chamadas lan?adas x liberadas.
-- A data de libera??o ? herdada do conte?do pai; o texto de descri??o do gr?fico registra que ela
+- Linha SVG com pontos por categoria e duas ou mais séries (`series`), eixo X textual abaixo do SVG.
+- `viewBox` fixo e `w-full`; `polyline` com `stroke-width="2.5"` e círculos com `title`.
+- Uso no painel: chamadas lançadas x liberadas.
+- A data de liberação é herdada do conteúdo pai; o texto de descrição do gráfico registra que ela
   pode ser prevista.
 
 **UiChartHorizontalBars**
 
-- Ranking horizontal com r?tulo truncado, valor em `font-mono tabular-nums` e trilha `h-1.5`
-  preenchida na cor do item (ou na cor padr?o `#0364f7`).
-- Uso no painel: softwares mais atendidos, tipo, impacto e tempo m?dio por est?gio.
+- Ranking horizontal com rótulo truncado, valor em `font-mono tabular-nums` e trilha `h-1.5`
+  preenchida na cor do item (ou na cor padrão `#0364f7`).
+- Uso no painel: softwares mais atendidos, tipo, impacto e tempo médio por estágio.
 
 **Acessibilidade**
 
-- Cada gr?fico ? `role="img"` com `aria-label` contendo o t?tulo e os valores das s?ries; a
-  legenda e os r?tulos vis?veis permanecem no DOM.
+- Cada gráfico é `role="img"` com `aria-label` contendo o título e os valores das séries; a
+  legenda e os rótulos visíveis permanecem no DOM.
 - O fluxo da esteira usa `role="progressbar"` com `aria-valuenow`, `aria-valuemin`,
   `aria-valuemax` e `aria-label` com as contagens.
-- Controles (`UiSelect`, `UiSegmented`, `UiButton`) mant?m foco/teclado nativos do kit.
+- Controles (`UiSelect`, `UiSegmented`, `UiButton`) mantêm foco/teclado nativos do kit.
 
-**Espelhamento:** se??o 27 do `/design` com exemplos reais de barras empilhadas, linha e ranking
-horizontal; a tela `/admin` ? a refer?ncia de composi??o.
+**Espelhamento:** seção 27 do `/design` com exemplos reais de barras empilhadas, linha e ranking
+horizontal; a tela `/admin` é a referência de composição.

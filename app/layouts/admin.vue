@@ -12,12 +12,9 @@ const { expandida: sidebarOpen, aplicarLarguraInicial, marcarPreferenciaManual }
 // estado vai no payload — o primeiro paint já sai com a logo e a sidebar
 // recolhida, sem flash de defaults no F5 (bug da hidratação só em onMounted).
 // Em falha do GET o loader devolve null e valem os defaults do seed.
-await carregarShell()
-
-// Matriz de permissões do usuário também no SSR: a sidebar e o menu da conta já
-// saem no primeiro paint com os itens permitidos (evita flash de itens negados).
-// `garantir` nunca lança (em erro mantém fail-open).
-await usePermissions().garantir()
+// Shell e permissões são independentes: carregam em paralelo.
+const permissoes = usePermissions()
+await Promise.all([carregarShell(), permissoes.garantir()])
 
 // Ajuste pela largura da viewport continua no cliente (o servidor não a
 // conhece); com preferência salva o marcarPreferenciaManual já veio true no

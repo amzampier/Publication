@@ -113,6 +113,7 @@ sem divisão por zero. A barra SHALL expor `role="progressbar"` com `aria-valuen
 
 - **WHEN** existe chamada em `Publicado`
 - **THEN** o painel exibe a contagem informativa "no portal" com essas chamadas, sem incluí-las no percentual do ciclo ativo
+
 ### Requirement: O board organiza as chamadas em estágios do fluxo
 
 A tela SHALL organizar as chamadas do ciclo ativo em um board com três colunas principais:
@@ -207,6 +208,7 @@ sem resultados.
 
 - **WHEN** o usuário filtra o status `Publicado`
 - **THEN** o board exibe apenas as chamadas nesse status, ainda que fora do ciclo ativo padrão
+
 ### Requirement: Os cards exibem os dados da chamada e as ações do estágio
 
 Cada card SHALL exibir a origem, o código do vínculo, a chamada, o software, o parceiro, o título, um
@@ -254,6 +256,7 @@ chamada.
 
 - **WHEN** o card em `Publicado` é exibido pelo filtro de vínculo
 - **THEN** exibe Suspender e No Portal habilitada, abrindo a Área Pública em nova aba
+
 ### Requirement: O item publicado só é visível no portal quando o conteúdo pai está Publicado
 
 A visibilidade na Área Pública SHALL exigir que a chamada esteja em `Publicado` **e** que ao menos um
@@ -289,6 +292,7 @@ SHALL continuar sendo uma ação explícita de Release Week, Manual ou Escopo de
 
 - **WHEN** a chamada está em `Publicar` e o conteúdo pai está `Publicado`
 - **THEN** a chamada não é visível na Área Pública, permanece na coluna Publicados e a ação No Portal fica desabilitada com "Aguardando pai"
+
 ### Requirement: O detalhe exibe a chamada, os vínculos e o histórico em modo somente leitura
 
 A tela SHALL oferecer a ação **Inspecionar**, que abre um modal `xl` somente leitura com identificação
@@ -407,6 +411,7 @@ transição SHALL ser recusada com conflito e o board SHALL ser atualizado.
 
 - **WHEN** o conteúdo pai é publicado
 - **THEN** as chamadas filhas em `Publicar` passam a `Publicado` e cada transição é registrada no histórico
+
 ### Requirement: A interface e as APIs respeitam a matriz RBAC do módulo
 
 A tela SHALL usar o helper reativo `.can('esteira-revisao', ação)` para exibir ou ocultar as ações:
@@ -494,6 +499,7 @@ mesma regra de transição e gravar o mesmo histórico.
 
 - **WHEN** uma Release Week, Manual ou Escopo é publicado e várias chamadas filhas passam a `Publicado`
 - **THEN** a auditoria registra a publicação do conteúdo pai e o histórico registra uma transição por chamada
+
 ### Requirement: A tela é utilizável em telas estreitas
 
 A tela SHALL empilhar as três colunas do board em uma coluna em telas estreitas, manter os cards e
@@ -514,3 +520,61 @@ manter os modais de detalhe e de decisão utilizáveis na viewport.
 
 - **WHEN** o modal de decisão é aberto em 375px
 - **THEN** os campos e os botões permanecem visíveis, sem overflow horizontal
+
+### Requirement: O filtro de status inclui itens fora do ciclo ativo
+
+Quando o usuário aplica um filtro de **Status** no board, a lista SHALL incluir os itens daquele
+status mesmo que eles estejam fora do ciclo ativo padrão. Em especial, `status=Publicado` SHALL
+exibir as chamadas publicadas (com o vínculo ativo correspondente), ainda que a coluna Publicados
+não as mostre por padrão. O filtro explícito de vínculo continua prevalecendo quando informado.
+
+#### Scenario: Filtro Publicado exibe publicados
+- **WHEN** o usuário aplica `status=Publicado` sem filtro de vínculo específico
+- **THEN** o board exibe as chamadas em `Publicado` do conjunto, com o vínculo e o status correspondentes
+
+#### Scenario: Filtro de vínculo prevalece
+- **WHEN** o usuário aplica `status=Publicado` e um vínculo específico
+- **THEN** o board exibe apenas os publicados daquele vínculo
+
+### Requirement: A listagem do board usa projeção enxuta e cache de opções
+
+A listagem do board SHALL carregar apenas os campos necessários para renderizar os cards, o
+progresso e o contexto dos vínculos, sem materializar o HTML completo das descrições nem o array de
+mídias. Os catálogos de opções dos filtros SHALL ser cacheados por curto período e invalidados nas
+escritas que alterem chamadas ou seus vínculos, de modo que a abertura do board não repita as cinco
+consultas de catálogo a cada requisição.
+
+#### Scenario: Board sem over-fetch de conteúdo
+- **WHEN** o board é aberto
+- **THEN** a resposta não inclui o HTML completo de descrição/solução nem a lista completa de mídias de cada card
+
+#### Scenario: Opções reaproveitadas
+- **WHEN** o board é aberto duas vezes dentro da janela de cache sem escritas
+- **THEN** os catálogos de opções são reaproveitados e as consultas de catálogo não se repetem
+
+#### Scenario: Escrita invalida as opções
+- **WHEN** uma chamada é criada, alterada, excluída ou transicionada
+- **THEN** o cache de opções do board é invalidado para a próxima abertura
+
+### Requirement: O parecer da recusa é obrigatório e o botão explica a indisponibilidade
+
+No modal de decisão da esteira, o parecer da recusa SHALL ser marcado como obrigatório e validado no
+clique de confirmação, com mensagem persistente e foco no campo quando vazio. O botão de confirmação
+NÃO SHALL ficar silenciosamente desabilitado: enquanto a ação estiver disponível, o clique SHALL
+revelar a validação; se o botão estiver desabilitado por outro motivo, o motivo SHALL ser acessível
+por tooltip/`aria-describedby`.
+
+#### Scenario: Parecer vazio revela a validação
+
+- **WHEN** o usuário aciona “Recusar” na esteira com o parecer vazio
+- **THEN** o modal permanece aberto, exibe o erro de obrigatoriedade e leva o foco ao parecer
+
+#### Scenario: Parecer preenchido confirma
+
+- **WHEN** o usuário informa um parecer válido e confirma
+- **THEN** a recusa é enviada e o modal fecha após o sucesso
+
+#### Scenario: Indisponibilidade explicada
+
+- **WHEN** o botão de recusa está desabilitado por permissão ou estado
+- **THEN** o motivo é anunciado de forma acessível, sem deixar o usuário supor falta de permissão

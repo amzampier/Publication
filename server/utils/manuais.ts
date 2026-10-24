@@ -4,7 +4,7 @@
 // arquivamento soft, guarda de exclusão e importação transacional.
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
-import { query, getTransaction } from './db'
+import { query, getTransaction, inserirEmLotes } from './db'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import type { AtorTransicao } from './historico-esteira'
 import {
@@ -478,14 +478,12 @@ export async function importarManuais(
 
   const tx = await getTransaction()
   try {
-    for (const p of preparados) {
+    const linhas = preparados.map((p) => {
       const id = randomUUID()
-      await tx.query(
-        `INSERT INTO manuais_mensal
-          (id, codigo, ano, mes, mes_numero, titulo, descricao, status,
-           destaque_mes, destaque_semana, autor_id, data_criacao, data_publicacao)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+      return {
+        id,
+        p,
+        valores: [
           id,
           gerarCodigo(p.mesNumero, p.ano),
           p.ano,
@@ -500,9 +498,21 @@ export async function importarManuais(
           p.dataCriacao || hojeIso(),
           p.dataPublicacao || null
         ]
-      )
+      }
+    })
+    await inserirEmLotes(
+      tx,
+      `INSERT INTO manuais_mensal
+        (id, codigo, ano, mes, mes_numero, titulo, descricao, status,
+         destaque_mes, destaque_semana, autor_id, data_criacao, data_publicacao)
+       VALUES`,
+      13,
+      linhas.map((linha) => linha.valores),
+      150
+    )
+    for (const { id, p } of linhas) {
       if (p.status === 'Publicado') {
-      await reconciliarFilhasPublicacao(tx, 'manual', id, atorDeAutor(autor))
+        await reconciliarFilhasPublicacao(tx, 'manual', id, atorDeAutor(autor))
       }
     }
     await tx.commit()

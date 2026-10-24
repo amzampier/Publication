@@ -156,9 +156,9 @@ administrativo, sidebar ou rail.
 ### Requirement: Toda rota sob /admin/** é renderizada com o shell da Área Administrativa
 
 O sistema SHALL renderizar qualquer rota futura criada sob a Área Administrativa com o mesmo shell,
-**com exceção das telas de autenticação** (`/admin/login` e `/admin/esqueci-senha`, que renderizam
-sem o shell com layout próprio — spec `login`), de modo que a adição de telas administrativas não
-dependa de marcação ou estilos próprios por página.
+**com exceção das telas de autenticação** (`/admin/login`, `/admin/esqueci-senha` e
+`/admin/primeiro-acesso`, que renderizam sem o shell com layout próprio — spec `login`), de modo que
+a adição de telas administrativas não dependa de marcação ou estilos próprios por página.
 
 #### Scenario: Tela inicial em /admin
 
@@ -184,6 +184,12 @@ dependa de marcação ou estilos próprios por página.
 #### Scenario: A tela de esqueci a senha fica fora do shell
 
 - **WHEN** o visitante abre `/admin/esqueci-senha`
+- **THEN** a página renderiza sem header nem sidebar da Área Administrativa, mantendo o layout
+  próprio das telas de autenticação
+
+#### Scenario: A tela de primeiro acesso fica fora do shell
+
+- **WHEN** o usuário com senha provisória abre `/admin/primeiro-acesso`
 - **THEN** a página renderiza sem header nem sidebar da Área Administrativa, mantendo o layout
   próprio das telas de autenticação
 
@@ -282,3 +288,23 @@ notificações reais, SHALL apresentar o estado vazio ("Nenhuma notificação no
 #### Scenario: Estado vazio sem conteúdo fictício
 - **WHEN** o usuário abre a central de notificações sem notificações
 - **THEN** o painel exibe o estado vazio e nenhum texto de demonstração
+
+### Requirement: O drawer mobile é um diálogo com foco controlado
+
+Quando a sidebar é exibida como drawer abaixo de `lg`, ela SHALL ter semântica de diálogo
+(`role="dialog"`, `aria-modal="true"`, nome acessível), SHALL fechar com `Escape`, SHALL manter o
+foco preso dentro do drawer enquanto aberto e SHALL devolver o foco ao gatilho ao fechar. O backdrop
+SHALL fechar o drawer ao clique. A navegação por teclado SHALL percorrer os itens do drawer sem
+escapar para o conteúdo de trás.
+
+#### Scenario: Escape fecha o drawer e devolve foco
+- **WHEN** o drawer mobile está aberto e o usuário pressiona `Escape`
+- **THEN** o drawer fecha e o foco retorna ao botão de alternância
+
+#### Scenario: Foco preso no drawer
+- **WHEN** o drawer está aberto e o usuário navega por `Tab`
+- **THEN** o foco circula apenas entre os controles do drawer e não alcança o conteúdo de trás
+
+#### Scenario: Backdrop fecha
+- **WHEN** o usuário clica no backdrop do drawer
+- **THEN** o drawer fecha sem navegar

@@ -729,22 +729,23 @@ const secoes = [
   { id: 'action-menu', label: '23. Menu de Ações (UiActionMenu)' },
   { id: 'tag-input', label: '24. Entrada de Tags (UiTagInput)' },
   { id: 'rich-text', label: '25. Texto Rico (UiRichText)' },
-  { id: 'multi-select', label: '26. Seleção Múltipla (UiMultiSelect)' }
+  { id: 'multi-select', label: '26. Seleção Múltipla (UiMultiSelect)' },
+  { id: 'charts', label: '27. Gráficos' }
 ]
 const chartCategorias = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const chartSeries = [
   { nome: 'Aberta', cor: '#0364f7', valores: [2, 1, 0, 0, 1, 0, 0, 2, 1, 0, 1, 0] },
-  { nome: 'Em Revis?o', cor: '#f59e0b', valores: [0, 1, 2, 1, 0, 0, 1, 0, 0, 2, 1, 0] },
+  { nome: 'Em Revisão', cor: '#f59e0b', valores: [0, 1, 2, 1, 0, 0, 1, 0, 0, 2, 1, 0] },
   { nome: 'Aprovado', cor: '#1a9e07', valores: [1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1] },
   { nome: 'Publicado', cor: '#112051', valores: [0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0] }
 ]
 const chartLinhas = [
-  { nome: 'Lan?adas', cor: '#0364f7', valores: [4, 6, 3, 8, 5, 7, 4, 9, 6, 8, 5, 7] },
+  { nome: 'Lançadas', cor: '#0364f7', valores: [4, 6, 3, 8, 5, 7, 4, 9, 6, 8, 5, 7] },
   { nome: 'Liberadas', cor: '#1a9e07', valores: [2, 4, 3, 5, 4, 6, 3, 7, 5, 6, 4, 6] }
 ]
 const chartRanking = [
-  { rotulo: 'Gest?o Administrativa', valor: 12 },
-  { rotulo: 'Gest?o de Pessoal / eSocial', valor: 9 },
+  { rotulo: 'Gestão Administrativa', valor: 12 },
+  { rotulo: 'Gestão de Pessoal / eSocial', valor: 9 },
   { rotulo: 'Vendor Praxis', valor: 7 },
   { rotulo: 'Arquivos Digitais - SPED', valor: 4 }
 ]
@@ -3435,30 +3436,30 @@ variant="lime"
         <section id="charts" class="bg-white border border-slate-200 rounded-xl p-6 shadow-xs scroll-mt-24">
           <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Se??o 27</p>
-              <h2 class="text-base font-bold text-slate-900 mt-1">Gr?ficos (ChartBars, ChartLine, ChartHorizontalBars)</h2>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Seção 27</p>
+              <h2 class="text-base font-bold text-slate-900 mt-1">Gráficos (ChartBars, ChartLine, ChartHorizontalBars)</h2>
               <p class="text-xs text-slate-500 mt-1">
-                Primitivas do Painel Executivo ? barras empilhadas, linha e ranking horizontal, sem depend?ncia externa.
+                Primitivas do Painel Executivo — barras empilhadas, linha e ranking horizontal, sem dependência externa.
               </p>
             </div>
             <span class="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-mono text-slate-500">
-              Componente: UiChartBars ? UiChartLine ? UiChartHorizontalBars
+              Componente: UiChartBars · UiChartLine · UiChartHorizontalBars
             </span>
           </div>
 
           <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
             <UiChartBars
-              titulo="Publica??es por m?s"
-              descricao="Release Week por status ? eixo pela data de publica??o."
-              rotulo="Exemplo de publica??es por m?s"
+              titulo="Publicações por mês"
+              descricao="Release Week por status — eixo pela data de publicação."
+              rotulo="Exemplo de publicações por mês"
               :categorias="chartCategorias"
               :series="chartSeries"
             />
 
             <UiChartLine
               titulo="Chamadas ao longo do ano"
-              descricao="Lan?adas x liberadas no exemplo ? a data de libera??o ? herdada do conte?do pai."
-              rotulo="Exemplo de chamadas lan?adas e liberadas"
+              descricao="Lançadas x liberadas no exemplo — a data de liberação — herdada do conteúdo pai."
+              rotulo="Exemplo de chamadas lançadas e liberadas"
               :categorias="chartCategorias"
               :series="chartLinhas"
             />

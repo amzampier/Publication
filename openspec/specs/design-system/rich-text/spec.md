@@ -13,13 +13,19 @@ representando o HTML, `label`, `placeholder`, `error`, `disabled` e altura míni
 acima do campo e o placeholder apenas enquanto o conteúdo estiver vazio. O campo SHALL reproduzir a
 identidade visual da família de controles: caixa branca `rounded-lg` `border-slate-200`, foco recortado
 com `.ds-bottom-clip` em `brand-focus` `#1a9e07` e erro em `rose-700` `#be123c` com ícone `AlertCircle`
-e mensagem `role="alert"` associada por `aria-describedby`. O componente SHALL emitir também o texto
-puro do conteúdo, para que o formulário valide e envie a representação textual.
+e mensagem `role="alert"` associada por `aria-describedby`. O editor `contenteditable` SHALL ter `id`
+e/ou `aria-labelledby` associado ao label visível, de modo que o nome acessível seja anunciado ao
+focar o campo. O componente SHALL emitir também o texto puro do conteúdo, para que o formulário valide
+e envie a representação textual.
 
 #### Scenario: Renderização básica
 
 - **WHEN** `UiRichText` é renderizado com `label`, `placeholder` e um valor inicial
 - **THEN** o label aparece acima do campo, o conteúdo formatado é exibido e o placeholder some quando há conteúdo
+
+#### Scenario: Label associado ao editor
+- **WHEN** o foco vai para o editor por teclado ou leitor de tela
+- **THEN** o campo é anunciado com o texto do label, por `id`/`aria-labelledby`, e não apenas como “edição de texto”
 
 #### Scenario: Modelo bidirecional
 

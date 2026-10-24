@@ -45,7 +45,7 @@ export function resolveMigrationDir(): string {
  * Convenção docs/02 §4.5: proibido ";" dentro de strings nas migrations.
  */
 export function splitStatements(sql: string): string[] {
-  return sql
+  const limpo = sql
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n')
     .map((line) => {
@@ -53,9 +53,29 @@ export function splitStatements(sql: string): string[] {
       return idx === -1 ? line : line.slice(0, idx)
     })
     .join('\n')
-    .split(';')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
+
+  const statements: string[] = []
+  let delimiter = ';'
+  let buffer = ''
+  for (const line of limpo.split('\n')) {
+    const diretiva = /^\s*DELIMITER\s+(.+?)\s*$/i.exec(line)
+    if (diretiva) {
+      if (buffer.trim()) statements.push(buffer.trim())
+      buffer = ''
+      delimiter = diretiva[1] ?? ';'
+      continue
+    }
+    buffer += `${line}\n`
+    let idx = buffer.indexOf(delimiter)
+    while (idx >= 0) {
+      const statement = buffer.slice(0, idx).trim()
+      if (statement) statements.push(statement)
+      buffer = buffer.slice(idx + delimiter.length)
+      idx = buffer.indexOf(delimiter)
+    }
+  }
+  if (buffer.trim()) statements.push(buffer.trim())
+  return statements
 }
 
 function isTolerated(err: unknown): boolean {

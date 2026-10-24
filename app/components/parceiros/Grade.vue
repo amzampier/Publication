@@ -65,6 +65,7 @@ watch(
               placeholder="Buscar parceiros..."
               :left-icon="Search"
               :right-icon="busca ? X : undefined"
+              :right-icon-label="'Limpar busca'"
               @right-icon-click="busca = ''"
             />
           </div>
@@ -107,7 +108,7 @@ watch(
 
         <div
           v-else
-          class="py-12 text-center text-sm text-slate-400"
+          class="py-12 text-center text-sm text-slate-600"
         >
           {{
             filtrosAtivosCount > 0 || busca.trim() !== ''

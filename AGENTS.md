@@ -81,3 +81,5 @@ raw SQL — no ORM), `bcrypt` + `jose` (auth) and `resend` (e-mail). Lint/test/t
   running locally: the Nitro plugin `server/plugins/migration.ts` provisions the schema from
   `server/migration/*.sql` on boot and bootstraps the admin user — if MariaDB is down or
   unreachable, `npm run dev`/production boot fails fast by design.
+
+- **Trilha imutável (RL06-3):** a migration 32 cria gatilhos que rejeitam UPDATE/DELETE em uditoria e historico_esteira_revisao; o expurgo da auditoria usa @rl06_permitir_auditoria no EVENT. O rollback está documentado no SQL. O runner aceita DELIMITER para blocos de trigger/event.\n

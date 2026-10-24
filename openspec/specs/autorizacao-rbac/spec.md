@@ -39,7 +39,7 @@ válida SHALL continuar respondendo `401` (a autorização SHALL ocorrer somente
 O sistema SHALL aplicar a cada rota administrativa a permissão do módulo e da funcionalidade
 indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`, `perfis-acesso`,
 `auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`, `manuais`,
-`lancar-chamadas`):
+`escopo-projetos`, `lancar-chamadas`, `esteira-revisao`):
 
 - `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com o parâmetro de **filtro/paginação**
   server-side → `gestao-usuarios` / `filtrar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
@@ -68,7 +68,7 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `GET /api/release-week` → `release-week` / `visualizar`; com o parâmetro de **exportação** → `release-week` / `exportar`
 - `GET /api/release-week/:id/itens` → `release-week` / `visualizar_itens`
 - `POST /api/release-week` → `release-week` / `criar`
-- `PUT /api/release-week/:id` → `release-week` / `alterar`
+- `PUT /api/release-week/:id` → `release-week` / `alterar`; se o status mudar para `Publicado`, também `publicar`
 - `PUT /api/release-week/:id/publicar` → `release-week` / `publicar`
 - `PUT /api/release-week/:id/arquivar` → `release-week` / `arquivar`
 - `DELETE /api/release-week/:id` → `release-week` / `excluir`
@@ -76,24 +76,39 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `GET /api/manuais` → `manuais` / `visualizar`; com o parâmetro de **exportação** → `manuais` / `exportar`
 - `GET /api/manuais/:id/itens` → `manuais` / `visualizar_itens`
 - `POST /api/manuais` → `manuais` / `criar`
-- `PUT /api/manuais/:id` → `manuais` / `alterar`
+- `PUT /api/manuais/:id` → `manuais` / `alterar`; se o status mudar para `Publicado`, também `publicar`
 - `PUT /api/manuais/:id/publicar` → `manuais` / `publicar`
 - `PUT /api/manuais/:id/arquivar` → `manuais` / `arquivar`
 - `DELETE /api/manuais/:id` → `manuais` / `excluir`
 - `POST /api/manuais/importar` → `manuais` / `importar`
+- `GET /api/escopo-projetos` → `escopo-projetos` / `visualizar`; com o parâmetro de **exportação** → `escopo-projetos` / `exportar`
+- `GET /api/escopo-projetos/:id/itens` → `escopo-projetos` / `visualizar`
+- `POST /api/escopo-projetos` → `escopo-projetos` / `criar`; se o status for `Publicado`, também `publicar`
+- `PUT /api/escopo-projetos/:id` → `escopo-projetos` / `alterar`; se o status mudar para `Publicado`, também `publicar`
+- `PUT /api/escopo-projetos/:id/publicar` → `escopo-projetos` / `publicar`
+- `PUT /api/escopo-projetos/:id/arquivar` → `escopo-projetos` / `arquivar`
+- `DELETE /api/escopo-projetos/:id` → `escopo-projetos` / `excluir`
+- `POST /api/escopo-projetos/importar` → `escopo-projetos` / `importar`
 - `GET /api/lancar-chamadas` → `lancar-chamadas` / `visualizar`; com o parâmetro de **download** → `lancar-chamadas` / `download`
 - `GET /api/lancar-chamadas/opcoes` → `lancar-chamadas` / `visualizar`
 - `POST /api/lancar-chamadas` → `lancar-chamadas` / `criar`
 - `PUT /api/lancar-chamadas/:id` → `lancar-chamadas` / `alterar`
 - `PUT /api/lancar-chamadas/:id/aprovar` → `lancar-chamadas` / `publicar`
+- `PUT /api/lancar-chamadas/:id/desaprovar` → `lancar-chamadas` / `alterar`
 - `PUT /api/lancar-chamadas/:id/recusar` → `lancar-chamadas` / `alterar`
 - `DELETE /api/lancar-chamadas/:id` → `lancar-chamadas` / `excluir`
 - `POST /api/lancar-chamadas/importar` → `lancar-chamadas` / `importar`
+- `GET /api/esteira-revisao` → `esteira-revisao` / `visualizar`; com **busca** → `buscar`; com **filtros** → `filtrar`
+- `GET /api/esteira-revisao/:id` e `GET /api/esteira-revisao/:id/historico` → `esteira-revisao` / `visualizar`
+- `PUT /api/esteira-revisao/:id/aprovar|publicar|suspender` → `esteira-revisao` / `publicar`
+- `PUT /api/esteira-revisao/:id/recusar|reabrir` → `esteira-revisao` / `alterar`
 - `GET /api/auditoria` → `auditoria` / `visualizar`; com o parâmetro de **filtro** → `auditoria` / `filtrar`;
   com o parâmetro de **busca** → `auditoria` / `buscar`; com o parâmetro de **exportação** → `auditoria` / `exportar`
 - `GET /api/configuracoes`, `GET /api/seguranca/estado` → `configuracoes-globais` / `visualizar`
 - `PUT /api/configuracoes`, `POST /api/seguranca/liberar` → `configuracoes-globais` / `alterar`
 - `POST /api/uploads` com destino `logomarcas` → `configuracoes-globais` / `alterar`; com destino `logos` → `parceiros` / `alterar`; com destino `chamadas` → `lancar-chamadas` / `criar` ou `alterar`
+- `GET /uploads/chamadas/**` → sessão com `lancar-chamadas`/`visualizar` **ou**, para anônimo, o gate de conteúdo publicado
+- `GET /api/painel-executivo` → sessão com `visualizar` em ao menos um dos módulos agregados, com cada bloco filtrado pelo módulo de origem
 
 #### Scenario: Leitor não executa escrita nem exclusão
 - **WHEN** um usuário com perfil Leitor (que não concede `criar`, `alterar` nem `excluir` em `gestao-usuarios`) chama `POST`, `PUT` ou `DELETE` de usuários
@@ -142,6 +157,14 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 #### Scenario: Importação de Manuais exige a ação extra
 - **WHEN** um perfil sem `manuais`/`importar` chama `POST /api/manuais/importar`
 - **THEN** a API responde `403` e nada é gravado
+
+#### Scenario: Rotas de Escopo usam o módulo escopo-projetos
+- **WHEN** um perfil concede `escopo-projetos`/`visualizar` mas não `escopo-projetos`/`publicar` chama `PUT /api/escopo-projetos/:id/publicar`
+- **THEN** a API responde `403` e nenhum escopo é publicado
+
+#### Scenario: Rotas da Esteira usam o módulo esteira-revisao
+- **WHEN** um perfil sem `esteira-revisao`/`publicar` chama `PUT /api/esteira-revisao/:id/aprovar`
+- **THEN** a API responde `403` e a chamada permanece no status anterior
 
 #### Scenario: Importação de chamadas exige a ação extra
 - **WHEN** um perfil sem `lancar-chamadas`/`importar` chama `POST /api/lancar-chamadas/importar`
@@ -207,6 +230,7 @@ server-side (Gestão de Usuários e Auditoria) a imposição é **também** no s
 - **WHEN** o perfil não concede `manuais`/`clonar`, `manuais`/`visualizar_itens` ou `manuais`/`importar`
 - **THEN** a ação "Clonar", a flag de itens e o ícone de importação não são exibidos na tela de
   Manuais Mensais
+
 ### Requirement: A publicação exige a permissão própria em qualquer caminho
 
 Além da permissão da rota genérica, o sistema SHALL exigir a funcionalidade `publicar` do módulo

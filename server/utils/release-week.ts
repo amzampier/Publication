@@ -5,7 +5,7 @@
 // guarda de exclusão (arquivada ou com itens).
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
-import { query, getTransaction } from './db'
+import { query, getTransaction, inserirEmLotes } from './db'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import type { AtorTransicao } from './historico-esteira'
 import {
@@ -453,15 +453,12 @@ export async function importarReleaseWeeks(
 
   const tx = await getTransaction()
   try {
-    for (const p of preparados) {
+    const linhas = preparados.map((p) => {
       const id = randomUUID()
-      await tx.query(
-        `INSERT INTO release_week
-          (id, codigo, nome, versao, \`release\`, semana, ano, mes,
-           data_inicio, data_finaliza, data_publicacao, status, descricao,
-           destaque_semana, autor_id, autor_nome)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+      return {
+        id,
+        p,
+        valores: [
           id,
           gerarCodigo(p.semana, p.ano),
           p.nome,
@@ -479,7 +476,20 @@ export async function importarReleaseWeeks(
           autor.id,
           autor.nome
         ]
-      )
+      }
+    })
+    await inserirEmLotes(
+      tx,
+      `INSERT INTO release_week
+        (id, codigo, nome, versao, \`release\`, semana, ano, mes,
+         data_inicio, data_finaliza, data_publicacao, status, descricao,
+         destaque_semana, autor_id, autor_nome)
+       VALUES`,
+      16,
+      linhas.map((linha) => linha.valores),
+      150
+    )
+    for (const { id, p } of linhas) {
       if (p.status === 'Publicado') {
         await reconciliarFilhasPublicacao(tx, 'release', id, autor)
       }

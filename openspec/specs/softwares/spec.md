@@ -59,9 +59,9 @@ chave primária**, no formato sequencial `SFT-001`, junto de `descricao` (nome/d
 ### Requirement: Listagem de softwares
 
 A tela SHALL carregar o catálogo de `GET /api/softwares` e exibi-lo em uma tabela com as colunas
-**Descrição, Categoria, Situação, Criado em e Atualizado em**, além da coluna de ações. Enquanto a
-leitura está em voo, SHALL exibir um overlay de carregamento sem conteúdo parcial. Se a leitura
-falhar, SHALL exibir um aviso de erro e manter a lista **vazia** — nunca apresentar dados de
+**Código, Descrição, Categoria, Situação, Criado em e Atualizado em**, além da coluna de ações.
+Enquanto a leitura está em voo, SHALL exibir um overlay de carregamento sem conteúdo parcial. Se a
+leitura falhar, SHALL exibir um aviso de erro e manter a lista **vazia** — nunca apresentar dados de
 demonstração como se fossem persistidos. A tabela SHALL oferecer busca, ordenação e paginação no
 cliente, como as demais telas do kit.
 
@@ -73,8 +73,7 @@ cliente, como as demais telas do kit.
 #### Scenario: Colunas da listagem
 
 - **WHEN** o catálogo é exibido
-- **THEN** a tabela mostra as colunas Descrição, Categoria, Situação, Criado em e Atualizado em,
-  com Categoria e Situação em `UiBadge`
+- **THEN** a tabela mostra as colunas Código, Descrição, Categoria, Situação, Criado em e Atualizado em, com Categoria e Situação em `UiBadge` e o código em fonte monoespaçada
 
 #### Scenario: Catálogo vazio
 
@@ -172,19 +171,19 @@ ação de linha "Editar" (edição), com os campos **Descrição** (obrigatória
 **Categoria** (`Delphi` | `Web` | `Delphi e Web`) e **Situação** (`Ativo` | `Inativo`). Na criação
 o registro nasce com categoria `Delphi` e situação `Ativo`; na edição o modal exibe a seção
 **Informações de Cadastro** com `criado_em` e `atualizado_em` desabilitados. Salvar SHALL gravar via
-`POST /api/softwares` (criação) ou `PUT /api/softwares/:id` (edição); o sucesso fecha o modal e
-confirma a ação; em falha, o modal permanece aberto e o erro é informado.
+`POST /api/softwares` (criação) ou `PUT /api/softwares/:codigo` (edição); o código é imutável e
+identifica a rota. O sucesso fecha o modal e confirma a ação; em falha, o modal permanece aberto e o
+erro é informado.
 
 #### Scenario: Abrir cadastro com padrões
 
 - **WHEN** o usuário aciona "Novo Software"
-- **THEN** o modal "Novo Software" abre com categoria `Delphi` e situação `Ativo`, sem a seção de
-  Informações de Cadastro
+- **THEN** o modal "Novo Software" abre com categoria `Delphi` e situação `Ativo`, sem a seção de Informações de Cadastro
 
 #### Scenario: Abrir edição com o registro e os carimbos de cadastro
 
 - **WHEN** o usuário aciona "Editar" em uma linha
-- **THEN** o modal "Editar Software" abre preenchido e exibe Criado em/Atualizado em desabilitados
+- **THEN** o modal "Editar Software" abre preenchido, com o Código somente leitura e Criado em/Atualizado em desabilitados
 
 #### Scenario: Descrição obrigatória
 
@@ -194,8 +193,7 @@ confirma a ação; em falha, o modal permanece aberto e o erro é informado.
 #### Scenario: Salvar com sucesso
 
 - **WHEN** o usuário salva um formulário válido
-- **THEN** o registro é gravado (POST na criação, PUT na edição), o modal fecha e um aviso de
-  sucesso é exibido
+- **THEN** o registro é gravado (POST na criação, PUT /:codigo na edição), o modal fecha e um aviso de sucesso é exibido
 
 #### Scenario: Falha ao salvar mantém o modal
 
@@ -244,24 +242,29 @@ de importação.
 ### Requirement: Backend do catálogo de softwares
 
 O sistema SHALL servir o catálogo de softwares pela API sob a permissão do módulo `softwares`:
-`GET /api/softwares` (visualizar) devolve a lista completa em ordem de `codigo`; `POST /api/softwares`
-(criar) cria o software gerando o próximo `codigo`; `PUT /api/softwares/:codigo` (alterar) e
-`DELETE /api/softwares/:codigo` (excluir) operam por código. As escritas SHALL validar os campos
-(descrição obrigatória de até 200 caracteres; categoria e situação restritas ao domínio), responder
-`404` quando o código não existir e registrar a operação na trilha de auditoria com recurso
-"Softwares". A geração do código SHALL ser sequencial e resiliente a concorrência (a unicidade da
-chave primária barra a corrida e a inserção é repetida).
+`GET /api/softwares` (visualizar; `?exportar=1` → `exportar`) devolve a lista em ordem de `codigo`;
+`POST /api/softwares` (criar) cria o software gerando o próximo `codigo`; `PUT /api/softwares/:codigo`
+(alterar) e `DELETE /api/softwares/:codigo` (excluir) operam por código. As escritas SHALL validar os
+campos (descrição obrigatória de até 200 caracteres; categoria e situação restritas ao domínio),
+responder `404` quando o código não existir, `409` quando a exclusão for bloqueada por entregas
+vinculadas e registrar a operação na trilha de auditoria com recurso "Softwares". A geração do
+código SHALL ser sequencial e resiliente a concorrência (a unicidade da chave primária barra a
+corrida e a inserção é repetida).
 
 #### Scenario: Listar o catálogo em ordem de código
 
 - **WHEN** um usuário com `softwares`/`visualizar` chama `GET /api/softwares`
 - **THEN** a resposta é a lista de softwares ordenada por `codigo`
 
+#### Scenario: Guarda de exportação
+
+- **WHEN** um perfil sem `softwares`/`exportar` chama `GET /api/softwares?exportar=1`
+- **THEN** a API responde `403` e nenhum arquivo é gerado
+
 #### Scenario: Criar gera código e registra auditoria
 
 - **WHEN** um usuário com `softwares`/`criar` cria um software válido
-- **THEN** o registro é gravado com o próximo código sequencial, a resposta é `201` e a trilha
-  registra uma Inclusão do recurso "Softwares"
+- **THEN** o registro é gravado com o próximo código sequencial, a resposta é `201` e a trilha registra uma Inclusão do recurso "Softwares"
 
 #### Scenario: Validação recusa campos inválidos
 
@@ -272,6 +275,10 @@ chave primária barra a corrida e a inserção é repetida).
 
 - **WHEN** `PUT` ou `DELETE` é chamado com um `codigo` que não existe
 - **THEN** a API responde `404`
+
+#### Scenario: Exclusão bloqueada por vínculo
+- **WHEN** `DELETE /api/softwares/:codigo` é chamado para um software referenciado por entregas
+- **THEN** a API responde `409` com o motivo e nenhum registro é removido
 
 #### Scenario: Sem permissão a escrita é negada
 

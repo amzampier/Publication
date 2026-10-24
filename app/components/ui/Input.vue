@@ -17,6 +17,7 @@ interface Props {
   helperText?: string
   leftIcon?: any
   rightIcon?: any
+  rightIconLabel?: string
   mono?: boolean
   inputClass?: string
   forceFocus?: boolean
@@ -38,6 +39,7 @@ const props = withDefaults(defineProps<Props>(), {
   helperText: '',
   leftIcon: null,
   rightIcon: null,
+  rightIconLabel: 'Ação do campo',
   mono: false,
   inputClass: '',
   forceFocus: false,
@@ -173,14 +175,17 @@ const aplicarMascara = (valor: string, mascara: string): string => {
       </div>
 
       <!-- Ícone Direito Interativo ou Informativo -->
-      <div
+      <button
         v-else-if="rightIcon || $slots.rightIcon"
-        class="absolute right-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer"
+        type="button"
+        class="absolute right-3 flex items-center rounded text-slate-500 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+        :aria-label="rightIconLabel"
+        :disabled="disabled"
         @click="emit('rightIconClick')"
       >
-        <component :is="rightIcon" v-if="rightIcon" class="h-4 w-4" />
+        <component :is="rightIcon" v-if="rightIcon" class="h-4 w-4" aria-hidden="true" />
         <slot name="rightIcon" />
-      </div>
+      </button>
     </div>
 
     <!-- Erro: visualmente só o AlertCircle interno + borda vermelha (sem texto abaixo);

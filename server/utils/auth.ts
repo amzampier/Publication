@@ -318,9 +318,12 @@ export async function obterSessaoDoAccess(event: any): Promise<UsuarioSessao | n
 }
 
 export async function getSessionUser(event: any): Promise<UsuarioSessao | null> {
-  const sessao = await obterSessaoDoAccess(event)
-  if (sessao) return sessao
-  return await renovarSessao(event)
+  if (event?.context && 'sessaoUsuario' in event.context) {
+    return event.context.sessaoUsuario as UsuarioSessao | null
+  }
+  const sessao = (await obterSessaoDoAccess(event)) ?? (await renovarSessao(event))
+  if (event?.context) event.context.sessaoUsuario = sessao
+  return sessao
 }
 
 // ---------------------------------------------------------------------------

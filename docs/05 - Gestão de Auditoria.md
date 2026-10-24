@@ -353,8 +353,8 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   (`app/config/navigation.ts`) — fica ativo na rota (spec `layout-navigation`).
 - **Menu da conta:** item "Gestão de Auditoria" com o mesmo `to`.
 - Na Administração os quatro itens têm rota (Configurações Globais, Gestão de Usuários, Gestão de
-  Auditoria e Perfis de Acesso (RBAC)); seguem sem rota os itens das demais sessões e o Painel
-  Executivo (MEL-03 do RL01).
+  Auditoria e Perfis de Acesso (RBAC)); todos os itens atuais da sidebar têm rota, inclusive o
+  Painel Executivo.
 
 ## 9. Estilo e CSS dedicado
 
@@ -424,4 +424,4 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   real, trocar por variante neutra é ajuste de uma linha.
 - **Expurgo automático:** a rotina diária é um **EVENT** do MariaDB (`ev_expurgo_auditoria`, migrations
   10/11), com catch-up no boot; a política segue `dias_retencao_auditoria`.
-- Itens de navegação sem rota restantes (MEL-03 do `RL01`).
+- Nenhum item de navegação sem rota no estado atual.

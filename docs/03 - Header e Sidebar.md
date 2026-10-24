@@ -261,7 +261,7 @@ Observações:
   - Sem `cor`: apenas o item raiz **Painel Executivo**. Antes do grupo Movimentos todas as cores
     já existiam no design system ou no menu Account; `#f59e0b` e `#8b5cf6` são as primeiras
     criadas de propósito para um grupo de navegação.
-- `Parceiros` e `Softwares` são módulos de cadastro ainda sem spec de domínio (ver [§11](#11-mudanças-desta-fase-e-pendências)).
+- `Parceiros` e `Softwares` são módulos de cadastro com spec de domínio (ver [§11](#11-mudanças-desta-fase-e-pendências)).
 - Rótulos das sessões são gravados em caixa mista e renderizados em **caixa alta pelo CSS** (`uppercase`
   no cabeçalho) — não escrever em maiúsculas no dado.
 
@@ -303,7 +303,7 @@ empresas/filiais).
 | `sidebarOpen` | `useSidebarExpandida` (`useState`, lido por `layouts/admin.vue`) | preferência compartilhada com Configurações > Sidebar; default `true` no SSR, espelho com o toggle do header; na primeira carga o cliente aplica `aplicarLarguraInicial` (recolhida abaixo de `lg`) salvo `preferenciaManual` (F5 zera) |
 | `preferenciaManual` | `useSidebarExpandida` (`useState`) | marcada por toggle/backdrop/cartão de Configurações — daí em diante a escolha manual prevalece sobre a largura da viewport (F5 zera) |
 | `sessao.aberto` | `useSessoesAbertas` (`useState`, lido por `AppSidebar`) | individual, preferência compartilhada com Configurações > Sidebar; default `true` em `navigation.ts`, preservado ao recolher/reexpandir (F5 zera) |
-| `itemAtivo` | `AppSidebar.vue` | deriva da rota quando a URL casa com um item que tem `to` (ex.: `/admin/configuracoes-globais`); fallback no ref local para itens sem rota (clica e marca) |
+| `itemAtivo` | `AppSidebar.vue` | deriva da rota quando a URL casa com um item que tem `to` (ex.: `/admin/configuracoes-globais`); todos os itens atuais têm rota, sem fallback local |
 | `contaAberto` / `notificacoesAberto` | `AppHeader.vue` | mútuamente exclusivos |
 | `notificacoes` | `AppHeader.vue` (cópia de `notificacoesIniciais`) | dispensar/remove, "Limpar tudo"/esvazia |
 

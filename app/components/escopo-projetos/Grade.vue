@@ -68,6 +68,7 @@ watch(
               placeholder="Buscar escopos..."
               :left-icon="Search"
               :right-icon="busca ? X : undefined"
+              :right-icon-label="'Limpar busca'"
               @right-icon-click="busca = ''"
             />
           </div>

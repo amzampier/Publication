@@ -301,6 +301,7 @@ const enviar = async () => {
                   ? ''
                   : 'Informe ou gere uma senha de ao menos 8 caracteres para habilitar o envio.'
               "
+              :right-icon-label="'Mostrar ou ocultar senha'"
               @right-icon-click="mostrarSenha = !mostrarSenha"
             />
           </div>
@@ -351,17 +352,21 @@ const enviar = async () => {
         Copiar mensagem
       </UiButton>
       <UiButton variant="outline" size="md" @click="fechar">Cancelar</UiButton>
-      <UiButton
-        variant="primary"
-        size="md"
-        :disabled="!podeEnviar"
-        :loading="enviando"
-        :title="podeEnviar ? '' : 'Informe ou gere a senha provisória (mínimo de 8 caracteres).'"
-        @click="enviar"
+      <UiTooltip
+        :content="podeEnviar ? '' : 'Informe ou gere a senha provisória (mínimo de 8 caracteres).'"
+        position="top"
       >
-        <template #leftIcon><Send class="h-3.5 w-3.5" /></template>
-        Enviar Convite
-      </UiButton>
+        <UiButton
+          variant="primary"
+          size="md"
+          :disabled="!podeEnviar"
+          :loading="enviando"
+          @click="enviar"
+        >
+          <template #leftIcon><Send class="h-3.5 w-3.5" /></template>
+          Enviar Convite
+        </UiButton>
+      </UiTooltip>
     </template>
   </UiModal>
 </template>

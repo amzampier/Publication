@@ -60,7 +60,7 @@ withDefaults(defineProps<Props>(), {
           <component
             :is="tendencia === 'up' ? TrendingUp : tendencia === 'down' ? TrendingDown : Minus"
             class="h-3.5 w-3.5 shrink-0"
-            :class="tendencia === 'up' ? 'text-emerald-600' : tendencia === 'down' ? 'text-rose-600' : 'text-slate-400'"
+            :class="tendencia === 'up' ? 'text-emerald-600' : tendencia === 'down' ? 'text-rose-600' : 'text-slate-500'"
             aria-hidden="true"
           />
           <span
@@ -70,7 +70,7 @@ withDefaults(defineProps<Props>(), {
           >{{ metrica }}</span>
           <span
             v-if="metricaRotulo"
-            class="truncate text-slate-400"
+            class="truncate text-slate-600"
           >{{ metricaRotulo }}</span>
         </div>
       </div>

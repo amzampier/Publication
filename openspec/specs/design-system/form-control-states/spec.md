@@ -163,3 +163,46 @@ Os botões secundários do kit — o limpar do `Select` e o limpar do `DatePicke
 #### Scenario: Limpar do DatePicker mostra foco
 - **WHEN** o botão de limpar do `UiDatePicker` recebe foco por teclado
 - **THEN** um indicador de foco visível é exibido
+
+### Requirement: As ações de submissão usam loading e disabled
+
+Todo botão que dispara uma operação de escrita (`Salvar`, `Enviar`, `Publicar`, `Recusar`,
+`Aprovar`, `Importar`) SHALL entrar em estado de carregamento e ficar desabilitado enquanto a
+requisição estiver em voo, impedindo duplo envio. O estado SHALL ser restaurado em sucesso, erro ou
+cancelamento, e o botão SHALL expor `aria-busy`/`disabled` de forma acessível. O formulário NÃO SHALL
+disparar duas requisições concorrentes para a mesma ação.
+
+#### Scenario: Clique duplo gera uma requisição
+- **WHEN** o usuário aciona “Salvar” duas vezes rapidamente
+- **THEN** apenas uma requisição é enviada e o botão permanece em loading até a resposta
+
+#### Scenario: Erro restaura o botão
+- **WHEN** a requisição falha
+- **THEN** o botão sai do loading e volta a permitir nova tentativa, com o erro exibido
+
+#### Scenario: Ação destrutiva também protege
+- **WHEN** o usuário confirma “Excluir” ou “Recusar” e a requisição está em voo
+- **THEN** o botão de confirmação fica desabilitado até a resposta
+
+### Requirement: A ação de ícone do controle é acionável por teclado
+
+Quando um controle de formulário exibe uma ação em ícone à direita do campo (ex.: revelar senha,
+limpar busca ou abrir seletor), essa ação SHALL ser um controle focável com papel de botão, nome
+acessível e acionamento por `Enter` e `Space`, além do clique. Ela NÃO SHALL ser um elemento
+apenas clicável sem equivalente de teclado. Quando desabilitada, a ação SHALL expor o estado
+desabilitado de forma acessível e não SHALL disparar o evento.
+
+#### Scenario: Foco e acionamento por teclado
+
+- **WHEN** o usuário navega por `Tab` até a ação de ícone e pressiona `Enter` ou `Space`
+- **THEN** a ação é disparada como no clique e o foco permanece visível no controle
+
+#### Scenario: Nome acessível
+
+- **WHEN** a ação de ícone recebe foco
+- **THEN** a tecnologia assistiva anuncia um nome que descreve a ação, não apenas “ícone” ou “botão”
+
+#### Scenario: Ação desabilitada
+
+- **WHEN** a ação de ícone está desabilitada
+- **THEN** ela é anunciada como desabilitada e não dispara o evento ao clique ou teclado

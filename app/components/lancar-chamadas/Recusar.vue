@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { XCircle } from '@lucide/vue'
 import { validarParecer } from '#shared/esteira-revisao'
 import {
@@ -23,6 +23,7 @@ const emit = defineEmits<{
 
 const parecer = ref('')
 const tentou = ref(false)
+const parecerRef = ref<{ focar: () => void } | null>(null)
 
 const motivo = computed(() =>
   props.chamada ? motivoBloqueioRecusa(props.chamada) : 'Chamada não encontrada.'
@@ -50,7 +51,10 @@ const cancelar = () => emit('update:modelValue', false)
 
 const confirmar = () => {
   tentou.value = true
-  if (!podeConfirmar.value) return
+  if (!podeConfirmar.value) {
+    if (parecer.value.trim() === '') nextTick(() => parecerRef.value?.focar())
+    return
+  }
   emit('confirmar', { parecer: parecer.value.trim(), criterios: false })
 }
 </script>
@@ -73,8 +77,9 @@ const confirmar = () => {
       <p class="text-sm font-medium text-slate-900">{{ chamada?.titulo }}</p>
 
       <UiTextarea
+        ref="parecerRef"
         v-model="parecer"
-        label="Parecer da recusa"
+        label="Parecer da recusa (obrigatório)"
         placeholder="Descreva o motivo da recusa e o que precisa ser corrigido..."
         :rows="4"
         :error="erroParecer ?? ''"
@@ -87,7 +92,12 @@ const confirmar = () => {
 
     <template #footer>
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="danger" :disabled="!podeConfirmar" @click="confirmar">
+      <UiButton
+        variant="danger"
+        :disabled="motivo !== null"
+        :title="motivo ?? undefined"
+        @click="confirmar"
+      >
         <template #leftIcon><XCircle class="h-4 w-4" /></template>
         Recusar
       </UiButton>

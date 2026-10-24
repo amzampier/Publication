@@ -414,6 +414,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
             placeholder="Mínimo de 8 caracteres"
             :right-icon="mostrarSenha ? EyeOff : Eye"
             :error="erros.senha"
+            :right-icon-label="'Mostrar ou ocultar senha'"
             @right-icon-click="mostrarSenha = !mostrarSenha"
           />
           <UiInput
@@ -424,6 +425,7 @@ const segmentosStatus: { value: StatusUsuario; label: StatusUsuario; tone: 'emer
             placeholder="Repita a senha"
             :right-icon="mostrarConfirmacao ? EyeOff : Eye"
             :error="erros.confirmarSenha"
+            :right-icon-label="'Mostrar ou ocultar senha'"
             @right-icon-click="mostrarConfirmacao = !mostrarConfirmacao"
           />
         </div>

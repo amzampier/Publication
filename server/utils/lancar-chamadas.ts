@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { unlink } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { createError } from 'h3'
-import { getTransaction, query } from './db'
-import { invalidarCache } from './cache'
+import { getTransaction, inserirEmLotes, query } from './db'
+import { cacheado, invalidarCache } from './cache'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
 import {
@@ -374,7 +374,7 @@ export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
   )
 }
 
-export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
+async function consultarOpcoesChamadas(): Promise<CatalogosChamada> {
   const [releases, projetos, manuais, softwares, parceiros] = await Promise.all([
     query<Row[]>(
       `SELECT id, codigo, nome, data_publicacao, status
@@ -435,6 +435,10 @@ export async function listarOpcoesChamadas(): Promise<CatalogosChamada> {
       opcao(texto(row.id), texto(row.nome_fantasia), texto(row.codigo))
     )
   }
+}
+
+export function listarOpcoesChamadas(): Promise<CatalogosChamada> {
+  return cacheado('chamadas-opcoes', 30_000, consultarOpcoesChamadas)
 }
 
 function montarEntrada(dados: Record<string, unknown>): EntradaChamada {

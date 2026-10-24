@@ -625,7 +625,7 @@ watch(
         title="Conteúdo e mídias"
         :icon="FileText"
       >
-        <UiRichText
+        <UiRichTextLazy
           v-model="rascunho.descricaoHtml"
           data-campo="descricaoCompleta"
           label="Descrição do Resumo"
@@ -635,7 +635,7 @@ watch(
           @update:text="rascunho.descricaoCompleta = $event"
         />
 
-        <UiRichText
+        <UiRichTextLazy
           v-model="rascunho.solucaoHtml"
           data-campo="solucao"
           label="Solução"

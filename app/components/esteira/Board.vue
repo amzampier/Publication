@@ -135,7 +135,7 @@ const recusadas = computed(() => linhas.value.filter((linha) => linha.status ===
           >
             <button
               type="button"
-              class="inline-flex items-center justify-center rounded p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               aria-label="Limpar filtros e busca"
               @click="limparFiltros(); busca = ''"
             >
@@ -149,7 +149,7 @@ const recusadas = computed(() => linhas.value.filter((linha) => linha.status ===
         <div class="grid gap-3 lg:grid-cols-[1fr_20rem] lg:items-center">
           <div class="flex flex-col gap-2">
             <div class="flex items-start gap-2">
-              <Layers class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+              <Layers class="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
               <div>
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Demandas por origem
@@ -210,7 +210,7 @@ const recusadas = computed(() => linhas.value.filter((linha) => linha.status ===
           />
           <p
             v-if="!coluna.itens.length"
-            class="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-xs text-slate-400"
+            class="rounded-lg border border-dashed border-slate-200 bg-white px-3 py-6 text-center text-xs text-slate-500"
           >
             Nenhuma chamada nesta etapa.
           </p>

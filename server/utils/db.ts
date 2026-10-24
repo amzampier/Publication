@@ -76,3 +76,27 @@ export async function getTransaction(): Promise<Transaction> {
 
   return { query: txQuery, commit, rollback, release: () => conn.release() }
 }
+
+/**
+ * Insere linhas em blocos multi-row. `sqlBase` deve terminar em `VALUES`
+ * (ex.: "INSERT INTO tabela (a, b) VALUES"); `colunas` é a quantidade de
+ * placeholders por linha. Mantém a ordem e reduz round-trips sem abrir uma
+ * transação por linha.
+ */
+export async function inserirEmLotes(
+  executor: Pick<Transaction, 'query'>,
+  sqlBase: string,
+  colunas: number,
+  linhas: unknown[][],
+  lote = 150
+): Promise<void> {
+  if (!linhas.length) return
+  const modelo = `(${Array(colunas).fill('?').join(', ')})`
+  for (let i = 0; i < linhas.length; i += lote) {
+    const bloco = linhas.slice(i, i + lote)
+    await executor.query(
+      `${sqlBase} ${bloco.map(() => modelo).join(', ')}`,
+      bloco.flat()
+    )
+  }
+}

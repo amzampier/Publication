@@ -5,7 +5,7 @@
 // importação transacional. As rotas aplicam RBAC e auditoria.
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
-import { query, getTransaction } from './db'
+import { query, getTransaction, inserirEmLotes } from './db'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import type { AtorTransicao } from './historico-esteira'
 import {
@@ -517,16 +517,14 @@ export async function importarEscopos(
       maiorPorAno.set(ano, Math.max(maiorPorAno.get(ano) ?? 0, Number(match[2])))
     }
 
-    for (const preparado of preparados) {
+    const linhas = preparados.map((preparado) => {
       const sequencia = (maiorPorAno.get(preparado.ano) ?? 0) + 1
       maiorPorAno.set(preparado.ano, sequencia)
       const id = randomUUID()
-      await tx.query(
-        `INSERT INTO projetos_escopo
-          (id, codigo, nome, versao, ano, data_inicio, data_final, data_previsao,
-           data_publicacao, status, softwares_contemplados, descricao_geral)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+      return {
+        id,
+        preparado,
+        valores: [
           id,
           gerarCodigo(preparado.ano, sequencia),
           preparado.nome,
@@ -540,7 +538,19 @@ export async function importarEscopos(
           JSON.stringify([]),
           preparado.descricaoGeral
         ]
-      )
+      }
+    })
+    await inserirEmLotes(
+      tx,
+      `INSERT INTO projetos_escopo
+        (id, codigo, nome, versao, ano, data_inicio, data_final, data_previsao,
+         data_publicacao, status, softwares_contemplados, descricao_geral)
+       VALUES`,
+      12,
+      linhas.map((linha) => linha.valores),
+      150
+    )
+    for (const { id, preparado } of linhas) {
       if (preparado.status === 'Publicado') {
         await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
       }

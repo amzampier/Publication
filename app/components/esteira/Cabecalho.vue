@@ -4,7 +4,7 @@ import { Workflow } from '@lucide/vue'
 
 <template>
   <header class="flex min-w-0 items-start gap-3">
-    <div class="shrink-0 rounded-lg bg-brand-primary p-2 text-[#8b5cf6]">
+    <div class="shrink-0 rounded-lg bg-brand-primary p-2 text-brand-accent">
       <Workflow class="h-5 w-5" aria-hidden="true" />
     </div>
     <div class="min-w-0">

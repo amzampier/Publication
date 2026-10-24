@@ -100,7 +100,7 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 - Busca gated por `buscar`, filtros por `filtrar`; badge soma busca + filtros.
 - **Importar** (`importar`): ícone somente, imediatamente à esquerda do botão "Filtros".
 - Ações: Detalhes; Editar (`alterar`); Excluir (`excluir`, desabilitado com motivo); Aprovar
-  (`publicar`); Desaprovar (`alterar`, apenas em `Aprovado`); Recusar (`alterar`, apenas em
+  (`publicar`); Desaprovar (`alterar`, em `Aprovado` ou `Recusado`); Recusar (`alterar`, apenas em
   `Revisar`).
 - Status em `UiBadge`: `Revisar` → `pending`, `Aprovado` → `reconciled`, `Recusado` → `blocked`,
   `Publicar` → `done`, `Publicado` → `publicado`.
@@ -390,3 +390,6 @@ como legado e não é usada pela UI.
 - **Galeria rica** (edição de legenda/capa e miniaturas) e a UI da Área Pública.
 - Limpeza de uploads órfãos de chamadas canceladas/falhas após o upload.
 - Evolução para filtros/paginação server-side se o volume crescer.
+
+
+> **RL06-3:** importações gravam em blocos de 100–200 linhas dentro de uma única transação; as mídias usam upsert multi-row. Falha em qualquer bloco desfaz o lote inteiro.

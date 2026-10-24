@@ -282,3 +282,51 @@ O provisionamento do banco SHALL NOT inserir qualquer registro de demonstração
 #### Scenario: Operações reais continuam registrando
 - **WHEN** uma rota administrativa de escrita ou um evento de autenticação é concluído com sucesso após a limpeza
 - **THEN** a trilha recebe o registro correspondente, agora o único conteúdo da tabela
+
+### Requirement: O identificador da entidade na trilha é o UUID canônico
+
+Ao registrar uma operação de escrita, o sistema SHALL gravar em `auditoria.entidade_id` o **UUID**
+do registro afetado, e não o código de negócio (ex.: `RW-43/2026`, `MAN-10/2026`, `SFT-045`). O
+código de negócio SHALL permanecer legível em `detalhes`. Quando a operação não tiver uma entidade
+única (ex.: importação em lote), `entidade_id` PODE ser vazio, mas o detalhe SHALL identificar o
+lote/recurso. A API de auditoria continua expondo `entidade_id`.
+
+#### Scenario: Inclusão de usuário grava o UUID
+- **WHEN** `POST /api/usuarios` conclui com sucesso
+- **THEN** o registro de auditoria contém o UUID do usuário em `entidade_id` e o nome/e-mail em `detalhes`
+
+#### Scenario: Código de negócio não substitui o UUID
+- **WHEN** uma Release Week ou Software é criado/alterado/excluído
+- **THEN** `entidade_id` recebe o UUID do registro e o código (`RW-…`/`SFT-…`) aparece apenas em `detalhes`
+
+#### Scenario: Operação sem entidade única
+- **WHEN** uma importação em lote é registrada
+- **THEN** `entidade_id` fica vazio e o detalhe informa a contagem e o recurso importado
+
+### Requirement: A trilha de auditoria e o histórico da esteira são imutáveis no banco
+
+O banco SHALL impedir `UPDATE` e `DELETE` comuns nas tabelas `auditoria` e
+`historico_esteira_revisao` para o usuário da aplicação, por meio de privilégios mínimos e/ou
+gatilhos de rejeição. A inserção SHALL continuar permitida e o expurgo controlado da auditoria SHALL
+continuar funcionando por um caminho privilegiado e restrito. Nenhuma leitura ou escrita normal da
+aplicação SHALL depender de alterar registros históricos.
+
+#### Scenario: Alteração é rejeitada
+
+- **WHEN** uma sessão com DML comum tenta atualizar um registro de auditoria ou histórico
+- **THEN** o banco rejeita a operação e o registro permanece inalterado
+
+#### Scenario: Exclusão comum é rejeitada
+
+- **WHEN** uma sessão com DML comum tenta excluir um registro de auditoria ou histórico
+- **THEN** o banco rejeita a operação e o registro permanece
+
+#### Scenario: Expurgo controlado continua
+
+- **WHEN** a rotina de expurgo autorizada remove registros de auditoria fora da janela
+- **THEN** a remoção é concluída sem violar a imutabilidade dos demais registros
+
+#### Scenario: Inserção normal continua
+
+- **WHEN** uma operação administrativa registra auditoria ou uma transição grava histórico
+- **THEN** a inserção é concluída normalmente

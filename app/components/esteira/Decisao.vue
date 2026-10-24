@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { ArchiveRestore, ShieldCheck, Undo2, UploadCloud, XCircle } from '@lucide/vue'
 import {
   validarParecer,
@@ -28,6 +28,7 @@ const emit = defineEmits<{
 const parecer = ref('')
 const criterios = ref(true)
 const tentou = ref(false)
+const parecerRef = ref<{ focar: () => void } | null>(null)
 
 const configuracao = computed(() => {
   if (props.acao === 'aprovar') {
@@ -99,7 +100,10 @@ const cancelar = () => emit('update:modelValue', false)
 
 const confirmar = () => {
   tentou.value = true
-  if (!podeConfirmar.value) return
+  if (!podeConfirmar.value) {
+    if (props.acao === 'recusar' && parecer.value.trim() === '') nextTick(() => parecerRef.value?.focar())
+    return
+  }
   emit('confirmar', {
     acao: props.acao,
     parecer: parecer.value.trim(),
@@ -134,8 +138,9 @@ const confirmar = () => {
       />
 
       <UiTextarea
+        ref="parecerRef"
         v-model="parecer"
-        :label="acao === 'recusar' ? 'Parecer da recusa' : 'Parecer (opcional)'"
+        :label="acao === 'recusar' ? 'Parecer da recusa (obrigatório)' : 'Parecer (opcional)'"
         :placeholder="
           acao === 'recusar'
             ? 'Descreva o motivo da recusa e o que precisa ser corrigido...'
@@ -150,7 +155,7 @@ const confirmar = () => {
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
       <UiButton
         :variant="configuracao.variante"
-        :disabled="!podeConfirmar"
+        :disabled="acao === 'aprovar' && !criterios"
         @click="confirmar"
       >
         <template #leftIcon>

@@ -8,14 +8,19 @@ interface EntradaCache<T> {
 }
 
 const store = new Map<string, EntradaCache<unknown>>()
+const pendentes = new Map<string, Promise<unknown>>()
 
 /** Invalida chaves específicas (ou todo o cache) após escritas (RL05-M-07). */
 export function invalidarCache(...chaves: string[]): void {
   if (chaves.length === 0) {
     store.clear()
+    pendentes.clear()
     return
   }
-  for (const chave of chaves) store.delete(chave)
+  for (const chave of chaves) {
+    store.delete(chave)
+    pendentes.delete(chave)
+  }
 }
 
 /**
@@ -26,7 +31,16 @@ export async function cacheado<T>(chave: string, ttlMs: number, produzir: () => 
   const agora = Date.now()
   const atual = store.get(chave) as EntradaCache<T> | undefined
   if (atual && atual.expira > agora) return atual.valor
-  const valor = await produzir()
-  store.set(chave, { valor, expira: agora + ttlMs })
-  return valor
+  const emVoo = pendentes.get(chave)
+  if (emVoo) return emVoo as Promise<T>
+  const promessa = produzir()
+    .then((valor) => {
+      store.set(chave, { valor, expira: Date.now() + ttlMs })
+      return valor
+    })
+    .finally(() => {
+      pendentes.delete(chave)
+    })
+  pendentes.set(chave, promessa)
+  return promessa
 }

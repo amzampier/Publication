@@ -103,6 +103,7 @@ const limparErro = (campo: string) => {
         placeholder="Digite sua senha atual"
         :right-icon="mostrarAtual ? EyeOff : Eye"
         :error="erros.senhaAtual"
+        :right-icon-label="'Mostrar ou ocultar senha'"
         @right-icon-click="mostrarAtual = !mostrarAtual"
         @update:model-value="limparErro('senhaAtual')"
       />
@@ -116,6 +117,7 @@ const limparErro = (campo: string) => {
         placeholder="Mínimo de 8 caracteres"
         :right-icon="mostrarNova ? EyeOff : Eye"
         :error="erros.novaSenha"
+        :right-icon-label="'Mostrar ou ocultar senha'"
         @right-icon-click="mostrarNova = !mostrarNova"
         @update:model-value="limparErro('novaSenha')"
       />
@@ -127,6 +129,7 @@ const limparErro = (campo: string) => {
         placeholder="Repita a nova senha"
         :right-icon="mostrarConfirmacao ? EyeOff : Eye"
         :error="erros.confirmacao"
+        :right-icon-label="'Mostrar ou ocultar senha'"
         @right-icon-click="mostrarConfirmacao = !mostrarConfirmacao"
         @update:model-value="limparErro('confirmacao')"
       />

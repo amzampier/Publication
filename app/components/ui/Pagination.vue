@@ -17,7 +17,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   pageSizeOptions: () => [5, 10, 20, 50],
-  rotulo: 'entradas'
+  rotulo: 'registros'
 })
 
 const emit = defineEmits<{
@@ -61,7 +61,7 @@ watch(
     <div class="text-[11px] text-slate-600">
       Mostrando <strong class="text-slate-900">{{ rangeStart }}</strong> a
       <strong class="text-slate-900">{{ rangeEnd }}</strong> de
-      <strong class="text-slate-900">{{ total }}</strong> {{ rotulo }} exibidas
+      <strong class="text-slate-900">{{ total }}</strong> {{ rotulo }}
     </div>
 
     <div class="flex max-w-full flex-wrap items-center gap-2.5 text-[11px]">

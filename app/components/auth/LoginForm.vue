@@ -136,6 +136,7 @@ watch(senha, () => {
       :right-icon="senha ? (showPassword ? EyeOff : Eye) : null"
       :error="erros.senha"
       required
+      :right-icon-label="'Mostrar ou ocultar senha'"
       @right-icon-click="showPassword = !showPassword"
     />
 

@@ -101,12 +101,17 @@ const marcarAtalho = (valor: number, marcado: boolean) => {
       <div class="min-w-0">
         <p class="text-xs font-bold text-blue-900">Rotina de Expurgo Automático</p>
         <p class="text-[11px] text-blue-800 mt-1">
-          Uma vez ao dia o sistema executa a rotina abaixo, marcando para expurgo os registros fora
-          da janela:
+          Uma vez ao dia o sistema remove os registros de auditoria mais antigos que a janela
+          configurada. A rotina mantém a trilha apenas com o período vigente.
         </p>
-        <code
-          class="mt-2 block overflow-x-auto rounded border border-blue-100 bg-white px-2 py-1 font-mono text-[10px] leading-relaxed text-slate-800 tabular-nums"
-        >{{ query }}</code>
+        <details class="mt-2 rounded border border-blue-100 bg-white px-2 py-1">
+          <summary class="cursor-pointer text-[11px] font-medium text-blue-900">
+            Ver detalhe técnico da rotina
+          </summary>
+          <code
+            class="mt-2 block overflow-x-auto font-mono text-[10px] leading-relaxed text-slate-800 tabular-nums"
+          >{{ query }}</code>
+        </details>
       </div>
     </div>
   </div>

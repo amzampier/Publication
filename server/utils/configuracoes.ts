@@ -1,6 +1,7 @@
 // server/utils/configuracoes.ts — acesso à linha única de configurações globais
 // Tabela: configuracoes_globais (id = 'config_default', seedada em 02_seed.sql).
 import { query, getTransaction } from './db'
+import { cacheado, invalidarCache } from './cache'
 
 export interface ConfiguracoesGlobais {
   id: string
@@ -84,6 +85,7 @@ const normalizarRow = (row: RowConfig): Omit<ConfiguracoesGlobais, 'rate_limit'>
 
 /** Lê a linha config_default completa (fallback = defaults do seed). */
 export async function getConfiguracoes(): Promise<ConfiguracoesGlobais> {
+  return cacheado('config-globais', 15_000, async () => {
   const [rows, rateRows] = await Promise.all([
     query<RowConfig[]>("SELECT * FROM configuracoes_globais WHERE id = 'config_default'"),
     query<Array<{ ativo: number; limite_requisicoes_minuto: number }>>(
@@ -102,6 +104,7 @@ export async function getConfiguracoes(): Promise<ConfiguracoesGlobais> {
       }
     : { ...RATE_PADRAO }
   return { ...base, rate_limit: rate }
+  })
 }
 
 /**
@@ -150,6 +153,7 @@ export async function atualizarConfiguracoes(patch: PatchConfiguracoes): Promise
       )
     }
     await tx.commit()
+    invalidarCache('config-globais', 'config-shell')
   } catch (erro) {
     await tx.rollback().catch(() => {})
     throw erro

@@ -36,6 +36,8 @@ const emit = defineEmits<{
 }>()
 
 const isFocused = ref(false)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+defineExpose({ focar: () => textareaRef.value?.focus() })
 const textareaId = useId()
 // Id estável da mensagem de erro — referenciada por aria-describedby no textarea
 // e renderizada como região viva (role="alert") abaixo do campo.
@@ -84,6 +86,7 @@ const handleInput = (e: Event) => {
 
       <!-- Textarea (sem outline/box-shadow do navegador) -->
       <textarea
+        ref="textareaRef"
         :id="textareaId"
         :value="modelValue"
         :placeholder="placeholder"

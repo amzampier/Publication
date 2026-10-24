@@ -11,23 +11,31 @@ recuperação de senha por e-mail (Resend) e identidade do usuário logado — p
 ## Requirements
 
 ### Requirement: O sistema serve o login em `/admin/login` sem o shell da Área Administrativa
+
 O sistema SHALL servir a tela de login em `/admin/login` (`app/pages/admin/login.vue`) renderizada
 **sem** o shell da Área Administrativa (sem header nem sidebar), como uma página de largura
 integral com o `AuthBackground` (canvas animado) ao fundo e, centralizado sobre ele, um card
 branco com cantos arredondados contendo o `AuthLoginHeader` (identidade — a logomarca de
 Configurações > Logomarcas ou, sem personalização, a marca padrão do sistema — e o subtítulo
-"Área Administrativa") e o `AuthLoginForm`. A rota SHALL ser liberada pela guarda global
-mesmo sem sessão, e as rotas de autenticação — `/admin/login` e `/admin/esqueci-senha` —
-SHALL ser as únicas rotas sob `/admin/**` sem o shell.
+“Área Administrativa”) e o `AuthLoginForm`. A rota SHALL ser liberada pela guarda global
+mesmo sem sessão, e as rotas de autenticação — `/admin/login`, `/admin/esqueci-senha` e
+`/admin/primeiro-acesso` — SHALL ser as únicas rotas sob `/admin/**` sem o shell.
 
 #### Scenario: Tela renderiza sem shell e com composição canônica
+
 - **WHEN** o visitante abre `/admin/login` sem sessão
 - **THEN** a página não exibe header nem sidebar da Área Administrativa, e o card centralizado
   exibe o cabeçalho (identidade e subtítulo) acima do formulário de login, sobre o canvas animado
 
 #### Scenario: Logada, a rota de login redireciona para o painel
+
 - **WHEN** um usuário com sessão ativa abre `/admin/login`
 - **THEN** o navegador o redireciona imediatamente para `/admin`
+
+#### Scenario: Primeiro acesso também fica fora do shell
+
+- **WHEN** o usuário com senha provisória abre `/admin/primeiro-acesso`
+- **THEN** a página renderiza com o layout de autenticação, sem header nem sidebar administrativa
 
 ### Requirement: O formulário de login usa os componentes do design system e valida os campos no cliente
 O formulário SHALL conter um `UiInput` de e-mail (`autocomplete="username"`, ícone `Mail` à
@@ -140,21 +148,26 @@ e convite) um limite de requisições por IP, derivado da configuração global 
 requisições do sistema, respondendo `429` com mensagem genérica quando excedido e sem executar
 a operação. O IP considerado SHALL ser o da conexão do cliente, e o cabeçalho `X-Forwarded-For`
 SHALL ser levado em conta **somente** quando a implantação declarar uma lista de proxies
-confiáveis (por configuração), de modo que um cliente não consiga contornar o limite forjando
+confiáveis (por configuração) **e o IP da conexão pertencer a um dos IPs/CIDRs dessa lista**;
+fora dela, o `X-Forwarded-For` SHALL ser ignorado. A lista SHALL ser validada por IP/CIDR, não
+apenas por estar preenchida, de modo que um cliente não consiga contornar o limite forjando
 esse cabeçalho.
 
 #### Scenario: Exceder o limite responde 429
 - **WHEN** um mesmo IP dispara mais requisições de login do que o limite permitido por minuto
-- **THEN** as requisições excedentes respondem `429` e o cliente exibe toast de erro genérico
-  (nenhuma validação de credencial é executada nas excedentes)
+- **THEN** as requisições excedentes respondem `429` e o cliente exibe toast de erro genérico (nenhuma validação de credencial é executada nas excedentes)
 
 #### Scenario: Uso normal não é afetado pelo limite
 - **WHEN** o usuário opera login/recuperação dentro do volume normal do limite configurado
 - **THEN** nenhuma requisição é rejeitada por 429 e os fluxos funcionam como esperado
 
 #### Scenario: Cabeçalho de encaminhamento não contorna o limite
-- **WHEN** um cliente varia o `X-Forwarded-For` a cada requisição sem que existam proxies confiáveis configurados
+- **WHEN** um cliente varia o `X-Forwarded-For` a cada requisição sem que a conexão venha de um proxy da lista confiável
 - **THEN** o limite continua contando pelo IP real da conexão e as requisições excedentes seguem respondendo `429`
+
+#### Scenario: Proxy confiável encaminha o IP real
+- **WHEN** a conexão vem de um IP/CIDR declarado em `TRUSTED_PROXIES` e o cabeçalho informa o cliente
+- **THEN** o limite e a auditoria usam o IP encaminhado, não o IP do proxy
 
 ### Requirement: A sessão é mantida por cookies HttpOnly com refresh rotativo e encerrada pelo menu do Account
 O sistema SHALL manter a sessão em cookie HttpOnly de acesso (JWT de curta duração, ~15
@@ -394,3 +407,20 @@ O evento registrado na trilha para a solicitação de recuperação de senha SHA
 #### Scenario: Detalhe reflete a falha de envio
 - **WHEN** a recuperação é solicitada e o provedor de e-mail falha
 - **THEN** o evento da trilha indica que o envio falhou (sem afirmar que a senha provisória foi enviada)
+
+### Requirement: A recuperação de senha rotula o envio da senha provisória
+
+A tela `/admin/esqueci-senha` SHALL rotular a ação principal como envio de **senha provisória**
+(ex.: “Enviar senha provisória”), e não como envio de link. A confirmação de sucesso SHALL informar
+que uma senha provisória foi enviada e que a troca será exigida no primeiro acesso, sem prometer um
+link de redefinição.
+
+#### Scenario: Ação principal com rótulo correto
+
+- **WHEN** a tela de recuperação é exibida
+- **THEN** o botão principal informa que envia uma senha provisória
+
+#### Scenario: Confirmação compatível com o mecanismo
+
+- **WHEN** o envio é concluído
+- **THEN** a mensagem confirma o envio da senha provisória e a troca obrigatória, sem mencionar link

@@ -112,7 +112,7 @@ watch(email, () => {
       <template #leftIcon>
         <Send class="h-3.5 w-3.5" />
       </template>
-      Enviar link
+      Enviar senha provisória
     </UiButton>
 
     <div>
@@ -148,7 +148,7 @@ watch(email, () => {
     </div>
 
     <p class="text-[11px] text-slate-500">
-      Use a senha recebida para entrar e troque-a em Meu Perfil após o acesso.
+      Use a senha recebida para entrar; a troca será exigida no primeiro acesso.
     </p>
 
     <UiButton

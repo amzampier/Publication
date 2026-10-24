@@ -677,6 +677,7 @@ onUnmounted(() => {
             placeholder="Filtrar dados da tabela..."
             :left-icon="Search"
             :right-icon="searchQuery ? X : undefined"
+            :right-icon-label="'Limpar busca'"
             @right-icon-click="searchQuery = ''"
           />
         </div>
@@ -728,7 +729,7 @@ onUnmounted(() => {
         <span>{{ getColumnHeader(colId) }}</span>
         <button
           type="button"
-          class="text-slate-400 hover:text-white ml-0.5 p-0.5 transition-colors cursor-pointer"
+          class="text-slate-500 hover:text-white ml-0.5 p-0.5 transition-colors cursor-pointer"
           title="Remover agrupamento"
           @click="removeGroupColumn(colId)"
         >
@@ -737,14 +738,14 @@ onUnmounted(() => {
       </div>
 
       <!-- Placeholder quando vazio -->
-      <span v-if="groupedColumns.length === 0" class="text-[11px] text-slate-400 italic">
+      <span v-if="groupedColumns.length === 0" class="text-[11px] text-slate-500 italic">
         Nenhuma coluna agrupada
       </span>
 
       <!-- Dica: arraste qualquer cabeçalho de coluna para cá -->
       <span
         v-if="groupedColumns.length < 3"
-        class="ml-auto text-[11px] text-slate-400 italic hidden sm:inline"
+        class="ml-auto text-[11px] text-slate-500 italic hidden sm:inline"
       >
         Arraste um cabeçalho de coluna para agrupar
       </span>
@@ -878,7 +879,7 @@ onUnmounted(() => {
                       </span>
                     </div>
 
-                    <span class="text-[10px] text-slate-400 font-normal hidden sm:inline pr-2">
+                    <span class="text-[10px] text-slate-500 font-normal hidden sm:inline pr-2">
                       Clique para {{ isNodeExpanded(row.node!.id, 1) ? 'recolher' : 'expandir' }}
                     </span>
                   </div>
@@ -915,7 +916,7 @@ onUnmounted(() => {
                       </span>
                     </div>
 
-                    <span class="text-[10px] text-slate-400 font-normal hidden sm:inline pr-2">
+                    <span class="text-[10px] text-slate-500 font-normal hidden sm:inline pr-2">
                       Clique para {{ isNodeExpanded(row.node!.id, 2) ? 'recolher' : 'expandir' }}
                     </span>
                   </div>
@@ -1184,7 +1185,7 @@ onUnmounted(() => {
         :style="{ top: `${contextMenu.y}px`, left: `${contextMenu.x}px` }"
         class="fixed z-50 bg-white border border-slate-300 rounded-lg shadow-2xl py-1 w-48 text-xs font-medium text-slate-800 animate-in fade-in zoom-in-95 duration-100"
       >
-        <div class="px-3 py-1.5 border-b border-slate-100 font-bold text-[10px] text-slate-400 uppercase tracking-wider">
+        <div class="px-3 py-1.5 border-b border-slate-100 font-bold text-[10px] text-slate-500 uppercase tracking-wider">
           Totalizador (DevExpress cxGrid)
         </div>
         <button
@@ -1193,7 +1194,7 @@ onUnmounted(() => {
           @click="selectAggregate('SUM')"
         >
           <span>Soma (SUM)</span>
-          <span class="text-[10px] text-slate-400 font-mono">∑</span>
+          <span class="text-[10px] text-slate-500 font-mono">∑</span>
         </button>
         <button
           type="button"
@@ -1201,7 +1202,7 @@ onUnmounted(() => {
           @click="selectAggregate('AVG')"
         >
           <span>Média (AVG)</span>
-          <span class="text-[10px] text-slate-400 font-mono">x̄</span>
+          <span class="text-[10px] text-slate-500 font-mono">x̄</span>
         </button>
         <button
           type="button"
@@ -1209,7 +1210,7 @@ onUnmounted(() => {
           @click="selectAggregate('COUNT')"
         >
           <span>Contagem (COUNT)</span>
-          <span class="text-[10px] text-slate-400 font-mono">N</span>
+          <span class="text-[10px] text-slate-500 font-mono">N</span>
         </button>
         <button
           type="button"
@@ -1217,7 +1218,7 @@ onUnmounted(() => {
           @click="selectAggregate('MIN')"
         >
           <span>Mínimo (MIN)</span>
-          <span class="text-[10px] text-slate-400 font-mono">↓</span>
+          <span class="text-[10px] text-slate-500 font-mono">↓</span>
         </button>
         <button
           type="button"
@@ -1225,7 +1226,7 @@ onUnmounted(() => {
           @click="selectAggregate('MAX')"
         >
           <span>Máximo (MAX)</span>
-          <span class="text-[10px] text-slate-400 font-mono">↑</span>
+          <span class="text-[10px] text-slate-500 font-mono">↑</span>
         </button>
         <div class="border-t border-slate-100 my-1"></div>
         <button
@@ -1234,7 +1235,7 @@ onUnmounted(() => {
           @click="selectAggregate('NONE')"
         >
           <span>Nenhum (Limpar)</span>
-          <span class="text-[10px] text-slate-400">✕</span>
+          <span class="text-[10px] text-slate-500">✕</span>
         </button>
       </div>
     </Teleport>

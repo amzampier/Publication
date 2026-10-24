@@ -75,34 +75,34 @@ export async function sincronizarMidias(
     return
   }
 
-  const placeholders = normalizadas.map(() => '?').join(', ')
+  const placeholdersDelete = normalizadas.map(() => '?').join(', ')
   await executor.query(
     `DELETE FROM anexos_midias
-      WHERE entrega_item_id = ? AND url_arquivo NOT IN (${placeholders})`,
+      WHERE entrega_item_id = ? AND url_arquivo NOT IN (${placeholdersDelete})`,
     [itemId, ...normalizadas]
   )
 
-  for (const [indice, url] of normalizadas.entries()) {
-    await executor.query(
-      `INSERT INTO anexos_midias
-        (entrega_item_id, url_arquivo, nome_arquivo, tipo_mime,
-         ordem_exibicao, destaque_capa)
-       VALUES (?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         nome_arquivo = VALUES(nome_arquivo),
-         tipo_mime = VALUES(tipo_mime),
-         ordem_exibicao = VALUES(ordem_exibicao),
-         destaque_capa = VALUES(destaque_capa)`,
-      [
-        itemId,
-        url,
-        nomeArquivoDaUrl(url),
-        mimeDaUrl(url),
-        indice,
-        indice === 0 ? 1 : 0
-      ]
-    )
-  }
+  const valores = normalizadas.flatMap((url, indice) => [
+    itemId,
+    url,
+    nomeArquivoDaUrl(url),
+    mimeDaUrl(url),
+    indice,
+    indice === 0 ? 1 : 0
+  ])
+  const placeholders = normalizadas.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')
+  await executor.query(
+    `INSERT INTO anexos_midias
+      (entrega_item_id, url_arquivo, nome_arquivo, tipo_mime,
+       ordem_exibicao, destaque_capa)
+     VALUES ${placeholders}
+     ON DUPLICATE KEY UPDATE
+       nome_arquivo = VALUES(nome_arquivo),
+       tipo_mime = VALUES(tipo_mime),
+       ordem_exibicao = VALUES(ordem_exibicao),
+       destaque_capa = VALUES(destaque_capa)`,
+    valores
+  )
 }
 
 /** Outra chamada ainda referencia a URL? (checagem indexada por url_arquivo). */

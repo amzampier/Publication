@@ -160,15 +160,27 @@ O sistema SHALL exibir no painel "Política de Retenção & Expurgo de Logs de A
 - **THEN** ele permanece selecionado (nenhum atalho fica desmarcado)
 
 ### Requirement: Os textos derivados do valor de retenção atualizam-se com ele
-O sistema SHALL derivar do valor vigente de retenção o subtítulo "Registros com mais de N dias são marcados para expurgo" e a query de expurgo exibida no banner informativo, sem valores fixos.
+
+O sistema SHALL derivar do valor vigente de retenção o subtítulo “Registros com mais de N dias são
+removidos pela rotina de expurgo”, um resumo em linguagem natural da rotina e a query técnica
+correspondente. O resumo SHALL explicar que os registros são removidos (não apenas marcados) e a
+query SHALL ficar disponível em um detalhe técnico expansível/recolhido, sem expor SQL bruto como
+texto principal do banner.
 
 #### Scenario: Subtítulo dinâmico
+
 - **WHEN** o valor vigente é 365
-- **THEN** o subtítulo lê "Registros com mais de 365 dias são marcados para expurgo"
+- **THEN** o subtítulo lê “Registros com mais de 365 dias são removidos pela rotina de expurgo”
+
+#### Scenario: Resumo natural
+
+- **WHEN** o painel de retenção é exibido
+- **THEN** o banner apresenta a rotina em linguagem natural, sem exigir leitura de SQL para entendê-la
 
 #### Scenario: Query dinâmica
-- **WHEN** o valor vigente é 180
-- **THEN** o banner "Rotina de Expurgo Automático" exibe `INTERVAL 180 DAY` na query
+
+- **WHEN** o valor vigente é 180 e o detalhe técnico é expandido
+- **THEN** a query exibida contém `INTERVAL 180 DAY` e permanece recolhida por padrão
 
 ### Requirement: Salvar persiste as configurações via API
 O sistema SHALL manter o botão "Salvar Alterações Globais" no cabeçalho da página (alinhado à direita, sem container), iniciando **desabilitado** e só habilitando quando qualquer painel altera seu estado; ao acioná-lo, SHALL enviar as configurações da tela (retenção, logomarcas, estado expandida/recolhida da sidebar, sessões do menu e o bloco de rate limit — limite de requisições por minuto e status ativo) a um `PUT /api/configuracoes`, exibir toast de sucesso e voltar a desabilitá-lo quando a gravação for confirmada; em caso de falha da API, SHALL exibir toast de erro e manter o botão habilitado, sem perder as alterações feitas. Após a confirmação da gravação, o estado/cache de configurações compartilhado com o shell SHALL ser **atualizado** para refletir os valores salvos, de modo que navegar para outra rota e reentrar na tela (sem recarregar o navegador) exiba os valores vigentes, não os anteriores. A ação **Liberar** do painel de segurança é ação imediata via API própria e NÃO participa deste rascunho nem habilita o botão.

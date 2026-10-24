@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 // Cabeçalho da tela de Manuais Mensais: tile, menu "Relatórios" (PDF/CSV sobre
 // o conjunto vigente) e ação primária "Novo Manual". As exportações validam a
 // guarda `exportar` na API antes de gerar o arquivo.
-import { ref, onMounted, onUnmounted } from 'vue'
-import { BookOpen, Plus, NotebookText, FileDown, FileSpreadsheet, ChevronDown } from '@lucide/vue'
+import { BookOpen, Plus, FileDown, FileSpreadsheet } from '@lucide/vue'
 import { useManuaisModelo } from './useManuaisModelo'
 import { gerarPdfManuais } from './gerarPdfManuais'
 import { useApiFetch } from '../../composables/useApiFetch'
@@ -20,24 +20,7 @@ const { linhas } = useManuaisModelo()
 const { toast } = useToast()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const menuAberto = ref(false)
-const relatoriosRef = ref<HTMLElement | null>(null)
 const exportando = ref(false)
-
-const aoClicarFora = (e: MouseEvent) => {
-  if (relatoriosRef.value && !relatoriosRef.value.contains(e.target as Node)) menuAberto.value = false
-}
-const aoKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape') menuAberto.value = false
-}
-onMounted(() => {
-  document.addEventListener('click', aoClicarFora)
-  window.addEventListener('keydown', aoKeydown)
-})
-onUnmounted(() => {
-  document.removeEventListener('click', aoClicarFora)
-  window.removeEventListener('keydown', aoKeydown)
-})
 
 const semDados = (): boolean => {
   if (linhas.value.length > 0) return false
@@ -59,7 +42,6 @@ const descreverDestaques = (linha: (typeof linhas.value)[number]): string => {
 }
 
 const exportarCsv = async () => {
-  menuAberto.value = false
   if (semDados()) return
   try {
     // Guarda server-side: exige manuais/exportar antes de gerar o arquivo.
@@ -93,7 +75,6 @@ const exportarCsv = async () => {
 }
 
 const relacaoPdf = async () => {
-  menuAberto.value = false
   if (semDados()) return
   exportando.value = true
   try {
@@ -109,6 +90,11 @@ const relacaoPdf = async () => {
   } finally {
     exportando.value = false
   }
+}
+
+const acoesRelatorio: Record<string, () => void> = {
+  pdf: relacaoPdf,
+  csv: exportarCsv
 }
 </script>
 
@@ -127,52 +113,16 @@ const relacaoPdf = async () => {
     </div>
 
     <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <div v-if="can('manuais', 'exportar')" ref="relatoriosRef" class="relative w-full sm:w-auto">
-        <UiButton
-          variant="outline"
-          size="md"
-          class="w-full sm:w-auto"
-          :loading="exportando"
-          aria-haspopup="menu"
-          :aria-expanded="menuAberto"
-          @click="menuAberto = !menuAberto"
-        >
-          <template #leftIcon><NotebookText class="h-4 w-4" /></template>
-          Relatórios
-          <ChevronDown
-            class="h-3.5 w-3.5 transition-transform"
-            :class="menuAberto ? 'rotate-180' : 'rotate-0'"
-            aria-hidden="true"
-          />
-        </UiButton>
-
-        <div
-          v-if="menuAberto"
-          role="menu"
-          aria-label="Opções de relatórios"
-          class="absolute right-0 top-full z-30 mt-1 w-56 rounded-lg border border-slate-200 bg-white py-1 shadow-lg"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-light text-slate-700 transition-colors hover:bg-slate-100"
-            @click="relacaoPdf"
-          >
-            <FileDown class="h-3.5 w-3.5 shrink-0 text-brand-structure" aria-hidden="true" />
-            Listagem em PDF
-          </button>
-          <div class="my-1 h-px bg-slate-200" role="separator"></div>
-          <button
-            type="button"
-            role="menuitem"
-            class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs font-light text-slate-700 transition-colors hover:bg-slate-100"
-            @click="exportarCsv"
-          >
-            <FileSpreadsheet class="h-3.5 w-3.5 shrink-0 text-emerald-700" aria-hidden="true" />
-            Exportar em CSV
-          </button>
-        </div>
-      </div>
+      <UiReportMenu
+        v-if="can('manuais', 'exportar')"
+        :items="[
+          { id: 'pdf', label: 'Listagem em PDF', icon: FileDown },
+          { id: 'csv', label: 'Exportar em CSV', icon: FileSpreadsheet }
+        ]"
+        :loading="exportando"
+        label="Relatórios"
+        @select="(id) => acoesRelatorio[id]?.()"
+      />
 
       <UiButton
         v-if="can('manuais', 'criar')"

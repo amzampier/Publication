@@ -50,6 +50,7 @@ nenhum deles, a API SHALL responder `403` e a tela SHALL exibir estado de acesso
 
 - **WHEN** um usuário possui `visualizar` apenas em `softwares` e abre o painel
 - **THEN** o painel exibe somente o ranking de softwares permitido e não exibe KPIs, séries ou publicações de chamadas/publicações não autorizadas
+
 ### Requirement: O painel apresenta os KPIs do ciclo editorial
 
 O painel SHALL exibir, para o período selecionado, os KPIs: **Releases publicadas**, **Chamadas
@@ -90,6 +91,7 @@ dimensões.
 
 - **WHEN** não há chamadas com vínculo ativo
 - **THEN** o percentual do fluxo e a taxa de recusa exibem `0%` (ou estado vazio), sem divisão por zero
+
 ### Requirement: O painel exibe a série mensal e anual de publicações
 
 O painel SHALL exibir um gráfico de publicações com alternância **Mensal/Anual**. No modo mensal, o
@@ -224,6 +226,7 @@ API SHALL responder `403`. Sob saturação da fila do banco, a API SHALL respond
 
 - **WHEN** a fila de conexões do banco está saturada durante uma consulta ao painel
 - **THEN** a API responde `503` com `Retry-After` e não expõe erro interno de fila
+
 ### Requirement: O painel trata carregamento, erro e vazio
 
 A tela SHALL exibir `UiLoading` durante a carga inicial, sem renderizar números parciais. Em falha,
@@ -245,3 +248,22 @@ recarregar os dados da API e manter o seletor utilizável.
 
 - **WHEN** o usuário seleciona outro ano
 - **THEN** a tela recarrega os dados do ano escolhido e atualiza todos os blocos
+
+### Requirement: As agregações do Painel são limitadas e indexadas
+
+As consultas do Painel Executivo SHALL usar índices para os filtros e janelas de data, SHALL
+agregar no banco sempre que possível e NÃO SHALL materializar a tabela inteira de chamadas em memória
+para calcular indicadores. A carga de cada requisição SHALL ser limitada e executada em grupos de
+paralelismo controlado, de modo que a abertura do painel não esgote o pool em concorrência moderada.
+
+#### Scenario: Janela de data usa índice
+- **WHEN** o painel consulta chamadas por `data_lancamento`/`data_liberacao` e publicações por `data_publicacao`
+- **THEN** o plano de execução usa os índices de data e não uma varredura completa da tabela
+
+#### Scenario: Indicadores calculados sem materializar o histórico
+- **WHEN** o painel calcula o fluxo global e as séries do período
+- **THEN** as contagens são agregadas no banco e a aplicação não recebe todas as linhas de chamadas para contar em memória
+
+#### Scenario: Concorrência moderada preservada
+- **WHEN** dez painéis são abertos simultaneamente
+- **THEN** as requisições respondem `200` (ou `503` com `Retry-After` apenas sob saturação real), sem `500` de fila

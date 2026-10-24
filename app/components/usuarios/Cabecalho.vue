@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { Users, Plus, NotebookText, FileText, FileDown, FileSpreadsheet, ChevronDown } from '@lucide/vue'
+import { ref } from 'vue'
+import { Users, Plus, FileText, FileDown, FileSpreadsheet } from '@lucide/vue'
 import { formatarUltimoAcesso } from './useUsuariosModelo'
 import { useUsuarios } from './useUsuarios'
 import { gerarPdfUsuarios } from './gerarPdfUsuarios'
@@ -17,24 +17,6 @@ const emit = defineEmits<{
 }>()
 
 // Menu "Relatórios" (mini-menu role=menu — padrão do menu da conta do AppHeader)
-const menuAberto = ref(false)
-const exportarRef = ref<HTMLElement | null>(null)
-
-const aoClicarFora = (e: MouseEvent) => {
-  if (exportarRef.value && !exportarRef.value.contains(e.target as Node)) menuAberto.value = false
-}
-const aoKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Escape') menuAberto.value = false
-}
-onMounted(() => {
-  document.addEventListener('click', aoClicarFora)
-  window.addEventListener('keydown', aoKeydown)
-})
-onUnmounted(() => {
-  document.removeEventListener('click', aoClicarFora)
-  window.removeEventListener('keydown', aoKeydown)
-})
-
 // Exportação sobre o conjunto filtrado COMPLETO (buscado pela API, pois a
 // listagem é paginada — change paginacao-server-side-e-performance)
 const { buscarParaExportacao } = useUsuarios()
@@ -43,7 +25,6 @@ const { toast } = useToast()
 const exportando = ref(false)
 
 const exportarCsv = async () => {
-  menuAberto.value = false
   exportando.value = true
   try {
     const usuarios = await buscarParaExportacao()
@@ -76,7 +57,6 @@ const exportarCsv = async () => {
 }
 
 const fichaCadastralPdf = async () => {
-  menuAberto.value = false
   exportando.value = true
   try {
     const usuarios = await buscarParaExportacao()
@@ -90,7 +70,6 @@ const fichaCadastralPdf = async () => {
 }
 
 const relacaoCompletaPdf = async () => {
-  menuAberto.value = false
   exportando.value = true
   try {
     const usuarios = await buscarParaExportacao()
@@ -101,6 +80,12 @@ const relacaoCompletaPdf = async () => {
   } finally {
     exportando.value = false
   }
+}
+
+const acoesRelatorio: Record<string, () => void> = {
+  ficha: fichaCadastralPdf,
+  pdf: relacaoCompletaPdf,
+  csv: exportarCsv
 }
 </script>
 
@@ -122,61 +107,17 @@ const relacaoCompletaPdf = async () => {
     </div>
 
     <div class="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row sm:items-center sm:gap-2">
-      <div v-if="can('gestao-usuarios', 'exportar')" ref="exportarRef" class="relative w-full sm:w-auto">
-        <UiButton
-          variant="outline"
-          size="md"
-          class="w-full sm:w-auto"
-          :loading="exportando"
-          aria-haspopup="menu"
-          :aria-expanded="menuAberto"
-          @click="menuAberto = !menuAberto"
-        >
-          <template #leftIcon><NotebookText class="h-4 w-4" /></template>
-          Relatórios
-          <ChevronDown
-            class="h-3.5 w-3.5 transition-transform"
-            :class="menuAberto ? 'rotate-180' : 'rotate-0'"
-            aria-hidden="true"
-          />
-        </UiButton>
-
-        <div
-          v-if="menuAberto"
-          role="menu"
-          aria-label="Opções de relatórios"
-          class="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-30"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 transition-colors text-left"
-            @click="fichaCadastralPdf"
-          >
-            <FileText class="h-3.5 w-3.5 shrink-0 text-brand-structure" aria-hidden="true" />
-            Ficha Cadastral
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 transition-colors text-left"
-            @click="relacaoCompletaPdf"
-          >
-            <FileDown class="h-3.5 w-3.5 shrink-0 text-brand-structure" aria-hidden="true" />
-            Relação Completa
-          </button>
-          <div class="my-1 h-px bg-slate-200" role="separator"></div>
-          <button
-            type="button"
-            role="menuitem"
-            class="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-light text-slate-700 hover:bg-slate-100 transition-colors text-left"
-            @click="exportarCsv"
-          >
-            <FileSpreadsheet class="h-3.5 w-3.5 shrink-0 text-emerald-700" aria-hidden="true" />
-            Exportar em CSV
-          </button>
-        </div>
-      </div>
+      <UiReportMenu
+        v-if="can('gestao-usuarios', 'exportar')"
+        :items="[
+          { id: 'ficha', label: 'Ficha cadastral', icon: FileText },
+          { id: 'pdf', label: 'Relação completa', icon: FileDown },
+          { id: 'csv', label: 'Exportar em CSV', icon: FileSpreadsheet }
+        ]"
+        :loading="exportando"
+        label="Relatórios"
+        @select="(id) => acoesRelatorio[id]?.()"
+      />
 
       <UiButton
         v-if="can('gestao-usuarios', 'criar')"
