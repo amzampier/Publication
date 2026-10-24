@@ -34,7 +34,7 @@ raiz-do-projeto/
 │   ├── components/
 │   │   ├── layout/                # Shell (AppHeader, AppSidebar)
 │   │   ├── ui/                    # Design System interno (36 componentes atômicos)
-│   │   └── [modulo]/              # Componentes de domínio (usuarios, perfis, auditoria, configuracoes, perfil, auth)
+│   │   └── [modulo]/              # Componentes de domínio (usuarios, perfis, auditoria, configuracoes, perfil, auth, softwares, parceiros, release-week, manuais, escopo-projetos, lancar-chamadas, esteira-revisao, painel)
 │   ├── composables/               # Regras de negócio e hooks reativos reutilizáveis
 │   ├── config/
 │   │   └── navigation.ts          # Definição centralizada do menu lateral e rotas
@@ -44,11 +44,11 @@ raiz-do-projeto/
 │   └── pages/                     # Roteamento por arquivos (admin/**, index, design, error)
 │
 ├── server/                        # CAMADA SERVIDORA / BACKEND (Nitro Engine)
-│   ├── api/                       # Endpoints REST (auth, usuarios, perfis, auditoria, configuracoes, seguranca, convite, uploads)
+│   ├── api/                       # Endpoints REST (auth, usuarios, perfis, auditoria, configuracoes, seguranca, convite, uploads, softwares, parceiros, release-week, manuais, escopo-projetos, lancar-chamadas, esteira-revisao, painel-executivo)
 │   ├── middleware/                # auth-api.ts (sessão global nas /api/**)
 │   ├── migration/                 # Scripts SQL versionados (01_..., 02_..., etc.)
 │   ├── plugins/                   # migration.ts, auth-config.ts
-│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner, bootstrap-admin
+│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner, bootstrap-admin, publicacao-pais, visibilidade-publica, busca, csv, pool-error, hierarquia, ip, midias
 │
 ├── shared/                        # Tipos/utilitários compartilhados (ex.: shared/utils/emails.ts)
 ├── docs/                          # Documentação de arquitetura e especificações de negócio
@@ -329,8 +329,8 @@ await registrarAuditoria(event, {
   (migration 01 §18 — mapeamento: `recurso` da tela ↔ coluna `entidade`).
 - **Resiliência:** o helper envolve tudo em `try/catch` e só loga no console — a falha na
   auditoria **nunca** interrompe nem altera a resposta da requisição principal.
-- **Escopo:** 41 rotas auditadas (37 de escrita, incluindo Lançar as Chamadas e suas
-  aprovação/recusa/importação, uploads, convite e liberação de bloqueio + 4 de autenticação: login,
+- **Escopo:** 59 pontos auditados (54 administrativos — incluindo Lançar as Chamadas e suas
+  aprovação/recusa/importação, uploads, convite e liberação de bloqueio — + 5 de autenticação: login,
   logout, troca e recuperação de senha, com o 5º tipo **`Acesso`** e recurso "Autenticação"). Nos casos em que o request
   ainda não carrega a sessão (login — os cookies são da resposta — e `esqueci-senha`,
   público), o chamador informa `sessao: { id, nome, perfil }` explicitamente. Tentativas
@@ -347,7 +347,7 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 
 - `GET /api/usuarios/eu` e `PATCH /api/usuarios/eu` — registro do próprio usuário (sessão apenas; PATCH grava dados/endereço/SMTP/avatar, **não** e-mail/perfil/situação/senha).
 - `GET /api/usuarios/eu/permissoes` — matriz de permissões do próprio usuário (sessão apenas), que alimenta `usePermissions().can()`.
-- `POST /api/convite` — find-or-create por e-mail + envio (requer `gestao-usuarios`/`criar`).
+- `POST /api/convite` — find-or-create por e-mail + envio (requer `gestao-usuarios`/`convite`; para conta já existente, também `alterar`).
 - `GET /api/seguranca/estado` (visualizar) e `POST /api/seguranca/liberar` (alterar) — aba Segurança (rate limit/lockout).
 - `GET /api/configuracoes/identidade` — **público**; devolve apenas `logo_login_url` para as telas de autenticação.
 - `POST /api/uploads` — multipart `file` + `pasta` (`logomarcas`|`avatares`|`logos`|`chamadas`); `logomarcas` exige `configuracoes-globais`/`alterar`, `logos` exige `parceiros`/`alterar`, `avatares` é session-only e `chamadas` exige `lancar-chamadas`/`criar` ou `alterar`, com `ano`/`mes` e destino `uploads/chamadas/<ano>/<mes>/`.
@@ -355,9 +355,12 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `GET/POST/PUT/DELETE /api/softwares` e `POST /api/softwares/importar` — CRUD do catálogo de softwares por `codigo` (`SFT-XXX`, gerado pelo servidor) e importação de planilha `.xlsx`; exigem a permissão `softwares`/`visualizar|criar|alterar|excluir|importar`.
 - `GET/POST/PUT/DELETE /api/release-week`, `PUT /api/release-week/:id/publicar|arquivar`, `GET /api/release-week/:id/itens` e `POST /api/release-week/importar` — Release Week (código `RW-XX/AAAA` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `release-week`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/manuais`, `PUT /api/manuais/:id/publicar|arquivar`, `GET /api/manuais/:id/itens` e `POST /api/manuais/importar` — Manuais Mensais (código `MAN-XX/AAAA` gerado pelo servidor, `arquivada` soft, datas históricas, itens somente leitura e importação `.xlsx`); exigem `manuais`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
-- `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`. As transições gravam `historico_esteira_revisao` com parecer e critérios.
+- `GET/POST/PUT/DELETE /api/escopo-projetos`, `PUT /api/escopo-projetos/:id/publicar|arquivar`, `GET /api/escopo-projetos/:id/itens` e `POST /api/escopo-projetos/importar` — Escopo de Projetos (código `PE-AAAA.VV` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `escopo-projetos`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
+- `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Publicar`/`Publicado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`. As transições gravam `historico_esteira_revisao` com parecer e critérios.
 - `GET /api/esteira-revisao`, `GET /api/esteira-revisao/:id`, `GET /api/esteira-revisao/:id/historico` e `PUT /api/esteira-revisao/:id/aprovar|recusar|reabrir|publicar|suspender` — board do ciclo ativo (Release Week, Manuais e Escopo de Projetos não arquivados e não publicados), progresso do fluxo, detalhe, histórico e transições com parecer; exigem `esteira-revisao`/`visualizar|buscar|filtrar|publicar|alterar` e registram auditoria com o recurso "Esteira de Revisão".
 > **Publicação (RL06):** a transição para `Publicado` em Release Week, Manuais e Escopo de Projetos exige a funcionalidade `publicar` em qualquer caminho (endpoint dedicado, criação ou edição). Sem ela, a API responde `403` sem efeito, e a operação autorizada é auditada como “Homologação”. A Release grava `data_aprovacao` ao entrar em `Publicado` e a limpa ao sair.
+>
+> **Publicação em cascata (RL06):** publicar o pai promove as chamadas filhas de `Publicar` para `Publicado`, gravando histórico por filha e auditoria única no pai; reabrir o pai devolve a `Publicar` as filhas em `Publicado` que não tenham outro vínculo ativo publicado. Arquivar o pai não altera o status das filhas, mas o gate de visibilidade pública as esconde. Com múltiplos vínculos, a chamada é pública quando ao menos um pai está `Publicado`, não arquivado e com `publicado_em <= NOW()`.
 >
 > **Painel Executivo (RL06):** `GET /api/painel-executivo` exige sessão e `visualizar` em ao menos um módulo agregado; cada bloco respeita o módulo de origem (publicações, chamadas, softwares). Sem nenhum módulo permitido, responde `403`. Sob saturação da fila do pool, responde `503` com `Retry-After` em vez de `500`. Os defaults do pool passam a `20` conexões / `100` de fila (`DB_POOL_LIMIT`/`DB_POOL_QUEUE_LIMIT`). A criação de escopo com cascata é atômica (insert + reconciliação na mesma transação).
 
@@ -594,8 +597,8 @@ O composable `useApiFetch` encapsula o `$fetch` nativo do Nuxt, trazendo:
    - Fornece o helper reativo `.can(modulo, acao)` (busca a matriz do próprio usuário em `GET /api/usuarios/eu/permissoes`). É usado pelos módulos para ocultar ações sem permissão.
    - Permite controlar a renderização de botões e links no frontend:
    ```vue
-<UiButton v-if="can('publicacoes', 'criar')" @click="abrirModal">
-  Nova Publicação
+<UiButton v-if="can('softwares', 'criar')" @click="abrirModal">
+  Novo Software
    </UiButton>
    ```
 

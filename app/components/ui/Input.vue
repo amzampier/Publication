@@ -25,6 +25,8 @@ interface Props {
    *  demais caracteres são literais fixos (ex.: `99999-999`, `(99) 99999-9999`).
    *  O `v-model` recebe sempre a string já formatada. */
   mask?: string
+  /** Nome acessível do `<input>` quando não há `label` visível (ex.: busca). */
+  ariaLabel?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -43,7 +45,8 @@ const props = withDefaults(defineProps<Props>(), {
   mono: false,
   inputClass: '',
   forceFocus: false,
-  mask: ''
+  mask: '',
+  ariaLabel: ''
 })
 
 const emit = defineEmits<{
@@ -144,6 +147,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
         :placeholder="placeholder"
         :disabled="disabled"
         :maxlength="mask ? mask.length : undefined"
+        :aria-label="ariaLabel || undefined"
         :aria-describedby="error ? erroId : undefined"
         :class="[
           'w-full h-full bg-transparent text-slate-900 text-xs placeholder:text-slate-400',

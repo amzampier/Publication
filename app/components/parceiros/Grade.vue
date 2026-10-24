@@ -62,6 +62,7 @@ watch(
           <div v-if="can('parceiros', 'buscar')" class="w-full min-w-0 shrink-0 sm:w-64">
             <UiInput
               v-model="busca"
+              aria-label="Buscar parceiros"
               placeholder="Buscar parceiros..."
               :left-icon="Search"
               :right-icon="busca ? X : undefined"

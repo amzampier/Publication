@@ -241,6 +241,8 @@ interface ReleaseWeekModelo {
   lista local.
 
 > **Permissão de publicação (RL06):** a transição para `Publicado` pela criação ou edição exige `release-week`/`publicar` (não basta `criar`/`alterar`). Sem ela, a API responde `403` sem efeito; a transição autorizada grava `data_aprovacao`, executa a cascata e audita **Homologação**. Reabrir limpa `data_aprovacao` e a auditoria volta a ser **Alteração**.
+>
+> **Publicação em cascata (RL06):** publicar a Release promove as chamadas filhas em `Publicar` para `Publicado`, grava histórico por filha e uma auditoria única no pai; a resposta de `PUT /publicar` inclui `chamadasPublicadas`. Reabrir a Release devolve a `Publicar` as filhas em `Publicado` que não tenham outro vínculo ativo publicado. Arquivar não altera o status das filhas, mas o gate de visibilidade pública as esconde. Com múltiplos vínculos, a chamada é pública quando ao menos um pai está `Publicado`, não arquivado e com `publicado_em <= NOW()`.
 
 ## 5. Fluxos
 

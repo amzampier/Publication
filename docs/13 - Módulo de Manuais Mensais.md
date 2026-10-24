@@ -275,6 +275,8 @@ interface ManuaisModelo {
   derivados `linhas`/`kpis`/`opcoes`; as escritas chamam a API e atualizam a lista local.
 
 > **Permissão de publicação (RL06):** a transição para `Publicado` pela criação ou edição exige `manuais`/`publicar` (não basta `criar`/`alterar`). Sem ela, a API responde `403` sem efeito; a transição autorizada preenche `data_publicacao` quando vazia (preservando a histórica), executa a cascata e audita **Homologação**.
+>
+> **Publicação em cascata (RL06):** publicar o Manual promove as chamadas filhas em `Publicar` para `Publicado`, grava histórico por filha e uma auditoria única no pai; a resposta de `PUT /publicar` inclui `chamadasPublicadas`. Reabrir o Manual devolve a `Publicar` as filhas em `Publicado` que não tenham outro vínculo ativo publicado. Arquivar não altera o status das filhas, mas o gate de visibilidade pública as esconde. Com múltiplos vínculos, a chamada é pública quando ao menos um pai está `Publicado`, não arquivado e com `publicado_em <= NOW()`.
 
 ## 5. Fluxos
 

@@ -555,7 +555,10 @@ const totalEntries = computed(() =>
 )
 
 const paginatedFlatRows = computed<FlatRow[]>(() => {
-  if (serverMode.value || groupedColumns.value.length === 0) return []
+  if (groupedColumns.value.length === 0) return []
+  // No modo servidor a paginação já foi aplicada aos dados recebidos; agrupar
+  // apenas acrescenta os cabeçalhos de grupo sobre a página corrente.
+  if (serverMode.value) return visibleFlatRows.value
   const start = (currentPage.value - 1) * pageSize.value
   return visibleFlatRows.value.slice(start, start + pageSize.value)
 })

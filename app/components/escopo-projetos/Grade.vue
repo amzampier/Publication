@@ -65,6 +65,7 @@ watch(
           <div v-if="can('escopo-projetos', 'buscar')" class="w-full min-w-0 shrink-0 sm:w-64">
             <UiInput
               v-model="busca"
+              aria-label="Buscar escopos"
               placeholder="Buscar escopos..."
               :left-icon="Search"
               :right-icon="busca ? X : undefined"
