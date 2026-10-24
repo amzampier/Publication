@@ -89,11 +89,20 @@ Os arquivos gravados nos destinos de identidade (`logomarcas`, `avatares` e `log
 
 ### Requirement: Mídias de chamadas são servidas sob autorização e visibilidade
 
-As mídias gravadas em `uploads/chamadas/<ano>/<mes>/` NÃO SHALL ser servidas como ativo estático público. O acesso SHALL ocorrer por rota da aplicação que:
+As mídias gravadas em `uploads/chamadas/<ano>/<mes>/` NÃO SHALL ser servidas como ativo estático
+público. O acesso SHALL ocorrer por rota da aplicação que:
 - exige sessão válida e a permissão `lancar-chamadas`/`visualizar` para leitura administrativa; ou
-- para requisição anônima, exige que a mídia esteja referenciada em `anexos_midias` por uma chamada com status `Publicado`, que ao menos um vínculo ativo da chamada aponte para conteúdo pai `Publicado` e não arquivado e que a `data_liberacao` da chamada e a `data_publicacao` do pai não estejam no futuro (quando informadas).
+- para requisição anônima, exige que a mídia esteja referenciada em `anexos_midias` por uma chamada
+  com status `Publicado` e `publicado_em` não nulo e não futuro, que ao menos um vínculo ativo da
+  chamada aponte para conteúdo pai `Publicado`, com `publicado_em` não nulo e não futuro, e não
+  arquivado.
 
-O servimento autorizado SHALL manter `X-Content-Type-Options: nosniff` e CSP que impeça execução, usar o tipo de mídia derivado do conteúdo real e responder `404` quando o arquivo não existir ou não estiver visível, sem revelar a existência de conteúdo não publicado. A rota SHALL rejeitar tentativas de travessia de diretório com `400` ou `404`, sem sair de `uploads/chamadas/`. Mídias publicadas SHALL permitir cache público reutilizável; a pré-visualização administrativa SHALL permanecer privada.
+O servimento autorizado SHALL manter `X-Content-Type-Options: nosniff` e CSP que impeça execução,
+usar o tipo de mídia derivado do conteúdo real e responder `404` quando o arquivo não existir ou não
+estiver visível, sem revelar a existência de conteúdo não publicado. A rota SHALL rejeitar tentativas
+de travessia de diretório com `400` ou `404`, sem sair de `uploads/chamadas/`. Mídias publicadas
+SHALL permitir cache público reutilizável; a pré-visualização administrativa SHALL permanecer
+privada.
 
 #### Scenario: Anônimo não acessa mídia de chamada em revisão
 - **WHEN** um visitante sem sessão requisita a URL de uma mídia vinculada a chamada em `Revisar`, `Aprovado` ou `Publicar`
@@ -104,11 +113,11 @@ O servimento autorizado SHALL manter `X-Content-Type-Options: nosniff` e CSP que
 - **THEN** a resposta é `404` (ou `401`) e o conteúdo não é servido
 
 #### Scenario: Anônimo acessa mídia publicada
-- **WHEN** um visitante sem sessão requisita a URL de uma mídia vinculada a chamada `Publicado` com ao menos um vínculo ativo para conteúdo pai `Publicado` e não arquivado, com datas efetivas
+- **WHEN** um visitante sem sessão requisita a URL de uma mídia vinculada a chamada `Publicado` com ao menos um vínculo ativo para conteúdo pai `Publicado`, ambos com `publicado_em` efetivo
 - **THEN** a imagem é exibida com `nosniff`, sem exigir sessão
 
 #### Scenario: Mídia com data futura não é pública
-- **WHEN** a chamada está `Publicado`, mas a `data_liberacao` ou a `data_publicacao` do pai é posterior a hoje
+- **WHEN** a chamada está `Publicado`, mas o `publicado_em` da chamada ou do pai é posterior a agora
 - **THEN** a mídia não é servida anonimamente até a data efetiva
 
 #### Scenario: Perfil autorizado acessa mídia em revisão

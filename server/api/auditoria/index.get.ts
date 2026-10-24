@@ -4,6 +4,7 @@
 // opcoes do conjunto não filtrado (change auditoria-backend-integracao).
 import { listarAuditoria } from '../../utils/audit'
 import { funcionalidadesDeConsulta, requirePermission } from '../../utils/permission'
+import { enviarCsv } from '../../utils/csv'
 
 const texto = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 const inteiro = (v: unknown): number | undefined => {
@@ -22,6 +23,31 @@ export default defineEventHandler(async (event) => {
     )
   })
   for (const acao of acoes) await requirePermission(event, 'auditoria', acao)
+  if (exportando && texto(q.formato) === 'csv') {
+    const cabecalho = ['Data/Hora', 'Usuário', 'Ação', 'Recurso', 'Detalhes', 'IP']
+    return enviarCsv(event, 'auditoria.csv', cabecalho, (async function* () {
+      let pagina = 1
+      while (true) {
+        const lote = await listarAuditoria({
+          dataInicial: texto(q.dataInicial),
+          dataFinal: texto(q.dataFinal),
+          usuario: texto(q.usuario),
+          acao: texto(q.acao),
+          recurso: texto(q.recurso),
+          busca: texto(q.busca),
+          pagina,
+          porPagina: 200,
+          ordenar: texto(q.ordenar),
+          direcao: texto(q.direcao)
+        })
+        for (const r of lote.registros) {
+          yield [new Date(r.registradoEm).toISOString().slice(0, 16).replace('T', ' '), r.usuario.nome, r.acao, r.recurso, r.detalhes, r.ip]
+        }
+        if (lote.registros.length < 200) return
+        pagina += 1
+      }
+    })())
+  }
   return await listarAuditoria({
     dataInicial: texto(q.dataInicial),
     dataFinal: texto(q.dataFinal),

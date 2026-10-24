@@ -9,6 +9,8 @@ import type { UsuarioLogado } from './useAuth'
 import { useAuth } from './useAuth'
 
 let refreshEmVoo: Promise<boolean> | null = null
+let csrfToken: string | null = null
+let csrfEmVoo: Promise<string | null> | null = null
 
 function renovarUmaVez(): Promise<boolean> {
   if (!refreshEmVoo) {
@@ -25,6 +27,23 @@ function renovarUmaVez(): Promise<boolean> {
   return refreshEmVoo
 }
 
+async function obterCsrf(): Promise<string | null> {
+  if (!import.meta.client) return null
+  if (csrfToken) return csrfToken
+  if (!csrfEmVoo) {
+    csrfEmVoo = $fetch<{ csrfToken: string }>('/api/auth/csrf', { credentials: 'include' })
+      .then((resp) => {
+        csrfToken = resp?.csrfToken ?? null
+        return csrfToken
+      })
+      .catch(() => null)
+      .finally(() => {
+        csrfEmVoo = null
+      })
+  }
+  return csrfEmVoo
+}
+
 export function useApiFetch<T = any>(
   request: Parameters<typeof $fetch>[0],
   opts?: Parameters<typeof $fetch>[1]
@@ -39,7 +58,12 @@ export function useApiFetch<T = any>(
   if (usuario.value?.id) headers['x-usuario-id'] = usuario.value.id
   if (usuario.value?.nome) headers['x-usuario-nome'] = encodeURIComponent(usuario.value.nome)
 
-  const doFetch = () => {
+  const doFetch = async () => {
+    const metodo = String(opts?.method ?? 'GET').toUpperCase()
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(metodo)) {
+      const token = await obterCsrf()
+      if (token) headers['x-csrf-token'] = token
+    }
     // No SSR, useRequestFetch encaminha os cookies da requisição entrante
     // (mesmo padrão de useAuth.ensureSessao) — essencial para rotas protegidas
     // chamadas no setup do layout (ex.: GET /api/configuracoes no admin, que o

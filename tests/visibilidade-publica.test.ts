@@ -12,6 +12,7 @@ const pai = (overrides: Partial<ContextoVinculo> = {}): ContextoVinculo => ({
   nome: 'Release',
   status: 'Publicado',
   arquivada: false,
+  publicadoEm: '2026-10-01T00:00:00.000Z',
   ...overrides
 })
 
@@ -24,11 +25,11 @@ describe('visibilidade pública', () => {
   })
 
   it('exige chamada Publicado e ao menos um pai visível', () => {
-    expect(itemVisivelNoPortal('Publicado', { release: pai() })).toBe(true)
-    expect(itemVisivelNoPortal('Publicado', { manual: pai(), projeto: pai({ arquivada: true }) })).toBe(true)
-    expect(itemVisivelNoPortal('Revisar', { release: pai() })).toBe(false)
-    expect(itemVisivelNoPortal('Publicado', { release: pai({ arquivada: true }) })).toBe(false)
-    expect(itemVisivelNoPortal('Publicado', null)).toBe(false)
+    expect(itemVisivelNoPortal('Publicado', { release: pai() }, '2026-10-01T00:00:00.000Z')).toBe(true)
+    expect(itemVisivelNoPortal('Publicado', { manual: pai(), projeto: pai({ arquivada: true }) }, '2026-10-01T00:00:00.000Z')).toBe(true)
+    expect(itemVisivelNoPortal('Revisar', { release: pai() }, '2026-10-01T00:00:00.000Z')).toBe(false)
+    expect(itemVisivelNoPortal('Publicado', { release: pai({ arquivada: true }) }, '2026-10-01T00:00:00.000Z')).toBe(false)
+    expect(itemVisivelNoPortal('Publicado', null, '2026-10-01T00:00:00.000Z')).toBe(false)
   })
 
   it('preserva a visibilidade quando há múltiplos vínculos e um pai ativo', () => {
@@ -36,7 +37,7 @@ describe('visibilidade pública', () => {
       itemVisivelNoPortal('Publicado', {
         release: pai({ arquivada: true }),
         manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026' })
-      })
+      }, '2026-10-01T00:00:00.000Z')
     ).toBe(true)
   })
 
@@ -47,5 +48,13 @@ describe('visibilidade pública', () => {
     expect(sql).toContain('projetos_escopo')
     expect(sql).toContain("r.status = 'Publicado'")
     expect(sql).toContain('r.arquivada = 0')
+    expect(sql).toContain('r.publicado_em <= NOW()')
+  })
+
+  it('oculta publicação futura e ausência de carimbo', () => {
+    const futuro = pai({ publicadoEm: '2099-01-01T00:00:00.000Z' })
+    expect(contextoPublicado(futuro)).toBe(false)
+    expect(itemVisivelNoPortal('Publicado', { release: futuro }, '2026-10-01T00:00:00.000Z')).toBe(false)
+    expect(itemVisivelNoPortal('Publicado', { release: pai() }, null)).toBe(false)
   })
 })

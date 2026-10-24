@@ -83,3 +83,8 @@ raw SQL — no ORM), `bcrypt` + `jose` (auth) and `resend` (e-mail). Lint/test/t
   unreachable, `npm run dev`/production boot fails fast by design.
 
 - **Trilha imutável (RL06-3):** a migration 32 cria gatilhos que rejeitam UPDATE/DELETE em uditoria e historico_esteira_revisao; o expurgo da auditoria usa @rl06_permitir_auditoria no EVENT. O rollback está documentado no SQL. O runner aceita DELIMITER para blocos de trigger/event.\n
+- **Publicação efetiva (B-05):** publicado_em é o gate público; status Publicado sozinho não expõe conteúdo agendado. A migration 33 adiciona/backfilla o carimbo nas quatro tabelas. Não reintroduza comparações de data_publicacao/data_liberacao nas leituras públicas sem o carimbo.
+
+- **Segurança HTTP (RL06):** headers globais/CSRF e rate limit persistente. Escritas por cookie exigem Origin/Referer same-origin ou `X-CSRF-Token`; o contador vive em `rate_limit_contadores` (migration 34) com fallback local.
+
+- **Busca e entrega (escalar):** FULLTEXT cobre Chamadas/Auditoria/Usuários (migration 35; termos 3+), CSV de exportação usa streaming e assets /_nuxt/** têm cache imutável. Não reintroduza LIKE '%termo%' nesses campos sem avaliar o índice.

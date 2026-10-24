@@ -54,14 +54,15 @@ const montarContexto = (row: Row): ContextoVinculo => ({
   codigo: texto(row.codigo),
   nome: texto(row.nome),
   status: texto(row.status),
-  arquivada: Number(row.arquivada ?? 0) === 1
+  arquivada: Number(row.arquivada ?? 0) === 1,
+  publicadoEm: row.publicado_em ? new Date(String(row.publicado_em).replace(' ', 'T')).toISOString() : null
 })
 
 async function carregarPais(): Promise<MapasPais> {
   const [releases, manuais, projetos] = await Promise.all([
-    query<Row[]>('SELECT id, codigo, nome, status, arquivada FROM release_week'),
-    query<Row[]>('SELECT id, codigo, titulo AS nome, status, arquivada FROM manuais_mensal'),
-    query<Row[]>('SELECT id, codigo, nome, status, arquivada FROM projetos_escopo')
+    query<Row[]>('SELECT id, codigo, nome, status, arquivada, publicado_em FROM release_week'),
+    query<Row[]>('SELECT id, codigo, titulo AS nome, status, arquivada, publicado_em FROM manuais_mensal'),
+    query<Row[]>('SELECT id, codigo, nome, status, arquivada, publicado_em FROM projetos_escopo')
   ])
   const mapa = (linhas: Row[]): Map<string, ContextoVinculo> =>
     new Map(linhas.map((linha) => [texto(linha.id), montarContexto(linha)]))

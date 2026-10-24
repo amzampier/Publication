@@ -136,10 +136,6 @@ export const importarUsuarios = async (
 }
 
 /** Conjunto completo de e-mails da base (importação: pré-classificação). Lança em falha. */
-export const buscarEmailsBase = async (): Promise<string[]> => {
-  const resp = await useApiFetch<{ emails: string[] }>('/api/usuarios/emails')
-  return Array.isArray(resp?.emails) ? resp.emails : []
-}
 
 /** Detalhe completo do usuário (a listagem traz só as colunas exibidas — RL04 B-23). */
 export const buscarUsuario = async (id: string): Promise<UsuarioModelo> => {
@@ -267,6 +263,18 @@ export const useUsuarios = () => {
   }
 
   /** Conjunto filtrado COMPLETO (todas as páginas) para CSV/PDF. */
+  const urlExportacaoCsv = (): string => {
+    const f = filtros.value
+    const q = new URLSearchParams({ exportar: '1', formato: 'csv' })
+    if (f.usuario) q.set('usuario', f.usuario)
+    if (f.perfil) q.set('perfil', f.perfil)
+    if (f.status) q.set('status', f.status)
+    if (busca.value.trim()) q.set('busca', busca.value.trim())
+    if (ordem.value?.coluna) q.set('ordenar', ordem.value.coluna)
+    if (ordem.value?.direcao) q.set('direcao', ordem.value.direcao)
+    return `/api/usuarios?${q.toString()}`
+  }
+
   const buscarParaExportacao = async (): Promise<UsuarioModelo[]> => {
     const f = filtros.value
     const resposta = await useApiFetch<RespostaUsuariosApi>('/api/usuarios', {
@@ -317,6 +325,7 @@ export const useUsuarios = () => {
     mudarPorPagina,
     buscar,
     ordenarPor,
-    buscarParaExportacao
+    buscarParaExportacao,
+    urlExportacaoCsv
   }
 }

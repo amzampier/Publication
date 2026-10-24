@@ -14,7 +14,7 @@ import {
   type StatusUsuario,
   type RegistroImportacao
 } from './useUsuariosModelo'
-import { importarUsuarios, buscarEmailsBase, useUsuarios } from './useUsuarios'
+import { importarUsuarios, useUsuarios } from './useUsuarios'
 import { useToast } from '../../composables/useToast'
 
 // Modal de importação de usuários — aberto pelo botão "Importar" da toolbar da
@@ -55,8 +55,8 @@ const aoSelecionar = async (arquivos: File[] | null) => {
   if (!arquivos?.length) return
   processando.value = true
   try {
-    const emailsBase = await buscarEmailsBase()
-    const resultado = await lerPlanilhaUsuarios(arquivos[0]!, emailsBase, opcoes.value.perfis)
+    // Duplicatas de e-mail são validadas no servidor; o preview não carrega a base inteira.
+    const resultado = await lerPlanilhaUsuarios(arquivos[0]!, [], opcoes.value.perfis)
     if (resultado.erro) {
       erro.value = resultado.erro
       return

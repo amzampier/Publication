@@ -663,3 +663,26 @@ CREATE OR REPLACE VIEW manuais AS
 --   - 31: views de itens recriadas sem `situacao`, índices de data do Painel, limpeza de `data_aprovacao`, colunas geradas `chave_ativa` + unicidade que admite um ativo e vários arquivados
 -- A fonte da verdade do schema é `server/migration/*.sql` (aplicado no boot).
 -- =========================================================================
+
+-- =========================================================================
+-- Migration 33 (RL06 B-05): publicado_em em release_week, manuais_mensal,
+-- projetos_escopo e entregas_itens; backfill de Publicado e índices de leitura.
+-- Rollback: remover índices e colunas (ver 33_rl06_3_publicado_em.sql).
+-- =========================================================================
+
+-- =========================================================================
+-- Migration 34 (segurança/infra): tabela rate_limit_contadores (chave IP+rota,
+-- janela_inicio, contagem, atualizado_em) e índice de limpeza.
+-- Rollback: DROP TABLE rate_limit_contadores (ver 34_rate_limit_persistente.sql).
+-- =========================================================================
+
+-- =========================================================================
+-- Migration 34 (segurança/infra): rate_limit_contadores
+-- chave IP+rota, janela_inicio, contagem, atualizado_em; índice de limpeza.
+-- Rollback: DROP TABLE rate_limit_contadores.
+-- =========================================================================
+
+-- =========================================================================
+-- Migration 35 (escalar): índices FULLTEXT ft_entregas_busca, ft_auditoria_busca
+-- e ft_usuarios_busca. Rollback: DROP INDEX em cada tabela.
+-- =========================================================================

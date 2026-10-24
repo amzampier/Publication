@@ -65,3 +65,4 @@ Documento da tela **Gestão de Usuários** (`/admin/gestao-usuarios`): rota, com
 
 - Design system: `docs/01`; arquitetura/migrations: `docs/02`; Perfis/RBAC: `docs/07`;
   Login/convite por e-mail: `docs/08`.
+> **Busca de e-mails (segurança/infra):** `GET /api/usuarios/emails?q=...` exige 2+ caracteres e permissões `gestao-usuarios`/`visualizar` + `buscar`, retorna no máximo 20 itens com apenas `id`/`email`/`nome`. A importação não baixa mais a base inteira de e-mails; duplicatas são validadas no servidor.

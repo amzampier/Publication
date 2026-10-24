@@ -4,6 +4,7 @@ import { resolve, sep } from 'node:path'
 import { createError } from 'h3'
 import { getTransaction, inserirEmLotes, query } from './db'
 import { cacheado, invalidarCache } from './cache'
+import { publicadoEmFuturo } from '#shared/publicacao'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
 import {
@@ -13,7 +14,7 @@ import {
   type OpcoesTransicao
 } from './historico-esteira'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
-import { escaparLike } from './sql'
+import { condicaoPrefixo, termoFulltext } from './busca'
 import {
   carregarMidiasPorItem,
   sincronizarMidias,
@@ -108,7 +109,7 @@ const listaJson = (valor: unknown): unknown[] => {
 const COLUNAS = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, e.software_id,
   e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
   e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
-  e.impacto, e.descricao_completa, e.descricao_html, e.solucao, e.solucao_html,
+  e.impacto, e.publicado_em, e.descricao_completa, e.descricao_html, e.solucao, e.solucao_html,
   e.manual_titulo, e.link_manual, e.link_video,
   e.imagens, e.status, e.tags, e.criado_em, e.atualizado_em,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
@@ -236,7 +237,7 @@ export interface PaginaChamadas {
 const COLUNAS_LISTA = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, e.software_id,
   e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
   e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
-  e.impacto, e.status, e.tags, e.criado_em, e.atualizado_em,
+  e.impacto, e.status, e.publicado_em, e.tags, e.criado_em, e.atualizado_em,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
 
 function whereChamadas(filtros: FiltrosListaChamadas): { sql: string; params: unknown[] } {
@@ -280,14 +281,36 @@ function whereChamadas(filtros: FiltrosListaChamadas): { sql: string; params: un
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const termo = `%${escaparLike(busca)}%`
-    condicoes.push(
-      `(e.chamada LIKE ? OR e.titulo LIKE ? OR e.descricao_completa LIKE ?
-        OR e.solucao LIKE ? OR e.software LIKE ? OR e.modulo LIKE ?
-        OR e.menu_funcionalidade LIKE ? OR e.parceiro LIKE ? OR e.tags LIKE ?
-        OR e.release LIKE ?)`
-    )
-    params.push(termo, termo, termo, termo, termo, termo, termo, termo, termo, termo)
+    const fulltext = termoFulltext(busca)
+    if (fulltext) {
+      const prefixo = condicaoPrefixo(
+        ['e.software', 'e.parceiro', 'e.tags', 'e.release'],
+        busca
+      )
+      condicoes.push(
+        `(MATCH(e.chamada, e.titulo, e.descricao_completa, e.solucao, e.modulo, e.menu_funcionalidade)
+            AGAINST (? IN BOOLEAN MODE) OR ${prefixo.sql})`
+      )
+      params.push(fulltext, ...prefixo.params)
+    } else {
+      const prefixo = condicaoPrefixo(
+        [
+          'e.chamada',
+          'e.titulo',
+          'e.descricao_completa',
+          'e.solucao',
+          'e.software',
+          'e.modulo',
+          'e.menu_funcionalidade',
+          'e.parceiro',
+          'e.tags',
+          'e.release'
+        ],
+        busca
+      )
+      condicoes.push(prefixo.sql)
+      params.push(...prefixo.params)
+    }
   }
   return { sql: condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '', params }
 }
@@ -926,8 +949,21 @@ async function transicionarChamada(
   const tx = await getTransaction()
   try {
     const resultado = await tx.query<{ affectedRows: number }>(
-      'UPDATE entregas_itens SET status = ?, data_liberacao = ? WHERE id = ? AND status = ?',
-      [novoStatus, dataLiberacao, atual.id, atual.status]
+      `UPDATE entregas_itens
+          SET status = ?, data_liberacao = ?,
+              publicado_em = CASE
+                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                ELSE NULL
+              END
+        WHERE id = ? AND status = ?`,
+      [
+        novoStatus,
+        dataLiberacao,
+        novoStatus,
+        publicadoEmFuturo(dataLiberacao),
+        atual.id,
+        atual.status
+      ]
     )
     if (Number(resultado.affectedRows) !== 1) {
       erro409('A chamada já avançou na esteira. Recarregue a lista.')

@@ -27,7 +27,8 @@ const contexto = (
   codigo,
   nome: `Contexto ${codigo}`,
   status,
-  arquivada
+  arquivada,
+  publicadoEm: '2026-10-01T00:00:00.000Z'
 })
 
 const base = (): ChamadaModelo => ({
@@ -61,6 +62,7 @@ const base = (): ChamadaModelo => ({
   imagens: [],
   midias: [],
   status: 'Revisar',
+  publicadoEm: '2026-10-01T00:00:00.000Z',
   tags: ['fiscal'],
   temHistorico: false,
   criadoEm: '2026-10-05T10:00:00.000Z',

@@ -373,3 +373,5 @@ interface ManuaisModelo {
 - **Autor histórico:** a importação usa o usuário que importa; uma coluna `Autor` (e-mail) e
   resolução de usuário ficam para uma fase futura.
 - **Exportação server-side:** o CSV/PDF continua no cliente, sob a guarda `exportar` da API.
+
+> **Publicação efetiva (RL06 B-05):** `publicado_em` é o carimbo efetivo: status `Publicado` sozinho não torna o Manual público. O carimbo usa a `data_publicacao` quando futura; data passada/ausente usa o instante da transição. Sair de `Publicado` limpa o carimbo.

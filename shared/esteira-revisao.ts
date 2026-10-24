@@ -21,6 +21,7 @@ export interface ContextoVinculo {
   nome: string
   status: string
   arquivada: boolean
+  publicadoEm?: string | null
 }
 
 export interface ItemEsteira extends ChamadaModelo {
@@ -119,7 +120,14 @@ export function statusRevisaoDoPai(tipo: TipoVinculo): string {
 
 /** O conteúdo pai está publicado no portal? */
 export function contextoPublicado(contexto: ContextoVinculo | null): boolean {
-  return Boolean(contexto && contexto.status === 'Publicado')
+  if (!contexto || contexto.status !== 'Publicado' || contexto.arquivada) return false
+  return publicadoEfetivo(contexto.publicadoEm)
+}
+
+function publicadoEfetivo(publicadoEm: string | null | undefined): boolean {
+  if (!publicadoEm) return false
+  const data = new Date(String(publicadoEm).replace(' ', 'T'))
+  return !Number.isNaN(data.getTime()) && data.getTime() <= Date.now()
 }
 
 /** Ao menos um vínculo ativo aponta para conteúdo pai publicado. */
@@ -134,14 +142,14 @@ export function temPaiPublicado(item: Pick<ItemEsteira, 'contexto'>): boolean {
  * vínculo ativo aponta para conteúdo pai com status `Publicado`.
  */
 export function itemPublicadoNoPortal(
-  item: Pick<ItemEsteira, 'status' | 'contexto'>
+  item: Pick<ItemEsteira, 'status' | 'contexto' | 'publicadoEm'>
 ): boolean {
-  if (item.status !== 'Publicado') return false
+  if (item.status !== 'Publicado' || !publicadoEfetivo(item.publicadoEm)) return false
   return temPaiPublicado(item)
 }
 
 /** Alias de leitura para a visibilidade pública do item. */
-export function itemVisivelNoPortal(item: Pick<ItemEsteira, 'status' | 'contexto'>): boolean {
+export function itemVisivelNoPortal(item: Pick<ItemEsteira, 'status' | 'contexto' | 'publicadoEm'>): boolean {
   return itemPublicadoNoPortal(item)
 }
 

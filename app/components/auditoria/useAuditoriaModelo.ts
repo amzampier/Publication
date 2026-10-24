@@ -209,6 +209,20 @@ export const useAuditoriaModelo = () => {
   }
 
   /** Conjunto filtrado COMPLETO (todas as páginas) para CSV/PDF. */
+  const urlExportacaoCsv = (): string => {
+    const f = filtros.value
+    const q = new URLSearchParams({ exportar: '1', formato: 'csv' })
+    if (f.dataInicial) q.set('dataInicial', f.dataInicial)
+    if (f.dataFinal) q.set('dataFinal', f.dataFinal)
+    if (f.usuario) q.set('usuario', f.usuario)
+    if (f.acao) q.set('acao', f.acao)
+    if (f.recurso) q.set('recurso', f.recurso)
+    if (busca.value.trim()) q.set('busca', busca.value.trim())
+    if (ordem.value?.coluna) q.set('ordenar', ordem.value.coluna)
+    if (ordem.value?.direcao) q.set('direcao', ordem.value.direcao)
+    return `/api/auditoria?${q.toString()}`
+  }
+
   const buscarParaExportacao = async (): Promise<RegistroAuditoria[]> => {
     const f = filtros.value
     const resposta = await useApiFetch<RespostaAuditoriaApi>('/api/auditoria', {
@@ -260,6 +274,7 @@ export const useAuditoriaModelo = () => {
     buscar,
     ordenarPor,
     buscarParaExportacao,
+    urlExportacaoCsv,
     pagina,
     porPagina,
     total,

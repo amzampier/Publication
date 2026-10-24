@@ -99,6 +99,7 @@ export interface ChamadaModelo {
   imagens: string[]
   midias: ImagemChamada[]
   status: StatusChamada
+  publicadoEm?: string | null
   tags: string[]
   temHistorico: boolean
   criadoEm: string

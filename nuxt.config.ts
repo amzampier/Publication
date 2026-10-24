@@ -41,7 +41,22 @@ export default defineNuxtConfig({
   nitro: {
     // Servimento dos uploads com nosniff (RL02 A-02): o navegador não adivinha
     // o tipo do arquivo — defesa extra contra conteúdo interpretado (HTML/SVG).
+    compressPublicAssets: true,
     routeRules: {
+      '/_nuxt/**': {
+        headers: {
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          Vary: 'Accept-Encoding'
+        }
+      },
+      '/**': {
+        headers: {
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+          'X-Frame-Options': 'DENY'
+        }
+      },
       '/uploads/**': {
         headers: {
           'X-Content-Type-Options': 'nosniff',

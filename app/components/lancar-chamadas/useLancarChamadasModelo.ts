@@ -316,6 +316,9 @@ export const useLancarChamadasModelo = () => {
   const buscarDetalhe = (id: string): Promise<ChamadaModelo> =>
     useApiFetch<ChamadaModelo>(`/api/lancar-chamadas/${id}`)
 
+  const urlExportacaoCsv = (): string =>
+    `/api/lancar-chamadas?download=1&formato=csv&${parametrosLista()}`
+
   const exportarLinhas = async (): Promise<LinhaChamada[]> => {
     const resposta = await useApiFetch<{ chamadas: ChamadaModelo[] }>(
       `/api/lancar-chamadas?download=1&${parametrosLista()}`
@@ -352,6 +355,7 @@ export const useLancarChamadasModelo = () => {
     definirPorPagina,
     buscarDetalhe,
     exportarLinhas,
+    urlExportacaoCsv,
     chamadasFiltradas,
     linhas,
     kpis,

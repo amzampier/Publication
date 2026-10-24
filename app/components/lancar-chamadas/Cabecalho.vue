@@ -12,17 +12,14 @@ import { useLogomarcaLogin } from '../../composables/useLogomarcaLogin'
 import { useApiFetch } from '../../composables/useApiFetch'
 import { useToast } from '../../composables/useToast'
 import { useLancarChamadasModelo } from './useLancarChamadasModelo'
-import {
-  gerarCsvLancarChamadas,
-  gerarPdfLancarChamadas
-} from './gerarPdfLancarChamadas'
+import { gerarPdfLancarChamadas } from './gerarPdfLancarChamadas'
 
 const emit = defineEmits<{
   (e: 'novo'): void
 }>()
 
 const { can } = usePermissions()
-const { total, exportarLinhas } = useLancarChamadasModelo()
+const { total, exportarLinhas, urlExportacaoCsv } = useLancarChamadasModelo()
 const { toast } = useToast()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
@@ -36,21 +33,10 @@ const semDados = (): boolean => {
 
 
 
-const exportarCsv = async () => {
+const exportarCsv = () => {
   if (semDados()) return
-  try {
-    const dados = await exportarLinhas()
-    if (!dados.length) {
-      toast.info('Exportação', 'Não há chamadas para exportar com os filtros atuais.')
-      return
-    }
-    gerarCsvLancarChamadas(dados)
-  } catch (erro) {
-    console.error('[csv] falha ao exportar chamadas:', erro)
-    toast.danger('Exportação', 'Não foi possível exportar as chamadas. Tente novamente.')
-  }
+  window.location.assign(urlExportacaoCsv())
 }
-
 const gerarPdf = async () => {
   if (semDados()) return
   exportando.value = true

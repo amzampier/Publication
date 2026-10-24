@@ -393,3 +393,7 @@ como legado e não é usada pela UI.
 
 
 > **RL06-3:** importações gravam em blocos de 100–200 linhas dentro de uma única transação; as mídias usam upsert multi-row. Falha em qualquer bloco desfaz o lote inteiro.
+
+> **Publicação efetiva (RL06 B-05):** a chamada e a mídia usam `publicado_em` como gate temporal. A cascata pai -> filhas grava o carimbo ao publicar e limpa ao reverter; `data_liberacao` futura mantém a chamada/mídia oculta até a data.
+
+> **Busca/exportação (escalar):** termos de 3+ caracteres usam FULLTEXT; códigos e termos curtos usam prefixo. `?exportar=1&formato=csv` entrega CSV em fluxo por keyset, sem montar o arquivo inteiro no servidor.

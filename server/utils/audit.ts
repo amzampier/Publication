@@ -11,7 +11,7 @@
 import { createError } from 'h3'
 import { query } from './db'
 import { cacheado } from './cache'
-import { escaparLike } from './sql'
+import { condicaoPrefixo, termoFulltext } from './busca'
 import { getSessionUser } from './auth'
 import { ipDoCliente } from './rateLimit'
 
@@ -214,9 +214,18 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const like = `%${escaparLike(busca)}%`
-    clausulas.push('(detalhes LIKE ? OR usuario_nome LIKE ? OR entidade LIKE ? OR acao LIKE ?)')
-    params.push(like, like, like, like)
+    const fulltext = termoFulltext(busca)
+    if (fulltext) {
+      const prefixo = condicaoPrefixo(['acao'], busca)
+      clausulas.push(
+        `(MATCH(usuario_nome, entidade, detalhes) AGAINST (? IN BOOLEAN MODE) OR ${prefixo.sql})`
+      )
+      params.push(fulltext, ...prefixo.params)
+    } else {
+      const prefixo = condicaoPrefixo(['detalhes', 'usuario_nome', 'entidade', 'acao'], busca)
+      clausulas.push(prefixo.sql)
+      params.push(...prefixo.params)
+    }
   }
 
   const clausula = clausulas.length > 0 ? `WHERE ${clausulas.join(' AND ')}` : ''

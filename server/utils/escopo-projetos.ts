@@ -6,6 +6,7 @@
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
 import { query, getTransaction, inserirEmLotes } from './db'
+import { publicadoEmFuturo } from '#shared/publicacao'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import type { AtorTransicao } from './historico-esteira'
 import {
@@ -285,8 +286,8 @@ export async function criarEscopo(
       await tx.query(
         `INSERT INTO projetos_escopo
           (id, codigo, nome, versao, ano, data_inicio, data_final, data_previsao,
-           data_publicacao, status, softwares_contemplados, descricao_geral)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           data_publicacao, status, softwares_contemplados, descricao_geral, publicado_em)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6)) ELSE NULL END)`,
         [
           id,
           codigo,
@@ -299,7 +300,9 @@ export async function criarEscopo(
           validada.dataPublicacao,
           validada.status,
           JSON.stringify([]),
-          validada.descricaoGeral
+          validada.descricaoGeral,
+          validada.status,
+          publicadoEmFuturo(validada.dataPublicacao)
         ]
       )
       if (validada.status === 'Publicado') {
@@ -357,7 +360,11 @@ export async function atualizarEscopo(
       `UPDATE projetos_escopo
           SET nome = ?, versao = ?, ano = ?, data_inicio = ?, data_final = ?,
               data_previsao = ?, data_publicacao = ?, status = ?,
-              softwares_contemplados = ?, descricao_geral = ?
+              softwares_contemplados = ?, descricao_geral = ?,
+              publicado_em = CASE
+                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                ELSE NULL
+              END
         WHERE id = ?`,
       [
         validada.nome,
@@ -370,6 +377,8 @@ export async function atualizarEscopo(
         validada.status,
         JSON.stringify([]),
         validada.descricaoGeral,
+        validada.status,
+        publicadoEmFuturo(validada.dataPublicacao),
         id
       ]
     )
@@ -401,10 +410,10 @@ export async function publicarEscopo(
   const tx = await getTransaction()
   let publicadas = 0
   try {
-    await tx.query("UPDATE projetos_escopo SET status = 'Publicado', data_publicacao = ? WHERE id = ?", [
-      hojeIso(),
-      id
-    ])
+    await tx.query(
+      "UPDATE projetos_escopo SET status = 'Publicado', data_publicacao = ?, publicado_em = COALESCE(?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
+      [hojeIso(), null, id]
+    )
     const resultado = await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)
     publicadas = resultado.publicadas
     await tx.commit()
@@ -550,6 +559,20 @@ export async function importarEscopos(
       linhas.map((linha) => linha.valores),
       150
     )
+    const idsPublicados = linhas
+      .filter((linha) => linha.preparado.status === 'Publicado')
+      .map((linha) => linha.id)
+    if (idsPublicados.length) {
+      await tx.query(
+        `UPDATE projetos_escopo
+            SET publicado_em = CASE
+              WHEN data_publicacao > CURDATE() THEN TIMESTAMP(data_publicacao)
+              ELSE CURRENT_TIMESTAMP(6)
+            END
+          WHERE id IN (${idsPublicados.map(() => '?').join(', ')})`,
+        idsPublicados
+      )
+    }
     for (const { id, preparado } of linhas) {
       if (preparado.status === 'Publicado') {
         await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)

@@ -12,43 +12,14 @@ const { can } = usePermissions()
 // Menu "Exportar" (mini-menu role=menu — padrão do menu da conta do AppHeader)
 // Exportação sobre o conjunto filtrado COMPLETO (buscado pela API, pois a
 // listagem é paginada — change paginacao-server-side-e-performance)
-const { filtros, periodoRotulo, buscarParaExportacao } = useAuditoriaModelo()
+const { filtros, periodoRotulo, buscarParaExportacao, urlExportacaoCsv } = useAuditoriaModelo()
 const { toast } = useToast()
 const exportando = ref(false)
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 
-const exportarCsv = async () => {
-  exportando.value = true
-  try {
-    const registros = await buscarParaExportacao()
-    // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
-    const escapar = (v: string | number) => {
-      let texto = String(v)
-      if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
-      return `"${texto.replace(/"/g, '""')}"`
-    }
-    const cabecalho = ['Data/Hora', 'Usuário', 'Ação', 'Recurso', 'Detalhes', 'IP']
-    const linhas = registros.map((r) =>
-      [formatarDataHora(r.registradoEm), r.usuario.nome, r.acao, r.recurso, r.detalhes, r.ip]
-        .map(escapar)
-        .join(';')
-    )
-    const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'auditoria.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (erro) {
-    console.error('[csv] falha ao exportar auditoria:', erro)
-    toast.danger('Exportação', 'Não foi possível exportar a auditoria. Tente novamente.')
-  } finally {
-    exportando.value = false
-  }
+const exportarCsv = () => {
+  window.location.assign(urlExportacaoCsv())
 }
-
 const baixarPdf = async () => {
   exportando.value = true
   try {

@@ -307,3 +307,5 @@ quando existirem.
 - **Índice de datas de chamadas:** avaliar migration própria se o volume crescer.
 - **Drill-down:** o painel é somente leitura; a navegação para os módulos pode ser adicionada depois.
 - **Cache:** se necessário, curto e com invalidação nas escritas, sem perder a semântica de "HOJE".
+
+> **Busca/entrega (escalar):** as listagens usam os índices FULLTEXT (migration 35) e assets `/_nuxt/**` têm cache imutável; a compressão Brotli/gzip é validada no proxy de produção.

@@ -6,6 +6,7 @@
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
 import { query, getTransaction, inserirEmLotes } from './db'
+import { publicadoEmFuturo } from '#shared/publicacao'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import type { AtorTransicao } from './historico-esteira'
 import {
@@ -235,9 +236,10 @@ export async function criarReleaseWeek(
       `INSERT INTO release_week
         (id, codigo, nome, versao, \`release\`, semana, ano, mes,
          data_inicio, data_finaliza, data_publicacao, status, descricao,
-         destaque_semana, autor_id, autor_nome, data_aprovacao)
+         destaque_semana, autor_id, autor_nome, data_aprovacao, publicado_em)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-               CASE WHEN ? = 'Publicado' THEN CURRENT_TIMESTAMP(6) ELSE NULL END)`,
+               CASE WHEN ? = 'Publicado' THEN CURRENT_TIMESTAMP(6) ELSE NULL END,
+               CASE WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6)) ELSE NULL END)`,
       [
         id,
         codigo,
@@ -255,7 +257,9 @@ export async function criarReleaseWeek(
         validada.destaqueSemana ? 1 : 0,
         autor.id,
         autor.nome,
-        validada.status
+        validada.status,
+        validada.status,
+        publicadoEmFuturo(validada.dataPublicacao)
       ]
     )
     if (validada.status === 'Publicado') {
@@ -309,6 +313,10 @@ export async function atualizarReleaseWeek(
               data_aprovacao = CASE
                 WHEN ? = 'Publicado' THEN COALESCE(data_aprovacao, CURRENT_TIMESTAMP(6))
                 ELSE NULL
+              END,
+              publicado_em = CASE
+                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                ELSE NULL
               END
         WHERE id = ?`,
       [
@@ -326,6 +334,8 @@ export async function atualizarReleaseWeek(
         validada.descricao,
         validada.destaqueSemana ? 1 : 0,
         validada.status,
+        validada.status,
+        publicadoEmFuturo(validada.dataPublicacao),
         id
       ]
     )
@@ -355,8 +365,8 @@ export async function publicarReleaseWeek(
   let publicadas = 0
   try {
     await tx.query(
-      "UPDATE release_week SET status = 'Publicado', data_aprovacao = CURRENT_TIMESTAMP(6) WHERE id = ?",
-      [id]
+      "UPDATE release_week SET status = 'Publicado', data_aprovacao = CURRENT_TIMESTAMP(6), publicado_em = COALESCE(?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
+      [publicadoEmFuturo(atual.dataPublicacao), id]
     )
     const resultado = await reconciliarFilhasPublicacao(tx, 'release', id, ator)
     publicadas = resultado.publicadas
@@ -489,6 +499,18 @@ export async function importarReleaseWeeks(
       linhas.map((linha) => linha.valores),
       150
     )
+    const idsPublicados = linhas.filter((linha) => linha.p.status === 'Publicado').map((linha) => linha.id)
+    if (idsPublicados.length) {
+      await tx.query(
+        `UPDATE release_week
+            SET publicado_em = CASE
+              WHEN data_publicacao > CURDATE() THEN TIMESTAMP(data_publicacao)
+              ELSE CURRENT_TIMESTAMP(6)
+            END
+          WHERE id IN (${idsPublicados.map(() => '?').join(', ')})`,
+        idsPublicados
+      )
+    }
     for (const { id, p } of linhas) {
       if (p.status === 'Publicado') {
         await reconciliarFilhasPublicacao(tx, 'release', id, autor)

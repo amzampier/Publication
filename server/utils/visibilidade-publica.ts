@@ -12,15 +12,23 @@ export interface ContextoVisibilidade {
 
 /** Contexto de pai visível no portal: status Publicado e não arquivado. */
 export function contextoPublicado(contexto: ContextoVinculo | null | undefined): boolean {
-  return Boolean(contexto && contexto.status === 'Publicado' && !contexto.arquivada)
+  return Boolean(
+    contexto &&
+      contexto.status === 'Publicado' &&
+      !contexto.arquivada &&
+      contexto.publicadoEm &&
+      new Date(String(contexto.publicadoEm).replace(' ', 'T')).getTime() <= Date.now()
+  )
 }
 
 /** Chamada visível no portal: status Publicado + ao menos um pai visível. */
 export function itemVisivelNoPortal(
   status: string | null | undefined,
-  contexto: ContextoVisibilidade | null | undefined
+  contexto: ContextoVisibilidade | null | undefined,
+  publicadoEm?: string | null
 ): boolean {
-  if (status !== 'Publicado' || !contexto) return false
+  if (status !== 'Publicado' || !contexto || !publicadoEm) return false
+  if (new Date(String(publicadoEm).replace(' ', 'T')).getTime() > Date.now()) return false
   return (
     contextoPublicado(contexto.release) ||
     contextoPublicado(contexto.manual) ||
@@ -35,10 +43,13 @@ export function itemVisivelNoPortal(
 export function sqlVinculoPublicado(alias = 'e'): string {
   return `(
     EXISTS (SELECT 1 FROM release_week r
-             WHERE r.id = ${alias}.release_id AND r.status = 'Publicado' AND r.arquivada = 0)
+             WHERE r.id = ${alias}.release_id AND r.status = 'Publicado' AND r.arquivada = 0
+               AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW())
     OR EXISTS (SELECT 1 FROM manuais_mensal m
-                WHERE m.id = ${alias}.manual_id AND m.status = 'Publicado' AND m.arquivada = 0)
+                WHERE m.id = ${alias}.manual_id AND m.status = 'Publicado' AND m.arquivada = 0
+                  AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW())
     OR EXISTS (SELECT 1 FROM projetos_escopo p
-                WHERE p.id = ${alias}.projeto_id AND p.status = 'Publicado' AND p.arquivada = 0)
+                WHERE p.id = ${alias}.projeto_id AND p.status = 'Publicado' AND p.arquivada = 0
+                  AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW())
   )`
 }

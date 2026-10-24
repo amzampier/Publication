@@ -27,7 +27,8 @@ const contexto = (
   codigo: `CTX-${id}`,
   nome: `Contexto ${id}`,
   status,
-  arquivada
+  arquivada,
+  publicadoEm: '2026-10-01T00:00:00.000Z'
 })
 
 const itemFluxo = (
@@ -42,7 +43,8 @@ const itemFluxo = (
     projeto: null,
     ...dados
   },
-  dataReferencia
+  dataReferencia,
+  publicadoEm: '2026-10-01T00:00:00.000Z'
 })
 
 const comoItemEsteira = (item: ItemFluxoPainel): ItemEsteira =>

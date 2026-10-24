@@ -9,7 +9,7 @@ import { cifrar } from './crypto'
 import { revogarSessoesDoUsuario } from './auth'
 import { garantirAdministracaoApos } from './perfis'
 import { cacheado, invalidarCache } from './cache'
-import { escaparLike } from './sql'
+import { condicaoPrefixo, termoFulltext } from './busca'
 
 export type SituacaoEscrita = 'Ativo' | 'Inativo'
 export type SituacaoLida = 'Ativo' | 'Inativo' | 'Bloqueado'
@@ -326,9 +326,17 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const like = `%${escaparLike(busca)}%`
-    clausulas.push('(u.nome_completo LIKE ? OR u.email_corporativo LIKE ?)')
-    params.push(like, like)
+    const fulltext = termoFulltext(busca)
+    if (fulltext) {
+      clausulas.push(
+        '(MATCH(u.nome_completo, u.email_corporativo) AGAINST (? IN BOOLEAN MODE))'
+      )
+      params.push(fulltext)
+    } else {
+      const prefixo = condicaoPrefixo(['u.nome_completo', 'u.email_corporativo'], busca)
+      clausulas.push(prefixo.sql)
+      params.push(...prefixo.params)
+    }
   }
   const clausula = clausulas.length > 0 ? `WHERE ${clausulas.join(' AND ')}` : ''
 
@@ -788,4 +796,56 @@ export async function importarUsuarios(linhas: unknown): Promise<{ importados: n
   }
   invalidarCache('usuarios-opcoes')
   return { importados: preparados.length }
+}
+
+export interface EmailUsuario {
+  id: string
+  email: string
+  nome: string
+}
+
+export interface PaginaEmailsUsuarios {
+  itens: EmailUsuario[]
+  total: number
+  pagina: number
+  porPagina: number
+}
+
+/** Busca dedicada de e-mails/nomes para autocomplete (prefixo indexável). */
+export async function buscarEmailsUsuarios(
+  q: string,
+  pagina = 1,
+  porPagina = 10
+): Promise<PaginaEmailsUsuarios> {
+  const termo = q.trim()
+  const limite = Math.min(20, Math.max(1, Math.trunc(porPagina) || 10))
+  const atual = Math.max(1, Math.trunc(pagina) || 1)
+  const offset = (atual - 1) * limite
+  const padrao = `${termo}%`
+  const [linhas, totais] = await Promise.all([
+    query<Array<Record<string, unknown>>>(
+      `SELECT id, email_corporativo, nome_completo
+         FROM usuarios
+        WHERE email_corporativo LIKE ? OR nome_completo LIKE ?
+        ORDER BY email_corporativo ASC
+        LIMIT ? OFFSET ?`,
+      [padrao, padrao, limite, offset]
+    ),
+    query<Array<{ total: number }>>(
+      `SELECT COUNT(*) AS total
+         FROM usuarios
+        WHERE email_corporativo LIKE ? OR nome_completo LIKE ?`,
+      [padrao, padrao]
+    )
+  ])
+  return {
+    itens: linhas.map((linha) => ({
+      id: texto(linha.id),
+      email: texto(linha.email_corporativo),
+      nome: texto(linha.nome_completo)
+    })),
+    total: Number(totais[0]?.total ?? 0),
+    pagina: atual,
+    porPagina: limite
+  }
 }

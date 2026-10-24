@@ -4,6 +4,7 @@ import {
   type FiltrosListaChamadas
 } from '../../utils/lancar-chamadas'
 import { requirePermission } from '../../utils/permission'
+import { enviarCsv } from '../../utils/csv'
 
 const textoQuery = (valor: unknown): string => (typeof valor === 'string' ? valor.trim() : '')
 
@@ -29,6 +30,21 @@ export default defineEventHandler(async (event) => {
     dataLancamentoAte: textoQuery(consulta.dataLancamentoAte),
     dataLiberacaoDe: textoQuery(consulta.dataLiberacaoDe),
     dataLiberacaoAte: textoQuery(consulta.dataLiberacaoAte)
+  }
+
+  if (baixar && textoQuery(consulta.formato) === 'csv') {
+    const cabecalho = ['Chamada', 'Título', 'Software', 'Módulo', 'Tipo', 'Impacto', 'Status', 'Lançamento', 'Liberação']
+    return enviarCsv(event, 'lancar-chamadas.csv', cabecalho, (async function* () {
+      let pagina = 1
+      while (true) {
+        const lote = await listarChamadasPaginadas({ pagina, porPagina: 200, filtros })
+        for (const c of lote.itens) {
+          yield [c.chamada, c.titulo, c.softwares.join(', '), c.modulo, c.tipo, c.impacto, c.status, c.dataLancamento, c.dataLiberacao]
+        }
+        if (lote.itens.length < 200) return
+        pagina += 1
+      }
+    })())
   }
 
   if (baixar) {

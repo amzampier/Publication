@@ -29,14 +29,17 @@ const SEM_OUTRO_PAI_PUBLICADO = `
   NOT EXISTS (
     SELECT 1 FROM release_week r
      WHERE r.id = e.release_id AND r.status = 'Publicado' AND r.arquivada = 0
+       AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW()
   )
   AND NOT EXISTS (
     SELECT 1 FROM manuais_mensal m
      WHERE m.id = e.manual_id AND m.status = 'Publicado' AND m.arquivada = 0
+       AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW()
   )
   AND NOT EXISTS (
     SELECT 1 FROM projetos_escopo p
      WHERE p.id = e.projeto_id AND p.status = 'Publicado' AND p.arquivada = 0
+       AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW()
   )`
 
 const SQL_HISTORICO = `INSERT INTO historico_esteira_revisao
@@ -99,7 +102,12 @@ export async function reconciliarFilhasPublicacao(
     ])
     const resultado = await executor.query<{ affectedRows: number }>(
       `UPDATE entregas_itens e
-          SET e.status = 'Publicado'
+          SET e.status = 'Publicado',
+              e.publicado_em = CASE
+                WHEN e.data_liberacao IS NOT NULL AND e.data_liberacao > CURDATE()
+                  THEN TIMESTAMP(e.data_liberacao)
+                ELSE CURRENT_TIMESTAMP(6)
+              END
         WHERE e.${config.fk} = ? AND e.status = 'Publicar'`,
       [id]
     )
@@ -132,7 +140,7 @@ export async function reconciliarFilhasPublicacao(
   )
   const resultado = await executor.query<{ affectedRows: number }>(
     `UPDATE entregas_itens e
-        SET e.status = 'Publicar'
+        SET e.status = 'Publicar', e.publicado_em = NULL
       WHERE e.${config.fk} = ? AND e.status = 'Publicado'
         AND ${SEM_OUTRO_PAI_PUBLICADO}`,
     [id]

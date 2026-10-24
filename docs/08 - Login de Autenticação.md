@@ -337,3 +337,5 @@ o campo de pontos conforme avança (`ONDA_LARGURA = 48 px`, `ONDA_FORCA = 10`);
   (bcrypt + Resend só quando a conta existe) — envio assíncrono padronizaria.
 - **`configuracoes_limite_requisicao` como fonte única** já é usada pelo rate limit de
   auth; o "Aba Segurança" de Configurações Globais (UI de edição) segue pendente.
+
+> **CSRF/rate limit persistente:** o login/refresh/recuperação são isentos de CSRF; as demais escritas enviam `X-CSRF-Token` obtido em `GET /api/auth/csrf`. O contador de rate limit fica em `rate_limit_contadores` e sobrevive a restart; se o banco falhar, o fallback local mantém o limite.

@@ -5,6 +5,7 @@
 import { randomUUID } from 'node:crypto'
 import { createError } from 'h3'
 import { query, getTransaction, inserirEmLotes } from './db'
+import { publicadoEmFuturo } from '#shared/publicacao'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
 import type { AtorTransicao } from './historico-esteira'
 import {
@@ -255,8 +256,8 @@ export async function criarManual(
     await tx.query(
       `INSERT INTO manuais_mensal
         (id, codigo, ano, mes, mes_numero, titulo, descricao, status,
-         destaque_mes, destaque_semana, autor_id, data_criacao, data_publicacao)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         destaque_mes, destaque_semana, autor_id, data_criacao, data_publicacao, publicado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CASE WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6)) ELSE NULL END)`,
       [
         id,
         codigo,
@@ -270,7 +271,9 @@ export async function criarManual(
         validada.destaqueSemana ? 1 : 0,
         autor.id,
         dataCriacao,
-        dataPublicacao
+        dataPublicacao,
+        validada.status,
+        publicadoEmFuturo(dataPublicacao)
       ]
     )
     if (validada.status === 'Publicado') {
@@ -322,7 +325,11 @@ export async function atualizarManual(
     await tx.query(
       `UPDATE manuais_mensal
           SET codigo = ?, titulo = ?, descricao = ?, ano = ?, mes = ?, mes_numero = ?,
-              status = ?, destaque_mes = ?, destaque_semana = ?, data_publicacao = ?
+              status = ?, destaque_mes = ?, destaque_semana = ?, data_publicacao = ?,
+              publicado_em = CASE
+                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                ELSE NULL
+              END
         WHERE id = ?`,
       [
         codigo,
@@ -335,6 +342,8 @@ export async function atualizarManual(
         validada.destaqueMes ? 1 : 0,
         validada.destaqueSemana ? 1 : 0,
         dataPublicacao,
+        validada.status,
+        publicadoEmFuturo(dataPublicacao),
         id
       ]
     )
@@ -367,10 +376,10 @@ export async function publicarManual(
   const tx = await getTransaction()
   let publicadas = 0
   try {
-    await tx.query("UPDATE manuais_mensal SET status = 'Publicado', data_publicacao = ? WHERE id = ?", [
-      dataPublicacao,
-      id
-    ])
+    await tx.query(
+      "UPDATE manuais_mensal SET status = 'Publicado', data_publicacao = ?, publicado_em = COALESCE(?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
+      [dataPublicacao, publicadoEmFuturo(dataPublicacao), id]
+    )
     const resultado = await reconciliarFilhasPublicacao(tx, 'manual', id, ator)
     publicadas = resultado.publicadas
     await tx.commit()
@@ -510,6 +519,18 @@ export async function importarManuais(
       linhas.map((linha) => linha.valores),
       150
     )
+    const idsPublicados = linhas.filter((linha) => linha.p.status === 'Publicado').map((linha) => linha.id)
+    if (idsPublicados.length) {
+      await tx.query(
+        `UPDATE manuais_mensal
+            SET publicado_em = CASE
+              WHEN data_publicacao > CURDATE() THEN TIMESTAMP(data_publicacao)
+              ELSE CURRENT_TIMESTAMP(6)
+            END
+          WHERE id IN (${idsPublicados.map(() => '?').join(', ')})`,
+        idsPublicados
+      )
+    }
     for (const { id, p } of linhas) {
       if (p.status === 'Publicado') {
         await reconciliarFilhasPublicacao(tx, 'manual', id, atorDeAutor(autor))

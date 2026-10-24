@@ -31,6 +31,7 @@ GRANT UPDATE, DELETE ON publications.softwares TO 'publications_app'@'localhost'
 GRANT UPDATE, DELETE ON publications.token_blacklist TO 'publications_app'@'localhost';
 GRANT UPDATE, DELETE ON publications.tokens_acesso TO 'publications_app'@'localhost';
 GRANT UPDATE, DELETE ON publications.usuarios TO 'publications_app'@'localhost';
+GRANT UPDATE, DELETE ON publications.rate_limit_contadores TO 'publications_app'@'localhost';
 
 -- Auditoria: sem UPDATE; DELETE só pelo EVENT de expurgo (gatilho exige a
 -- variável de sessão definida pelo evento).

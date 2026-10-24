@@ -19,43 +19,14 @@ const emit = defineEmits<{
 // Menu "Relatórios" (mini-menu role=menu — padrão do menu da conta do AppHeader)
 // Exportação sobre o conjunto filtrado COMPLETO (buscado pela API, pois a
 // listagem é paginada — change paginacao-server-side-e-performance)
-const { buscarParaExportacao } = useUsuarios()
+const { buscarParaExportacao, urlExportacaoCsv } = useUsuarios()
 const { preview: previewLoginGlobal } = useLogomarcaLogin()
 const { toast } = useToast()
 const exportando = ref(false)
 
-const exportarCsv = async () => {
-  exportando.value = true
-  try {
-    const usuarios = await buscarParaExportacao()
-    // RL05-B-01: neutraliza fórmula em CSV (Excel/LibreOffice) antes de citar.
-    const escapar = (v: string | number) => {
-      let texto = String(v)
-      if (/^[=+\-@\t\r]/.test(texto)) texto = `'${texto}`
-      return `"${texto.replace(/"/g, '""')}"`
-    }
-    const cabecalho = ['Nome', 'E-mail', 'Perfil', 'Status', 'Último acesso']
-    const linhas = usuarios.map((u) =>
-      [u.nome, u.email, u.perfil, u.status, formatarUltimoAcesso(u.ultimoAcesso)]
-        .map(escapar)
-        .join(';')
-    )
-    const csv = '\uFEFF' + [cabecalho.map(escapar).join(';'), ...linhas].join('\r\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'usuarios.csv'
-    a.click()
-    URL.revokeObjectURL(url)
-  } catch (erro) {
-    console.error('[csv] falha ao exportar usuarios:', erro)
-    toast.danger('Exportação', 'Não foi possível exportar os usuários. Tente novamente.')
-  } finally {
-    exportando.value = false
-  }
+const exportarCsv = () => {
+  window.location.assign(urlExportacaoCsv())
 }
-
 const fichaCadastralPdf = async () => {
   exportando.value = true
   try {

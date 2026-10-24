@@ -341,3 +341,5 @@ interface ProjetoEscopoModelo {
 - **Teste de concorrência:** validar a geração de código sob carga real; o índice único é a barreira.
 - **Exportação:** manter no cliente ou mover para o servidor (decisão futura), com guarda
   `exportar` na API.
+
+> **Publicação efetiva (RL06 B-05):** `publicado_em` é o carimbo efetivo: status `Publicado` sozinho não torna o Escopo público. O carimbo usa a `data_publicacao` quando futura; data passada/ausente usa o instante da transição. Sair de `Publicado` limpa o carimbo.

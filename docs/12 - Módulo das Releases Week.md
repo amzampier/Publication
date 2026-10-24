@@ -317,3 +317,5 @@ interface ReleaseWeekModelo {
   revisão/homologação pode ganhar UI própria (hoje a publicação grava `data_aprovacao`).
 - **Expurgo/retenção:** a trilha de auditoria já tem expurgo; a Release Week não tem retenção
   específica definida.
+
+> **Publicação efetiva (RL06 B-05):** `publicado_em` é o carimbo efetivo: status `Publicado` sozinho não torna a Release pública. O carimbo usa a `data_publicacao` quando futura; data passada/ausente usa o instante da transição. Sair de `Publicado` limpa o carimbo.
