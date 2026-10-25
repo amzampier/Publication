@@ -94,7 +94,7 @@ const handleInput = (e: Event) => {
         :rows="rows"
         :aria-describedby="error ? erroId : undefined"
         :class="[
-          'w-full min-h-[70px] bg-transparent text-slate-900 text-xs leading-relaxed placeholder:text-slate-400 resize-y font-normal',
+          'w-full min-h-[70px] bg-transparent text-slate-900 text-xs leading-relaxed placeholder:text-slate-500 resize-y font-normal',
           'border-none outline-none focus:outline-none ring-0 focus:ring-0 disabled:cursor-not-allowed',
           'px-3.5 py-2.5',
           error ? 'pr-9' : '',

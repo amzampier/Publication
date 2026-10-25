@@ -181,7 +181,7 @@ const focarEntrada = () => {
         :maxlength="maxLength"
         :aria-label="label ? undefined : 'Adicionar tag'"
         :aria-describedby="error ? erroId : undefined"
-        class="min-w-[8rem] flex-1 border-none bg-transparent text-xs font-normal text-slate-900 placeholder:text-slate-400 outline-none ring-0 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
+        class="min-w-[8rem] flex-1 border-none bg-transparent text-xs font-normal text-slate-900 placeholder:text-slate-500 outline-none ring-0 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
         style="outline: none !important; box-shadow: none !important;"
         @input="aoDigitar"
         @keydown="aoTecla"

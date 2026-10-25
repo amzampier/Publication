@@ -225,7 +225,7 @@ const dayRows = computed(() => {
       <span
         v-for="wd in weekDays"
         :key="wd"
-        class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider py-1"
+        class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider py-1"
       >
         {{ wd }}
       </span>
@@ -281,7 +281,7 @@ const dayRows = computed(() => {
 
     <!-- Rodapé com Botão Atalho Hoje -->
     <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
-      <span class="text-[10px] text-slate-400 font-medium">
+      <span class="text-[10px] text-slate-500 font-medium">
         Hoje: {{ getToday().toLocaleDateString('pt-BR') }}
       </span>
       <button

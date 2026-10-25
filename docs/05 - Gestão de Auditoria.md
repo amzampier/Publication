@@ -318,7 +318,7 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 - Protegido pelo middleware global `auth-api.ts`: **sem sessão → 401**.
 - Query params opcionais: `dataInicial`, `dataFinal` (`yyyy-mm-dd`, janela inclusiva do dia),
   `usuario` (nome exato), `acao`, `recurso`, `busca` (texto), `ordenar`/`direcao`, `pagina`,
-  `porPagina`, `exportar` — vazio/ausente = todos; `acao` fora dos 4 tipos resulta em conjunto
+  `porPagina`, `exportar` — vazio/ausente = todos; `acao` fora dos 5 tipos resulta em conjunto
   vazio (sem erro).
 - Resposta `{ registros, total, kpis, opcoes, pagina, porPagina }`: `registros` com
   `{ id, registradoEm, usuario: { id, nome }, acao, recurso, detalhes, ip, entidadeId }`
@@ -425,3 +425,5 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 - **Expurgo automático:** a rotina diária é um **EVENT** do MariaDB (`ev_expurgo_auditoria`, migrations
   10/11), com catch-up no boot; a política segue `dias_retencao_auditoria`.
 - Nenhum item de navegação sem rota no estado atual.
+
+> **Complemento RL06:** além das linhas detalhadas acima, a trilha cobre Parceiros (4 pontos), Release Week (6) e Esteira de Revisão (5), totalizando **59 pontos**. A fonte executável é `registrarAuditoria` em `server/**`; a contagem é validada por busca de chamadas no código.

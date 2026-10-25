@@ -1,4 +1,5 @@
 import { query } from './db'
+import { cacheado } from './cache'
 import {
   calcularPercentual,
   calcularTaxaRecusa,
@@ -115,14 +116,15 @@ export async function obterPainelExecutivo(
   const incluirPublicacoes = escopo.releases || escopo.manuais || escopo.escopos
 
   const anosDisponiveis = escopo.chamadas
-    ? (
-        await query<Row[]>(
+    ? await cacheado('painel-anos', 30_000, async () => {
+        const linhas = await query<Row[]>(
           `SELECT DISTINCT YEAR(data_lancamento) AS ano
              FROM entregas_itens
             WHERE data_lancamento IS NOT NULL
             ORDER BY ano DESC`
         )
-      ).map((linha) => numero(linha.ano))
+        return linhas.map((linha) => numero(linha.ano))
+      })
     : await anosDasPublicacoes(escopo)
 
   const anoCorrente = new Date().getFullYear()
@@ -184,38 +186,27 @@ export async function obterPainelExecutivo(
         ),
         query<Row[]>(
           `SELECT
-             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND (
-               EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
-             ) THEN 1 ELSE 0 END), 0) AS revisar,
-             COALESCE(SUM(CASE WHEN e.status = 'Aprovado' AND (
-               EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
-             ) THEN 1 ELSE 0 END), 0) AS aprovado,
-             COALESCE(SUM(CASE WHEN e.status = 'Recusado' AND (
-               EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
-             ) THEN 1 ELSE 0 END), 0) AS recusado,
-             COALESCE(SUM(CASE WHEN e.status = 'Publicar' AND (
-               EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
-             ) AND NOT ${sqlVinculoPublicado('e')} THEN 1 ELSE 0 END), 0) AS publicar,
-             COALESCE(SUM(CASE WHEN e.status = 'Publicado' AND ${sqlVinculoPublicado('e')} THEN 1 ELSE 0 END), 0) AS publicado,
-             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND (
-               EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
-             ) AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 7 THEN 1 ELSE 0 END), 0) AS aging7,
-             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND (
-               EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
-               OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
-             ) AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 15 THEN 1 ELSE 0 END), 0) AS aging15
-           FROM entregas_itens e`
+             COALESCE(SUM(CASE WHEN e.status = 'Revisar' THEN 1 ELSE 0 END), 0) AS revisar,
+             COALESCE(SUM(CASE WHEN e.status = 'Aprovado' THEN 1 ELSE 0 END), 0) AS aprovado,
+             COALESCE(SUM(CASE WHEN e.status = 'Recusado' THEN 1 ELSE 0 END), 0) AS recusado,
+             COALESCE(SUM(CASE WHEN e.status = 'Publicar' AND NOT e.visivel THEN 1 ELSE 0 END), 0) AS publicar,
+             COALESCE(SUM(CASE WHEN e.status = 'Publicado' AND e.visivel THEN 1 ELSE 0 END), 0) AS publicado,
+             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 7 THEN 1 ELSE 0 END), 0) AS aging7,
+             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 15 THEN 1 ELSE 0 END), 0) AS aging15
+           FROM (
+             SELECT e.*,
+                    (r.id IS NOT NULL OR m.id IS NOT NULL OR p.id IS NOT NULL) AS ativo,
+                    (
+                      (r.status = 'Publicado' AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW(6))
+                      OR (m.status = 'Publicado' AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW(6))
+                      OR (p.status = 'Publicado' AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW(6))
+                    ) AS visivel
+               FROM entregas_itens e
+               LEFT JOIN release_week r ON r.id = e.release_id AND r.arquivada = 0
+               LEFT JOIN manuais_mensal m ON m.id = e.manual_id AND m.arquivada = 0
+               LEFT JOIN projetos_escopo p ON p.id = e.projeto_id AND p.arquivada = 0
+           ) e
+          WHERE e.ativo`
         )
       ])
     : [[], []]

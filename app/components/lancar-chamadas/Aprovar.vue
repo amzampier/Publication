@@ -10,10 +10,12 @@ import {
 interface Props {
   modelValue: boolean
   chamada?: ChamadaModelo | null
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  chamada: null
+  chamada: null,
+  loading: false
 })
 
 const emit = defineEmits<{
@@ -98,7 +100,8 @@ const confirmar = () => {
 
     <template #footer>
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" :disabled="!podeConfirmar" @click="confirmar">
+      <UiButton variant="primary" :disabled="!podeConfirmar || loading" :loading="loading"
+        @click="confirmar">
         <template #leftIcon><ShieldCheck class="h-4 w-4" /></template>
         Aprovar
       </UiButton>

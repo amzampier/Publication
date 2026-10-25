@@ -41,7 +41,7 @@ raw SQL — no ORM), `bcrypt` + `jose` (auth) and `resend` (e-mail). Lint/test/t
   passa pelo fluxo OpenSpec (`/opsx-propose` → apply → `/opsx-sync` → `/opsx-archive`).
 - **Componentes:** use sempre `app/components/ui/*` (auto-import `Ui*`) e
   `app/components/layout/*` (`AppHeader`, `AppSidebar` — shell de `app/layouts/admin.vue`; `app/layouts/default.vue` é o layout da Área Pública).
-  Nunca crie botão/campo/tooltip paralelos. A vitrine `app/pages/design.vue` (seções 1-27,
+  Nunca crie botão/campo/tooltip paralelos. A vitrine `app/pages/design.vue` (seções 1-28,
   `layout: false`) deve espelhar os componentes reais.
 - **Cores (tokens `brand.*` em `tailwind.config.js`):**
   - foco/abertura de controle = `brand-focus` `#1a9e07` — nunca `lime-500`

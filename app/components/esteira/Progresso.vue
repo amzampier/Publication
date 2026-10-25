@@ -105,7 +105,7 @@ const descricaoAcessivel = computed(
       />
     </div>
 
-    <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px] text-slate-400">
+    <div class="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[10px] text-slate-500">
       <span>{{ progresso.revisado }}/{{ progresso.total }} avançaram</span>
       <button
         v-if="progresso.recusado > 0"

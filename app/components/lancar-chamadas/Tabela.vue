@@ -30,6 +30,7 @@ const emit = defineEmits<{
 const { can } = usePermissions()
 const {
   linhas,
+  carregando,
   busca,
   criteriosAtivosCount,
   resolver,
@@ -37,7 +38,8 @@ const {
   porPagina,
   total,
   definirPagina,
-  definirPorPagina
+  definirPorPagina,
+  definirOrdenacao
 } = useLancarChamadasModelo()
 
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
@@ -85,7 +87,7 @@ const acoesDaLinha = (linha: LinhaChamada): ActionMenuItem[] => {
       : 'Chamada não encontrada.'
     itens.push({
       id: 'desaprovar',
-      label: 'Desaprovar',
+      label: chamada?.status === 'Recusado' ? 'Reabrir para Revisar' : 'Desaprovar',
       icon: Undo2,
       disabled: motivoDesaprovar !== null,
       reason: motivoDesaprovar ?? undefined
@@ -113,6 +115,8 @@ const acionar = (id: string, linha: LinhaChamada) => {
 
 <template>
   <section aria-label="Chamadas cadastradas">
+    <UiLoading v-if="carregando" message="Atualizando chamadas..." class="mb-2" />
+
     <UiDataTable
       ref="tabelaRef"
       title="Chamadas"
@@ -131,6 +135,7 @@ const acionar = (id: string, linha: LinhaChamada) => {
       :filters-count="criteriosAtivosCount"
       @page-change="definirPagina"
       @per-page-change="definirPorPagina"
+      @sort-change="definirOrdenacao"
       @open-filters="emit('open-filters')"
     >
       <template #filtersLeft>
@@ -175,14 +180,14 @@ const acionar = (id: string, linha: LinhaChamada) => {
       <template #cell(software)="{ row }">
         <div class="flex flex-col gap-0.5 whitespace-normal">
           <span v-for="nome in row.softwares" :key="nome">{{ nome }}</span>
-          <span v-if="!row.softwares.length" class="text-slate-400">—</span>
+          <span v-if="!row.softwares.length" class="text-slate-500">—</span>
         </div>
       </template>
 
       <template #cell(vinculo)="{ row }">
         <div class="flex flex-col gap-0.5 whitespace-normal font-mono text-[10px] text-slate-600">
           <span v-for="codigo in row.vinculos" :key="codigo">{{ codigo }}</span>
-          <span v-if="!row.vinculos.length" class="text-slate-400">—</span>
+          <span v-if="!row.vinculos.length" class="text-slate-500">—</span>
         </div>
       </template>
 
@@ -200,7 +205,7 @@ const acionar = (id: string, linha: LinhaChamada) => {
             <button
               type="button"
               aria-label="Editar chamada"
-              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('editar', row)"
             >
               <Pencil class="h-3.5 w-3.5" />
@@ -221,7 +226,7 @@ const acionar = (id: string, linha: LinhaChamada) => {
                   : 'Excluir chamada'
               "
               :title="motivoExclusao(row) ?? 'Excluir chamada'"
-              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-500"
               @click="emit('excluir', row)"
             >
               <Trash2 class="h-3.5 w-3.5" />

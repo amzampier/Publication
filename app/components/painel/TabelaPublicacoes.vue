@@ -105,7 +105,7 @@ const corProgresso = (percentual: number): string =>
       </table>
     </div>
 
-    <p class="mt-3 text-[10px] leading-relaxed text-slate-400">
+    <p class="mt-3 text-[10px] leading-relaxed text-slate-500">
       Uma chamada com dois vínculos (origem Ambos) aparece em mais de uma aba; a soma das abas pode
       superar o total de chamadas.
     </p>

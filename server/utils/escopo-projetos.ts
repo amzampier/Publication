@@ -362,7 +362,7 @@ export async function atualizarEscopo(
               data_previsao = ?, data_publicacao = ?, status = ?,
               softwares_contemplados = ?, descricao_geral = ?,
               publicado_em = CASE
-                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                WHEN ? = 'Publicado' THEN COALESCE(publicado_em, ?, CURRENT_TIMESTAMP(6))
                 ELSE NULL
               END
         WHERE id = ?`,
@@ -411,7 +411,7 @@ export async function publicarEscopo(
   let publicadas = 0
   try {
     await tx.query(
-      "UPDATE projetos_escopo SET status = 'Publicado', data_publicacao = ?, publicado_em = COALESCE(?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
+      "UPDATE projetos_escopo SET status = 'Publicado', data_publicacao = ?, publicado_em = COALESCE(publicado_em, ?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
       [hojeIso(), null, id]
     )
     const resultado = await reconciliarFilhasPublicacao(tx, 'projeto', id, ator)

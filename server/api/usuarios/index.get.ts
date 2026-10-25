@@ -19,25 +19,28 @@ export default defineEventHandler(async (event) => {
   })
   for (const acao of acoes) await requirePermission(event, 'gestao-usuarios', acao)
   if (exportando && texto(q.formato) === 'csv') {
-    const cabecalho = ['Nome', 'E-mail', 'Perfil', 'Status', 'Último acesso']
+    const cabecalho = ['Nome', 'E-mail', 'Perfil', 'Status', 'Último acesso', 'Cadastro', 'Atualizado em']
     return enviarCsv(event, 'usuarios.csv', cabecalho, (async function* () {
-      let pagina = 1
+      let cursorNome: string | undefined
+      let cursorId: string | undefined
       while (true) {
         const lote = await listarUsuarios({
           usuario: texto(q.usuario),
           perfil: texto(q.perfil),
           status: texto(q.status),
           busca: texto(q.busca),
-          pagina,
           porPagina: 200,
-          ordenar: texto(q.ordenar),
-          direcao: texto(q.direcao)
+          cursorNome,
+          cursorId,
+          semResumo: true
         })
         for (const u of lote.usuarios) {
-          yield [u.nome, u.email, u.perfil, u.status, u.ultimoAcesso ?? '']
+          yield [u.nome, u.email, u.perfil, u.status, u.ultimoAcesso ?? '', u.dataCadastro ?? '', u.atualizadoEm ?? '']
         }
-        if (lote.usuarios.length < 200) return
-        pagina += 1
+        const ultimo = lote.usuarios.at(-1)
+        if (lote.usuarios.length < 200 || !ultimo) return
+        cursorNome = ultimo.nome
+        cursorId = ultimo.id
       }
     })())
   }

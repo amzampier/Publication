@@ -125,7 +125,7 @@ const sizeClasses = computed(() => {
 // Configurações de cores de variante
 const variantClasses = computed(() => {
   if (props.disabled) {
-    return 'border-slate-300 bg-slate-100 text-slate-400'
+    return 'border-slate-300 bg-slate-100 text-slate-500'
   }
   if (props.error) {
     // Erro canônico rose-700 e foco sempre brand-focus (RL02 B-06).
@@ -216,7 +216,7 @@ const variantClasses = computed(() => {
           :class="[
             'leading-snug transition-colors',
             sizeClasses.label,
-            disabled ? 'text-slate-400' : 'text-slate-800 group-hover:text-slate-900',
+            disabled ? 'text-slate-500' : 'text-slate-800 group-hover:text-slate-900',
             error ? 'text-rose-700' : '',
             labelClass
           ]"

@@ -132,7 +132,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
       <!-- Ícone Esquerdo -->
       <div
         v-if="leftIcon || $slots.leftIcon"
-        class="pl-3.5 pr-1.5 text-slate-400 flex items-center pointer-events-none shrink-0"
+        class="pl-3.5 pr-1.5 text-slate-500 flex items-center pointer-events-none shrink-0"
       >
         <component :is="leftIcon" v-if="leftIcon" class="h-4 w-4" />
         <slot name="leftIcon" />

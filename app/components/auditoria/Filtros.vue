@@ -52,7 +52,6 @@ const cancelar = () => {
 
 const limpar = () => {
   rascunho.value = { ...VAZIO }
-  void aplicarFiltros()
 }
 </script>
 

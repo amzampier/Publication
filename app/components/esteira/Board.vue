@@ -30,7 +30,11 @@ const {
   aplicarPacote,
   limparFiltros,
   filtrarPorOrigem,
-  progresso
+  progresso,
+  total,
+  pagina,
+  totalPaginas,
+  irParaPagina
 } = useEsteiraRevisaoModelo()
 
 const opcoesPacote = computed(() =>
@@ -249,6 +253,21 @@ const recusadas = computed(() => linhas.value.filter((linha) => linha.status ===
       </div>
     </section>
 
+    <div
+      v-if="total > 0"
+      class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] text-slate-600"
+    >
+      <span>Mostrando {{ linhas.length }} de {{ total }} chamadas</span>
+      <div class="flex items-center gap-2">
+        <UiButton variant="outline" size="sm" :disabled="pagina <= 1" @click="irParaPagina(pagina - 1)">
+          Anterior
+        </UiButton>
+        <span class="font-mono tabular-nums">Página {{ pagina }} de {{ totalPaginas }}</span>
+        <UiButton variant="outline" size="sm" :disabled="pagina >= totalPaginas" @click="irParaPagina(pagina + 1)">
+          Próxima
+        </UiButton>
+      </div>
+    </div>
     <p
       v-if="!linhas.length"
       class="mt-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-xs text-slate-500"

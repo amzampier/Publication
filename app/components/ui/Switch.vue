@@ -55,7 +55,7 @@ const alternar = () => {
       v-if="label"
       :for="switchId"
       class="text-xs font-medium select-none"
-      :class="disabled ? 'text-slate-400 cursor-not-allowed' : 'text-slate-700 cursor-pointer'"
+      :class="disabled ? 'text-slate-500 cursor-not-allowed' : 'text-slate-700 cursor-pointer'"
     >
       {{ label }}
     </label>

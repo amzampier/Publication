@@ -242,7 +242,7 @@ const classeBadge = computed(() => [
       <p
         v-if="disabled && disabledHint"
         :id="hintId"
-        class="text-[11px] text-slate-400 leading-relaxed flex items-start gap-1"
+        class="text-[11px] text-slate-500 leading-relaxed flex items-start gap-1"
       >
         <AlertCircle class="h-3 w-3 mt-0.5 shrink-0" />
         <span>{{ disabledHint }}</span>

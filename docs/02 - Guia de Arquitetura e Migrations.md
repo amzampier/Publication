@@ -45,7 +45,8 @@ raiz-do-projeto/
 │
 ├── server/                        # CAMADA SERVIDORA / BACKEND (Nitro Engine)
 │   ├── api/                       # Endpoints REST (auth, usuarios, perfis, auditoria, configuracoes, seguranca, convite, uploads, softwares, parceiros, release-week, manuais, escopo-projetos, lancar-chamadas, esteira-revisao, painel-executivo)
-│   ├── middleware/                # auth-api.ts (sessão global nas /api/**)
+│   ├── middleware/                # auth-api.ts, security-headers.ts, csrf.ts, body-limit.ts
+│   ├── routes/                    # servimento autorizado de /uploads/chamadas/**
 │   ├── migration/                 # Scripts SQL versionados (01_..., 02_..., etc.)
 │   ├── plugins/                   # migration.ts, auth-config.ts
 │   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner, bootstrap-admin, publicacao-pais, visibilidade-publica, busca, csv, pool-error, hierarquia, ip, midias
@@ -257,7 +258,7 @@ Para não vazar detalhes internos do banco de dados (tabelas, colunas, queries) 
 4. **Proteção contra Brute-Force (Lockout)**:
    - Contador de tentativas falhas (`tentativas_falhas`) e bloqueio temporário (`bloqueado_ate`) na tabela `usuarios`.
 5. **Rate limiting em memória + configuração persistida**:
-   - Limite por IP em memória (janela de 1 minuto), com o valor lido de `configuracoes_limite_requisicao` (cache de 60s) e o status `ativo` respeitado; o IP considerado é o da conexão (X-Forwarded-For só com `TRUSTED_PROXIES`).
+   - Rate limit persistente em `rate_limit_contadores` (janela por IP+rota), com fallback em memória e expurgo pelo EVENT `ev_expurgo_rate_limit`; valor lido de `configuracoes_limite_requisicao` (cache de 60s), status `ativo` respeitado e IP real via `TRUSTED_PROXIES`.
 
 ---
 
@@ -460,7 +461,7 @@ O runner contém as seguintes responsabilidades:
    Em tempo de desenvolvimento, os arquivos estão em `server/migration/`. Após o build do Nitro (`npm run build`), os arquivos compilados ficam em `.output/server/`. O runner possui uma função `resolveMigrationDir()` que testa múltiplos caminhos candidatos relativos e absolutos, garantindo que o diretório seja encontrado em qualquer ambiente (Windows, Linux, Docker, VPS).
 
 3. **Parser de SQL Inteligente (`splitStatements`)**:
-   O runner remove comentários em bloco `/* ... */`, remove linhas comentadas `--` e quebra o arquivo por ponto e vírgula (`;`), executando cada statement individualmente.
+   O runner remove comentários em bloco `/* ... */`, remove linhas comentadas `--` entende `DELIMITER` para blocos de trigger/EVENT e quebra o arquivo por ponto e vírgula (`;`), executando cada statement individualmente.
 
 4. **Tolerância a Erros e Idempotência**:
    Se uma coluna, índice ou chave primária já existir (por exemplo, ao reexecutar scripts em um banco existente), o runner identifica os códigos de erro do MariaDB e **continua a execução** em vez de quebrar:
@@ -784,4 +785,8 @@ Na inicialização:
 
 > **Segurança/infra:** headers globais + CSP são aplicados por middleware e `routeRules`; escritas autenticadas por cookie exigem Origin/Referer same-origin ou `X-CSRF-Token` (cookie `csrf_token`). O rate limit usa a tabela `rate_limit_contadores` (migration 34) com UPSERT atômico por IP+rota, limpeza diária e fallback em memória.
 
+> **Performance (escalar):** o CSV usa keyset/cursor e calcula contagem/KPIs uma vez; a importação de Chamadas grava em lotes (inserirEmLotes) e softwares em multi-row; o board da Esteira é paginado; o Painel carrega o RBAC uma vez por request e agrega itensFluxo com joins/índice idx_entregas_fluxo; DB_POOL_LIMIT/DB_POOL_QUEUE_LIMIT são lidos em runtime.
+>
+> **Medição 24/10/2026 (5.000 chamadas sintéticas):** Painel p50 55,3 ms / p95 67,9 ms; N=10 260 ms, N=20 432 ms (100% 200); Esteira p50 30,5 ms / p95 38,2 ms com 200 itens (total 5.004); CSV de Chamadas 246 ms / 491 KB / 5.009 linhas. Teste de exportação: 1 linha 18 ms, 100 linhas 21 ms, 5.000 linhas 284 ms, 100.000 linhas 4.488 ms / 10,1 MB; abort de conexão interrompeu o fluxo e a API seguiu saudável (200). Base sintética removida ao final.
+>
 > **Busca FULLTEXT (escalar):** Chamadas, Auditoria e Usuários usam `MATCH ... AGAINST` para termos com 3+ caracteres (`innodb_ft_min_token_size=3`) e prefixo/igualdade para códigos, e-mails e termos curtos. A migration 35 cria os índices; a semântica é por palavra/prefixo, não substring em todo campo.

@@ -17,6 +17,7 @@ export type PermissoesSessao = Map<string, Set<string>>
 interface ContextoRbac {
   sessaoUsuario?: UsuarioSessao | null
   __permissoes?: PermissoesSessao
+  __permissoesPromise?: Promise<PermissoesSessao>
 }
 
 const contexto = (event: any): ContextoRbac => event.context as ContextoRbac
@@ -51,21 +52,29 @@ async function resolverSessao(event: any): Promise<UsuarioSessao | null> {
 export async function carregarPermissoesDaSessao(event: any): Promise<PermissoesSessao> {
   const ctx = contexto(event)
   if (ctx.__permissoes) return ctx.__permissoes
+  if (ctx.__permissoesPromise) return ctx.__permissoesPromise
 
-  const sessao = await resolverSessao(event)
-  if (!sessao) {
-    throw createError({ statusCode: 401, statusMessage: 'Sem sessão ativa.' })
+  ctx.__permissoesPromise = (async () => {
+    const sessao = await resolverSessao(event)
+    if (!sessao) {
+      throw createError({ statusCode: 401, statusMessage: 'Sem sessão ativa.' })
+    }
+    const linhas = await query<Row[]>(
+      `SELECT pp.modulo, pp.pode_visualizar, pp.pode_incluir, pp.pode_editar, pp.pode_excluir, pp.extras
+         FROM usuarios u JOIN permissoes_perfil pp ON pp.perfil_id = u.perfil_id
+        WHERE u.id = ?`,
+      [sessao.id]
+    )
+    return montarPermissoes(linhas)
+  })()
+
+  try {
+    const permissoes = await ctx.__permissoesPromise
+    ctx.__permissoes = permissoes
+    return permissoes
+  } finally {
+    ctx.__permissoesPromise = undefined
   }
-
-  const linhas = await query<Row[]>(
-    `SELECT pp.modulo, pp.pode_visualizar, pp.pode_incluir, pp.pode_editar, pp.pode_excluir, pp.extras
-       FROM usuarios u JOIN permissoes_perfil pp ON pp.perfil_id = u.perfil_id
-      WHERE u.id = ?`,
-    [sessao.id]
-  )
-  const permissoes = montarPermissoes(linhas)
-  ctx.__permissoes = permissoes
-  return permissoes
 }
 
 /** true quando o perfil da sessão concede a ação no módulo (módulo/ação ausente = false). */

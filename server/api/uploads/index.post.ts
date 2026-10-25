@@ -61,38 +61,31 @@ export default defineEventHandler(async (event) => {
   // aceito para compatibilidade, mas a checagem prévia é obrigatória na query.
   const consulta = getQuery(event)
   const destinoQuery = String(consulta.pasta ?? '').trim()
-  if (destinoQuery && !ehDestino(destinoQuery)) {
+  if (!destinoQuery) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Informe o destino em ?pasta=. Permitidos: ${UPLOAD_DESTINOS.join(', ')}.`
+    })
+  }
+  if (!ehDestino(destinoQuery)) {
     throw createError({
       statusCode: 400,
       statusMessage: `Destino inválido. Permitidos: ${UPLOAD_DESTINOS.join(', ')}.`
     })
   }
-  if (destinoQuery && ehDestino(destinoQuery)) {
-    await autorizarDestino(event, destinoQuery)
-  }
+  await autorizarDestino(event, destinoQuery)
 
   const partes = await readMultipartFormData(event)
   if (!partes || partes.length === 0) {
     throw createError({ statusCode: 400, statusMessage: 'Requisição sem dados multipart.' })
   }
 
-  const campoPasta = partes.find((p) => p.name === 'pasta' && !p.filename)
   const campoArquivo = partes.find((p) => p.name === 'file' && p.filename && p.data)
   if (!campoArquivo || !campoArquivo.data?.length) {
     throw createError({ statusCode: 400, statusMessage: 'Campo de arquivo ausente ou vazio.' })
   }
 
-  const destinoTexto = destinoQuery || (campoPasta ? Buffer.from(campoPasta.data).toString('utf8').trim() : '')
-  if (!ehDestino(destinoTexto)) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: `Destino inválido. Permitidos: ${UPLOAD_DESTINOS.join(', ')}.`
-    })
-  }
-
-  if (!destinoQuery) {
-    await autorizarDestino(event, destinoTexto)
-  }
+  const destinoTexto = destinoQuery
 
   const campoTexto = (nome: string): string => {
     const campo = partes.find((p) => p.name === nome && !p.filename)

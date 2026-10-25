@@ -78,7 +78,7 @@ const linhasGrade = [0, 0.5, 1].map((fracao) => base - fracao * alturaUtil)
     </p>
 
     <template v-else>
-      <div class="mt-2 flex items-center justify-between text-[10px] text-slate-400">
+      <div class="mt-2 flex items-center justify-between text-[10px] text-slate-500">
         <span>Máx. {{ maximo }}</span>
         <span>12 meses</span>
       </div>

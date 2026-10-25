@@ -5,6 +5,7 @@ import { createError } from 'h3'
 import { getTransaction, inserirEmLotes, query } from './db'
 import { cacheado, invalidarCache } from './cache'
 import { publicadoEmFuturo } from '#shared/publicacao'
+import { ordemChamadas } from '#shared/ordenacao-chamadas'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
 import {
@@ -14,7 +15,8 @@ import {
   type OpcoesTransicao
 } from './historico-esteira'
 import { reconciliarFilhasPublicacao } from './publicacao-pais'
-import { condicaoPrefixo, termoFulltext } from './busca'
+import { pareceCodigo, termoFulltext } from './busca'
+import { escaparLike } from './sql'
 import {
   carregarMidiasPorItem,
   sincronizarMidias,
@@ -172,7 +174,7 @@ const montarChamada = (
     modulo: texto(row.modulo),
     menuFuncionalidade: texto(row.menu_funcionalidade),
     tipo: (texto(row.tipo) || 'Correção') as TipoChamada,
-    impacto: (texto(row.impacto) || 'Médio') as ImpactoChamada,
+    impacto: (texto(row.impacto) || 'Baixo') as ImpactoChamada,
     descricaoCompleta: texto(row.descricao_completa),
     descricaoHtml: texto(row.descricao_html),
     solucao: texto(row.solucao),
@@ -281,35 +283,24 @@ function whereChamadas(filtros: FiltrosListaChamadas): { sql: string; params: un
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const fulltext = termoFulltext(busca)
+    const codigo = pareceCodigo(busca)
+    const fulltext = codigo ? null : termoFulltext(busca)
     if (fulltext) {
-      const prefixo = condicaoPrefixo(
-        ['e.software', 'e.parceiro', 'e.tags', 'e.release'],
-        busca
-      )
       condicoes.push(
-        `(MATCH(e.chamada, e.titulo, e.descricao_completa, e.solucao, e.modulo, e.menu_funcionalidade)
-            AGAINST (? IN BOOLEAN MODE) OR ${prefixo.sql})`
+        `MATCH(e.chamada, e.titulo, e.descricao_completa, e.solucao, e.modulo, e.menu_funcionalidade, e.software, e.parceiro, e.tags_texto, e.release)
+            AGAINST (? IN BOOLEAN MODE)`
       )
-      params.push(fulltext, ...prefixo.params)
+      params.push(fulltext)
     } else {
-      const prefixo = condicaoPrefixo(
-        [
-          'e.chamada',
-          'e.titulo',
-          'e.descricao_completa',
-          'e.solucao',
-          'e.software',
-          'e.modulo',
-          'e.menu_funcionalidade',
-          'e.parceiro',
-          'e.tags',
-          'e.release'
-        ],
-        busca
-      )
-      condicoes.push(prefixo.sql)
-      params.push(...prefixo.params)
+      const colunas = codigo
+        ? ['e.chamada', 'e.titulo', 'e.software', 'e.parceiro', 'e.release']
+        : ['e.chamada', 'e.software', 'e.parceiro', 'e.release']
+      const like = `${escaparLike(busca)}%`
+      const unions = colunas
+        .map((coluna) => `SELECT x.id FROM entregas_itens x WHERE ${coluna.replace(/^e\./, 'x.')} LIKE ?`)
+        .join(' UNION ')
+      condicoes.push(`e.id IN (${unions})`)
+      params.push(...colunas.map(() => like))
     }
   }
   return { sql: condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '', params }
@@ -320,25 +311,33 @@ export async function listarChamadasPaginadas(opts: {
   pagina?: number
   porPagina?: number
   filtros?: FiltrosListaChamadas
+  cursor?: string
+  semResumo?: boolean
+  ordenar?: string
+  direcao?: string
 }): Promise<PaginaChamadas> {
   const pagina = Math.max(1, Math.trunc(opts.pagina ?? 1))
   const porPagina = Math.min(200, Math.max(1, Math.trunc(opts.porPagina ?? 20)))
   const { sql, params } = whereChamadas(opts.filtros ?? {})
+  const cursorSql = opts.cursor !== undefined ? `${sql ? ' AND' : ' WHERE'} e.chamada > ?` : ''
+  const where = `${sql}${cursorSql}`
+  const queryParams = opts.cursor !== undefined ? [...params, opts.cursor] : params
+  const ordemSql = ordemChamadas(opts.ordenar, opts.direcao)
   const offset = (pagina - 1) * porPagina
   const [totalRows, kpiRows, linhas] = await Promise.all([
-    query<Row[]>(`SELECT COUNT(*) AS total FROM entregas_itens e ${sql}`, params),
-    query<Row[]>(
+    opts.semResumo ? Promise.resolve([] as Row[]) : query<Row[]>(`SELECT COUNT(*) AS total FROM entregas_itens e ${where}`, queryParams),
+    opts.semResumo ? Promise.resolve([] as Row[]) : query<Row[]>(
       `SELECT COUNT(*) AS total,
               COALESCE(SUM(e.status = 'Revisar'), 0) AS revisar,
               COALESCE(SUM(e.status = 'Aprovado'), 0) AS aprovado,
               COALESCE(SUM(e.status = 'Recusado'), 0) AS recusado
-         FROM entregas_itens e ${sql}`,
-      params
+         FROM entregas_itens e ${where}`,
+      queryParams
     ),
     query<Row[]>(
-      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e ${sql}
-        ORDER BY e.chamada ASC LIMIT ? OFFSET ?`,
-      [...params, porPagina, offset]
+      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e ${where}
+        ORDER BY ${ordemSql} LIMIT ? OFFSET ?`,
+      [...queryParams, porPagina, offset]
     )
   ])
   const ids = linhas.map((linha) => texto(linha.id))
@@ -375,9 +374,65 @@ export async function listarChamadasFiltradas(
   )
 }
 
-/** Projeção enxuta para o board da Esteira (sem HTML/mídias, todos os itens). */
-export async function listarChamadasParaEsteira(): Promise<ChamadaModelo[]> {
-  return listarChamadasFiltradas()
+/** Projeção enxuta e paginada para o board da Esteira (sem HTML/mídias). */
+export async function listarChamadasParaEsteira(
+  pagina = 1,
+  porPagina = 200
+): Promise<{ chamadas: ChamadaModelo[]; total: number }> {
+  const page = Math.max(1, Math.trunc(pagina))
+  const size = Math.min(500, Math.max(1, Math.trunc(porPagina)))
+  const ativo = `(
+    EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
+    OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
+    OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
+  )`
+  const [linhas, totalRows] = await Promise.all([
+    query<Row[]>(
+      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e WHERE ${ativo}
+        ORDER BY e.chamada ASC LIMIT ? OFFSET ?`,
+      [size, (page - 1) * size]
+    ),
+    query<Array<{ total: number }>>(`SELECT COUNT(*) AS total FROM entregas_itens e WHERE ${ativo}`)
+  ])
+  const ids = linhas.map((linha) => texto(linha.id))
+  const softwares = await carregarSoftwaresPorItem(ids)
+  return {
+    chamadas: linhas.map((linha) => montarChamada(linha, softwares.get(texto(linha.id)), undefined)),
+    total: Number(totalRows[0]?.total ?? 0)
+  }
+}
+
+/** Contagens do progresso da Esteira sem materializar todas as chamadas. */
+export async function contarProgressoEsteira(): Promise<Record<string, number>> {
+  const [linha] = await query<Row[]>(
+    `SELECT
+       COALESCE(SUM(e.status = 'Revisar'), 0) AS revisar,
+       COALESCE(SUM(e.status = 'Aprovado'), 0) AS aprovado,
+       COALESCE(SUM(e.status = 'Recusado'), 0) AS recusado,
+       COALESCE(SUM(e.status = 'Publicar'), 0) AS publicar,
+       COALESCE(SUM(e.status = 'Publicado'), 0) AS publicado,
+       COALESCE(SUM(e.status = 'Revisar' AND r.id IS NOT NULL), 0) AS release_revisar,
+       COALESCE(SUM(e.status = 'Aprovado' AND r.id IS NOT NULL), 0) AS release_aprovado,
+       COALESCE(SUM(e.status = 'Recusado' AND r.id IS NOT NULL), 0) AS release_recusado,
+       COALESCE(SUM(e.status = 'Publicar' AND r.id IS NOT NULL), 0) AS release_publicar,
+       COALESCE(SUM(e.status = 'Publicado' AND r.id IS NOT NULL), 0) AS release_publicado,
+       COALESCE(SUM(e.status = 'Revisar' AND m.id IS NOT NULL), 0) AS manual_revisar,
+       COALESCE(SUM(e.status = 'Aprovado' AND m.id IS NOT NULL), 0) AS manual_aprovado,
+       COALESCE(SUM(e.status = 'Recusado' AND m.id IS NOT NULL), 0) AS manual_recusado,
+       COALESCE(SUM(e.status = 'Publicar' AND m.id IS NOT NULL), 0) AS manual_publicar,
+       COALESCE(SUM(e.status = 'Publicado' AND m.id IS NOT NULL), 0) AS manual_publicado,
+       COALESCE(SUM(e.status = 'Revisar' AND p.id IS NOT NULL), 0) AS projeto_revisar,
+       COALESCE(SUM(e.status = 'Aprovado' AND p.id IS NOT NULL), 0) AS projeto_aprovado,
+       COALESCE(SUM(e.status = 'Recusado' AND p.id IS NOT NULL), 0) AS projeto_recusado,
+       COALESCE(SUM(e.status = 'Publicar' AND p.id IS NOT NULL), 0) AS projeto_publicar,
+       COALESCE(SUM(e.status = 'Publicado' AND p.id IS NOT NULL), 0) AS projeto_publicado
+     FROM entregas_itens e
+     LEFT JOIN release_week r ON r.id = e.release_id AND r.arquivada = 0
+     LEFT JOIN manuais_mensal m ON m.id = e.manual_id AND m.arquivada = 0
+     LEFT JOIN projetos_escopo p ON p.id = e.projeto_id AND p.arquivada = 0
+     WHERE (r.id IS NOT NULL OR m.id IS NOT NULL OR p.id IS NOT NULL)`
+  )
+  return Object.fromEntries(Object.entries(linha ?? {}).map(([chave, valor]) => [chave, Number(valor ?? 0)]))
 }
 export async function buscarChamada(id: string): Promise<ChamadaModelo | null> {
   const linhas = await query<Row[]>(
@@ -495,20 +550,12 @@ function montarEntrada(dados: Record<string, unknown>): EntradaChamada {
   }
 }
 
-async function existentesParaValidacao(idAtual?: string): Promise<ChamadaModelo[]> {
-  const linhas = await query<Row[]>(
-    `SELECT id, chamada FROM entregas_itens ${idAtual ? 'WHERE id <> ?' : ''}`,
-    idAtual ? [idAtual] : []
-  )
-  return linhas.map((row) => ({ id: texto(row.id), chamada: texto(row.chamada) })) as unknown as ChamadaModelo[]
-}
-
 async function validarEntrada(
   dados: Record<string, unknown>,
   idAtual?: string
 ): Promise<EntradaChamada> {
   const entrada = montarEntrada(dados)
-  const resultado = validarChamada(entrada, await existentesParaValidacao(idAtual), idAtual)
+  const resultado = validarChamada(entrada, [], idAtual)
   if (!resultado.valido) {
     if (resultado.erros.chamada && /já existe/i.test(resultado.erros.chamada)) {
       erro409(resultado.erros.chamada, { erros: resultado.erros })
@@ -799,7 +846,7 @@ export async function criarChamada(
   dados: Record<string, unknown>,
   autor: AutorChamada
 ): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes')
+  invalidarCache('chamadas-opcoes', 'painel-anos')
   const entrada = await validarEntrada(dados)
   const vinculos = await resolverVinculos(entrada)
   const preparada = prepararChamada(randomUUID(), entrada, vinculos, autor, 'Revisar')
@@ -829,7 +876,7 @@ export async function atualizarChamada(
   dados: Record<string, unknown>,
   autor: AutorChamada
 ): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes')
+  invalidarCache('chamadas-opcoes', 'painel-anos')
   const atual = await buscarChamada(id)
   if (!atual) erro404()
 
@@ -945,7 +992,7 @@ async function transicionarChamada(
   ator: AtorTransicao,
   opcoes: OpcoesTransicao
 ): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes')
+  invalidarCache('chamadas-opcoes', 'painel-anos')
   const tx = await getTransaction()
   try {
     const resultado = await tx.query<{ affectedRows: number }>(
@@ -1116,7 +1163,7 @@ export async function suspenderChamada(
 }
 
 export async function excluirChamada(id: string): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes')
+  invalidarCache('chamadas-opcoes', 'painel-anos')
   const atual = await buscarChamada(id)
   if (!atual) erro404()
   if (atual.status !== 'Revisar') {
@@ -1156,7 +1203,7 @@ export async function importarChamadas(
   linhas: unknown,
   autor: AutorChamada
 ): Promise<{ importados: number }> {
-  invalidarCache('chamadas-opcoes')
+  invalidarCache('chamadas-opcoes', 'painel-anos')
   if (!Array.isArray(linhas) || linhas.length === 0) {
     erro400('Envie ao menos uma linha para importar.')
   }

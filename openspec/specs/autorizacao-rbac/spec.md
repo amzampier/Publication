@@ -91,6 +91,7 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `POST /api/escopo-projetos/importar` → `escopo-projetos` / `importar`
 - `GET /api/lancar-chamadas` → `lancar-chamadas` / `visualizar`; com o parâmetro de **download** → `lancar-chamadas` / `download`
 - `GET /api/lancar-chamadas/opcoes` → `lancar-chamadas` / `visualizar`
+- `GET /api/lancar-chamadas/:id` → `lancar-chamadas` / `visualizar`
 - `POST /api/lancar-chamadas` → `lancar-chamadas` / `criar`
 - `PUT /api/lancar-chamadas/:id` → `lancar-chamadas` / `alterar`
 - `PUT /api/lancar-chamadas/:id/aprovar` → `lancar-chamadas` / `publicar`
@@ -299,3 +300,16 @@ SHALL rejeitar requisições sem sessão (`401`) e perfis sem a permissão (`403
 #### Scenario: Perfil sem permissão
 - **WHEN** um perfil sem `gestao-usuarios`/`visualizar` chama a rota
 - **THEN** a resposta é `403` e nenhum e-mail é retornado
+
+### Requirement: O catálogo cobre o detalhe da chamada
+
+O catálogo de autorização SHALL incluir `GET /api/lancar-chamadas/:id` mapeado para
+`lancar-chamadas`/`visualizar`.
+
+#### Scenario: Detalhe exige visualizar
+- **WHEN** um perfil sem `lancar-chamadas`/`visualizar` chama `GET /api/lancar-chamadas/:id`
+- **THEN** a API responde `403`
+
+#### Scenario: Perfil autorizado
+- **WHEN** um perfil com `lancar-chamadas`/`visualizar` chama o detalhe de uma chamada existente
+- **THEN** a API responde `200`

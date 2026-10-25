@@ -65,7 +65,7 @@ const sizeClasses = computed(() => {
 
 const variantClasses = computed(() => {
   if (props.disabled) {
-    return 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-60'
+    return 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed opacity-60'
   }
 
   if (!props.modelValue) {
@@ -132,7 +132,7 @@ const countClasses = computed(() => {
     <component
       :is="icon"
       v-else-if="icon"
-      :class="[sizeClasses.icon, 'text-slate-400']"
+      :class="[sizeClasses.icon, 'text-slate-500']"
     />
 
     <!-- Rótulo -->

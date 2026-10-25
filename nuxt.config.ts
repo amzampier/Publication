@@ -39,14 +39,14 @@ export default defineNuxtConfig({
   // contrário de public/uploads/ (copiada só no build). Nitro 2.13: fonte das
   // migrations = <rootDir>/server/migration; destino = nitro.options.output.serverDir.
   nitro: {
+    errorHandler: './server/error.ts',
     // Servimento dos uploads com nosniff (RL02 A-02): o navegador não adivinha
     // o tipo do arquivo — defesa extra contra conteúdo interpretado (HTML/SVG).
     compressPublicAssets: true,
     routeRules: {
       '/_nuxt/**': {
         headers: {
-          'Cache-Control': 'public, max-age=31536000, immutable',
-          Vary: 'Accept-Encoding'
+          'Cache-Control': 'public, max-age=31536000, immutable'
         }
       },
       '/**': {
@@ -59,6 +59,7 @@ export default defineNuxtConfig({
       },
       '/uploads/**': {
         headers: {
+          'Cache-Control': 'public, max-age=3600, must-revalidate',
           'X-Content-Type-Options': 'nosniff',
           // RL04-C-01 (defesa em profundidade): mesmo que um arquivo executável
           // escape, o navegador não executa script na origem da aplicação.

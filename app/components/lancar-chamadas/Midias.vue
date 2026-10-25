@@ -21,6 +21,12 @@ const props = withDefaults(defineProps<Props>(), {
   disabled: false
 })
 
+const usarOriginal = (evento: Event, original: string) => {
+  const img = evento.target as HTMLImageElement
+  if (img.dataset.fallback === '1') return
+  img.dataset.fallback = '1'
+  img.src = original
+}
 const emit = defineEmits<{
   (e: 'update:imagens', imagens: string[]): void
   (e: 'update:manualTitulo', valor: string): void
@@ -200,7 +206,7 @@ const remover = (indice: number) => {
       <div class="flex items-center gap-2">
         <ImagePlus class="h-4 w-4 text-brand-structure" aria-hidden="true" />
         <p class="text-xs font-medium text-slate-700">Imagens de evidência</p>
-        <span class="text-[10px] text-slate-400">
+        <span class="text-[10px] text-slate-500">
           {{ imagens.length }}/{{ MAX_IMAGENS_CHAMADA }}
           {{ imagens.length === 1 ? 'imagem' : 'imagens' }}
         </span>
@@ -214,6 +220,7 @@ const remover = (indice: number) => {
         >
           <img
             :src="urlMiniatura(imagem)"
+            @error="usarOriginal($event, imagem)"
             loading="lazy"
             decoding="async"
             :alt="`Imagem de evidência ${indice + 1}`"

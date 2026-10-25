@@ -67,6 +67,8 @@ const abrirNovo = () => {
   formAberto.value = true
 }
 
+const acaoEmAndamento = ref(false)
+
 const abrirEdicao = async (linha: LinhaChamada) => {
   try {
     const registro = await buscarDetalhe(linha.id)
@@ -74,6 +76,7 @@ const abrirEdicao = async (linha: LinhaChamada) => {
     chamadaEditar.value = registro
     formAberto.value = true
   } catch (erro) {
+    acaoEmAndamento.value = false
     toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
@@ -86,6 +89,7 @@ const abrirDetalhes = async (linha: LinhaChamada) => {
     chamadaDetalhes.value = await buscarDetalhe(linha.id)
     detalhesAberto.value = true
   } catch (erro) {
+    acaoEmAndamento.value = false
     toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
@@ -110,13 +114,16 @@ const confirmarAprovacao = async (payload: {
   criterios: boolean
 }) => {
   const alvo = chamadaAprovar.value
-  if (!alvo) return
+  if (!alvo || acaoEmAndamento.value) return
+  acaoEmAndamento.value = true
   try {
     await aprovar(alvo.id, payload)
     aprovarAberto.value = false
     chamadaAprovar.value = null
     toast.success('Lançar as Chamadas', 'Chamada aprovada com sucesso.')
+    acaoEmAndamento.value = false
   } catch (erro) {
+    acaoEmAndamento.value = false
     toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
@@ -138,13 +145,16 @@ const abrirDesaprovacao = (linha: LinhaChamada) => {
 
 const confirmarDesaprovacao = async (payload: { parecer: string }) => {
   const alvo = chamadaDesaprovar.value
-  if (!alvo) return
+  if (!alvo || acaoEmAndamento.value) return
+  acaoEmAndamento.value = true
   try {
     await desaprovar(alvo.id, payload)
     desaprovarAberto.value = false
     chamadaDesaprovar.value = null
     toast.success('Lançar as Chamadas', 'Chamada devolvida para Revisar.')
+    acaoEmAndamento.value = false
   } catch (erro) {
+    acaoEmAndamento.value = false
     toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
@@ -169,13 +179,16 @@ const confirmarRecusa = async (payload: {
   criterios: boolean
 }) => {
   const alvo = chamadaRecusar.value
-  if (!alvo) return
+  if (!alvo || acaoEmAndamento.value) return
+  acaoEmAndamento.value = true
   try {
     await recusar(alvo.id, payload)
     recusarAberto.value = false
     chamadaRecusar.value = null
     toast.success('Lançar as Chamadas', 'Chamada recusada com sucesso.')
+    acaoEmAndamento.value = false
   } catch (erro) {
+    acaoEmAndamento.value = false
     toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
@@ -197,13 +210,16 @@ const abrirExclusao = (linha: LinhaChamada) => {
 
 const confirmarExclusao = async () => {
   const alvo = chamadaExcluir.value
-  if (!alvo) return
+  if (!alvo || acaoEmAndamento.value) return
+  acaoEmAndamento.value = true
   try {
     await excluir(alvo.id)
     exclusaoAberta.value = false
     chamadaExcluir.value = null
     toast.success('Lançar as Chamadas', 'Chamada excluída com sucesso.')
+    acaoEmAndamento.value = false
   } catch (erro) {
+    acaoEmAndamento.value = false
     toast.danger('Lançar as Chamadas', mensagemErro(erro))
   }
 }
@@ -257,24 +273,28 @@ const confirmarExclusao = async () => {
       <LancarChamadasAprovar
         v-model="aprovarAberto"
         :chamada="chamadaAprovar"
+        :loading="acaoEmAndamento"
         @confirmar="confirmarAprovacao"
       />
 
       <LancarChamadasDesaprovar
         v-model="desaprovarAberto"
         :chamada="chamadaDesaprovar"
+        :loading="acaoEmAndamento"
         @confirmar="confirmarDesaprovacao"
       />
 
       <LancarChamadasRecusar
         v-model="recusarAberto"
         :chamada="chamadaRecusar"
+        :loading="acaoEmAndamento"
         @confirmar="confirmarRecusa"
       />
 
       <LancarChamadasExclusao
         v-model="exclusaoAberta"
         :chamada="chamadaExcluir"
+        :loading="acaoEmAndamento"
         @confirmar="confirmarExclusao"
       />
     </div>

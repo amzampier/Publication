@@ -120,7 +120,7 @@ const classeSegmento = (opt: SegmentedOption) => {
       // o valor escolhido continua legível no estado somente leitura (QA-UX).
       selecionado
         ? 'bg-white text-slate-500 shadow-xs'
-        : 'text-slate-400',
+        : 'text-slate-500',
       'cursor-not-allowed'
     ]
   }

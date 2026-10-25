@@ -29,6 +29,12 @@ const props = withDefaults(defineProps<Props>(), {
   chamada: null
 })
 
+const usarOriginal = (evento: Event, original: string) => {
+  const img = evento.target as HTMLImageElement
+  if (img.dataset.fallback === '1') return
+  img.dataset.fallback = '1'
+  img.src = original
+}
 const emit = defineEmits<{
   (e: 'update:modelValue', valor: boolean): void
 }>()
@@ -274,6 +280,7 @@ watch(
             >
               <img
                 :src="urlMiniatura(imagem)"
+                @error="usarOriginal($event, imagem)"
                 loading="lazy"
                 decoding="async"
                 :alt="`Imagem de evidência ${indice + 1}`"
@@ -360,7 +367,8 @@ watch(
         :class="indice === indiceImagem ? 'border-brand-focus' : 'border-transparent opacity-70 hover:opacity-100'"
         @click="indiceImagem = indice"
       >
-        <img :src="urlMiniatura(imagem)" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover" loading="lazy" decoding="async">
+        <img :src="urlMiniatura(imagem)"
+                @error="usarOriginal($event, imagem)" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover" loading="lazy" decoding="async">
       </button>
     </div>
 

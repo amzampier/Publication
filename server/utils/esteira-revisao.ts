@@ -4,20 +4,22 @@
 // o progresso do ciclo ativo. A transição em si vem de `lancar-chamadas.ts`.
 import { query } from './db'
 import { cacheado } from './cache'
+import { paraIso } from './datas'
 import {
   buscarChamada,
+  contarProgressoEsteira,
   listarChamadasParaEsteira,
   listarOpcoesChamadas
 } from './lancar-chamadas'
 import { listarHistoricoItem } from './historico-esteira'
 import {
-  calcularProgresso,
   contextoAtivo,
   itemComVinculoAtivo,
   type ContextoVinculo,
   type HistoricoEsteira,
   type ItemEsteira,
-  type ProgressoEsteira
+  type ProgressoEsteira,
+  type ProgressoVinculo
 } from '#shared/esteira-revisao'
 import type { CatalogosChamada } from '#shared/lancar-chamadas'
 import type { ChamadaModelo } from '#shared/lancar-chamadas'
@@ -55,7 +57,7 @@ const montarContexto = (row: Row): ContextoVinculo => ({
   nome: texto(row.nome),
   status: texto(row.status),
   arquivada: Number(row.arquivada ?? 0) === 1,
-  publicadoEm: row.publicado_em ? new Date(String(row.publicado_em).replace(' ', 'T')).toISOString() : null
+  publicadoEm: paraIso(row.publicado_em)
 })
 
 async function carregarPais(): Promise<MapasPais> {
@@ -136,13 +138,53 @@ function filtrarOpcoesAtivas(
 
 export interface RespostaEsteira {
   itens: ItemEsteira[]
+  total: number
+  pagina: number
+  porPagina: number
   opcoes: CatalogosChamada
   progresso: ProgressoEsteira
 }
 
+const progressoVinculo = (c: Record<string, number>, prefixo = ''): ProgressoVinculo => {
+  const revisar = c[`${prefixo}revisar`] ?? 0
+  const aprovado = c[`${prefixo}aprovado`] ?? 0
+  const recusado = c[`${prefixo}recusado`] ?? 0
+  const publicar = c[`${prefixo}publicar`] ?? 0
+  const publicado = c[`${prefixo}publicado`] ?? 0
+  const total = revisar + aprovado + recusado + publicar
+  const revisado = aprovado + publicar
+  return {
+    total,
+    revisar,
+    aprovado,
+    recusado,
+    publicar,
+    aguardando: publicar,
+    publicado,
+    revisado,
+    percentualRevisado: total ? Math.round((revisado / total) * 100) : 0,
+    percentualAprovado: total ? Math.round((aprovado / total) * 100) : 0
+  }
+}
+
+const montarProgresso = (c: Record<string, number>): ProgressoEsteira => ({
+  ...progressoVinculo(c),
+  porVinculo: {
+    release: progressoVinculo(c, 'release_'),
+    manual: progressoVinculo(c, 'manual_'),
+    projeto: progressoVinculo(c, 'projeto_')
+  }
+})
+
 /** Fila do ciclo ativo + opções de filtro + progresso global. */
-export async function listarEsteira(): Promise<RespostaEsteira> {
-  const [chamadas, mapas] = await Promise.all([listarChamadasParaEsteira(), carregarPais()])
+export async function listarEsteira(pagina = 1, porPagina = 200): Promise<RespostaEsteira> {
+  const page = Math.max(1, Math.trunc(pagina))
+  const size = Math.min(500, Math.max(1, Math.trunc(porPagina)))
+  const [{ chamadas, total }, mapas, progresso] = await Promise.all([
+    listarChamadasParaEsteira(page, size),
+    carregarPais(),
+    contarProgressoEsteira()
+  ])
   // Os catálogos de filtro mudam pouco e são caros (5 consultas). O TTL curto
   // absorve picos do board; as escritas de chamadas invalidam a chave.
   const opcoesBase = await cacheado('chamadas-opcoes', 10_000, listarOpcoesChamadas)
@@ -153,8 +195,11 @@ export async function listarEsteira(): Promise<RespostaEsteira> {
 
   return {
     itens,
+    total,
+    pagina: page,
+    porPagina: size,
     opcoes: filtrarOpcoesAtivas(opcoesBase, mapas),
-    progresso: calcularProgresso(itens)
+    progresso: montarProgresso(progresso)
   }
 }
 

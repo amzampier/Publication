@@ -58,7 +58,7 @@ publicações, chamadas lançadas x liberadas, tabela de chamadas por publicaç�
   chamada lançada; o ano inicial é o corrente quando ele tem chamadas, senão o mais recente com
   chamadas. Sem anos disponíveis, o seletor é omitido e a tela exibe o estado vazio. A troca de ano
   recarrega a API. Os KPIs de % de fluxo e taxa de recusa continuam usando o ciclo ativo global
-  (mesma regra da tela da Esteira); o bloco visual de fluxo não é exibido.
+  (regra própria do Painel: (Aprovado + Publicar + Publicado) / universo); o bloco visual de fluxo não é exibido.
 
 ## 2. Escopo v1 e não escopo
 

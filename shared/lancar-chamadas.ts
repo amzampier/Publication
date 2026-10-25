@@ -1,4 +1,5 @@
 import { MAX_TEXTO_RICO } from './rich-text'
+import { dataPublicacaoValida } from './feriados'
 
 // Regras puras do módulo Lançar as Chamadas — compartilhadas entre app e testes
 // (`#shared/lancar-chamadas`). Sem imports de Nuxt/Vue. A fonte de verdade dos
@@ -428,13 +429,13 @@ export function validarChamada(
   const dataLancamento = texto(dados.dataLancamento)
   if (!dataLancamento) erros.dataLancamento = 'Informe a data de lançamento.'
   else if (!ehDataIso(dataLancamento)) erros.dataLancamento = 'A data de lançamento é inválida.'
-  else if (!ehSegundaFeira(dataLancamento)) erros.dataLancamento = 'A data de lançamento deve ser uma segunda-feira.'
+  else if (!dataPublicacaoValida(dataLancamento)) erros.dataLancamento = 'A data de lançamento deve ser uma segunda-feira ou o próximo dia útil quando a segunda for feriado.'
 
   const dataLiberacao = texto(dados.dataLiberacao)
   if (dataLiberacao && !ehDataIso(dataLiberacao)) {
     erros.dataLiberacao = 'A data de liberação é inválida.'
-  } else if (dataLiberacao && !ehSegundaFeira(dataLiberacao)) {
-    erros.dataLiberacao = 'A data de liberação deve ser uma segunda-feira.'
+  } else if (dataLiberacao && !dataPublicacaoValida(dataLiberacao)) {
+    erros.dataLiberacao = 'A data de liberação deve ser uma segunda-feira ou o próximo dia útil quando a segunda for feriado.'
   }
 
   const tipo = texto(dados.tipo)
@@ -591,7 +592,9 @@ export function podeAprovar(chamada: ChamadaModelo): boolean {
 
 /** Motivo pelo qual a desaprovação está bloqueada (null quando permitida). */
 export function motivoBloqueioDesaprovacao(chamada: ChamadaModelo): string | null {
-  if (chamada.status !== 'Aprovado') return 'Somente chamadas aprovadas podem voltar para Revisar.'
+  if (chamada.status !== 'Aprovado' && chamada.status !== 'Recusado') {
+    return 'Somente chamadas aprovadas ou recusadas podem voltar para Revisar.'
+  }
   return null
 }
 

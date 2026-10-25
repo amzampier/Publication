@@ -262,7 +262,7 @@ watch(filteredOptions, () => {
         ]"
         @click="toggleDropdown"
       >
-        <component :is="leftIcon" v-if="leftIcon" class="h-4 w-4 text-slate-400 shrink-0" />
+        <component :is="leftIcon" v-if="leftIcon" class="h-4 w-4 text-slate-500 shrink-0" />
 
         <template v-if="selecionados.length">
           <span
@@ -275,27 +275,27 @@ watch(filteredOptions, () => {
               v-if="!disabled"
               type="button"
               :aria-label="`Remover ${opt.label}`"
-              class="text-slate-400 hover:text-slate-600 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
+              class="text-slate-500 hover:text-slate-600 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
               @click="remover(opt.value, $event)"
             >
               <X class="h-3 w-3" />
             </button>
           </span>
         </template>
-        <span v-else class="text-xs text-slate-400 font-normal truncate">{{ placeholder }}</span>
+        <span v-else class="text-xs text-slate-500 font-normal truncate">{{ placeholder }}</span>
 
         <div class="ml-auto flex items-center gap-1 shrink-0 pl-2">
           <button
             v-if="modelValue.length && !disabled"
             type="button"
             aria-label="Limpar seleção"
-            class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
+            class="text-slate-500 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
             @click="limpar"
           >
             <X class="h-3.5 w-3.5" />
           </button>
           <ChevronDown
-            class="h-4 w-4 text-slate-400 transition-transform duration-200"
+            class="h-4 w-4 text-slate-500 transition-transform duration-200"
             :class="{ 'rotate-180 text-brand-focus': isOpen }"
           />
         </div>
@@ -342,18 +342,18 @@ watch(filteredOptions, () => {
           <div
             class="flex items-center gap-2 border border-slate-200 rounded-lg px-2.5 h-[30px] bg-white focus-within:border-brand-focus transition-colors"
           >
-            <Search class="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <Search class="h-3.5 w-3.5 text-slate-500 shrink-0" />
             <input
               ref="searchInputRef"
               v-model="searchQuery"
               type="text"
               data-busca
               :placeholder="searchPlaceholder"
-              class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+              class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none"
               style="outline: none !important; box-shadow: none !important;"
             >
           </div>
-          <p class="text-[10px] text-slate-400 pl-0.5">
+          <p class="text-[10px] text-slate-500 pl-0.5">
             {{ filteredOptions.length }} opções encontradas
           </p>
         </div>
@@ -389,7 +389,7 @@ watch(filteredOptions, () => {
                   {{ opt.badge }}
                 </span>
               </div>
-              <span v-if="opt.description" class="text-[10px] text-slate-400 font-normal">
+              <span v-if="opt.description" class="text-[10px] text-slate-500 font-normal">
                 {{ opt.description }}
               </span>
             </div>
@@ -397,7 +397,7 @@ watch(filteredOptions, () => {
             <Check v-if="modelValue.includes(opt.value)" class="h-3.5 w-3.5 text-lime-700 shrink-0 ml-2" />
           </div>
 
-          <div v-if="filteredOptions.length === 0" class="px-4 py-6 text-center text-xs text-slate-400">
+          <div v-if="filteredOptions.length === 0" class="px-4 py-6 text-center text-xs text-slate-500">
             Nenhum resultado encontrado para "{{ searchQuery }}"
           </div>
         </div>

@@ -174,7 +174,7 @@ watch(
             :key="vinculo.rotulo"
             class="rounded-lg border border-slate-200 bg-slate-50 p-3"
           >
-            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
               {{ vinculo.rotulo }}
             </p>
             <template v-if="vinculo.contexto">
@@ -188,7 +188,7 @@ watch(
                 </UiBadge>
               </div>
             </template>
-            <p v-else class="mt-1 text-xs text-slate-400">—</p>
+            <p v-else class="mt-1 text-xs text-slate-500">—</p>
           </div>
         </div>
       </UiModalSection>

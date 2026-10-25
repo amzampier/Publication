@@ -50,7 +50,7 @@ const tempoLegivel = (minutos: number | null): string => {
           >
             {{ evento.statusAnterior }}
           </UiBadge>
-          <ArrowRight class="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+          <ArrowRight class="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
           <UiBadge
             :variant="VARIANTE_STATUS_CHAMADA[evento.novoStatus as StatusChamada] ?? 'neutral'"
             size="sm"
@@ -65,7 +65,7 @@ const tempoLegivel = (minutos: number | null): string => {
 
         <p class="mt-1 text-xs font-medium text-slate-700">
           {{ evento.responsavelNome || 'Desconhecido' }}
-          <span v-if="evento.responsavelPerfil" class="font-normal text-slate-400">
+          <span v-if="evento.responsavelPerfil" class="font-normal text-slate-500">
             · {{ evento.responsavelPerfil }}
           </span>
         </p>
@@ -77,7 +77,7 @@ const tempoLegivel = (minutos: number | null): string => {
           {{ evento.parecer }}
         </p>
 
-        <p class="mt-1 text-[10px] text-slate-400">
+        <p class="mt-1 text-[10px] text-slate-500">
           Critérios de aceite:
           {{ evento.criteriosAtendidos ? 'atendidos' : 'não atendidos' }}
           <span class="mx-1 text-slate-300">·</span>

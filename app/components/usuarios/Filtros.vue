@@ -50,7 +50,6 @@ const cancelar = () => {
 // completa volta — comportamento espelhado do irmão da Auditoria)
 const limpar = () => {
   rascunho.value = { ...VAZIO }
-  void aplicarFiltros()
 }
 </script>
 

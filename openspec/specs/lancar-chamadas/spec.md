@@ -269,7 +269,7 @@ máximo 60 caracteres e sem duplicidade no conjunto carregado; **Título** obrig
 255 caracteres; **Software**, **Parceiro**, **Módulo** e **Descrição completa** obrigatórios;
 **Módulo** com no máximo 100 caracteres; **Título do manual** com no máximo 255 caracteres; **Data de
 lançamento** obrigatória e **Data de liberação** opcional, ambas válidas e, quando preenchidas, em
-segunda-feira; links com URL `http(s)` quando informados; no máximo 12 tags, cada uma com até 30
+segunda-feira ou no próximo dia útil quando a segunda-feira da semana for feriado; links com URL `http(s)` quando informados; no máximo 12 tags, cada uma com até 30
 caracteres; no máximo 100 imagens por chamada, nos formatos PNG, JPG ou WebP, com até 5 MB por
 arquivo, tanto por seleção quanto por colagem. A obrigatoriedade da **Descrição completa** SHALL
 considerar o texto puro derivado do conteúdo rico: uma descrição que renderiza vazia SHALL ser
@@ -293,7 +293,7 @@ puro. O primeiro erro SHALL receber foco e permanecer visível no campo.
 
 #### Scenario: Data fora de segunda-feira
 
-- **WHEN** a data de lançamento ou de liberação não é segunda-feira
+- **WHEN** a data de lançamento ou de liberação não é segunda-feira nem o próximo dia útil de uma segunda feriada
 - **THEN** o campo exibe erro e o formulário não grava
 
 #### Scenario: Link inválido
@@ -774,7 +774,7 @@ e data/hora, além de atualizar o status da chamada na mesma transação. A apro
 `data_liberacao` existente e herdar a `data_publicacao` do conteúdo pai (Release Week, Manual ou
 Escopo, nesta ordem) somente quando ela estiver vazia.
 A recusa NÃO SHALL alterar a `data_liberacao` e SHALL exigir parecer não vazio. A desaprovação SHALL
-voltar a chamada para `Revisar`, limpar a `data_liberacao` e gravar a transição. A ação SHALL ser
+voltar a chamada para `Revisar` a partir de `Aprovado` ou `Recusado`, limpar a `data_liberacao` e gravar a transição. A ação SHALL ser
 recusada com conflito quando o status da chamada tiver mudado desde a leitura.
 
 #### Scenario: Aprovar grava histórico
@@ -792,7 +792,7 @@ recusada com conflito quando o status da chamada tiver mudado desde a leitura.
 - **WHEN** o usuário tenta recusar uma chamada sem preencher o parecer
 - **THEN** o formulário exibe erro, mantém o modal aberto e não grava a transição
 
-#### Scenario: Desaprovar limpa a data de liberação
+#### Scenario: Desaprovar/Reabrir limpa a data de liberação
 
 - **WHEN** o usuário confirma a desaprovação de uma chamada em `Aprovado`
 - **THEN** o status volta a `Revisar`, a `data_liberacao` é limpa e o histórico registra a transição
@@ -1083,3 +1083,49 @@ tooltip/`aria-describedby`.
 
 - **WHEN** o botão de recusa está desabilitado por permissão ou estado
 - **THEN** o motivo é anunciado de forma acessível, sem deixar o usuário supor falta de permissão
+
+### Requirement: A importação grava chamadas em lote
+
+A importação XLSX de Chamadas SHALL gravar os itens em blocos (multi-row) e os softwares em upsert
+multi-row, dentro de uma única transação, mantendo a atomicidade e o limite de 500 linhas.
+
+#### Scenario: Importação de 500 linhas
+- **WHEN** o usuário importa 500 chamadas válidas
+- **THEN** a gravação usa lotes, conclui em tempo compatível com as demais importações e não deixa registro parcial
+
+#### Scenario: Falha no meio
+- **WHEN** uma linha falha durante a gravação em lote
+- **THEN** a transação é revertida integralmente
+
+### Requirement: A validação de unicidade usa a chave única
+
+A criação/edição de chamada SHALL verificar duplicidade por `WHERE chamada = ?` (ou pela UK),
+tratando `1062` como conflito, sem ler a tabela inteira para montar um conjunto em memória.
+
+#### Scenario: Chamada duplicada
+- **WHEN** o usuário tenta gravar uma chamada já existente
+- **THEN** a API responde `409` sem varrer a tabela
+
+#### Scenario: Gravação concorrente
+- **WHEN** duas requisições criam a mesma chamada ao mesmo tempo
+- **THEN** uma vence e a outra recebe `409`
+
+### Requirement: As confirmações de Chamadas bloqueiam duplo envio
+
+As confirmações de aprovar, desaprovar, recusar e excluir chamadas SHALL exibir `loading` e desabilitar a ação enquanto a requisição estiver em voo, evitando requisições duplicadas.
+
+#### Scenario: Duplo clique em aprovar
+- **WHEN** o usuário clica duas vezes em "Aprovar"
+- **THEN** apenas uma requisição é enviada e o botão permanece desabilitado até a resposta
+
+#### Scenario: Falha restaura o botão
+- **WHEN** a requisição falha
+- **THEN** o botão volta ao estado habilitado e a mensagem de erro é exibida
+
+### Requirement: A listagem indica recarga no modo servidor
+
+Ao trocar de página, buscar ou aplicar filtros no modo servidor, a listagem de Chamadas SHALL exibir um indicador de carregamento sem remover a tabela da tela.
+
+#### Scenario: Troca de página
+- **WHEN** o usuário muda de página
+- **THEN** um indicador de carregamento é exibido até a nova página chegar

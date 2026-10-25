@@ -92,6 +92,8 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  await validarHierarquiaPerfil(event, perfil)
+
   // RL05-M-01: reenviar convite a uma conta existente REDEFINE a credencial dela.
   // Exige `alterar` (não basta `criar`) e recusa conta não-Ativa, validando a
   // situação real no banco — não apenas o payload.

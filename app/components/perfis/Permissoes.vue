@@ -331,7 +331,7 @@ const confirmarCopia = async () => {
                       :aria-label="`${modulo.label}: ${extra}`"
                       @update:model-value="alternar(modulo.id, extra)"
                     />
-                    <span v-if="!extrasDe(modulo.id).length" class="text-[11px] italic text-slate-400">
+                    <span v-if="!extrasDe(modulo.id).length" class="text-[11px] italic text-slate-500">
                       Nenhuma
                     </span>
                   </div>

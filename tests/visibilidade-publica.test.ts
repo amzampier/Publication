@@ -48,7 +48,7 @@ describe('visibilidade pública', () => {
     expect(sql).toContain('projetos_escopo')
     expect(sql).toContain("r.status = 'Publicado'")
     expect(sql).toContain('r.arquivada = 0')
-    expect(sql).toContain('r.publicado_em <= NOW()')
+    expect(sql).toContain('r.publicado_em <= NOW(6)')
   })
 
   it('oculta publicação futura e ausência de carimbo', () => {

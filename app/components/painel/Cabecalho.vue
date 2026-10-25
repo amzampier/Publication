@@ -51,7 +51,7 @@ const selecionar = (valor: string | number) => {
           @update:model-value="selecionar"
         />
       </div>
-      <p v-else class="text-[11px] text-slate-400">Sem lan?amentos</p>
+      <p v-else class="text-[11px] text-slate-500">Sem lan?amentos</p>
 
       <UiButton
         variant="outline"

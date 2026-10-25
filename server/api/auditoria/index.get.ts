@@ -26,7 +26,8 @@ export default defineEventHandler(async (event) => {
   if (exportando && texto(q.formato) === 'csv') {
     const cabecalho = ['Data/Hora', 'Usuário', 'Ação', 'Recurso', 'Detalhes', 'IP']
     return enviarCsv(event, 'auditoria.csv', cabecalho, (async function* () {
-      let pagina = 1
+      let cursorData: string | undefined
+      let cursorId: string | undefined
       while (true) {
         const lote = await listarAuditoria({
           dataInicial: texto(q.dataInicial),
@@ -35,16 +36,18 @@ export default defineEventHandler(async (event) => {
           acao: texto(q.acao),
           recurso: texto(q.recurso),
           busca: texto(q.busca),
-          pagina,
           porPagina: 200,
-          ordenar: texto(q.ordenar),
-          direcao: texto(q.direcao)
+          cursorData,
+          cursorId,
+          semResumo: true
         })
         for (const r of lote.registros) {
           yield [new Date(r.registradoEm).toISOString().slice(0, 16).replace('T', ' '), r.usuario.nome, r.acao, r.recurso, r.detalhes, r.ip]
         }
-        if (lote.registros.length < 200) return
-        pagina += 1
+        const ultimo = lote.registros.at(-1)
+        if (lote.registros.length < 200 || !ultimo) return
+        cursorData = ultimo.registradoEm.slice(0, 19).replace('T', ' ')
+        cursorId = ultimo.id
       }
     })())
   }

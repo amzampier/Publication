@@ -168,7 +168,7 @@ watch(
       <!-- Placeholder -->
       <span
         v-if="vazio && placeholder"
-        class="pointer-events-none absolute left-3.5 top-2.5 text-xs text-slate-400"
+        class="pointer-events-none absolute left-3.5 top-2.5 text-xs text-slate-500"
       >
         {{ placeholder }}
       </span>

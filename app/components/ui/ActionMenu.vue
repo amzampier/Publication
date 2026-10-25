@@ -226,7 +226,7 @@ onUnmounted(() => {
           class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-focus"
           :class="[
             item.disabled
-              ? 'cursor-not-allowed text-slate-400'
+              ? 'cursor-not-allowed text-slate-500'
               : item.tone === 'danger'
                 ? [
                     'text-rose-700',

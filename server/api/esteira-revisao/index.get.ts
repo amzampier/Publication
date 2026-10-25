@@ -12,8 +12,10 @@ export default defineEventHandler(async (event) => {
   for (const acao of funcionalidadesDeConsulta({ busca, filtros })) {
     await requirePermission(event, 'esteira-revisao', acao)
   }
+  const pagina = Math.max(1, Math.trunc(Number(consulta.pagina) || 1))
+  const porPagina = Math.min(500, Math.max(1, Math.trunc(Number(consulta.porPagina) || 200)))
   try {
-    return await listarEsteira()
+    return await listarEsteira(pagina, porPagina)
   } catch (erro) {
     if (!ehSaturacaoDePool(erro)) throw erro
     setResponseStatus(event, 503)

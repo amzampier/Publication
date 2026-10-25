@@ -35,14 +35,15 @@ export default defineEventHandler(async (event) => {
   if (baixar && textoQuery(consulta.formato) === 'csv') {
     const cabecalho = ['Chamada', 'Título', 'Software', 'Módulo', 'Tipo', 'Impacto', 'Status', 'Lançamento', 'Liberação']
     return enviarCsv(event, 'lancar-chamadas.csv', cabecalho, (async function* () {
-      let pagina = 1
+      let cursor: string | undefined
       while (true) {
-        const lote = await listarChamadasPaginadas({ pagina, porPagina: 200, filtros })
+        const lote = await listarChamadasPaginadas({ porPagina: 200, filtros, cursor, semResumo: true })
         for (const c of lote.itens) {
           yield [c.chamada, c.titulo, c.softwares.join(', '), c.modulo, c.tipo, c.impacto, c.status, c.dataLancamento, c.dataLiberacao]
         }
-        if (lote.itens.length < 200) return
-        pagina += 1
+        const ultima = lote.itens.at(-1)
+        if (lote.itens.length < 200 || !ultima) return
+        cursor = ultima.chamada
       }
     })())
   }
@@ -56,6 +57,6 @@ export default defineEventHandler(async (event) => {
     200,
     Math.max(1, Number.parseInt(textoQuery(consulta.porPagina) || '20', 10) || 20)
   )
-  const resultado = await listarChamadasPaginadas({ pagina, porPagina, filtros })
+  const resultado = await listarChamadasPaginadas({ pagina, porPagina, filtros, ordenar: textoQuery(consulta.ordenar), direcao: textoQuery(consulta.direcao) })
   return { ...resultado, chamadas: resultado.itens }
 })

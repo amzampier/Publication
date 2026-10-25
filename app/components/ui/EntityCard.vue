@@ -92,7 +92,7 @@ withDefaults(defineProps<Props>(), {
           class="flex items-center justify-between gap-3"
         >
           <dt class="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-slate-500">
-            <component :is="linha.icone" v-if="linha.icone" class="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+            <component :is="linha.icone" v-if="linha.icone" class="h-3.5 w-3.5 text-slate-500" aria-hidden="true" />
             {{ linha.rotulo }}
           </dt>
           <dd class="break-words text-right text-xs font-semibold text-slate-900">

@@ -327,7 +327,7 @@ export async function atualizarManual(
           SET codigo = ?, titulo = ?, descricao = ?, ano = ?, mes = ?, mes_numero = ?,
               status = ?, destaque_mes = ?, destaque_semana = ?, data_publicacao = ?,
               publicado_em = CASE
-                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                WHEN ? = 'Publicado' THEN COALESCE(publicado_em, ?, CURRENT_TIMESTAMP(6))
                 ELSE NULL
               END
         WHERE id = ?`,
@@ -377,7 +377,7 @@ export async function publicarManual(
   let publicadas = 0
   try {
     await tx.query(
-      "UPDATE manuais_mensal SET status = 'Publicado', data_publicacao = ?, publicado_em = COALESCE(?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
+      "UPDATE manuais_mensal SET status = 'Publicado', data_publicacao = ?, publicado_em = COALESCE(publicado_em, ?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
       [dataPublicacao, publicadoEmFuturo(dataPublicacao), id]
     )
     const resultado = await reconciliarFilhasPublicacao(tx, 'manual', id, ator)

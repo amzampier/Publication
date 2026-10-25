@@ -61,21 +61,21 @@ export default defineEventHandler(async (event) => {
          JOIN entregas_itens e ON e.id = a.entrega_item_id
         WHERE (${urlBase ? "a.url_arquivo LIKE CONCAT(?, '.%')" : 'a.url_arquivo = ?'})
           AND e.status = 'Publicado'
-          AND e.publicado_em IS NOT NULL AND e.publicado_em <= NOW()
+          AND e.publicado_em IS NOT NULL AND e.publicado_em <= NOW(6)
           AND ${sqlVinculoPublicado('e')}
           AND (
             EXISTS (SELECT 1 FROM release_week r
                      WHERE r.id = e.release_id AND r.status = 'Publicado'
                        AND r.arquivada = 0
-                       AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW())
+                       AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW(6))
             OR EXISTS (SELECT 1 FROM manuais_mensal m
                         WHERE m.id = e.manual_id AND m.status = 'Publicado'
                           AND m.arquivada = 0
-                          AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW())
+                          AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW(6))
             OR EXISTS (SELECT 1 FROM projetos_escopo p
                         WHERE p.id = e.projeto_id AND p.status = 'Publicado'
                           AND p.arquivada = 0
-                          AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW())
+                          AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW(6))
           )
         LIMIT 1`,
       [urlBase ?? url]

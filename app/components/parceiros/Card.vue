@@ -37,7 +37,7 @@ const linhas = computed(() => [
         <button
           type="button"
           :aria-label="`Editar ${parceiro.razao_social}`"
-          class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
           @click="emit('editar', parceiro)"
         >
           <Pencil class="h-3.5 w-3.5" />
@@ -48,7 +48,7 @@ const linhas = computed(() => [
         <button
           type="button"
           :aria-label="`Excluir ${parceiro.razao_social}`"
-          class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
           @click="emit('excluir', parceiro)"
         >
           <Trash2 class="h-3.5 w-3.5" />

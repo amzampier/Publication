@@ -102,7 +102,7 @@ const acionarMenu = (id: string) => {
         <button
           type="button"
           :aria-label="`Ver itens de ${escopo.nome}`"
-          class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-sky-50 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-sky-50 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
           @click="emit('ver-itens', escopo)"
         >
           <ListChecks class="h-3.5 w-3.5" />
@@ -113,7 +113,7 @@ const acionarMenu = (id: string) => {
         <button
           type="button"
           :aria-label="`Editar ${escopo.nome}`"
-          class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+          class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-lime-50 hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
           @click="emit('editar', escopo)"
         >
           <Pencil class="h-3.5 w-3.5" />
@@ -132,7 +132,7 @@ const acionarMenu = (id: string) => {
             motivoExclusao ? `Excluir escopo — ${motivoExclusao}` : `Excluir ${escopo.nome}`
           "
           :title="motivoExclusao ?? 'Excluir escopo'"
-          class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+          class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-500"
           @click="emit('excluir', escopo)"
         >
           <Trash2 class="h-3.5 w-3.5" />

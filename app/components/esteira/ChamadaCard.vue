@@ -60,7 +60,7 @@ const abrirPortal = () => {
         <UiBadge variant="neutral" size="sm" :show-icon="false">
           {{ rotuloOrigem }}
         </UiBadge>
-        <span class="truncate font-mono text-[10px] text-slate-400">{{ linha.vinculo }}</span>
+        <span class="truncate font-mono text-[10px] text-slate-500">{{ linha.vinculo }}</span>
       </div>
       <UiTooltip v-if="imagens" :content="`${imagens} imagem(ns) de evidência`" position="top">
         <span class="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] text-slate-500">
@@ -109,7 +109,7 @@ const abrirPortal = () => {
         <UiTooltip content="Inspecionar chamada" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Inspecionar chamada"
             @click="emit('detalhes', linha)"
           >
@@ -119,7 +119,7 @@ const abrirPortal = () => {
         <UiTooltip v-if="can('esteira-revisao', 'publicar')" content="Aprovar chamada" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Aprovar chamada"
             @click="emit('aprovar', linha)"
           >
@@ -129,7 +129,7 @@ const abrirPortal = () => {
         <UiTooltip v-if="can('esteira-revisao', 'alterar')" content="Recusar chamada" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Recusar chamada"
             @click="emit('recusar', linha)"
           >
@@ -142,7 +142,7 @@ const abrirPortal = () => {
         <UiTooltip v-if="can('esteira-revisao', 'alterar')" content="Voltar para revisão" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Voltar para revisão"
             @click="emit('reabrir', linha)"
           >
@@ -152,7 +152,7 @@ const abrirPortal = () => {
         <UiTooltip v-if="can('esteira-revisao', 'publicar')" content="Publicar item" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-sky-50 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-sky-50 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Publicar item"
             @click="emit('publicar', linha)"
           >
@@ -172,7 +172,7 @@ const abrirPortal = () => {
         <UiTooltip v-if="can('esteira-revisao', 'publicar')" content="Suspender para homologado" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Suspender para homologado"
             @click="emit('suspender', linha)"
           >
@@ -186,7 +186,7 @@ const abrirPortal = () => {
           <button
             type="button"
             :disabled="!visivelNoPortal"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-500"
             :aria-label="
               visivelNoPortal
                 ? 'Abrir no portal público'
@@ -203,7 +203,7 @@ const abrirPortal = () => {
         <UiTooltip content="Inspecionar chamada" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-brand-structure focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Inspecionar chamada"
             @click="emit('detalhes', linha)"
           >
@@ -213,7 +213,7 @@ const abrirPortal = () => {
         <UiTooltip v-if="can('esteira-revisao', 'alterar')" content="Reabrir chamada" position="top">
           <button
             type="button"
-            class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
             aria-label="Reabrir chamada"
             @click="emit('reabrir', linha)"
           >

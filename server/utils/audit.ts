@@ -11,7 +11,7 @@
 import { createError } from 'h3'
 import { query } from './db'
 import { cacheado } from './cache'
-import { condicaoPrefixo, termoFulltext } from './busca'
+import { condicaoPrefixo, pareceCodigo, termoFulltext } from './busca'
 import { getSessionUser } from './auth'
 import { ipDoCliente } from './rateLimit'
 
@@ -45,6 +45,10 @@ export interface FiltrosAuditoriaApi {
   /** paginação server-side (1-based); ignorada no modo exportação */
   pagina?: number
   porPagina?: number
+  /** cursor keyset (data_hora, id) para exportação em fluxo */
+  cursorData?: string
+  cursorId?: string
+  semResumo?: boolean
   /** devolve o conjunto filtrado completo (bounded) para exportação */
   exportar?: boolean
   /** ordenação server-side (RL04-M-02): id da coluna + direção */
@@ -214,26 +218,33 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const fulltext = termoFulltext(busca)
+    const codigo = pareceCodigo(busca)
+    const fulltext = codigo ? null : termoFulltext(busca)
     if (fulltext) {
-      const prefixo = condicaoPrefixo(['acao'], busca)
+      const prefixo = condicaoPrefixo(['usuario_nome', 'entidade', 'acao'], busca)
       clausulas.push(
         `(MATCH(usuario_nome, entidade, detalhes) AGAINST (? IN BOOLEAN MODE) OR ${prefixo.sql})`
       )
       params.push(fulltext, ...prefixo.params)
     } else {
-      const prefixo = condicaoPrefixo(['detalhes', 'usuario_nome', 'entidade', 'acao'], busca)
+      const colunas = codigo
+        ? ['usuario_nome', 'entidade', 'acao', 'detalhes']
+        : ['usuario_nome', 'entidade', 'acao']
+      const prefixo = condicaoPrefixo(colunas, busca)
       clausulas.push(prefixo.sql)
       params.push(...prefixo.params)
     }
   }
-
+  if (filtros.cursorData !== undefined) {
+    clausulas.push('(data_hora < ? OR (data_hora = ? AND id < ?))')
+    params.push(filtros.cursorData, filtros.cursorData, filtros.cursorId ?? '')
+  }
   const clausula = clausulas.length > 0 ? `WHERE ${clausulas.join(' AND ')}` : ''
 
   const pagina = Math.max(1, Math.trunc(filtros.pagina ?? 1))
   const porPagina = Math.min(POR_PAGINA_MAX, Math.max(1, Math.trunc(filtros.porPagina ?? POR_PAGINA_PADRAO)))
   const exportar = filtros.exportar === true
-  const ordem = montarOrdemAuditoria(filtros.ordenar, filtros.direcao)
+  const ordem = filtros.cursorData !== undefined ? 'data_hora DESC, id DESC' : montarOrdemAuditoria(filtros.ordenar, filtros.direcao)
 
   const consultaPagina = exportar
     ? query<AuditoriaRow[]>(
@@ -253,17 +264,21 @@ export async function listarAuditoria(filtros: FiltrosAuditoriaApi): Promise<Res
 
   const [linhas, agregadoRows, distintosRows] = await Promise.all([
     consultaPagina,
-    query<Array<{ registros: number; ultima: Date | null }>>(
-      `SELECT COUNT(*) AS registros, MAX(data_hora) AS ultima FROM auditoria ${clausula}`,
-      params
-    ),
-    query<Array<{ usuarios_distintos: number }>>(
-      `SELECT COUNT(DISTINCT usuario_nome) AS usuarios_distintos FROM auditoria ${clausula}`,
-      params
-    )
+    filtros.semResumo
+      ? Promise.resolve([] as Array<{ registros: number; ultima: Date | null }>)
+      : query<Array<{ registros: number; ultima: Date | null }>>(
+          `SELECT COUNT(*) AS registros, MAX(data_hora) AS ultima FROM auditoria ${clausula}`,
+          params
+        ),
+    filtros.semResumo
+      ? Promise.resolve([] as Array<{ usuarios_distintos: number }>)
+      : query<Array<{ usuarios_distintos: number }>>(
+          `SELECT COUNT(DISTINCT usuario_nome) AS usuarios_distintos FROM auditoria ${clausula}`,
+          params
+        )
   ])
   // Opções do conjunto NÃO filtrado — cache de TTL curto (RL04 M-10).
-  const opcoes = await cacheado('auditoria-opcoes', 30_000, async () => {
+  const opcoes = filtros.semResumo ? { usuarios: [], recursos: [] } : await cacheado('auditoria-opcoes', 30_000, async () => {
     const [usuariosRows, recursosRows] = await Promise.all([
       query<Array<{ usuario_nome: string }>>('SELECT DISTINCT usuario_nome FROM auditoria ORDER BY usuario_nome ASC'),
       query<Array<{ entidade: string }>>('SELECT DISTINCT entidade FROM auditoria ORDER BY entidade ASC')

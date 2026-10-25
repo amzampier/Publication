@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { condicaoPrefixo, termoFulltext } from '../server/utils/busca'
+import { condicaoPrefixo, pareceCodigo, termoFulltext } from '../server/utils/busca'
 import { csvStream, escaparCsv } from '../server/utils/csv'
 
 describe('adaptador de busca', () => {
@@ -9,6 +9,13 @@ describe('adaptador de busca', () => {
     expect(termoFulltext('ab')).toBeNull()
   })
 
+  it('trata códigos/e-mails como prefixo e remove operadores do MATCH', () => {
+    expect(pareceCodigo('MAN-10/2026')).toBe(true)
+    expect(pareceCodigo('admin@empresa.com')).toBe(true)
+    expect(pareceCodigo('fiscal')).toBe(false)
+    expect(termoFulltext('---')).toBeNull()
+    expect(termoFulltext('nota fiscal')).toBe('+nota* +fiscal*')
+  })
   it('gera prefixo com escape para códigos/termos curtos', () => {
     const condicao = condicaoPrefixo(['e.chamada', 'e.titulo'], 'SFT%')
     expect(condicao.sql).toBe('(e.chamada LIKE ? OR e.titulo LIKE ?)')

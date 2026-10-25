@@ -118,6 +118,7 @@ const clicarItem = (item: SidebarItem) => {
   itemAtivo.value = item.id
   if (item.to) {
     navigateTo(item.to)
+    if (drawerAtivo.value) emit('fechar')
     return
   }
   // Item da sidebar sem rota: avisa que o módulo ainda não existe (spec
@@ -178,7 +179,7 @@ const alternarSessao = (sessao: SidebarSession) => {
         <template v-for="sessao in sessoesVisiveis" :key="sessao.label">
           <button
             type="button"
-            class="flex items-center justify-between w-full text-[9px] font-bold text-slate-400 uppercase tracking-widest px-2 pt-3 pb-1 select-none hover:text-white transition-colors focus-visible:outline-none focus-visible:text-white"
+            class="flex items-center justify-between w-full text-[9px] font-bold text-slate-500 uppercase tracking-widest px-2 pt-3 pb-1 select-none hover:text-white transition-colors focus-visible:outline-none focus-visible:text-white"
             :aria-expanded="sessao.aberto"
             :aria-label="`Sessão ${sessao.label}`"
             @click="alternarSessao(sessao)"

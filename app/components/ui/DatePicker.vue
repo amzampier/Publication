@@ -232,7 +232,7 @@ onUnmounted(() => {
         disabled ? 'bg-slate-200 cursor-not-allowed opacity-60' : 'bg-white'
       ]"
     >
-      <div class="pl-3 pr-1 text-slate-400 flex items-center pointer-events-none">
+      <div class="pl-3 pr-1 text-slate-500 flex items-center pointer-events-none">
         <CalendarIcon class="h-4 w-4" />
       </div>
 
@@ -245,7 +245,7 @@ onUnmounted(() => {
         maxlength="10"
         :aria-describedby="error ? erroId : undefined"
         :class="[
-          'w-full py-2 pl-2 bg-transparent text-slate-900 text-xs font-normal placeholder:text-slate-400 focus:outline-none tabular-nums',
+          'w-full py-2 pl-2 bg-transparent text-slate-900 text-xs font-normal placeholder:text-slate-500 focus:outline-none tabular-nums',
           error ? 'pr-16' : 'pr-9'
         ]"
         @input="handleInput"
@@ -273,7 +273,7 @@ onUnmounted(() => {
         <button
           v-if="inputStr && !disabled"
           type="button"
-          class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
+          class="text-slate-500 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
           aria-label="Limpar data"
           @click="clearDate"
         >

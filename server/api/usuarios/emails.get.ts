@@ -9,6 +9,8 @@ const inteiro = (v: unknown): number | undefined => {
 }
 
 export default defineEventHandler(async (event) => {
+  await requirePermission(event, 'gestao-usuarios', 'visualizar')
+  await requirePermission(event, 'gestao-usuarios', 'buscar')
   const q = texto(getQuery(event).q)
   if (q.length < 2) {
     throw createError({
@@ -16,8 +18,6 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'Informe ao menos 2 caracteres para buscar e-mails.'
     })
   }
-  await requirePermission(event, 'gestao-usuarios', 'visualizar')
-  await requirePermission(event, 'gestao-usuarios', 'buscar')
   const consulta = getQuery(event)
   return await buscarEmailsUsuarios(
     q,

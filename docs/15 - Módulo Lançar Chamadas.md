@@ -20,7 +20,7 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 
 ## 1. Visão geral e rota
 
-> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, as datas de lançamento/liberação exigem segunda-feira e a Data de liberação é herdada da Release selecionada (editável). A galeria usa miniaturas WebP com fallback e cache.
+> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, as datas de lançamento/liberação exigem segunda-feira ou o próximo dia útil quando a segunda for feriado, e a Data de liberação é herdada da Release selecionada (editável). A galeria usa miniaturas WebP com fallback e cache.
 
 
 - **Rota:** `/admin/lancar-chamadas` → `app/pages/admin/lancar-chamadas.vue` com

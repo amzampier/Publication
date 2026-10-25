@@ -25,6 +25,7 @@ import {
   type GroupNode,
   type SortRule,
   calculateAggregate,
+  formatarValorGrupo,
   groupDataHierarchical,
   sortMultiColumn
 } from '../../utils/dataGrid'
@@ -56,6 +57,7 @@ interface Props {
   perPage?: number
   /** Debounce (ms) da busca no modo servidor antes de emitir `search` */
   searchDebounceMs?: number
+  searchLabel?: string
   /** Expansão de linha (opt-in): habilita o controle +/- em cada linha. */
   expandable?: boolean
   /** Chaves (rowKey) das linhas expandidas (`v-model:expanded`). */
@@ -84,6 +86,7 @@ const props = withDefaults(defineProps<Props>(), {
   page: 1,
   perPage: 0,
   searchDebounceMs: 300,
+  searchLabel: 'Buscar na tabela',
   expandable: false,
   expanded: () => [],
   rowKey: 'id',
@@ -301,9 +304,10 @@ const getColumnHeader = (colId: string) => {
 
 const getGroupValueLabel = (node: { groupKey: string; groupValue: any }) => {
   const col = props.columns.find((c) => c.id === node.groupKey)
-  if (col?.format) return col.format(node.groupValue, undefined)
-  return node.groupValue
+  return formatarValorGrupo(node.groupValue, col?.format)
 }
+
+const searchLabel = computed(() => props.searchLabel || 'Buscar na tabela')
 
 const getGroupLevelBadge = (colId: string) => {
   const idx = groupedColumns.value.indexOf(colId)
@@ -676,7 +680,7 @@ onUnmounted(() => {
         <div v-if="showHeaderTop && showSearch" ref="buscaRef" class="w-full min-w-0 sm:w-64 shrink-0">
           <UiInput
             v-model="searchQuery"
-            aria-label="Buscar na tabela"
+            :aria-label="searchLabel"
             placeholder="Filtrar dados da tabela..."
             :left-icon="Search"
             :right-icon="searchQuery ? X : undefined"
@@ -734,6 +738,7 @@ onUnmounted(() => {
           type="button"
           class="text-slate-500 hover:text-white ml-0.5 p-0.5 transition-colors cursor-pointer"
           title="Remover agrupamento"
+          :aria-label="`Remover agrupamento de ${getColumnHeader(colId)}`"
           @click="removeGroupColumn(colId)"
         >
           <X class="h-3 w-3" />
@@ -861,6 +866,10 @@ onUnmounted(() => {
                   isNodeExpanded(row.node!.id, 1) ? 'bg-slate-50 hover:bg-slate-100' : 'bg-white hover:bg-slate-50'
                 ]"
                 @click="toggleNode(row.node!.id, 1)"
+                tabindex="0"
+                :aria-expanded="isNodeExpanded(row.node!.id, 1)"
+                @keydown.enter.prevent="toggleNode(row.node!.id, 1)"
+                @keydown.space.prevent="toggleNode(row.node!.id, 1)"
               >
                 <td :colspan="colSpanTotal" class="py-1 px-2.5">
                   <div class="flex items-center justify-between">
@@ -878,7 +887,7 @@ onUnmounted(() => {
                       <span class="text-slate-900 font-bold text-[11px]">{{ getGroupValueLabel(row.node!) }}</span>
 
                       <span class="text-[10px] text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans shadow-2xs">
-                        {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}
+                        {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}<span v-if="serverMode" class="font-normal text-slate-500"> (nesta página)</span>
                       </span>
                     </div>
 
@@ -898,6 +907,10 @@ onUnmounted(() => {
                   isNodeExpanded(row.node!.id, 2) ? 'bg-slate-50/60 hover:bg-slate-100/60' : 'bg-white hover:bg-slate-50/80'
                 ]"
                 @click="toggleNode(row.node!.id, 2)"
+                tabindex="0"
+                :aria-expanded="isNodeExpanded(row.node!.id, 2)"
+                @keydown.enter.prevent="toggleNode(row.node!.id, 2)"
+                @keydown.space.prevent="toggleNode(row.node!.id, 2)"
               >
                 <td :colspan="colSpanTotal" class="py-1 px-2.5 pl-8">
                   <div class="flex items-center justify-between">
@@ -915,7 +928,7 @@ onUnmounted(() => {
                       <span class="text-slate-900 font-bold text-[11px]">{{ getGroupValueLabel(row.node!) }}</span>
 
                       <span class="text-[10px] text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans shadow-2xs">
-                        {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}
+                        {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}<span v-if="serverMode" class="font-normal text-slate-500"> (nesta página)</span>
                       </span>
                     </div>
 
@@ -931,6 +944,10 @@ onUnmounted(() => {
                 v-else-if="row.type === 'group3'"
                 class="bg-slate-50/40 font-medium text-slate-700 cursor-pointer hover:bg-slate-100/50 transition-colors border-y border-slate-100 h-8"
                 @click="toggleNode(row.node!.id, 3)"
+                tabindex="0"
+                :aria-expanded="isNodeExpanded(row.node!.id, 3)"
+                @keydown.enter.prevent="toggleNode(row.node!.id, 3)"
+                @keydown.space.prevent="toggleNode(row.node!.id, 3)"
               >
                 <td :colspan="colSpanTotal" class="py-1 px-2.5 pl-14">
                   <div class="flex items-center gap-2">
@@ -944,7 +961,7 @@ onUnmounted(() => {
                     <span class="text-slate-600 font-normal text-[11px]">{{ getColumnHeader(row.node!.groupKey) }}:</span>
                     <span class="text-slate-900 font-bold text-[11px]">{{ getGroupValueLabel(row.node!) }}</span>
                     <span class="text-[10px] text-slate-600 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-normal font-sans">
-                      {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}
+                      {{ row.node!.count }} {{ row.node!.count === 1 ? 'registro' : 'registros' }}<span v-if="serverMode" class="font-normal text-slate-500"> (nesta página)</span>
                     </span>
                   </div>
                 </td>
@@ -998,7 +1015,29 @@ onUnmounted(() => {
                   <slot name="expanded" :row="row.item" />
                 </td>
               </tr>
+
             </template>
+            <tr v-if="paginatedFlatRows.length === 0">
+              <td :colspan="colSpanTotal" class="py-10 text-center">
+                <div v-if="error" class="mx-auto flex max-w-md flex-col items-center gap-2 px-4">
+                  <AlertCircle class="h-6 w-6 text-rose-700" aria-hidden="true" />
+                  <p class="text-xs font-medium text-rose-700" role="alert">
+                    {{ typeof error === 'string' ? error : (errorMessage || 'Não foi possível carregar os dados.') }}
+                  </p>
+                  <button
+                    type="button"
+                    class="mt-1 inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 transition-colors hover:border-brand-focus hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+                    @click="emit('retry')"
+                  >
+                    <RotateCw class="h-3.5 w-3.5" aria-hidden="true" />
+                    Tentar novamente
+                  </button>
+                </div>
+                <span v-else class="text-slate-600">
+                  {{ (filtersCount > 0 || searchQuery.trim() !== '') ? 'Nenhum resultado encontrado para o filtro.' : 'Nenhum registro encontrado.' }}
+                </span>
+              </td>
+            </tr>
           </template>
 
           <!-- CASO 2: Renderização Plana (Sem agrupamento) com Divisórias Verticais cxGrid -->

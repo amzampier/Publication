@@ -550,7 +550,7 @@ reconciliação para as bases existentes, mantendo contagens, KPI e este documen
   com a sidebar e com a página (era "Configuração de Perfis (RBAC)"); o menu fecha após a
   navegação.
 - Os quatro itens da Administração têm rota (Configurações Globais, Gestão de Usuários, Gestão
-  de Auditoria e Perfis de Acesso (RBAC)); os itens das demais sessões seguem sem rota e, ao
+  de Auditoria e Perfis de Acesso (RBAC)); todos os itens atuais possuem rota; a mensagem de módulo em construção permanece apenas como salvaguarda futura.
   serem acionados, exibem o toast "Módulo em construção." (`docs/03` §Observações — MEL-03 do
   `RL01` resolvido).
 

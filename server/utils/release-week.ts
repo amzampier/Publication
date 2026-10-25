@@ -315,7 +315,7 @@ export async function atualizarReleaseWeek(
                 ELSE NULL
               END,
               publicado_em = CASE
-                WHEN ? = 'Publicado' THEN COALESCE(?, CURRENT_TIMESTAMP(6))
+                WHEN ? = 'Publicado' THEN COALESCE(publicado_em, ?, CURRENT_TIMESTAMP(6))
                 ELSE NULL
               END
         WHERE id = ?`,
@@ -365,7 +365,7 @@ export async function publicarReleaseWeek(
   let publicadas = 0
   try {
     await tx.query(
-      "UPDATE release_week SET status = 'Publicado', data_aprovacao = CURRENT_TIMESTAMP(6), publicado_em = COALESCE(?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
+      "UPDATE release_week SET status = 'Publicado', data_aprovacao = CURRENT_TIMESTAMP(6), publicado_em = COALESCE(publicado_em, ?, CURRENT_TIMESTAMP(6)) WHERE id = ?",
       [publicadoEmFuturo(atual.dataPublicacao), id]
     )
     const resultado = await reconciliarFilhasPublicacao(tx, 'release', id, ator)

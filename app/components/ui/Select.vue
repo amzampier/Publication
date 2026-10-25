@@ -290,7 +290,7 @@ watch(filteredOptions, () => {
             <component
               :is="leftIcon"
               v-if="leftIcon"
-              class="h-4 w-4 text-slate-400 shrink-0"
+              class="h-4 w-4 text-slate-500 shrink-0"
             />
           </slot>
 
@@ -305,7 +305,7 @@ watch(filteredOptions, () => {
               {{ selectedOption.badge }}
             </span>
           </div>
-          <span v-else class="text-xs text-slate-400 font-normal truncate">
+          <span v-else class="text-xs text-slate-500 font-normal truncate">
             {{ placeholder }}
           </span>
         </div>
@@ -316,13 +316,13 @@ watch(filteredOptions, () => {
             v-if="clearable && selectedOption && !disabled"
             type="button"
             aria-label="Limpar seleção"
-            class="text-slate-400 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
+            class="text-slate-500 hover:text-slate-600 p-0.5 rounded focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-focus"
             @click="clearSelection"
           >
             <X class="h-3.5 w-3.5" />
           </button>
           <ChevronDown
-            class="h-4 w-4 text-slate-400 transition-transform duration-200"
+            class="h-4 w-4 text-slate-500 transition-transform duration-200"
             :class="{ 'rotate-180 text-brand-focus': isOpen }"
           />
         </div>
@@ -379,18 +379,18 @@ watch(filteredOptions, () => {
         <!-- Busca Interna: 30px de altura -->
         <div class="px-2.5 pt-2.5 pb-2 border-b border-slate-100 bg-white space-y-1">
           <div class="flex items-center gap-2 border border-slate-200 rounded-lg px-2.5 h-[30px] bg-white focus-within:border-brand-focus transition-colors">
-            <Search class="h-3.5 w-3.5 text-slate-400 shrink-0" />
+            <Search class="h-3.5 w-3.5 text-slate-500 shrink-0" />
             <input
               ref="searchInputRef"
               v-model="searchQuery"
               type="text"
               data-busca
               :placeholder="searchPlaceholder"
-              class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none"
+              class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none"
               style="outline: none !important; box-shadow: none !important;"
             />
           </div>
-          <p class="text-[10px] text-slate-400 pl-0.5">
+          <p class="text-[10px] text-slate-500 pl-0.5">
             {{ filteredOptions.length }} opções encontradas
           </p>
         </div>
@@ -426,7 +426,7 @@ watch(filteredOptions, () => {
                   {{ opt.badge }}
                 </span>
               </div>
-              <span v-if="opt.description" class="text-[10px] text-slate-400 font-normal">
+              <span v-if="opt.description" class="text-[10px] text-slate-500 font-normal">
                 {{ opt.description }}
               </span>
             </div>
@@ -439,7 +439,7 @@ watch(filteredOptions, () => {
 
           <div
             v-if="filteredOptions.length === 0"
-            class="px-4 py-6 text-center text-xs text-slate-400"
+            class="px-4 py-6 text-center text-xs text-slate-500"
           >
             Nenhum resultado encontrado para "{{ searchQuery }}"
           </div>

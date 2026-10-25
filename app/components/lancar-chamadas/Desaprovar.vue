@@ -9,10 +9,12 @@ import {
 interface Props {
   modelValue: boolean
   chamada?: ChamadaModelo | null
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  chamada: null
+  chamada: null,
+  loading: false
 })
 
 const emit = defineEmits<{
@@ -46,12 +48,12 @@ const confirmar = () => {
   <UiModal
     :model-value="modelValue"
     size="sm"
-    title="Desaprovar chamada"
-    subtitle="A chamada volta para Revisar e a data de liberação é limpa."
+    :title="chamada?.status === 'Recusado' ? 'Reabrir chamada' : 'Desaprovar chamada'"
+    :subtitle="chamada?.status === 'Recusado' ? 'A chamada volta para Revisar após os ajustes.' : 'A chamada volta para Revisar e a data de liberação é limpa.'"
     :icon="Undo2"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <UiModalSection title="Confirmar desaprovação" :icon="Undo2">
+    <UiModalSection :title="chamada?.status === 'Recusado' ? 'Confirmar reabertura' : 'Confirmar desaprovação'" :icon="Undo2">
       <p class="text-sm text-slate-700">
         A chamada
         <span class="font-mono font-semibold tabular-nums">{{ chamada?.chamada }}</span>
@@ -73,9 +75,10 @@ const confirmar = () => {
 
     <template #footer>
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="primary" :disabled="Boolean(motivo)" @click="confirmar">
+      <UiButton variant="primary" :disabled="Boolean(motivo) || loading" :loading="loading"
+        @click="confirmar">
         <template #leftIcon><Undo2 class="h-4 w-4" /></template>
-        Desaprovar
+        {{ chamada?.status === 'Recusado' ? 'Reabrir' : 'Desaprovar' }}
       </UiButton>
     </template>
   </UiModal>

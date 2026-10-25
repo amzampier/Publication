@@ -6,10 +6,12 @@ import { motivoBloqueioExclusao, type ChamadaModelo } from './validadores'
 interface Props {
   modelValue: boolean
   chamada?: ChamadaModelo | null
+  loading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  chamada: null
+  chamada: null,
+  loading: false
 })
 
 const emit = defineEmits<{
@@ -59,7 +61,8 @@ const confirmar = () => {
 
     <template #footer>
       <UiButton variant="outline" @click="cancelar">Cancelar</UiButton>
-      <UiButton variant="danger" :disabled="Boolean(motivo)" @click="confirmar">
+      <UiButton variant="danger" :disabled="Boolean(motivo) || loading" :loading="loading"
+        @click="confirmar">
         <template #leftIcon><Trash2 class="h-4 w-4" /></template>
         Excluir
       </UiButton>

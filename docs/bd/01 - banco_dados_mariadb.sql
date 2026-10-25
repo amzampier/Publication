@@ -686,3 +686,14 @@ CREATE OR REPLACE VIEW manuais AS
 -- Migration 35 (escalar): índices FULLTEXT ft_entregas_busca, ft_auditoria_busca
 -- e ft_usuarios_busca. Rollback: DROP INDEX em cada tabela.
 -- =========================================================================
+
+-- =========================================================================
+-- MIGRATIONS 32-40 (referência; DDL executável em server/migration/)
+-- 32: triggers de imutabilidade de auditoria/histórico + EVENT de expurgo.
+-- 33: publicado_em em release_week, manuais_mensal, projetos_escopo e entregas_itens.
+-- 34: rate_limit_contadores (UPSERT por IP+rota).
+-- 35: FULLTEXT inicial em entregas_itens/auditoria/usuarios.
+-- 36-38: ampliação do FULLTEXT de Chamadas, tags_texto e índices de prefixo.
+-- 39: idx_entregas_fluxo (status + vínculos + datas).
+-- 40: EVENT ev_expurgo_rate_limit.
+-- =========================================================================

@@ -58,7 +58,7 @@ const aoEditar = () => emit('change')
               aria-label="Buscar CEP (ViaCEP)"
               :aria-busy="carregandoCep ? 'true' : undefined"
               :class="[
-                'mb-[1px] flex h-[34px] w-5 shrink-0 items-center justify-center text-slate-400 transition-colors hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus',
+                'mb-[1px] flex h-[34px] w-5 shrink-0 items-center justify-center text-slate-500 transition-colors hover:text-brand-focus focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus',
                 carregandoCep
                   ? 'pointer-events-none'
                   : 'cursor-pointer'

@@ -178,3 +178,16 @@ export function groupDataHierarchical<T = any>(
 
   return nodes
 }
+
+/** Formata o valor do cabeçalho de grupo (data ISO -> pt-BR; respeita format). */
+export function formatarValorGrupo(
+  valor: unknown,
+  format?: (v: any, row?: any) => unknown
+): string {
+  if (format) return String(format(valor))
+  if (typeof valor === 'string' && /^\d{4}-\d{2}-\d{2}/.test(valor)) {
+    const [ano, mes, dia] = valor.slice(0, 10).split('-')
+    return `${dia}/${mes}/${ano}`
+  }
+  return valor === null || valor === undefined ? '' : String(valor)
+}

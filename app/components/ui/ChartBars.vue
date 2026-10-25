@@ -66,7 +66,7 @@ const tituloSegmento = (categoria: string, serie: SerieBarras, valor: number): s
     </p>
 
     <template v-else>
-      <div class="mt-3 flex items-center justify-between text-[10px] text-slate-400">
+      <div class="mt-3 flex items-center justify-between text-[10px] text-slate-500">
         <span>Máx. {{ maximo }}</span>
         <span>{{ totais.reduce((soma, total) => soma + total, 0) }}{{ sufixo }} no total</span>
       </div>

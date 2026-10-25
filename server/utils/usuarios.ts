@@ -9,7 +9,8 @@ import { cifrar } from './crypto'
 import { revogarSessoesDoUsuario } from './auth'
 import { garantirAdministracaoApos } from './perfis'
 import { cacheado, invalidarCache } from './cache'
-import { condicaoPrefixo, termoFulltext } from './busca'
+import { condicaoPrefixo, pareceCodigo, termoFulltext } from './busca'
+import { escaparLike } from './sql'
 
 export type SituacaoEscrita = 'Ativo' | 'Inativo'
 export type SituacaoLida = 'Ativo' | 'Inativo' | 'Bloqueado'
@@ -132,7 +133,7 @@ const COLUNAS_LISTA = `u.id, u.nome_completo, u.email_corporativo, u.situacao, u
   u.avatar_url, u.criado_em, u.atualizado_em, p.nome_perfil`
 
 /** Projeção enxuta da LISTAGEM (RL04 B-23): só as colunas exibidas na tabela. */
-const COLUNAS_LISTA_ENXUTA = `u.id, u.nome_completo, u.email_corporativo, u.situacao, u.ultimo_login, p.nome_perfil`
+const COLUNAS_LISTA_ENXUTA = `u.id, u.nome_completo, u.email_corporativo, u.situacao, u.ultimo_login, u.criado_em, u.atualizado_em, p.nome_perfil`
 
 // ---------------------------------------------------------------------------
 // Validações
@@ -259,6 +260,10 @@ export interface FiltrosUsuariosApi {
   /** ordenação server-side (RL04-M-02): id da coluna + direção */
   ordenar?: string
   direcao?: string
+  /** cursor keyset (nome, id) para exportação em fluxo */
+  cursorNome?: string
+  cursorId?: string
+  semResumo?: boolean
 }
 
 export interface KpisUsuarios {
@@ -326,24 +331,32 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
   }
   const busca = (filtros.busca ?? '').trim()
   if (busca) {
-    const fulltext = termoFulltext(busca)
+    const codigo = pareceCodigo(busca)
+    const fulltext = codigo ? null : termoFulltext(busca)
     if (fulltext) {
+      const prefixo = condicaoPrefixo(['u.nome_completo', 'u.email_corporativo'], busca)
       clausulas.push(
-        '(MATCH(u.nome_completo, u.email_corporativo) AGAINST (? IN BOOLEAN MODE))'
+        `(MATCH(u.nome_completo, u.email_corporativo) AGAINST (? IN BOOLEAN MODE) OR ${prefixo.sql})`
       )
-      params.push(fulltext)
+      params.push(fulltext, ...prefixo.params)
     } else {
       const prefixo = condicaoPrefixo(['u.nome_completo', 'u.email_corporativo'], busca)
       clausulas.push(prefixo.sql)
       params.push(...prefixo.params)
     }
   }
+  if (filtros.cursorNome !== undefined) {
+    clausulas.push('(u.nome_completo > ? OR (u.nome_completo = ? AND u.id > ?))')
+    params.push(filtros.cursorNome, filtros.cursorNome, filtros.cursorId ?? '')
+  }
   const clausula = clausulas.length > 0 ? `WHERE ${clausulas.join(' AND ')}` : ''
 
   const pagina = Math.max(1, Math.trunc(filtros.pagina ?? 1))
   const porPagina = Math.min(POR_PAGINA_MAX, Math.max(1, Math.trunc(filtros.porPagina ?? POR_PAGINA_PADRAO)))
   const exportar = filtros.exportar === true
-  const ordem = montarOrdem(filtros.ordenar, filtros.direcao, ORDEM_USUARIOS, 'u.nome_completo ASC')
+  const ordem = filtros.cursorNome !== undefined
+    ? 'u.nome_completo ASC, u.id ASC'
+    : montarOrdem(filtros.ordenar, filtros.direcao, ORDEM_USUARIOS, 'u.nome_completo ASC')
 
   const consultaPagina = exportar
     ? query<Record<string, unknown>[]>(
@@ -359,16 +372,17 @@ export async function listarUsuarios(filtros: FiltrosUsuariosApi = {}): Promise<
 
   const [linhas, agregadoRows] = await Promise.all([
     consultaPagina,
-    query<Array<{ total: number; ativos: number; perfis: number }>>(
-      `SELECT COUNT(*) AS total,
-              SUM(CASE WHEN u.situacao = 'Ativo' THEN 1 ELSE 0 END) AS ativos,
-              COUNT(DISTINCT u.perfil_id) AS perfis
-         FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id ${clausula}`,
-      params
-    )
+    filtros.semResumo
+      ? Promise.resolve([] as Array<{ total: number; ativos: number; perfis: number }>)
+      : query<Array<{ total: number; ativos: number; perfis: number }>>(
+          `SELECT COUNT(*) AS total,
+                  SUM(CASE WHEN u.situacao = 'Ativo' THEN 1 ELSE 0 END) AS ativos,
+                  COUNT(DISTINCT u.perfil_id) AS perfis
+             FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id ${clausula}`,
+          params
+        )
   ])
-  // Opções dos selects — cache de TTL curto (RL04 M-10).
-  const opcoes = await cacheado('usuarios-opcoes', 30_000, async () => {
+  const opcoes = filtros.semResumo ? { usuarios: [], perfis: [] } : await cacheado('usuarios-opcoes', 30_000, async () => {
     const [nomesRows, perfisRows] = await Promise.all([
       query<Array<{ nome_completo: string }>>('SELECT DISTINCT nome_completo FROM usuarios ORDER BY nome_completo ASC'),
       query<Array<{ nome_perfil: string }>>("SELECT DISTINCT nome_perfil FROM perfis_acesso WHERE situacao = 'Ativo' ORDER BY nome_perfil ASC")
@@ -821,7 +835,7 @@ export async function buscarEmailsUsuarios(
   const limite = Math.min(20, Math.max(1, Math.trunc(porPagina) || 10))
   const atual = Math.max(1, Math.trunc(pagina) || 1)
   const offset = (atual - 1) * limite
-  const padrao = `${termo}%`
+  const padrao = `%${escaparLike(termo)}%`
   const [linhas, totais] = await Promise.all([
     query<Array<Record<string, unknown>>>(
       `SELECT id, email_corporativo, nome_completo

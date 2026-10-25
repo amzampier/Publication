@@ -78,6 +78,8 @@ export const useLancarChamadasModelo = () => {
   const pagina = useState<number>('lancar-chamadas-pagina', () => 1)
   const porPagina = useState<number>('lancar-chamadas-por-pagina', () => 20)
   const total = useState<number>('lancar-chamadas-total', () => 0)
+  const ordenar = useState<string>('lancar-chamadas-ordenar', () => '')
+  const direcao = useState<'asc' | 'desc'>('lancar-chamadas-direcao', () => 'asc')
   const kpisServidor = useState('lancar-chamadas-kpis', () => ({ total: 0, revisar: 0, aprovado: 0, recusado: 0 }))
   const erro = useState<string | null>('lancar-chamadas-erro', () => null)
   const carregado = useState<boolean>('lancar-chamadas-carregado', () => false)
@@ -96,6 +98,10 @@ export const useLancarChamadasModelo = () => {
     const params = new URLSearchParams()
     params.set('pagina', String(pagina.value))
     params.set('porPagina', String(porPagina.value))
+    if (ordenar.value) {
+      params.set('ordenar', ordenar.value)
+      params.set('direcao', direcao.value)
+    }
     if (busca.value.trim()) params.set('busca', busca.value.trim())
     const f = filtros.value
     for (const chave of [
@@ -162,6 +168,14 @@ export const useLancarChamadasModelo = () => {
 
   const definirPagina = async (valor: number) => {
     pagina.value = Math.max(1, valor)
+    await carregarChamadas(true)
+  }
+
+  const definirOrdenacao = async (regras: Array<{ columnId: string; direction: 'asc' | 'desc' }>) => {
+    const regra = regras[0]
+    ordenar.value = regra?.columnId ?? ''
+    direcao.value = regra?.direction ?? 'asc'
+    pagina.value = 1
     await carregarChamadas(true)
   }
 
@@ -352,6 +366,9 @@ export const useLancarChamadasModelo = () => {
     autorAtual,
     carregarChamadas,
     definirPagina,
+    definirOrdenacao,
+    ordenar,
+    direcao,
     definirPorPagina,
     buscarDetalhe,
     exportarLinhas,

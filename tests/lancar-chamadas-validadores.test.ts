@@ -143,15 +143,18 @@ describe('validarChamada', () => {
     ).toBe(true)
   })
 
-  it('exige segunda-feira na data de lancamento', () => {
-    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).erros.dataLancamento).toMatch(/segunda/)
-    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-21' })).erros.dataLancamento).toMatch(/segunda/)
+  it('aceita segunda-feira e o próximo dia útil quando a segunda é feriado', () => {
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-19' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-11-03' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).erros.dataLancamento).toMatch(/segunda|dia útil/)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-11-04' })).erros.dataLancamento).toMatch(/segunda|dia útil/)
   })
 
-  it('exige segunda-feira na data de liberacao e aceita vazia', () => {
-    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).erros.dataLiberacao).toMatch(/segunda/)
+  it('exige segunda/dia útil na data de liberacao e aceita vazia', () => {
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).erros.dataLiberacao).toMatch(/segunda|dia útil/)
     expect(validarChamada(entradaValida({ dataLiberacao: '' })).valido).toBe(true)
     expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-26' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-11-03' })).valido).toBe(true)
   })
 
   it('recusa links que não sejam http(s)', () => {
@@ -462,7 +465,8 @@ describe('guarda de desaprovação', () => {
   it('bloqueia desaprovação fora de Aprovado', () => {
     expect(podeDesaprovar(chamadaBase())).toBe(false)
     expect(motivoBloqueioDesaprovacao(chamadaBase())).toMatch(/aprovadas/i)
-    expect(podeDesaprovar(chamadaBase({ status: 'Recusado' }))).toBe(false)
+    expect(podeDesaprovar(chamadaBase({ status: 'Recusado' }))).toBe(true)
+    expect(motivoBloqueioDesaprovacao(chamadaBase({ status: 'Recusado' }))).toBeNull()
     expect(podeDesaprovar(chamadaBase({ status: 'Publicar' }))).toBe(false)
     expect(podeDesaprovar(chamadaBase({ status: 'Publicado' }))).toBe(false)
   })

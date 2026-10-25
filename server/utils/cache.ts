@@ -9,9 +9,11 @@ interface EntradaCache<T> {
 
 const store = new Map<string, EntradaCache<unknown>>()
 const pendentes = new Map<string, Promise<unknown>>()
+let versao = 0
 
 /** Invalida chaves específicas (ou todo o cache) após escritas (RL05-M-07). */
 export function invalidarCache(...chaves: string[]): void {
+  versao += 1
   if (chaves.length === 0) {
     store.clear()
     pendentes.clear()
@@ -33,13 +35,16 @@ export async function cacheado<T>(chave: string, ttlMs: number, produzir: () => 
   if (atual && atual.expira > agora) return atual.valor
   const emVoo = pendentes.get(chave)
   if (emVoo) return emVoo as Promise<T>
+  const versaoAtual = versao
   const promessa = produzir()
     .then((valor) => {
-      store.set(chave, { valor, expira: Date.now() + ttlMs })
+      if (versao === versaoAtual) {
+        store.set(chave, { valor, expira: Date.now() + ttlMs })
+      }
       return valor
     })
     .finally(() => {
-      pendentes.delete(chave)
+      if (pendentes.get(chave) === promessa) pendentes.delete(chave)
     })
   pendentes.set(chave, promessa)
   return promessa

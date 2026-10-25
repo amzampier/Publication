@@ -120,7 +120,7 @@ const rascunhoVazio = (): Rascunho => ({
   modulo: '',
   menuFuncionalidade: '',
   tipo: 'Correção',
-  impacto: 'Médio',
+  impacto: 'Baixo',
   descricaoCompleta: '',
   descricaoHtml: '',
   solucao: '',
@@ -543,7 +543,8 @@ watch(
             <UiDatePicker
               :model-value="paraData(rascunho.dataLiberacao)"
               label="Data de liberação"
-              helper-text="Preenchida com a publicação da Release vinculada; pode ser ajustada."
+              disabled
+              helper-text="Preenchida automaticamente com a publicação da Release vinculada."
               :error="erros.dataLiberacao"
               @update:model-value="definirData('dataLiberacao', $event)"
             />

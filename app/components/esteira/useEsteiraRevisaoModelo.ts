@@ -75,6 +75,11 @@ export const useEsteiraRevisaoModelo = () => {
   const opcoes = useState<CatalogosChamada>('esteira-opcoes', () => ({ ...CATALOGO_VAZIO }))
   const carregando = useState<boolean>('esteira-carregando', () => false)
   const carregado = useState<boolean>('esteira-carregado', () => false)
+  const progresso = useState<ProgressoEsteira>('esteira-progresso', () => calcularProgresso([]))
+  const totalPaginas = computed(() => Math.max(1, Math.ceil(total.value / porPagina.value)))
+  const total = useState<number>('esteira-total', () => 0)
+  const pagina = useState<number>('esteira-pagina', () => 1)
+  const porPagina = useState<number>('esteira-por-pagina', () => 200)
   const busca = useState<string>('esteira-busca', () => '')
   const filtros = useState<FiltrosEsteira>('esteira-filtros', () => ({
     ...FILTROS_ESTEIRA_VAZIOS
@@ -127,12 +132,19 @@ export const useEsteiraRevisaoModelo = () => {
       const query: Record<string, string> = {}
       if (busca.value.trim()) query.busca = '1'
       if (filtrosAtivosCount.value > 0) query.filtros = '1'
+      query.pagina = String(pagina.value)
+      query.porPagina = String(porPagina.value)
       const resposta = await useApiFetch<{
         itens: ItemEsteira[]
+        total: number
+        pagina: number
+        porPagina: number
         opcoes: CatalogosChamada
         progresso: ProgressoEsteira
       }>('/api/esteira-revisao', { query })
       itens.value = resposta.itens
+      total.value = resposta.total ?? resposta.itens.length
+      progresso.value = resposta.progresso ?? calcularProgresso(resposta.itens)
       opcoes.value = resposta.opcoes ?? { ...CATALOGO_VAZIO }
       carregado.value = true
       return true
@@ -146,6 +158,13 @@ export const useEsteiraRevisaoModelo = () => {
     }
   }
 
+  const irParaPagina = async (destino: number): Promise<void> => {
+    const alvo = Math.min(totalPaginas.value, Math.max(1, Math.trunc(destino)))
+    if (alvo === pagina.value) return
+    pagina.value = alvo
+    await carregar(true)
+  }
+
   const itensCiclo = computed(() => itens.value.filter(itemNoCicloAtivo))
 
   const itensFiltrados = computed(() =>
@@ -157,7 +176,6 @@ export const useEsteiraRevisaoModelo = () => {
     )
   )
 
-  const progresso = computed(() => calcularProgresso(itens.value))
 
   const kpis = computed<KpisEsteira>(() => {
     const conjunto = itensFiltrados.value
@@ -334,6 +352,11 @@ export const useEsteiraRevisaoModelo = () => {
     opcoes,
     carregando,
     carregado,
+    total,
+    pagina,
+    porPagina,
+    totalPaginas,
+    irParaPagina,
     busca,
     filtros,
     mostrarRecusadas,

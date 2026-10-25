@@ -157,7 +157,7 @@ const acionar = (id: string, linha: LinhaReleaseWeek) => {
             <button
               type="button"
               aria-label="Editar release"
-              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:text-brand-focus hover:bg-lime-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:text-brand-focus hover:bg-lime-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
               @click="emit('editar', row)"
             >
               <Pencil class="h-3.5 w-3.5" />
@@ -176,7 +176,7 @@ const acionar = (id: string, linha: LinhaReleaseWeek) => {
                 motivoExclusao(row) ? `Excluir release — ${motivoExclusao(row)}` : 'Excluir release'
               "
               :title="motivoExclusao(row) ?? 'Excluir release'"
-              class="inline-flex items-center justify-center rounded p-1.5 text-slate-400 transition-colors hover:text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+              class="inline-flex items-center justify-center rounded p-1.5 text-slate-500 transition-colors hover:text-rose-700 hover:bg-rose-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-slate-500"
               @click="emit('excluir', row)"
             >
               <Trash2 class="h-3.5 w-3.5" />

@@ -10,6 +10,7 @@ export default defineEventHandler(async (event) => {
   if (!body || typeof body !== 'object') {
     throw createError({ statusCode: 400, statusMessage: 'Corpo JSON ausente ou inválido.' })
   }
+  await validarHierarquiaPerfil(event, body.perfil)
 
   const usuario = await criarUsuario({
     nome: body.nome,

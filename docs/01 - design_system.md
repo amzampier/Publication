@@ -3,9 +3,9 @@
 **Versão:** 1.0.0 · **Data:** 2026-09-28 · **Idioma:** Português do Brasil (pt-BR)
 **Stack:** Nuxt 4 · Vue 3 (`<script setup>`) · Tailwind CSS · @lucide/vue · Google Fonts (Plus Jakarta Sans + JetBrains Mono)
 **Autoridade de comportamento:** specs em [`openspec/specs/design-system/`](../openspec/specs/design-system) — uma spec por capability (ex.: `upload`, `modais`, `typography`, `form-control-states`); em caso de divergência, a spec prevalece sobre este documento. Quando a capability não tiver spec própria, este documento é a referência oficial do padrão.
-**Vitrine:** rota [`/design`](../app/pages/design.vue) (27 seções numeradas)
+**Vitrine:** rota [`/design`](../app/pages/design.vue) (28 seções numeradas)
 
-> Este documento descreve **apenas o que está implementado**: os 36 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
+> Este documento descreve **apenas o que está implementado**: os 39 componentes de `app/components/ui/` (auto-importados, sem import manual), os tokens da página `/design` e as convenções do código. Componentes novos devem ser documentados aqui junto com sua seção no `/design`.
 
 ---
 
@@ -934,7 +934,7 @@ interface ColumnDef<T = any> {
 | `icon` | componente | `undefined` | Ícone renderizado no tile superior esquerdo |
 | `badge` | `string` | `''` | Pílula de metadados ao lado do tile (ex.: "Recomendado") |
 | `badgeVariant` | `'lime' \| 'emerald' \| 'indigo' \| 'slate' \| 'neutral'` | `'lime'` | Cor da pílula (mesmo vocabulário do `CheckCard`, §5.9) |
-| `badgeMono` | `boolean` | `false` | `true` aplica `font-mono` ao badge numérico (ex.: `n/99` — disciplina de numéricos); sem ele a pílula segue em sans (badges de texto) |
+| `badgeMono` | `boolean` | `false` | `true` aplica `font-mono` ao badge numérico (ex.: `n/92` — disciplina de numéricos); sem ele a pílula segue em sans (badges de texto) |
 | `tone` | `'sky' \| 'emerald' \| 'lime' \| 'indigo' \| 'slate'` | `'slate'` | Tom aplicado ao cartão **selecionado** (borda + anel + fundo + tile do ícone) |
 | `disabled` | `boolean` | `false` | Desabilita o cartão (`aria-disabled`, fora de clique e teclado) |
 | `disabledHint` | `string` | `''` | Dica exibida no cartão desabilitado, com ícone `AlertCircle` |
@@ -1404,3 +1404,11 @@ somente leitura, usam os tokens do design system e expõem `role="img"` com `ari
 
 **Espelhamento:** seção 27 do `/design` com exemplos reais de barras empilhadas, linha e ranking
 horizontal; a tela `/admin` é a referência de composição.
+
+## 28. Componentes de apoio (RL06)
+
+- `UiReportMenu`: menu de relatórios/exportação com teclado, setas, Home/End, Escape e retorno de foco; usado por Softwares, Parceiros, Auditoria e demais listagens.
+- `UiErrorState`: estado persistente de erro com mensagem específica (401/403/5xx) e ação "Tentar novamente"; usado nas telas que não têm `UiDataTable`.
+- `UiRichTextLazy`: wrapper `defineAsyncComponent` do `UiRichText`, mantendo o editor TipTap fora do bundle inicial da rota.
+
+Contagem atual do kit: **39 componentes** em `app/components/ui/`.

@@ -122,7 +122,7 @@ watch(
           />
         </div>
 
-        <div v-else class="py-12 text-center text-sm text-slate-400">
+        <div v-else class="py-12 text-center text-sm text-slate-500">
           {{
             filtrosAtivosCount > 0 || busca.trim() !== ''
               ? 'Nenhum resultado encontrado para o filtro.'

@@ -33,7 +33,7 @@ withDefaults(defineProps<Props>(), {
 
     <p
       v-if="subtitulo"
-      class="mt-1 text-sm italic text-slate-400"
+      class="mt-1 text-sm italic text-slate-500"
     >
       {{ subtitulo }}
     </p>

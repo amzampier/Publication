@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Contrato do serviço de uploads de arquivos da aplicação: recepção multipart, organização em subpastas por finalidade, validação de tipo/tamanho e servimento público dos arquivos gravados — base reutilizável para logomarcas hoje e avatares/mídias no futuro.
+Contrato do serviço de uploads: recepção multipart, organização em subpastas por finalidade, validação de tipo/tamanho e servimento. Logomarcas, avatares e logos são públicos; mídias de chamadas são servidas pela rota autorizada com gate de publicação.
 
 ## Requirements
 
@@ -171,14 +171,33 @@ módulo `lancar-chamadas`.
 ### Requirement: A autorização do destino precede o consumo do corpo
 
 A rota de upload SHALL validar o destino e a permissão correspondente antes de consumir o corpo
-multipart. Requisições para um destino não autorizado SHALL responder `403` sem bufferizar o
-arquivo; requisições com destino inválido SHALL responder `400` sem gravar nada. O limite de corpo
-SHALL ser aplicado antes da leitura completa, não apenas após o parse.
+multipart. A autorização SHALL usar o destino declarado na query (`pasta`); requisições sem `pasta`
+na query SHALL responder `400` antes do parse, e um destino presente apenas no corpo NÃO SHALL ser
+usado para postergar a checagem. Requisições para um destino não autorizado SHALL responder `403`
+sem bufferizar o arquivo; requisições com destino inválido SHALL responder `400` sem gravar nada. O
+limite de corpo SHALL ser aplicado antes da leitura completa, não apenas após o parse.
 
 #### Scenario: Destino proibido nega antes do parse
 - **WHEN** um perfil sem `configuracoes-globais`/`alterar` envia um multipart grande para `logomarcas`
 - **THEN** a resposta é `403` e o corpo não é processado como arquivo
 
+#### Scenario: Destino apenas no corpo é recusado
+- **WHEN** a requisição omite `pasta` na query e envia `pasta` no corpo
+- **THEN** a resposta é `400` antes do parse, sem autorização tardia
+
 #### Scenario: Corpo acima do teto não é bufferizado
 - **WHEN** a requisição declara `Content-Length` ou usa `chunked` acima do teto do envelope
 - **THEN** a resposta é `413` e o servidor não mantém o corpo inteiro em memória
+
+### Requirement: Miniaturas legadas têm fallback
+
+Quando uma mídia de chamada não possuir a variante `-320.webp`, a galeria/rota SHALL usar o arquivo
+original como fallback, sem exibir imagem quebrada nem responder erro.
+
+#### Scenario: Mídia antiga sem miniatura
+- **WHEN** a galeria renderiza uma imagem cuja variante `-320.webp` não existe
+- **THEN** o original é exibido e a página não registra erro de imagem
+
+#### Scenario: Miniatura existente
+- **WHEN** a variante `-320.webp` existe
+- **THEN** ela continua sendo usada para reduzir banda
