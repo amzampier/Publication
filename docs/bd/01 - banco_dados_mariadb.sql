@@ -696,4 +696,56 @@ CREATE OR REPLACE VIEW manuais AS
 -- 36-38: ampliação do FULLTEXT de Chamadas, tags_texto e índices de prefixo.
 -- 39: idx_entregas_fluxo (status + vínculos + datas).
 -- 40: EVENT ev_expurgo_rate_limit.
+-- 41: views de itens com projeção explícita + comentários das datas de chamada.
+-- =========================================================================
+
+-- =========================================================================
+-- DETALHES DAS MIGRATIONS 24-41 (referência humana)
+-- A fonte executável continua sendo server/migration/*.sql.
+--
+-- 24: entregas_itens.status passa a incluir 'Recusado'; manual_titulo;
+--     UNIQUE uk_entregas_chamada.
+-- 25: entregas_itens.descricao_html MEDIUMTEXT, solucao MEDIUMTEXT,
+--     solucao_html MEDIUMTEXT.
+-- 26: CREATE TABLE entregas_itens_softwares (
+--       entrega_item_id VARCHAR(64) NOT NULL,
+--       software_codigo VARCHAR(20) NOT NULL,
+--       software_nome VARCHAR(200) NOT NULL,
+--       ordem TINYINT UNSIGNED NOT NULL DEFAULT 0,
+--       PRIMARY KEY (entrega_item_id, software_codigo),
+--       KEY idx_entregas_softwares_codigo (software_codigo),
+--       FK para entregas_itens(id) ON DELETE CASCADE,
+--       FK para softwares(codigo) ON DELETE RESTRICT
+--     );
+-- 27: reconciliação do RBAC da Esteira.
+-- 28: remoção de entregas_itens.situacao.
+-- 29: status 'Publicado' + cascata pai/filhas.
+-- 30: tabela anexos_midias (mídias relacionais, ordem, capa e legenda).
+-- 31: views; chave_ativa gerada em release_week/manuais_mensal/projetos_escopo
+--     e unicidade que admite um ativo + arquivados.
+-- 33: publicado_em DATETIME(6) em release_week, manuais_mensal,
+--     projetos_escopo e entregas_itens; backfill e índices de leitura.
+-- 34: rate_limit_contadores.
+-- 35-38: FULLTEXT de busca; 37 adiciona entregas_itens.tags_texto
+--        (gerada de tags) ao índice.
+-- 39: idx_entregas_fluxo.
+-- 40: EVENT ev_expurgo_rate_limit.
+-- 41: views com projeção explícita (incluindo publicado_em/tags_texto) e
+--     comentários de data_lancamento/data_liberacao.
+--
+-- projetos_escopo (pós-19/23/33):
+--   arquivada TINYINT(1) NOT NULL DEFAULT 0,
+--   data_publicacao DATE NULL,
+--   publicado_em DATETIME(6) NULL,
+--   chave_ativa VARCHAR(64) GENERATED ALWAYS AS
+--     (IF(arquivada = 0, 'ativo', id)) STORED.
+--
+-- manuais_mensal (pós-19/23/33):
+--   arquivada TINYINT(1) NOT NULL DEFAULT 0,
+--   publicado_em DATETIME(6) NULL,
+--   chave_ativa VARCHAR(64) GENERATED ALWAYS AS
+--     (IF(arquivada = 0, 'ativo', id)) STORED.
+--
+-- Nota: server/migration/02_seed.sql é histórico e imutável; os totais
+-- vigentes (92/67/41/14) estão em docs/bd/02_seed.sql.
 -- =========================================================================

@@ -21,6 +21,8 @@
 
 > **M-07 (risco aceito, 27/10/2026):** no ambiente de desenvolvimento, a conta de banco é do operador e pode manter privilégios amplos; o projeto não cria usuários nem altera grants. Em produção, o operador deve provisionar a conta e aplicar o mínimo privilégio.
 
+> **Revalidação RL06-2 (27/10/2026):** A-06 e A-08 foram alinhados ao contrato atual; M-05 foi corrigido pela migration 41 (views com projeção explícita e boot check); M-21, M-22, M-23 e M-29 foram corrigidos na documentação/spec. A decisão de produto de 27/10 superou M-01/A-08 quanto à Data de lançamento: ela aceita qualquer data civil válida, enquanto a Data de liberação continua sujeita à regra da Release. O veredito global permanece em aberto até o Change 2 (M-10/M-11/B-07).
+
 > **Objetivo deste documento:** ser o relatório único e definitivo de fechamento da Área Administrativa, consolidando e deduplicando os sete pareceres (documentação, funcional, segurança, banco, UX, performance e execução), classificando a severidade e servindo de plano de correção para que a Área Pública comece sobre uma base aprovada.
 >
 > **Nota de consolidação:** os pareceres de origem usaram prefixos próprios (`DOC`, `FUN`, `SEG`, `BD`, `UX`, `PERF`, `EXE`). Neste relatório, os achados foram deduplicados e renumerados como `RL06-C-*` (Crítica), `RL06-A-*` (Alta), `RL06-M-*` (Média), `RL06-B-*` (Baixa) e `RL06-I-*` (Melhoria). A rastreabilidade está na seção 9.

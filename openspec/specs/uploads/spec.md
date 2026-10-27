@@ -28,16 +28,7 @@ O sistema SHALL expor um endpoint `POST /api/uploads` que aceita upload multipar
 
 ### Requirement: Somente imagens dentro dos limites são aceitas
 
-O endpoint SHALL aceitar apenas arquivos que sejam **imagens reais** (PNG, JPEG, WebP, GIF) de até
-5 MB, validando o **conteúdo** do arquivo (assinatura/magic bytes) **e** a coerência entre o tipo
-detectado e a extensão/nome do arquivo; requisições sem arquivo, com outro tipo de arquivo
-(incluindo HTML, SVG, JavaScript, XML ou qualquer conteúdo que se declare imagem), com extensão
-executável (ex.: `.html`, `.htm`, `.svg`, `.js`, `.xml`) ou acima do limite SHALL receber resposta
-de erro 400 sem gravar nada. O arquivo gravado SHALL usar uma extensão segura derivada do tipo real
-de imagem detectado (nunca a extensão arbitrária enviada pelo cliente). Um corpo multipart acima do
-envelope de segurança (5 MB de arquivo + folga do envelope) SHALL ser recusado com `413` antes de
-ser totalmente consumido, inclusive quando o tamanho não vier em `Content-Length` (requisição
-`chunked`), caso em que o limite SHALL ser aplicado durante a leitura.
+O endpoint SHALL aceitar apenas arquivos que sejam **imagens reais** (PNG, JPEG, WebP, GIF) de até 5 MB, validando o **conteúdo** do arquivo (assinatura/magic bytes) **e** a coerência entre o tipo detectado e a extensão/nome do arquivo; requisições sem arquivo, com outro tipo de arquivo (incluindo HTML, SVG, JavaScript, XML ou qualquer conteúdo que se declare imagem), com extensão executável (ex.: `.html`, `.htm`, `.svg`, `.js`, `.xml`) ou acima do limite SHALL receber resposta de erro 400 sem gravar nada. O arquivo gravado SHALL usar uma extensão segura derivada do tipo real de imagem detectado (nunca a extensão arbitrária enviada pelo cliente). Um corpo multipart acima do envelope de segurança (5 MB de arquivo + folga do envelope) SHALL ser recusado com `413` antes de ser totalmente consumido. Requisições `chunked` sem `Content-Length` SHALL ser recusadas imediatamente com `413`, sem leitura incremental do corpo.
 
 #### Scenario: Arquivo não-imagem rejeitado
 - **WHEN** a requisição envia um arquivo de texto (ex.: `.txt`)
@@ -62,6 +53,10 @@ ser totalmente consumido, inclusive quando o tamanho não vier em `Content-Lengt
 #### Scenario: Envelope acima do limite responde 413
 - **WHEN** o corpo multipart declarado excede 5 MB mais a folga do envelope
 - **THEN** o servidor responde `413` antes de processar o arquivo
+
+#### Scenario: Chunked sem Content-Length responde 413
+- **WHEN** a requisição usa `Transfer-Encoding: chunked` sem `Content-Length`
+- **THEN** o servidor responde `413` imediatamente, sem ler o corpo inteiro
 
 #### Scenario: Requisição sem arquivo rejeitada
 - **WHEN** a requisição chega sem o campo de arquivo

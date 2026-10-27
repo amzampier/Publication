@@ -38,6 +38,42 @@ async function verificarDuplicatasChamadas(): Promise<void> {
   }
 }
 
+const VIEWS_ITENS = [
+  { nome: 'v_release_itens', colunas: ['publicado_em', 'tags_texto'] },
+  { nome: 'v_projeto_itens', colunas: ['publicado_em', 'tags_texto'] },
+  { nome: 'v_manual_itens', colunas: ['publicado_em', 'tags_texto'] },
+  { nome: 'manuais', colunas: ['arquivada', 'publicado_em', 'chave_ativa'] }
+] as const
+
+/** Views antigas com SELECT * podem ficar consultáveis, mas sem as colunas novas. */
+async function verificarViewsItens(): Promise<void> {
+  const pool = getDbPool()
+  for (const view of VIEWS_ITENS) {
+    try {
+      await pool.query(`SELECT 1 FROM \`${view.nome}\` LIMIT 1`)
+    } catch (erro) {
+      throw new Error(
+        `[migrations] A view '${view.nome}' não pôde ser consultada após as migrations. ` +
+        `Reaplique a migration 41. Detalhe: ${String((erro as Error)?.message ?? erro)}`
+      )
+    }
+
+    const [linhas] = (await pool.query(
+      `SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+      [view.nome]
+    )) as unknown as [Array<{ COLUMN_NAME: string }>, unknown]
+    const presentes = new Set(linhas.map((linha) => String(linha.COLUMN_NAME)))
+    const faltando = view.colunas.filter((coluna) => !presentes.has(coluna))
+    if (faltando.length > 0) {
+      throw new Error(
+        `[migrations] A view '${view.nome}' não expõe a(s) coluna(s): ${faltando.join(', ')}. ` +
+        'Reaplique a migration 41.'
+      )
+    }
+  }
+}
+
 /** Confirma que o UNIQUE realmente foi criado, mesmo com o `1062` tolerado. */
 async function verificarIndiceUnicoChamada(): Promise<void> {
   const pool = getDbPool()
@@ -63,6 +99,7 @@ export default defineNitroPlugin(async () => {
     await verificarDuplicatasChamadas()
     await runMigrations()
     await verificarIndiceUnicoChamada()
+    await verificarViewsItens()
     await ensureAdminUser()
     await migrarSenhasSmtp()
     await garantirEventScheduler()
