@@ -57,11 +57,18 @@ const filtrosAbertos = ref(false)
 const detalheAberto = ref(false)
 const itemDetalhe = ref<ItemEsteira | null>(null)
 
-const abrirDetalhes = (linha: LinhaEsteira) => {
+const carregarDetalhe = (id: string): Promise<ItemEsteira> =>
+  useApiFetch<ItemEsteira>(`/api/esteira-revisao/${id}`)
+
+const abrirDetalhes = async (linha: LinhaEsteira) => {
   const item = resolver(linha.id)
   if (!item) return
-  itemDetalhe.value = item
-  detalheAberto.value = true
+  try {
+    itemDetalhe.value = await carregarDetalhe(item.id)
+    detalheAberto.value = true
+  } catch (erro) {
+    toast.danger('Esteira de Revisão', mensagemErro(erro))
+  }
 }
 
 const decisaoAberta = ref(false)
@@ -117,7 +124,9 @@ const confirmarDecisao = async (payload: {
       toast.success('Esteira de Revisão', 'Chamada reaberta e devolvida para Revisão.')
     }
     if (itemDetalhe.value?.id === item.id) {
-      itemDetalhe.value = resolver(item.id)
+      itemDetalhe.value = await carregarDetalhe(item.id).catch(
+        () => resolver(item.id) ?? item
+      )
     }
   } catch (erro) {
     toast.danger('Esteira de Revisão', mensagemErro(erro))

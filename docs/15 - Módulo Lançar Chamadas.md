@@ -296,9 +296,9 @@ interface ChamadaModelo {
 - As imagens são persistidas em `anexos_midias` (uma linha por imagem, com ordem, capa, nome e MIME);
   a API devolve `midias` e mantém `imagens` como lista derivada de URLs. O JSON
   `entregas_itens.imagens` permanece como snapshot legado até a change de limpeza.
-- Na edição, imagens retiradas do array têm a linha removida e o original + a variante `-320.webp`
-  apagados após o commit; na exclusão, as linhas são removidas por `ON DELETE CASCADE` e os dois
-  arquivos após o commit.
+- Na edição, imagens retiradas do array têm a linha removida e o original + as variantes `-320.webp`
+  (nome novo e padrão legado) apagados após o commit; na exclusão, as linhas são removidas por
+  `ON DELETE CASCADE` e os arquivos após o commit.
 - A limpeza é best-effort, só atua em `/uploads/chamadas/`, preserva arquivos referenciados por outra
   chamada (consulta indexada em `anexos_midias.url_arquivo`) e não remove nada quando a exclusão é
   bloqueada.

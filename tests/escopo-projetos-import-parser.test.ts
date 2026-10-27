@@ -38,6 +38,15 @@ describe('classificarLinhasEscopoProjetos', () => {
     expect(resultados[1]?.situacaoImportacao).toBe('repetido')
   })
 
+  it('recusa o status Publicado na importação', () => {
+    const [resultado] = classificarLinhasEscopoProjetos(
+      [linha({ status: 'Publicado' })],
+      []
+    )
+    expect(resultado?.situacaoImportacao).toBe('invalido')
+    expect(resultado?.motivo).toContain('não pode criar registros Publicados')
+  })
+
   it('recusa campo obrigatório, data e status inválidos', () => {
     const [resultado] = classificarLinhasEscopoProjetos(
       [linha({ nome: '', dataInicio: '31/02/2026', status: 'Inexistente' })],

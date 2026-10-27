@@ -92,13 +92,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  await validarHierarquiaPerfil(event, perfil)
-
   // RL05-M-01: reenviar convite a uma conta existente REDEFINE a credencial dela.
   // Exige `alterar` (não basta `criar`) e recusa conta não-Ativa, validando a
-  // situação real no banco — não apenas o payload.
-  const existentesPre = await query<Array<{ id: string; situacao: string }>>(
-    'SELECT id, situacao FROM usuarios WHERE email_corporativo = ? LIMIT 1',
+  // situação real no banco — não apenas o payload. A hierarquia também usa
+  // o perfil REAL do alvo: o perfil do payload não altera a conta existente.
+  const existentesPre = await query<Array<{ id: string; situacao: string; perfil: string }>>(
+    `SELECT u.id, u.situacao, p.nome_perfil AS perfil
+       FROM usuarios u JOIN perfis_acesso p ON p.id = u.perfil_id
+      WHERE u.email_corporativo = ? LIMIT 1`,
     [email]
   )
   const existentePre = existentesPre[0]
@@ -111,6 +112,9 @@ export default defineEventHandler(async (event) => {
           'A conta já existe e não está Ativa — reative-a antes de reenviar o convite.'
       })
     }
+    await validarHierarquiaPerfil(event, existentePre.perfil)
+  } else {
+    await validarHierarquiaPerfil(event, perfil)
   }
 
   const hashSenha = await hash(senha, 12)

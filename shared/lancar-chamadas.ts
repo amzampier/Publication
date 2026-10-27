@@ -287,7 +287,12 @@ export function normalizarSoftwareIds(valor: unknown): string[] {
 export function urlMiniatura(url: string): string {
   if (!url) return url
   const m = /^(.*)\.(png|jpe?g|webp|gif)$/i.exec(url)
-  return m ? `${m[1]}-320.webp` : url
+  return m ? `${url}-320.webp` : url
+}
+
+/** URL do original a partir da variante reduzida; não valida a existência. */
+export function urlOriginalDaMiniatura(url: string): string {
+  return url.replace(/-320\.webp$/i, '')
 }
 export function ehDataIso(valor: string): boolean {
   if (!ISO_DATE.test(valor)) return false

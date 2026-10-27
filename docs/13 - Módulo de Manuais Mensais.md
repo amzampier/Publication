@@ -193,7 +193,7 @@ admin/manuais.vue                                   (page - definePageMeta + com
 - `lerPlanilhaManuais.ts`: parser puro do modelo (Título, Mês, Ano, Descrição, Status, Data de
   Criação, Data de Publicação, Destaque do mês e Destaque da semana), sem imports de Nuxt —
   `classificarLinhasManuais` é coberto por testes. A chave de duplicidade é `(ano, mês)` e
-  `Publicado` exige `Data de Publicação`.
+  `Publicado` é inválido na importação.
 
 ### 3.9 `gerarPdfManuais.ts`
 
@@ -321,12 +321,12 @@ interface ManuaisModelo {
   e Destaque da semana** (sem Código — o servidor gera).
 - **Fluxo:** o ícone da toolbar abre `ManuaisImportar`; o parser local classifica as linhas
   (`pronto`/`já cadastrado`/`repetido`/`inválida`); o commit vai a `POST /api/manuais/importar`, que
-  revalida (incluindo datas e publicação obrigatória para `Publicado`), recusa tudo se houver linha
+  revalida (incluindo datas) e recusa `Publicado`, recusa tudo se houver linha
   inválida/duplicada (`400` com motivos/conflitos), grava em **transação** (códigos gerados) e
   registra auditoria.
 - **Datas:** aceita data do Excel, `dd/mm/aaaa` e `AAAA-MM-DD`; não há regra de segunda-feira nem
   exigência de a publicação cair no mês de referência. `Data de Criação` vazia usa a data da
-  importação; `Data de Publicação` é obrigatória quando o status é `Publicado`.
+  importação; `Publicado` é inválido na importação e a publicação usa os fluxos explícitos.
 - **Unicidade:** `(ano, mês)` no arquivo e contra o banco (inclui arquivados); limite de 500 linhas.
 - **Permissão:** `manuais`/`importar` (default: Administrador).
 - **Limitação:** o autor histórico **não** é preservado; todos os registros importados ficam com o

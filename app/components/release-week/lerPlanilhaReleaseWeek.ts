@@ -113,6 +113,9 @@ export function classificarLinhasReleaseWeek(
     if (!STATUS_RELEASE.includes(status as (typeof STATUS_RELEASE)[number])) {
       motivos.push('Status inválido')
     }
+    if (status === 'Publicado') {
+      motivos.push('A importação não pode criar registros Publicados')
+    }
 
     const base: LinhaBrutaReleaseWeek = {
       nome,

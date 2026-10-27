@@ -110,14 +110,14 @@ export function classificarLinhasManuais(
     if (!STATUS_MANUAL.includes(status as (typeof STATUS_MANUAL)[number])) {
       motivos.push('Status inválido')
     }
+    if (status === 'Publicado') {
+      motivos.push('A importação não pode criar registros Publicados')
+    }
     if (dataCriacao && !ehDataIso(dataCriacao)) {
       motivos.push('Data de criação inválida')
     }
     if (dataPublicacao && !ehDataIso(dataPublicacao)) {
       motivos.push('Data de publicação inválida')
-    }
-    if (status === 'Publicado' && !dataPublicacao) {
-      motivos.push('Informe a data de publicação para o status Publicado')
     }
 
     const base: LinhaBrutaManual = {

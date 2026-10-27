@@ -94,9 +94,9 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 ```
 
 - **Estado de coordenação:** `carregando`, `filtrosAbertos`, `detalheAberto`/`itemDetalhe`,
-  `decisaoAberta`/`itemDecisao`/`acaoDecisao`. A página resolve o item do board por `id` antes de
-  abrir cada modal; o detalhe reutiliza o item já carregado (incluindo as imagens de `anexos_midias`)
-  e busca o histórico por `id`.
+  `decisaoAberta`/`itemDecisao`/`acaoDecisao`. A página usa o item do board para ações rápidas; ao
+  abrir a inspeção, busca `GET /api/esteira-revisao/:id` para trazer descrição, solução, links e
+  imagens completas, e busca o histórico por `id`.
 - **Loading:** no F5 a tela exibe `UiLoading` ("Carregando a Esteira de Revisão...") enquanto o
   `GET /api/esteira-revisao` responde; em falha, toast de erro e board vazio.
 - **Largura:** container `mx-auto max-w-[85rem]` dentro do padding `p-4 sm:p-6 lg:p-1 lg:py-8`.
@@ -204,12 +204,12 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
     última decisão;
   - **Vínculos:** Release Week, Manual e Escopo de Projetos com código, nome e status do pai;
   - **Classificação:** parceiro, softwares, módulo, menu, tipo, impacto e tags;
-  - **Conteúdo:** descrição e solução com `UiRichTextViewer`, título do manual e links;
+  - **Conteúdo:** **Descrição do Resumo** e **Solução** com `UiRichTextViewer`, título do manual e links;
   - **Imagens:** grade e galeria a partir de `imagens` (carregadas de `anexos_midias` na listagem), com `urlMiniatura` (`-320.webp`) e fallback ao original;
   - **Histórico da esteira:** `<EsteiraHistorico>`;
   - **Informações de cadastro:** criado/atualizado.
-- Ao abrir, carrega `GET /api/esteira-revisao/:id/historico` (cache por item no modelo; invalidado
-  após uma transição).
+- Ao abrir, carrega `GET /api/esteira-revisao/:id` (detalhe completo) e
+  `GET /api/esteira-revisao/:id/historico` (cache por item no modelo; invalidado após uma transição).
 - Fecha por `Escape`, pelo `X` do `UiModal` ou por "Fechar", devolvendo o foco ao acionador.
 
 ### 3.7 `Historico.vue` → `<EsteiraHistorico>`

@@ -424,10 +424,15 @@ export async function importarReleaseWeeks(
   const preparados: ReleaseWeekValidada[] = []
   const vistos = new Set<string>()
 
-  for (const [indice, linha] of linhas.entries()) {
-    try {
-      const validada = validarEntradaReleaseWeek((linha ?? {}) as EntradaReleaseWeek)
-      const chave = `${validada.ano}-${validada.semana}`
+    for (const [indice, linha] of linhas.entries()) {
+      const statusBruto = String((linha as { status?: unknown } | null)?.status ?? '').trim()
+      if (statusBruto === 'Publicado') {
+        motivos.push(`Linha ${indice + 1}: a importação não pode criar registros Publicados.`)
+        continue
+      }
+      try {
+        const validada = validarEntradaReleaseWeek((linha ?? {}) as EntradaReleaseWeek)
+        const chave = `${validada.ano}-${validada.semana}`
       if (vistos.has(chave)) erro400('semana/ano repetido no arquivo.')
       vistos.add(chave)
       preparados.push(validada)

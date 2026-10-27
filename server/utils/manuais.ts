@@ -444,10 +444,15 @@ export async function importarManuais(
   const preparados: ManualValidado[] = []
   const vistos = new Set<string>()
 
-  for (const [indice, linha] of linhas.entries()) {
-    try {
-      const validada = validarEntradaManual((linha ?? {}) as EntradaManual, true)
-      const chave = `${validada.ano}-${validada.mesNumero}`
+    for (const [indice, linha] of linhas.entries()) {
+      const statusBruto = String((linha as { status?: unknown } | null)?.status ?? '').trim()
+      if (statusBruto === 'Publicado') {
+        motivos.push(`Linha ${indice + 1}: a importação não pode criar registros Publicados.`)
+        continue
+      }
+      try {
+        const validada = validarEntradaManual((linha ?? {}) as EntradaManual, true)
+        const chave = `${validada.ano}-${validada.mesNumero}`
       if (vistos.has(chave)) erro400('mês/ano repetido no arquivo.')
       vistos.add(chave)
       preparados.push(validada)

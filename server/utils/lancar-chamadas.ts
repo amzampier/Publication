@@ -1199,9 +1199,12 @@ export async function removerImagensChamadas(urls: string[], idAtual: string): P
     try {
       const referenciada = await urlReferenciadaPorOutraChamada(url, idAtual)
       if (referenciada) continue
-      const variante = urlMiniatura(url)
+      const variantes = new Set<string>([urlMiniatura(url)])
+      const legada = url.replace(/\.(png|jpe?g|webp|gif)$/i, '-320.webp')
+      if (legada !== url) variantes.add(legada)
       const caminhos = [caminho]
-      if (variante !== url) {
+      for (const variante of variantes) {
+        if (variante === url) continue
         const relativoVariante = variante.slice('/uploads/'.length)
         const caminhoVariante = resolve(uploadsDir(), relativoVariante)
         if (caminhoVariante.startsWith(`${raiz}${sep}`)) caminhos.push(caminhoVariante)

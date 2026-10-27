@@ -44,4 +44,36 @@ describe('hierarquia de atribuição de perfil', () => {
     await expect(validarHierarquiaPerfil(evento, 'Administrador')).resolves.toBeUndefined()
     expect(mocks.carregar).not.toHaveBeenCalled()
   })
+
+  it('valida o perfil atual do alvo mesmo sem perfil no payload', async () => {
+    mocks.query.mockReset()
+    mocks.query.mockResolvedValueOnce([{ id: 'perfil-admin' }])
+    mocks.query.mockResolvedValueOnce([
+      { modulo: 'gestao-usuarios', pode_visualizar: 1, pode_incluir: 1, pode_editar: 1, pode_excluir: 1, extras: null }
+    ])
+    mocks.carregar.mockResolvedValue(
+      new Map([['gestao-usuarios', new Set(['visualizar', 'alterar'])]])
+    )
+    await expect(
+      validarHierarquiaPerfil(evento, undefined, 'Administrador')
+    ).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('valida o novo perfil e o perfil atual quando ambos são enviados', async () => {
+    mocks.query.mockReset()
+    mocks.query.mockResolvedValueOnce([{ id: 'perfil-leitor' }])
+    mocks.query.mockResolvedValueOnce([
+      { modulo: 'softwares', pode_visualizar: 1, pode_incluir: 0, pode_editar: 0, pode_excluir: 0, extras: null }
+    ])
+    mocks.query.mockResolvedValueOnce([{ id: 'perfil-admin' }])
+    mocks.query.mockResolvedValueOnce([
+      { modulo: 'softwares', pode_visualizar: 1, pode_incluir: 1, pode_editar: 1, pode_excluir: 1, extras: null }
+    ])
+    mocks.carregar.mockResolvedValue(
+      new Map([['softwares', new Set(['visualizar'])]])
+    )
+    await expect(
+      validarHierarquiaPerfil(evento, 'Leitor', 'Administrador')
+    ).rejects.toMatchObject({ statusCode: 403 })
+  })
 })

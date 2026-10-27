@@ -21,6 +21,8 @@ import {
   podeExcluir,
   podeRecusar,
   proximaSegunda,
+  urlMiniatura,
+  urlOriginalDaMiniatura,
   validarChamada,
   type ChamadaModelo,
   type EntradaChamada,
@@ -501,6 +503,21 @@ describe('mídias da chamada', () => {
     expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.webp')).toBe('image/webp')
     expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.gif')).toBe('image/gif')
     expect(mimeDaUrl('/uploads/chamadas/2026/10/foto.bin')).toBe('image/png')
+  })
+
+  it('gera miniatura com o nome completo do original e reverte pelo sufixo', () => {
+    expect(urlMiniatura('/uploads/chamadas/2026/10/foto.png')).toBe(
+      '/uploads/chamadas/2026/10/foto.png-320.webp'
+    )
+    expect(urlMiniatura('/uploads/chamadas/2026/10/foto.jpg')).not.toBe(
+      urlMiniatura('/uploads/chamadas/2026/10/foto.png')
+    )
+    expect(
+      urlOriginalDaMiniatura('/uploads/chamadas/2026/10/foto.png-320.webp')
+    ).toBe('/uploads/chamadas/2026/10/foto.png')
+    expect(
+      urlOriginalDaMiniatura('/uploads/chamadas/2026/10/foto-320.webp')
+    ).toBe('/uploads/chamadas/2026/10/foto')
   })
 
   it('aceita 100 imagens e rejeita 101', () => {

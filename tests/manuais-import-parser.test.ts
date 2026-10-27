@@ -27,19 +27,17 @@ describe('classificarLinhasManuais', () => {
     expect(resultado?.destaqueSemana).toBe('Não')
   })
 
-  it('exige data de publicação quando o status é Publicado', () => {
-    const [resultado] = classificarLinhasManuais([linha({ status: 'Publicado' })], [])
-    expect(resultado?.situacaoImportacao).toBe('invalido')
-    expect(resultado?.motivo).toContain('data de publicação')
-  })
+  it('recusa o status Publicado na importação', () => {
+    const [semData] = classificarLinhasManuais([linha({ status: 'Publicado' })], [])
+    expect(semData?.situacaoImportacao).toBe('invalido')
+    expect(semData?.motivo).toContain('não pode criar registros Publicados')
 
-  it('aceita publicação histórica válida', () => {
-    const [resultado] = classificarLinhasManuais(
+    const [comData] = classificarLinhasManuais(
       [linha({ status: 'Publicado', dataPublicacao: '2026-09-28' })],
       []
     )
-    expect(resultado?.situacaoImportacao).toBe('pronto')
-    expect(resultado?.dataPublicacao).toBe('2026-09-28')
+    expect(comData?.situacaoImportacao).toBe('invalido')
+    expect(comData?.motivo).toContain('não pode criar registros Publicados')
   })
 
   it('recusa mês, status e datas inválidos', () => {

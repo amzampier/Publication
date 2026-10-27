@@ -283,6 +283,8 @@ interface ReleaseWeekModelo {
   commit vai a `POST /api/release-week/importar`, que revalida (incluindo segunda-feira/feriado), recusa tudo
   se houver linha inválida/duplicada (`400` com motivos/conflitos), grava em **transação** (códigos
   gerados) e registra auditoria.
+- **Status `Publicado`:** a importação nunca cria registros publicados; a linha é inválida e o lote
+  inteiro é recusado. Publicação continua exclusivamente pelos fluxos explícitos com `publicar`.
 - **Unicidade:** `(ano, semana)` no arquivo e contra o banco; limite de 500 linhas.
 - **Permissão:** `release-week`/`importar` (default: Administrador).
 

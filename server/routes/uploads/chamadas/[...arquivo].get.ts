@@ -6,11 +6,12 @@ import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { createError, sendStream, setResponseHeader } from 'h3'
-import { getSessionUser } from '../../../utils/auth'
+import { obterSessaoValida } from '../../../utils/auth'
 import { query } from '../../../utils/db'
 import { pode } from '../../../utils/permission'
 import { uploadsDir } from '../../../utils/uploads'
 import { sqlVinculoPublicado } from '../../../utils/visibilidade-publica'
+import { urlOriginalDaMiniatura } from '#shared/lancar-chamadas'
 
 const MIME_POR_EXTENSAO: Record<string, string> = {
   '.png': 'image/png',
@@ -44,22 +45,20 @@ export default defineEventHandler(async (event) => {
   }
   if (!info.isFile()) throw NAO_ENCONTRADO()
 
-  const sessao = await getSessionUser(event)
+  const sessao = await obterSessaoValida(event)
   let autorizado = false
-  if (sessao) {
+  if (sessao && !sessao.provisoria) {
     autorizado = await pode(event, 'lancar-chamadas', 'visualizar')
   }
 
   if (!autorizado) {
     const url = `/uploads/chamadas/${relativo}`
-    const urlBase = relativo.endsWith('-320.webp')
-      ? `/uploads/chamadas/${relativo.replace(/-320\.webp$/i, '')}`
-      : null
+    const urlOriginal = urlOriginalDaMiniatura(url)
     const linhas = await query<Array<{ ok: number }>>(
       `SELECT 1 AS ok
          FROM anexos_midias a
          JOIN entregas_itens e ON e.id = a.entrega_item_id
-        WHERE (${urlBase ? "a.url_arquivo LIKE CONCAT(?, '.%')" : 'a.url_arquivo = ?'})
+        WHERE a.url_arquivo = ?
           AND e.status = 'Publicado'
           AND e.publicado_em IS NOT NULL AND e.publicado_em <= NOW(6)
           AND ${sqlVinculoPublicado('e')}
@@ -78,7 +77,7 @@ export default defineEventHandler(async (event) => {
                           AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW(6))
           )
         LIMIT 1`,
-      [urlBase ?? url]
+      [urlOriginal]
     )
     autorizado = linhas.length > 0
   }

@@ -7,7 +7,8 @@ import { requirePermission } from '../../../utils/permission'
 export default defineEventHandler(async (event) => {
   await requirePermission(event, 'gestao-usuarios', 'alterar')
   const id = String(getRouterParam(event, 'id') ?? '')
-  if (!(await buscarUsuarioTelaPorId(id))) {
+  const alvo = await buscarUsuarioTelaPorId(id)
+  if (!alvo) {
     throw createError({ statusCode: 404, statusMessage: 'Usuário não encontrado.' })
   }
 
@@ -15,7 +16,7 @@ export default defineEventHandler(async (event) => {
   if (!body || typeof body !== 'object') {
     throw createError({ statusCode: 400, statusMessage: 'Corpo JSON ausente ou inválido.' })
   }
-  await validarHierarquiaPerfil(event, body.perfil)
+  await validarHierarquiaPerfil(event, body.perfil, alvo.perfil)
 
   const atualizado = await atualizarUsuario(id, {
     nome: body.nome,

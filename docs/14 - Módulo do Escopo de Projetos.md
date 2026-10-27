@@ -297,6 +297,8 @@ interface ProjetoEscopoModelo {
   (`pronto`/`já cadastrado`/`repetido`/`inválido`); o commit vai a
   `POST /api/escopo-projetos/importar`, que revalida tudo, recusa o lote inteiro se houver qualquer
   linha inválida/conflitante e grava em **transação**.
+- **Status `Publicado`:** a importação nunca cria escopos publicados; a linha é inválida e o lote
+  inteiro é recusado. Publicação continua exclusivamente pelos fluxos explícitos com `publicar`.
 - **Chave:** `(ano, versao)`, inclusive contra arquivados; limite de 500 linhas; linhas vazias são
   ignoradas. O código é gerado no servidor.
 - **Datas:** aceita data do Excel, `dd/mm/aaaa` e `AAAA-MM-DD`.

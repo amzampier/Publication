@@ -20,16 +20,19 @@ const montarMatriz = (linhas: Row[]): Map<string, Set<string>> => {
   return mapa
 }
 
-export async function validarHierarquiaPerfil(event: any, perfil: unknown): Promise<void> {
-  const nome = typeof perfil === 'string' ? perfil.trim() : ''
-  if (!nome) return
-
-  const perfilRows = await query<Row[]>(
-    'SELECT id FROM perfis_acesso WHERE nome_perfil = ? LIMIT 1',
-    [nome]
-  )
-  const perfilId = String(perfilRows[0]?.id ?? '')
-  if (!perfilId) return // a validação de perfil existente fica no utilitário de usuários
+export async function validarHierarquiaPerfil(
+  event: any,
+  perfil: unknown,
+  perfilAtual?: unknown
+): Promise<void> {
+  const nomes = [
+    ...new Set(
+      [perfil, perfilAtual]
+        .map((valor) => (typeof valor === 'string' ? valor.trim() : ''))
+        .filter(Boolean)
+    )
+  ]
+  if (!nomes.length) return
 
   if (
     (await pode(event, 'perfis-acesso', 'permissoes')) ||
@@ -39,19 +42,28 @@ export async function validarHierarquiaPerfil(event: any, perfil: unknown): Prom
   }
 
   const ator = await carregarPermissoesDaSessao(event)
-  const linhas = await query<Row[]>(
-    `SELECT modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras
-       FROM permissoes_perfil WHERE perfil_id = ?`,
-    [perfilId]
-  )
-  const alvo = montarMatriz(linhas)
-  for (const [modulo, acoes] of alvo) {
-    for (const acao of acoes) {
-      if (!ator.get(modulo)?.has(acao)) {
-        throw createError({
-          statusCode: 403,
-          statusMessage: 'Você não pode atribuir um perfil com permissões superiores ao seu.'
-        })
+  for (const nome of nomes) {
+    const perfilRows = await query<Row[]>(
+      'SELECT id FROM perfis_acesso WHERE nome_perfil = ? LIMIT 1',
+      [nome]
+    )
+    const perfilId = String(perfilRows[0]?.id ?? '')
+    if (!perfilId) continue // a validação de perfil existente fica no utilitário de usuários
+
+    const linhas = await query<Row[]>(
+      `SELECT modulo, pode_visualizar, pode_incluir, pode_editar, pode_excluir, extras
+         FROM permissoes_perfil WHERE perfil_id = ?`,
+      [perfilId]
+    )
+    const alvo = montarMatriz(linhas)
+    for (const [modulo, acoes] of alvo) {
+      for (const acao of acoes) {
+        if (!ator.get(modulo)?.has(acao)) {
+          throw createError({
+            statusCode: 403,
+            statusMessage: 'Você não pode operar sobre um perfil com permissões superiores ao seu.'
+          })
+        }
       }
     }
   }

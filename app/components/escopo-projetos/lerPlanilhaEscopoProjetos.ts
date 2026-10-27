@@ -112,6 +112,9 @@ export function classificarLinhasEscopoProjetos(
     if (!STATUS_ESCOPO.includes(status as (typeof STATUS_ESCOPO)[number])) {
       motivos.push('Status inválido')
     }
+    if (status === 'Publicado') {
+      motivos.push('A importação não pode criar registros Publicados')
+    }
     if (!dataValida(dataInicio)) motivos.push('Data de início inválida')
     if (!dataValida(dataFinal)) motivos.push('Data final inválida')
     if (!dataValida(dataPrevisao)) motivos.push('Data de previsão inválida')

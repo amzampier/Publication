@@ -254,7 +254,7 @@ watch(
 
       <UiModalSection title="Conteúdo" :icon="FileText">
         <div>
-          <p class="text-[11px] font-medium text-slate-500">Descrição completa</p>
+          <p class="text-[11px] font-medium text-slate-500">Descrição do Resumo</p>
           <div class="mt-1">
             <UiRichTextViewer :html="item.descricaoHtml" :text="item.descricaoCompleta" />
           </div>

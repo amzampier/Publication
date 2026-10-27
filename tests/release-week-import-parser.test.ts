@@ -59,6 +59,12 @@ describe('classificarLinhasReleaseWeek', () => {
     expect(r?.situacaoImportacao).toBe('pronto')
   })
 
+  it('recusa o status Publicado na importação', () => {
+    const [r] = classificarLinhasReleaseWeek([linha({ status: 'Publicado' })], [])
+    expect(r?.situacaoImportacao).toBe('invalido')
+    expect(r?.motivo).toContain('não pode criar registros Publicados')
+  })
+
   it('recusa nome ausente, semana fora de 1–52 e status inválido', () => {
     const [r] = classificarLinhasReleaseWeek(
       [linha({ nome: '', semana: '60', status: 'Encerrada' })],

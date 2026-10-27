@@ -470,10 +470,15 @@ export async function importarEscopos(
   const preparados: EscopoValidado[] = []
   const vistos = new Set<string>()
 
-  for (const [indice, linha] of linhas.entries()) {
-    try {
-      const validada = validarEntradaEscopo((linha ?? {}) as EntradaEscopoApi)
-      const chave = chaveAnoVersao(validada.ano, validada.versao)
+    for (const [indice, linha] of linhas.entries()) {
+      const statusBruto = String((linha as { status?: unknown } | null)?.status ?? '').trim()
+      if (statusBruto === 'Publicado') {
+        motivos.push(`Linha ${indice + 1}: a importação não pode criar registros Publicados.`)
+        continue
+      }
+      try {
+        const validada = validarEntradaEscopo((linha ?? {}) as EntradaEscopoApi)
+        const chave = chaveAnoVersao(validada.ano, validada.versao)
       if (vistos.has(chave)) {
         erro400('ano/versão repetido no arquivo.')
       }

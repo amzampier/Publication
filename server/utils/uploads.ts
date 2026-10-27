@@ -114,12 +114,11 @@ export async function gravarUpload(
   if (destino === 'chamadas') {
     // Variante leve para a galeria (fallback silencioso: o original continua válido).
     try {
-      const baseMiniatura = baseSemExtensao(final)
       const miniatura = await sharp(dados)
         .resize({ width: 320, withoutEnlargement: true })
         .webp({ quality: 75 })
         .toBuffer()
-      await writeFile(join(dir, `${baseMiniatura}-320.webp`), miniatura)
+      await writeFile(join(dir, `${final}-320.webp`), miniatura)
     } catch {
       // Sem binário de imagem para resize: a galeria usa o original.
     }
