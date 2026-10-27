@@ -250,6 +250,7 @@ const COLUNAS_LISTA = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, 
   (SELECT m.codigo FROM manuais_mensal m WHERE m.id = e.manual_id) AS manual_codigo,
   (SELECT p.codigo FROM projetos_escopo p WHERE p.id = e.projeto_id) AS projeto_codigo,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
+const COLUNAS_ESTEIRA = `${COLUNAS_LISTA}, e.descricao_completa`
 
 function whereChamadas(filtros: FiltrosListaChamadas): { sql: string; params: unknown[] } {
   const condicoes: string[] = []
@@ -402,7 +403,7 @@ export async function listarChamadasParaEsteira(
   const filtroStatus = statusFiltro ? ' AND e.status = ?' : ''
   const [linhas, totalRows] = await Promise.all([
     query<Row[]>(
-      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e WHERE ${ativo}${filtroStatus}
+      `SELECT ${COLUNAS_ESTEIRA} FROM entregas_itens e WHERE ${ativo}${filtroStatus}
         ORDER BY e.chamada ASC LIMIT ? OFFSET ?`,
       statusFiltro
         ? [statusFiltro, size, (page - 1) * size]
