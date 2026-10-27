@@ -12,10 +12,10 @@
 | **Banco** | MariaDB 11.8.6 / `publications`; 30 migrations aplicadas (`01`–`30`); 21 tabelas base (20 de aplicação + `_migrations`) e 4 views |
 | **Método** | Análise estática + `EXPLAIN`/medições + consultas read-only no MariaDB + testes HTTP reais + execução E2E no dev server (`localhost:3000`) + gates (`lint`, `test`, `typecheck`, `build`) |
 | **Alterações de código** | **Nenhuma.** Auditoria somente leitura; os agentes de QA só escreveram dados de teste, com limpeza declarada na seção 10 |
-| **Veredito** | **REPROVADO** |
-| **Risco** | **Crítico** — exposição anônima de mídia de conteúdo não publicado + bypass da permissão `publicar` + sessão sobrevivente à recuperação de senha + indisponibilidade do pool em concorrência moderada |
+| **Veredito** | **Aprovado com ressalvas (M-07)** — snapshot histórico: REPROVADO em 23/10 |
+| **Risco** | **Baixo/operacional** — M-07 (grants da conta de dev) e I-01; sem bloqueadores críticos/altos no estado atual |
 
-> **Nota de snapshot (27/10/2026):** este relatório é o snapshot de 23/10/2026, commit `85c79c8`. As contagens do Apêndice D (42 specs, 30 migrations, 84 rotas, 18 páginas, 36 componentes e 15 composables) são históricas. No estado atual (commit `998657a`): **46 specs, 40 migrations, 86 rotas, 18 páginas, 39 componentes e 16 composables**; o antigo `docs/18` foi removido. Para o estado vigente, consulte `docs/02` e `openspec/specs`.
+> **Nota de snapshot (27/10/2026):** este relatório é o snapshot de 23/10/2026, commit `85c79c8`. As contagens do Apêndice D (42 specs, 30 migrations, 84 rotas, 18 páginas, 36 componentes e 15 composables) são históricas. No estado atual (commit `203aece`): **46 specs, 42 migrations, 86 rotas, 18 páginas, 39 componentes e 16 composables**; o antigo `docs/18` foi removido. Para o estado vigente, consulte `docs/02` e `openspec/specs`.
 
 > **Revalidação 27/10/2026 (pós-RL06):** A-04 fechado com N=20 no dev local — Painel `ok=20/20`, `503=0`, `500=0` (336 ms); Esteira `ok=20/20`, `503=0`, `500=0` (124 ms). A-05 mantém o gate de visibilidade (`sqlVinculoPublicado`/`itemVisivelNoPortal`) com testes explícitos para `release`, `manual` e `projeto` arquivados. Os achados históricos abaixo permanecem como snapshot.
 
@@ -26,6 +26,8 @@
 > **Revalidação RL06-2 — Change 2 (27/10/2026):** M-10 fechado com projeção mínima, cache de fluxo/anos e invalidação por prefixo; carga N=20 no Painel `ok=20/20`, `503=0`, `500=0` (333 ms) e Esteira `ok=20/20`, `503=0`, `500=0` (224 ms). M-11 fechado no board (contagem/capa, sem array completo), no PDF (teto de 5.000) e no formulário (catálogo remoto). B-07 fechado com importação em lote (`inserirEmLotes` + softwares multi-row); E2E importou 3 linhas e removeu os registros. M-02 aplica `status` antes da paginação; M-03 limpa a data ao remover a Release e valida a herança na aprovação.
 
 > **Revalidação RL06-2 — B-03 (27/10/2026):** `softwares.uuid UUID UNIQUE` restaurado pela migration 42, mantendo `codigo` como PK/FK. As auditorias de criação, alteração e exclusão usam `entidade_id = uuid`; o código `SFT-XXX` permanece em `detalhes`. E2E validou os três eventos e a migration 42 confirmou 44 softwares com UUIDs únicos e não nulos.
+
+> **Fechamento documental (27/10/2026):** B-09 corrigido com placeholder `slate-500`; B-19 alinhado para incluir `primeiro-acesso` na identidade das telas de autenticação; `docs/qa/05` atualizado para 39 componentes; B-03 fechado com UUID. M-07 e I-01 permanecem como risco operacional aceito. A Área Pública não faz parte deste relatório.
 
 > **Objetivo deste documento:** ser o relatório único e definitivo de fechamento da Área Administrativa, consolidando e deduplicando os sete pareceres (documentação, funcional, segurança, banco, UX, performance e execução), classificando a severidade e servindo de plano de correção para que a Área Pública comece sobre uma base aprovada.
 >

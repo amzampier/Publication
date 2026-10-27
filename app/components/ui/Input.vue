@@ -150,7 +150,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
         :aria-label="ariaLabel || undefined"
         :aria-describedby="error ? erroId : undefined"
         :class="[
-          'w-full h-full bg-transparent text-slate-900 text-xs placeholder:text-slate-400',
+          'w-full h-full bg-transparent text-slate-900 text-xs placeholder:text-slate-500',
           'border-none outline-none focus:outline-none ring-0 focus:ring-0 disabled:cursor-not-allowed',
           mono ? 'font-mono tabular-nums font-medium tracking-tight' : 'font-normal',
           (leftIcon || $slots.leftIcon) ? 'pl-1.5' : 'pl-3.5',
