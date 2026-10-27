@@ -45,6 +45,9 @@ for (const n of cargas) {
     console.log(
       `${rotulo} N=${n} ok=${ok} 503=${indisponivel} 500=${erro} outros=${n - ok - indisponivel - erro} ms=${Date.now() - inicio}`
     )
-    if (erro > 0) process.exitCode = 1
+    if (erro > 0 || indisponivel > 0 || ok < n) {
+      console.error(`FALHA ${rotulo} N=${n}: esperado ${n} respostas 200.`)
+      process.exitCode = 1
+    }
   }
 }

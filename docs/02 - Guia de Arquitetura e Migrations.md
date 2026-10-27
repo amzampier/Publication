@@ -363,6 +363,8 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 >
 > **Publicação em cascata (RL06):** publicar o pai promove as chamadas filhas de `Publicar` para `Publicado`, gravando histórico por filha e auditoria única no pai; reabrir o pai devolve a `Publicar` as filhas em `Publicado` que não tenham outro vínculo ativo publicado. Arquivar o pai não altera o status das filhas, mas o gate de visibilidade pública as esconde. Com múltiplos vínculos, a chamada é pública quando ao menos um pai está `Publicado`, não arquivado e com `publicado_em <= NOW()`.
 >
+> **Contrato de leitura pública (A-05):** toda consulta pública de conteúdo deve usar `sqlVinculoPublicado`/`itemVisivelNoPortal` (status `Publicado` + ao menos um pai ativo, não arquivado e com `publicado_em <= NOW(6)`); nunca filtrar apenas `entregas_itens.status = 'Publicado'`. Arquivar o pai não altera as filhas; o gate é a única barreira.
+>
 > **Painel Executivo (RL06):** `GET /api/painel-executivo` exige sessão e `visualizar` em ao menos um módulo agregado; cada bloco respeita o módulo de origem (publicações, chamadas, softwares). Sem nenhum módulo permitido, responde `403`. Sob saturação da fila do pool, responde `503` com `Retry-After` em vez de `500`. Os defaults do pool passam a `20` conexões / `100` de fila (`DB_POOL_LIMIT`/`DB_POOL_QUEUE_LIMIT`). A criação de escopo com cascata é atômica (insert + reconciliação na mesma transação).
 
 ---
@@ -789,5 +791,7 @@ Na inicialização:
 > **Performance (escalar):** o CSV usa keyset/cursor e calcula contagem/KPIs uma vez; a importação de Chamadas grava em lotes (inserirEmLotes) e softwares em multi-row; o board da Esteira é paginado; o Painel carrega o RBAC uma vez por request e agrega itensFluxo com joins/índice idx_entregas_fluxo; DB_POOL_LIMIT/DB_POOL_QUEUE_LIMIT são lidos em runtime.
 >
 > **Medição 24/10/2026 (5.000 chamadas sintéticas):** Painel p50 55,3 ms / p95 67,9 ms; N=10 260 ms, N=20 432 ms (100% 200); Esteira p50 30,5 ms / p95 38,2 ms com 200 itens (total 5.004); CSV de Chamadas 246 ms / 491 KB / 5.009 linhas. Teste de exportação: 1 linha 18 ms, 100 linhas 21 ms, 5.000 linhas 284 ms, 100.000 linhas 4.488 ms / 10,1 MB; abort de conexão interrompeu o fluxo e a API seguiu saudável (200). Base sintética removida ao final.
+>
+> **Medição 27/10/2026 (N=20, dev local — A-04):** Painel `ok=20/20`, `503=0`, `500=0` (336 ms); Esteira `ok=20/20`, `503=0`, `500=0` (124 ms). Comando: `N=20 node scripts/load-painel-esteira.mjs`; credenciais somente em variáveis de ambiente.
 >
 > **Busca FULLTEXT (escalar):** Chamadas, Auditoria e Usuários usam `MATCH ... AGAINST` para termos com 3+ caracteres (`innodb_ft_min_token_size=3`) e prefixo/igualdade para códigos, e-mails e termos curtos. A migration 35 cria os índices; a semântica é por palavra/prefixo, não substring em todo campo.

@@ -32,11 +32,27 @@ describe('visibilidade pública', () => {
     expect(itemVisivelNoPortal('Publicado', null, '2026-10-01T00:00:00.000Z')).toBe(false)
   })
 
+  it('oculta a filha quando o pai manual ou projeto está arquivado', () => {
+    const ts = '2026-10-01T00:00:00.000Z'
+    expect(
+      itemVisivelNoPortal('Publicado', { manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026', arquivada: true }) }, ts)
+    ).toBe(false)
+    expect(
+      itemVisivelNoPortal('Publicado', { projeto: pai({ id: 'projeto-1', codigo: 'PE-2026.01', arquivada: true }) }, ts)
+    ).toBe(false)
+  })
+
   it('preserva a visibilidade quando há múltiplos vínculos e um pai ativo', () => {
     expect(
       itemVisivelNoPortal('Publicado', {
         release: pai({ arquivada: true }),
         manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026' })
+      }, '2026-10-01T00:00:00.000Z')
+    ).toBe(true)
+    expect(
+      itemVisivelNoPortal('Publicado', {
+        manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026', arquivada: true }),
+        projeto: pai({ id: 'projeto-1', codigo: 'PE-2026.01' })
       }, '2026-10-01T00:00:00.000Z')
     ).toBe(true)
   })
@@ -49,6 +65,10 @@ describe('visibilidade pública', () => {
     expect(sql).toContain("r.status = 'Publicado'")
     expect(sql).toContain('r.arquivada = 0')
     expect(sql).toContain('r.publicado_em <= NOW(6)')
+    expect(sql).toContain('m.arquivada = 0')
+    expect(sql).toContain('m.publicado_em <= NOW(6)')
+    expect(sql).toContain('p.arquivada = 0')
+    expect(sql).toContain('p.publicado_em <= NOW(6)')
   })
 
   it('oculta publicação futura e ausência de carimbo', () => {

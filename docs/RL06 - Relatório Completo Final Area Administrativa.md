@@ -17,6 +17,8 @@
 
 > **Nota de snapshot (27/10/2026):** este relatório é o snapshot de 23/10/2026, commit `85c79c8`. As contagens do Apêndice D (42 specs, 30 migrations, 84 rotas, 18 páginas, 36 componentes e 15 composables) são históricas. No estado atual (commit `998657a`): **46 specs, 40 migrations, 86 rotas, 18 páginas, 39 componentes e 16 composables**; o antigo `docs/18` foi removido. Para o estado vigente, consulte `docs/02` e `openspec/specs`.
 
+> **Revalidação 27/10/2026 (pós-RL06):** A-04 fechado com N=20 no dev local — Painel `ok=20/20`, `503=0`, `500=0` (336 ms); Esteira `ok=20/20`, `503=0`, `500=0` (124 ms). A-05 mantém o gate de visibilidade (`sqlVinculoPublicado`/`itemVisivelNoPortal`) com testes explícitos para `release`, `manual` e `projeto` arquivados. Os achados históricos abaixo permanecem como snapshot.
+
 > **Objetivo deste documento:** ser o relatório único e definitivo de fechamento da Área Administrativa, consolidando e deduplicando os sete pareceres (documentação, funcional, segurança, banco, UX, performance e execução), classificando a severidade e servindo de plano de correção para que a Área Pública comece sobre uma base aprovada.
 >
 > **Nota de consolidação:** os pareceres de origem usaram prefixos próprios (`DOC`, `FUN`, `SEG`, `BD`, `UX`, `PERF`, `EXE`). Neste relatório, os achados foram deduplicados e renumerados como `RL06-C-*` (Crítica), `RL06-A-*` (Alta), `RL06-M-*` (Média), `RL06-B-*` (Baixa) e `RL06-I-*` (Melhoria). A rastreabilidade está na seção 9.
