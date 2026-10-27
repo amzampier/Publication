@@ -67,7 +67,7 @@ O Login é a porta de entrada da Área Administrativa:
 - **Identidade:** card branco centralizado sobre o canvas animado `AuthBackground`; o
   cabeçalho exibe a logomarca de Configurações > Logomarcas (`useLogomarcaLogin`) quando
   personalizada — ou a marca padrão do sistema (ícone `Building2` + "Publications") quando não
-  — no lugar do título, com o subtítulo "Área Administrativa" abaixo. A logomarca é hidratada
+  — no lugar do título, sem subtítulo ou texto auxiliar abaixo. A logomarca é hidratada
   no carregamento da página pelo layout `auth` via **endpoint público mínimo**
   `GET /api/configuracoes/identidade` (retorna somente `logo_login_url` - o `GET /api/configuracoes`
   completo exige sessão e é bloqueado ao visitante anônimo por `server/middleware/auth-api.ts`),
@@ -119,7 +119,7 @@ são donas apenas do próprio formulário. O layout monta, de fora para dentro:
 | Fundo | `AuthBackground` | canvas animado (`pointer-events-none`, `aria-hidden`), paleta brand (§7) |
 | Container | layout | `flex` centralizado, `min-h-dvh`, `p-6` |
 | Card | layout | `max-w-xs` (320px), branco, `rounded-xl`, `shadow-lg`, `p-8` |
-| Cabeçalho | `AuthLoginHeader` | identidade centralizada — logomarca (`useLogomarcaLogin`: `preview \|\| caminho`) ou, sem personalização, a marca padrão (ícone `Building2` + "Publications", como no `AppHeader`) — e subtítulo "Área Administrativa" abaixo |
+| Cabeçalho | `AuthLoginHeader` | identidade centralizada — logomarca (`useLogomarcaLogin`: `preview \|\| caminho`) ou, sem personalização, a marca padrão (ícone `Building2` + "Publications", como no `AppHeader`), sem subtítulo abaixo |
 | Divisor | layout | linha `h-px` em `bg-brand-focus` (`#1a9e07`) com `role="separator"`, separando o cabeçalho do formulário |
 | Formulário | página | `AuthLoginForm` em `/admin/login`: `UiInput` e-mail + `UiInput` senha (olho à direita alterna visibilidade) + `UiCheckbox` "Lembrar-me" (`size="sm"`, cinza) + "Esqueceu a senha?" + `UiButton` "Entrar no Portal" (`w-full`, `:loading`); `AuthForgotForm` em `/admin/esqueci-senha` (§5) |
 

@@ -27,7 +27,6 @@ await carregarIdentidadeLogin()
       <div class="w-full max-w-xs rounded-xl bg-white p-8 shadow-lg">
         <AuthLoginHeader
           class="mb-4"
-          subtitulo="Área Administrativa"
           :logo="logo"
         />
 

@@ -2,12 +2,10 @@
 import { Building2 } from '@lucide/vue'
 
 interface Props {
-  subtitulo?: string
   logo?: string
 }
 
 withDefaults(defineProps<Props>(), {
-  subtitulo: '',
   logo: ''
 })
 </script>
@@ -30,12 +28,5 @@ withDefaults(defineProps<Props>(), {
       </span>
       <span class="text-sm font-bold tracking-tight text-slate-900">Publications</span>
     </div>
-
-    <p
-      v-if="subtitulo"
-      class="mt-1 text-sm italic text-slate-500"
-    >
-      {{ subtitulo }}
-    </p>
   </header>
 </template>
