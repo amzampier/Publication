@@ -41,7 +41,8 @@ Documento da tela **Gestão de Usuários** (`/admin/gestao-usuarios`): rota, com
   `senha_provisoria`; e-mail duplicado → `409` (inclusive em corrida de unicidade). O modal de edição
   busca o registro completo por `GET /api/usuarios/:id` (a listagem traz só as colunas exibidas).
 - **Importação:** `POST /api/usuarios/importar` revalida contra a base e grava em transação;
-  `GET /api/usuarios/emails` entrega todos os e-mails (pré-classificação "já cadastrado").
+  `GET /api/usuarios/emails` busca e-mails sob demanda (2+ caracteres, máximo 20 itens,
+  permissões `visualizar` + `buscar`; pré-classificação "já cadastrado").
 - **Convite:** `POST /api/convite` (find-or-create por e-mail); canal `email` envia pelo Resend
   (falha → `502` com a conta já gravada), `whatsapp` só grava. Só usuário **Ativo** pode ser convidado.
 - **Bloqueio/Desbloqueio:** `PUT /api/usuarios/:id/situacao` (inativar revoga o acesso vigente).

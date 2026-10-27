@@ -33,7 +33,7 @@ raiz-do-projeto/
 │   ├── app.vue                    # Ponto de entrada (NuxtRouteAnnouncer + NuxtLayout + NuxtPage + UiToastContainer)
 │   ├── components/
 │   │   ├── layout/                # Shell (AppHeader, AppSidebar)
-│   │   ├── ui/                    # Design System interno (36 componentes atômicos)
+│   │   ├── ui/                    # Design System interno (39 componentes atômicos)
 │   │   └── [modulo]/              # Componentes de domínio (usuarios, perfis, auditoria, configuracoes, perfil, auth, softwares, parceiros, release-week, manuais, escopo-projetos, lancar-chamadas, esteira-revisao, painel)
 │   ├── composables/               # Regras de negócio e hooks reativos reutilizáveis
 │   ├── config/
@@ -48,8 +48,8 @@ raiz-do-projeto/
 │   ├── middleware/                # auth-api.ts, security-headers.ts, csrf.ts, body-limit.ts
 │   ├── routes/                    # servimento autorizado de /uploads/chamadas/**
 │   ├── migration/                 # Scripts SQL versionados (01_..., 02_..., etc.)
-│   ├── plugins/                   # migration.ts, auth-config.ts
-│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner, bootstrap-admin, publicacao-pais, visibilidade-publica, busca, csv, pool-error, hierarquia, ip, midias
+│   ├── plugins/                   # migration.ts, auth-config.ts, error-sanitize.ts, pool-error.ts
+│   └── utils/                     # db, auth, permission, audit, perfis, usuarios, configuracoes, seguranca, uploads, crypto, rateLimit, mailer, expurgo, migration-runner, bootstrap-admin, publicacao-pais, visibilidade-publica, busca, csv, pool-error, hierarquia, ip, midias, cache, csrf, datas, escopo-projetos, esteira-revisao, historico-esteira, lancar-chamadas, manuais, painel-executivo, parceiros, release-week, richText, security-headers, softwares, sql
 │
 ├── shared/                        # Tipos/utilitários compartilhados (ex.: shared/utils/emails.ts)
 ├── docs/                          # Documentação de arquitetura e especificações de negócio
@@ -358,7 +358,7 @@ Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio —
 - `GET/POST/PUT/DELETE /api/manuais`, `PUT /api/manuais/:id/publicar|arquivar`, `GET /api/manuais/:id/itens` e `POST /api/manuais/importar` — Manuais Mensais (código `MAN-XX/AAAA` gerado pelo servidor, `arquivada` soft, datas históricas, itens somente leitura e importação `.xlsx`); exigem `manuais`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/escopo-projetos`, `PUT /api/escopo-projetos/:id/publicar|arquivar`, `GET /api/escopo-projetos/:id/itens` e `POST /api/escopo-projetos/importar` — Escopo de Projetos (código `PE-AAAA.VV` gerado pelo servidor, `arquivada` soft, itens somente leitura e importação `.xlsx`); exigem `escopo-projetos`/`visualizar|visualizar_itens|criar|alterar|publicar|arquivar|excluir|importar|exportar`.
 - `GET/POST/PUT/DELETE /api/lancar-chamadas`, `PUT /api/lancar-chamadas/:id/aprovar|desaprovar|recusar` e `POST /api/lancar-chamadas/importar` — chamadas em `entregas_itens` (status `Revisar`/`Aprovado`/`Publicar`/`Publicado`/`Recusado`, unicidade de `chamada`, snapshots, imagens em `uploads/chamadas/<ano>/<mes>/` e importação `.xlsx`); exigem `lancar-chamadas`/`visualizar|download|criar|alterar|publicar|excluir|importar`. As transições gravam `historico_esteira_revisao` com parecer e critérios.
-- `GET /api/esteira-revisao`, `GET /api/esteira-revisao/:id`, `GET /api/esteira-revisao/:id/historico` e `PUT /api/esteira-revisao/:id/aprovar|recusar|reabrir|publicar|suspender` — board do ciclo ativo (Release Week, Manuais e Escopo de Projetos não arquivados e não publicados), progresso do fluxo, detalhe, histórico e transições com parecer; exigem `esteira-revisao`/`visualizar|buscar|filtrar|publicar|alterar` e registram auditoria com o recurso "Esteira de Revisão".
+- `GET /api/esteira-revisao`, `GET /api/esteira-revisao/:id`, `GET /api/esteira-revisao/:id/historico` e `PUT /api/esteira-revisao/:id/aprovar|recusar|reabrir|publicar|suspender` — board do ciclo ativo (Release Week, Manuais e Escopo de Projetos não arquivados; a listagem inclui `Publicar` e `Publicado`, e o board/filtro recorta), progresso do fluxo, detalhe, histórico e transições com parecer; exigem `esteira-revisao`/`visualizar|buscar|filtrar|publicar|alterar` e registram auditoria com o recurso "Esteira de Revisão".
 > **Publicação (RL06):** a transição para `Publicado` em Release Week, Manuais e Escopo de Projetos exige a funcionalidade `publicar` em qualquer caminho (endpoint dedicado, criação ou edição). Sem ela, a API responde `403` sem efeito, e a operação autorizada é auditada como “Homologação”. A Release grava `data_aprovacao` ao entrar em `Publicado` e a limpa ao sair.
 >
 > **Publicação em cascata (RL06):** publicar o pai promove as chamadas filhas de `Publicar` para `Publicado`, gravando histórico por filha e auditoria única no pai; reabrir o pai devolve a `Publicar` as filhas em `Publicado` que não tenham outro vínculo ativo publicado. Arquivar o pai não altera o status das filhas, mas o gate de visibilidade pública as esconde. Com múltiplos vínculos, a chamada é pública quando ao menos um pai está `Publicado`, não arquivado e com `publicado_em <= NOW()`.
@@ -507,7 +507,7 @@ export default defineNuxtConfig({
 Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigorosamente as seguintes regras:
 
 1. **Nomenclatura Sequencial de Dois ou Três Dígitos**:
-   - Exemplo: `01_create_tables.sql`, `02_add_status_to_publicacoes.sql`, `03_permissoes_perfil.sql`.
+   - Exemplo: `01_create_tables.sql`, `23_add_escopo_arquivada_e_ano_versao.sql`, `34_rate_limit_persistente.sql`.
    - A ordenação alfabética do runner garante a ordem exata de execução.
 2. **Sem `USE` nas migrations executáveis**:
    - Os arquivos de `server/migration/` **não** contêm `USE` — o pool conecta já no banco definido por `DB_NAME` (a referência humana `docs/bd/01` mantém o `USE` para execução manual via cliente SQL).
@@ -517,11 +517,12 @@ Para manter a consistência e a rastreabilidade em futuros sistemas, siga rigoro
    - Toda migration deve incluir, ao final do arquivo, o script de reversão manual:
    ```sql
    -- REVERTER (ROLLBACK):
--- ALTER TABLE publicacoes DROP COLUMN status;
--- DELETE FROM _migrations WHERE nome = '02_add_status_to_publicacoes.sql';
+-- ALTER TABLE projetos_escopo DROP COLUMN arquivada;
+-- DELETE FROM _migrations WHERE nome = '23_add_escopo_arquivada_e_ano_versao.sql';
    ```
 5. **Seeds e Dados Iniciais**:
    - Insira os dados necessários para o funcionamento inicial do sistema (Perfis padrão, usuário Administrador inicial, configurações globais) em arquivos de migration específicos ou na migration `01`.
+   - **Nota histórica:** o cabeçalho da migration `02_seed.sql` ainda diz 99/90/65/39/14; após as migrations 16/20/22/27 a matriz efetiva é 92/67/41/14 (214/368). A migration não é editada depois de aplicada; `docs/bd/02_seed.sql` reflete o total final.
 
 6. **Remoção de coluna obsoleta (exceção)**:
    - Uma migration só PODE remover uma coluna quando uma change registrada a declara obsoleta, nenhum código a lê ou escreve e a auditoria prévia comprova que todos os valores são o default/semanticamente vazios (ex.: `SELECT situacao, COUNT(*) FROM entregas_itens GROUP BY situacao`).

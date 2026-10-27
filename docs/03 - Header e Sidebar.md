@@ -268,7 +268,7 @@ Observações:
 ## 6. Modelo de dados (`config/navigation.ts`)
 
 ```ts
-interface SidebarItem   { id: string; label: string; icon: Component; cor?: string }
+interface SidebarItem   { id: string; label: string; icon: Component; cor?: string; to?: string; modulo?: string }
 interface SidebarSession { label: string; aberto: boolean; items: SidebarItem[] }
 interface MenuItem      { label: string; icon: Component; cor?: string; to?: string; modulo?: string }
 interface Conta         { nome: string; perfil: string }
@@ -403,6 +403,6 @@ vitrine**: os dados importados, larguras, árvore e a estrutura do menu seguem i
    Administração, os quatro itens apontam para `/admin/configuracoes-globais`,
    `/admin/gestao-usuarios`, `/admin/auditoria` e `/admin/perfis-acesso`), e o item ativo da sidebar
    deriva da rota quando a URL casa com um `to`. O item **Escopo de Projetos** aponta para
-   `/admin/escopo-projetos` (frontend com dataset em memória); os itens sem `to` seguem apenas
+   `/admin/escopo-projetos` (frontend integrado à API via `useEscopoProjetosModelo`); os itens sem `to` seguem apenas
    estado visual.
-3. `Parceiros` e `Softwares` não têm spec de domínio (módulos ainda não construídos).
+3. **Parceiros e Softwares** têm spec de domínio e rotas implementadas; a pendência anterior está resolvida.

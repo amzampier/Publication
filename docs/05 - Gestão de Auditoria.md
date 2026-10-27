@@ -273,6 +273,16 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 | `PUT /api/softwares/:codigo` | Alteração | Softwares |
 | `DELETE /api/softwares/:codigo` | Exclusão | Softwares |
 | `POST /api/softwares/importar` | Inclusão (1 evento com a contagem) | Softwares |
+| `POST /api/parceiros` | Inclusão | Parceiros |
+| `PUT /api/parceiros/:id` | Alteração | Parceiros |
+| `DELETE /api/parceiros/:id` | Exclusão | Parceiros |
+| `POST /api/parceiros/importar` | Inclusão (1 evento com a contagem) | Parceiros |
+| `POST /api/release-week` | Inclusão (Homologação se publicar) | Release Week |
+| `PUT /api/release-week/:id` | Alteração (Homologação se publicar) | Release Week |
+| `PUT /api/release-week/:id/publicar` | Homologação | Release Week |
+| `PUT /api/release-week/:id/arquivar` | Alteração | Release Week |
+| `DELETE /api/release-week/:id` | Exclusão | Release Week |
+| `POST /api/release-week/importar` | Inclusão (1 evento com a contagem) | Release Week |
 | `POST /api/manuais` | Inclusão | Manuais Mensais |
 | `PUT /api/manuais/:id` | Alteração | Manuais Mensais |
 | `PUT /api/manuais/:id/publicar` | Homologação | Manuais Mensais |
@@ -292,14 +302,21 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
 | `PUT /api/escopo-projetos/:id/arquivar` | Alteração | Escopo de Projetos |
 | `DELETE /api/escopo-projetos/:id` | Exclusão | Escopo de Projetos |
 | `POST /api/escopo-projetos/importar` | Inclusão (1 evento com a contagem) | Escopo de Projetos |
+| `PUT /api/esteira-revisao/:id/aprovar` | Homologação | Esteira de Revisão |
+| `PUT /api/esteira-revisao/:id/publicar` | Homologação | Esteira de Revisão |
+| `PUT /api/esteira-revisao/:id/recusar` | Alteração | Esteira de Revisão |
+| `PUT /api/esteira-revisao/:id/reabrir` | Alteração | Esteira de Revisão |
+| `PUT /api/esteira-revisao/:id/suspender` | Alteração | Esteira de Revisão |
 | `PUT /api/configuracoes` | Alteração | Configurações Globais |
 | `POST /api/uploads` | Inclusão | Logomarcas / Avatares / Logos / Lançar as Chamadas |
 | `POST /api/convite` | Inclusão | Usuários |
-| `POST /api/seguranca/liberar` | Alteração | Rate Limits |
+| `POST /api/seguranca/liberar` (conta existente) | Alteração | Rate Limits |
+| `POST /api/seguranca/liberar` (e-mail inexistente) | Alteração | Rate Limits |
 | `POST /api/auth/login` (sucesso) | **Acesso** | Autenticação |
 | `POST /api/auth/logout` (com sessão) | **Acesso** | Autenticação |
 | `POST /api/auth/trocar-senha` | **Acesso** | Autenticação |
-| `POST /api/auth/esqueci-senha` (ambos os caminhos) | **Acesso** | Autenticação |
+| `POST /api/auth/esqueci-senha` (conta ativa) | **Acesso** | Autenticação |
+| `POST /api/auth/esqueci-senha` (e-mail sem conta ativa) | **Acesso** | Autenticação |
 
 - A chamada só acontece **após o sucesso da operação** — validação/conflito/erro de banco
   (400/404/409) não inserem nada (verificado).
@@ -426,4 +443,4 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   10/11), com catch-up no boot; a política segue `dias_retencao_auditoria`.
 - Nenhum item de navegação sem rota no estado atual.
 
-> **Complemento RL06:** além das linhas detalhadas acima, a trilha cobre Parceiros (4 pontos), Release Week (6) e Esteira de Revisão (5), totalizando **59 pontos**. A fonte executável é `registrarAuditoria` em `server/**`; a contagem é validada por busca de chamadas no código.
+> **Contagem:** a tabela lista os **59 pontos** de auditoria (42 originais + 2 caminhos duplos de `esqueci-senha`/`seguranca/liberar` + 15 de Parceiros/Release Week/Esteira). A fonte executável é `registrarAuditoria` em `server/**`; a contagem é validada por busca de chamadas no código (59 chamadas + a definição em `server/utils/audit.ts`).

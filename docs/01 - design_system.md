@@ -18,7 +18,7 @@
 3. [Layout & Navegação](#3-layout--navegação)
 4. [Convenções Globais](#4-convenções-globais)
 
-**Componentes** (5.1–5.20)
+**Componentes** (5.1–5.28)
 
 5. [Componentes](#5-componentes)
    - [5.1 Button](#51-button--seção-3-do-design) (seção 3)

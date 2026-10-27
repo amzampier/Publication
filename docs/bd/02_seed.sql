@@ -6,6 +6,10 @@
 -- Re-execução: as UNIQUE keys (uk_perfil_modulo, uk_usuarios_email, PKs de
 -- config) evitam duplicidade — o runner tolera erros 1062 (docs/qa/03).
 -- =========================================================================
+-- Nota: o cabeçalho da migration `server/migration/02_seed.sql` é histórico
+-- (99/90/65/39/14). Após as migrations 16/20/22/27, a matriz efetiva é
+-- 92/67/41/14 (214/368); este arquivo humano já reflete o total final.
+-- =========================================================================
 USE publications;
 
 -- =========================================================================

@@ -15,6 +15,8 @@
 | **Veredito** | **REPROVADO** |
 | **Risco** | **Crítico** — exposição anônima de mídia de conteúdo não publicado + bypass da permissão `publicar` + sessão sobrevivente à recuperação de senha + indisponibilidade do pool em concorrência moderada |
 
+> **Nota de snapshot (27/10/2026):** este relatório é o snapshot de 23/10/2026, commit `85c79c8`. As contagens do Apêndice D (42 specs, 30 migrations, 84 rotas, 18 páginas, 36 componentes e 15 composables) são históricas. No estado atual (commit `998657a`): **46 specs, 40 migrations, 86 rotas, 18 páginas, 39 componentes e 16 composables**; o antigo `docs/18` foi removido. Para o estado vigente, consulte `docs/02` e `openspec/specs`.
+
 > **Objetivo deste documento:** ser o relatório único e definitivo de fechamento da Área Administrativa, consolidando e deduplicando os sete pareceres (documentação, funcional, segurança, banco, UX, performance e execução), classificando a severidade e servindo de plano de correção para que a Área Pública comece sobre uma base aprovada.
 >
 > **Nota de consolidação:** os pareceres de origem usaram prefixos próprios (`DOC`, `FUN`, `SEG`, `BD`, `UX`, `PERF`, `EXE`). Neste relatório, os achados foram deduplicados e renumerados como `RL06-C-*` (Crítica), `RL06-A-*` (Alta), `RL06-M-*` (Média), `RL06-B-*` (Baixa) e `RL06-I-*` (Melhoria). A rastreabilidade está na seção 9.

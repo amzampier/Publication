@@ -218,7 +218,7 @@ exibido nem enviado no formulário. As tags SHALL ficar na etapa **Classificaç�
 ser preenchido a partir da sessão e exibido somente leitura. Os campos de texto `release`, `software`
 e `parceiro` SHALL ser derivados dos catálogos selecionados, nunca digitados em paralelo. Ao
 selecionar uma Release, a **Data de liberação** SHALL ser preenchida com a `dataPublicacao` da release
-selecionada, permanecendo editável. Novas chamadas SHALL nascer com status `Revisar`; o status NÃO
+selecionada, permanecendo **somente leitura**. Novas chamadas SHALL nascer com status `Revisar`; o status NÃO
 SHALL ser editável no formulário. A **Descrição completa** e a **Solução** SHALL ficar na etapa
 **Conteúdo e mídias** e SHALL aceitar formatação de texto rico; a **Solução** SHALL ser opcional.
 
@@ -240,7 +240,7 @@ SHALL ser editável no formulário. A **Descrição completa** e a **Solução**
 #### Scenario: Data de liberação herdada da Release
 
 - **WHEN** o usuário seleciona uma Release que possui data de publicação
-- **THEN** o campo Data de liberação é preenchido com essa data e permanece editável
+- **THEN** o campo Data de liberação é preenchido com essa data e permanece somente leitura
 
 #### Scenario: Tags na classificação
 
@@ -589,7 +589,10 @@ contrato, limitar a importação a 500 linhas e gravar todas as linhas válidas 
 Linhas inválidas, duplicadas ou já cadastradas SHALL impedir a importação completa, sem gravação
 parcial. As chamadas importadas SHALL nascer com status `Revisar`, SHALL resolver
 release, projeto, manual, **um ou mais softwares separados por `;`** e parceiro pelos códigos da planilha, SHALL aceitar múltiplas tags
-separadas por `;` e NÃO SHALL importar imagens, status ou situação.
+separadas por `;` e NÃO SHALL importar imagens, status ou situação. As datas de lançamento e de
+liberação SHALL seguir a mesma validação da criação, incluindo segunda-feira ou o próximo dia útil
+quando a segunda-feira da semana for feriado; uma linha com data fora dessa regra SHALL ser
+classificada como `inválida` e bloquear a importação completa.
 
 #### Scenario: Importação válida
 
@@ -613,7 +616,7 @@ separadas por `;` e NÃO SHALL importar imagens, status ou situação.
 
 #### Scenario: Linha inválida
 
-- **WHEN** o arquivo contém campo obrigatório vazio, código de vínculo inexistente ou data inválida
+- **WHEN** o arquivo contém campo obrigatório vazio, código de vínculo inexistente, data inválida ou data fora da segunda-feira/próximo dia útil permitido
 - **THEN** o preview marca a linha como `inválida`, indica o erro e a importação completa é bloqueada
 
 #### Scenario: Limite de linhas

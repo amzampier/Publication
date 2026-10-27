@@ -633,6 +633,10 @@ exportação:
 
 ## 12. Verificação
 
+> **Nota de snapshot:** os números `0/88`, `n/88`, `214/460`, `152/352` e `252/352` desta seção
+> são do snapshot histórico das changes `perfis-acesso-*` (catálogo de 88). A matriz atual é
+> **92/67/41/14 (214/368)**; os contadores vigentes da tela são `n/92` e `214/368`.
+
 - `npm run build` (gate estrutural — não há lint/test no repositório) e
   `openspec validate "perfis-acesso-modal-permissoes" --strict`.
 - Smoke SSR da rota: `/admin/perfis-acesso` responde 200 com shell, título "Perfis de Acesso

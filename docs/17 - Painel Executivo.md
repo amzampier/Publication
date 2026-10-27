@@ -86,7 +86,7 @@ Definições normativas. O `ANO` é o ano selecionado; `HOJE` é a data civil lo
 | **Releases publicadas** | `COUNT(release_week)` com `status='Publicado'` e `data_publicacao` no ano | Inclui releases arquivadas (histórico) |
 | **Chamadas lançadas** | `COUNT(entregas_itens)` com `data_lancamento` no ano | Independe de status |
 | **Chamadas liberadas** | `COUNT(entregas_itens)` com `data_liberacao` no ano e `data_liberacao <= HOJE` | A data é herdada do pai na aprovação; pode ser futura |
-| **% do fluxo concluído** | `(Aprovado + Publicar + Publicado) / total do universo com vínculo ativo` | Mesma regra de `#shared/esteira-revisao`; recusadas não entram no numerador |
+| **% do fluxo concluído** | `(Aprovado + Publicar + Publicado) / total do universo com vínculo ativo` | Mesmo universo de `#shared/esteira-revisao`; fórmula própria do Painel (inclui `Publicado`); recusadas não entram no numerador |
 | **Lead time médio** | `AVG(DATEDIFF(data_liberacao, data_lancamento))` das chamadas liberadas até hoje, com `data_liberacao >= data_lancamento` | Sem chamadas válidas, 0 |
 | **Taxa de recusa** | `Recusado / total do universo com vínculo ativo` | Sem universo ativo, 0% |
 | **Chamadas por publicação** | `COUNT(entregas_itens)` por `release_id`, `manual_id` e `projeto_id` | Ver ressalva de `Ambos` abaixo |
@@ -102,8 +102,8 @@ Definições normativas. O `ANO` é o ano selecionado; `HOJE` é a data civil lo
   (Release/Manual/Escopo), que pode estar no futuro. Por isso a série de liberadas corta em `HOJE`.
 - **Arquivadas:** entram no histórico de publicações do ano; não entram no ciclo operacional da
   Esteira (vínculo arquivado é inativo).
-- **Ciclo ativo global:** o fluxo e a taxa de recusa não são filtrados pelo ano; refletem o mesmo
-  ciclo da tela `/admin/esteira-revisao`.
+- **Ciclo ativo global:** o fluxo e a taxa de recusa não são filtrados pelo ano; usam o mesmo
+  universo da tela `/admin/esteira-revisao`, mas o Painel aplica fórmula própria (inclui `Publicado`).
 - **`situacao` não existe mais** em `entregas_itens` (change `remover-situacao-entregas`); nenhum
   indicador usa esse campo.
 
@@ -273,7 +273,7 @@ quando existirem.
 
 - **Gates:** `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`.
 - **Unitários:** [`tests/painel-executivo.test.ts`](../tests/painel-executivo.test.ts) cobre:
-  12 meses com zeros, série anual de cinco anos, percentual do fluxo igual ao da Esteira, lead time
+  12 meses com zeros, série anual de cinco anos, percentual do fluxo no mesmo universo da Esteira com fórmula própria do Painel, lead time
   só de liberadas, taxa de recusa com total zero, dupla contagem de vínculos e aging.
 - **API/E2E:** `GET /api/painel-executivo` `200` com todos os blocos e `anosDisponiveis`; `400` para
   `ano=abc`; `401` sem sessão; comparação dos números com SQL direto (releases publicadas, chamadas

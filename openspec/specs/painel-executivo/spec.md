@@ -69,8 +69,9 @@ recusa**. As definições SHALL ser:
 - **Taxa de recusa:** `Recusado / total do universo do progresso`.
 
 O percentual do fluxo e a taxa de recusa usam o **universo do progresso global** (não filtrado pelo
-ano), a mesma regra da tela da Esteira; o seletor de ano afeta apenas publicações, chamadas e
-dimensões.
+ano), o mesmo universo da tela da Esteira, mas com **fórmula própria do Painel** (as chamadas
+`Publicado` entram no numerador e no denominador); o seletor de ano afeta apenas publicações,
+chamadas e dimensões.
 
 #### Scenario: KPI de releases publicadas
 

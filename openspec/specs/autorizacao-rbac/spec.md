@@ -41,9 +41,10 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 `auditoria`, `configuracoes-globais`, `softwares`, `parceiros`, `release-week`, `manuais`,
 `escopo-projetos`, `lancar-chamadas`, `esteira-revisao`):
 
-- `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com o parâmetro de **filtro/paginação**
-  server-side → `gestao-usuarios` / `filtrar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
-- `GET /api/usuarios/emails` → `gestao-usuarios` / `visualizar`
+- `GET /api/usuarios` → `gestao-usuarios` / `visualizar`; com os **filtros** server-side
+  (`usuario`, `perfil`, `status`) → `gestao-usuarios` / `filtrar`; a **paginação** isolada
+  (`pagina`/`porPagina`) permanece em `visualizar`; com o parâmetro de **busca** → `gestao-usuarios` / `buscar`
+- `GET /api/usuarios/emails` → `gestao-usuarios` / `visualizar` e `buscar`
 - `GET /api/usuarios/:id` → `gestao-usuarios` / `visualizar`
 - `POST /api/usuarios` → `gestao-usuarios` / `criar`; `POST /api/convite` → `gestao-usuarios` / `convite`
 - `PUT /api/usuarios/:id`, `PUT /api/usuarios/:id/situacao` → `gestao-usuarios` / `alterar`
@@ -112,74 +113,97 @@ indicados (o `modulo` SHALL usar os identificadores da matriz: `gestao-usuarios`
 - `GET /api/painel-executivo` → sessão com `visualizar` em ao menos um dos módulos agregados, com cada bloco filtrado pelo módulo de origem
 
 #### Scenario: Leitor não executa escrita nem exclusão
+
 - **WHEN** um usuário com perfil Leitor (que não concede `criar`, `alterar` nem `excluir` em `gestao-usuarios`) chama `POST`, `PUT` ou `DELETE` de usuários
 - **THEN** a API responde `403` em todas e nenhum usuário é criado, alterado ou excluído
 
 #### Scenario: Leitor não grava configurações nem perfis
+
 - **WHEN** um usuário com perfil Leitor chama `PUT /api/configuracoes` ou `PUT /api/perfis/:id/permissoes`
 - **THEN** a API responde `403` e a configuração e a matriz permanecem intactas
 
 #### Scenario: Ação extra de importar é exigida
+
 - **WHEN** um perfil que concede `criar` mas não concede a ação extra `importar` chama `POST /api/usuarios/importar`
 - **THEN** a API responde `403`
 
 #### Scenario: Rota de e-mails exige visualizar de usuários
+
 - **WHEN** um perfil sem `gestao-usuarios`/`visualizar` chama `GET /api/usuarios/emails`
 - **THEN** a API responde `403`
 
+#### Scenario: Rota de e-mails exige buscar além de visualizar
+
+- **WHEN** um perfil concede `gestao-usuarios`/`visualizar` mas não `gestao-usuarios`/`buscar` chama `GET /api/usuarios/emails`
+- **THEN** a API responde `403`
+
 #### Scenario: Rotas de softwares usam o módulo softwares
+
 - **WHEN** um perfil concede `softwares`/`visualizar` mas não `softwares`/`excluir` chama `DELETE /api/softwares/:codigo`
 - **THEN** a API responde `403` e nenhum software é excluído
 
 #### Scenario: Importação de softwares exige a ação extra
+
 - **WHEN** um perfil sem `softwares`/`importar` chama `POST /api/softwares/importar`
 - **THEN** a API responde `403`
 
 #### Scenario: Rotas de Release Week usam o módulo release-week
+
 - **WHEN** um perfil concede `release-week`/`visualizar` mas não `release-week`/`arquivar` chama `PUT /api/release-week/:id/arquivar`
 - **THEN** a API responde `403` e nenhuma release é arquivada
 
 #### Scenario: Itens de Release Week exigem a ação extra
+
 - **WHEN** um perfil sem `release-week`/`visualizar_itens` chama `GET /api/release-week/:id/itens`
 - **THEN** a API responde `403` e nenhum item é retornado
 
 #### Scenario: Leitor não escreve Manuais
+
 - **WHEN** um usuário sem `manuais`/`criar`, `alterar` ou `excluir` chama as rotas de escrita de Manuais
 - **THEN** a API responde `403` em todas e nenhum catálogo é criado, alterado ou excluído
 
 #### Scenario: Rotas de Manuais usam o módulo manuais
+
 - **WHEN** um perfil concede `manuais`/`visualizar` mas não `manuais`/`arquivar` chama `PUT /api/manuais/:id/arquivar`
 - **THEN** a API responde `403` e nenhum catálogo é arquivado
 
 #### Scenario: Itens de Manuais exigem a ação extra
+
 - **WHEN** um perfil sem `manuais`/`visualizar_itens` chama `GET /api/manuais/:id/itens`
 - **THEN** a API responde `403` e nenhum item é retornado
 
 #### Scenario: Importação de Manuais exige a ação extra
+
 - **WHEN** um perfil sem `manuais`/`importar` chama `POST /api/manuais/importar`
 - **THEN** a API responde `403` e nada é gravado
 
 #### Scenario: Rotas de Escopo usam o módulo escopo-projetos
+
 - **WHEN** um perfil concede `escopo-projetos`/`visualizar` mas não `escopo-projetos`/`publicar` chama `PUT /api/escopo-projetos/:id/publicar`
 - **THEN** a API responde `403` e nenhum escopo é publicado
 
 #### Scenario: Rotas da Esteira usam o módulo esteira-revisao
+
 - **WHEN** um perfil sem `esteira-revisao`/`publicar` chama `PUT /api/esteira-revisao/:id/aprovar`
 - **THEN** a API responde `403` e a chamada permanece no status anterior
 
 #### Scenario: Importação de chamadas exige a ação extra
+
 - **WHEN** um perfil sem `lancar-chamadas`/`importar` chama `POST /api/lancar-chamadas/importar`
 - **THEN** a API responde `403` e nenhuma chamada é criada
 
 #### Scenario: Aprovação de chamada exige publicar
+
 - **WHEN** um perfil concede `lancar-chamadas`/`alterar` mas não `publicar` chama `PUT /api/lancar-chamadas/:id/aprovar`
 - **THEN** a API responde `403` e o status da chamada permanece inalterado
 
 #### Scenario: Download de chamadas exige a ação extra
+
 - **WHEN** um perfil sem `lancar-chamadas`/`download` chama `GET /api/lancar-chamadas?download=1`
 - **THEN** a API responde `403` e nenhum arquivo é gerado
 
 #### Scenario: Upload de imagem de chamada exige escrita no módulo
+
 - **WHEN** um perfil sem `lancar-chamadas`/`criar` e sem `alterar` chama `POST /api/uploads` com destino `chamadas`
 - **THEN** a API responde `403` e nenhum arquivo é gravado
 
