@@ -133,6 +133,7 @@ const acionar = (id: string, linha: LinhaChamada) => {
       :show-search="false"
       :show-filters="can('lancar-chamadas', 'filtrar')"
       :filters-count="criteriosAtivosCount"
+      sticky-actions
       @page-change="definirPagina"
       @per-page-change="definirPorPagina"
       @sort-change="definirOrdenacao"

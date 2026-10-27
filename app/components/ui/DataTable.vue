@@ -66,6 +66,8 @@ interface Props {
   rowKey?: string
   /** Rótulo acessível do controle de expansão. */
   expandLabel?: string
+  /** Mantém a coluna de Ações fixa à direita durante a rolagem horizontal. */
+  stickyActions?: boolean
   error?: boolean | string
   errorMessage?: string
 }
@@ -91,6 +93,7 @@ const props = withDefaults(defineProps<Props>(), {
   expanded: () => [],
   rowKey: 'id',
   expandLabel: 'Expandir itens',
+  stickyActions: false,
   error: false,
   errorMessage: ''
 })
@@ -123,6 +126,22 @@ const alternarLinha = (row: any) => {
 }
 const colSpanTotal = computed(
   () => props.columns.length + (slots.actions ? 1 : 0) + (mostrarColunaExpansao.value ? 1 : 0)
+)
+
+const classesAcoesCabecalho = computed(() =>
+  props.stickyActions
+    ? 'sticky right-0 z-30 w-28 min-w-28 max-w-28 border-l border-slate-700 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)]'
+    : 'w-20'
+)
+const classesAcoesCorpo = computed(() =>
+  props.stickyActions
+    ? 'sticky right-0 z-20 w-28 min-w-28 max-w-28 border-l border-slate-100 bg-white group-hover:bg-slate-50 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)]'
+    : ''
+)
+const classesAcoesRodape = computed(() =>
+  props.stickyActions
+    ? 'sticky right-0 z-20 w-28 min-w-28 max-w-28 border-l border-slate-300 bg-slate-100 shadow-[-8px_0_12px_-10px_rgba(15,23,42,0.35)]'
+    : 'bg-slate-100/90'
 )
 
 const serverMode = computed(() => props.serverMode === true)
@@ -846,7 +865,11 @@ onUnmounted(() => {
                 @click.stop
               />
             </th>
-            <th v-if="$slots.actions" class="py-1.5 px-2 text-center w-20 relative bg-brand-primary text-[11px]">
+            <th
+              v-if="$slots.actions"
+              class="py-1.5 px-2 text-center bg-brand-primary text-[11px]"
+              :class="classesAcoesCabecalho"
+            >
               Ações
             </th>
           </tr>
@@ -970,7 +993,7 @@ onUnmounted(() => {
               <!-- Linha Folha de Dados (Leaf Row) -->
               <tr
                 v-else-if="row.type === 'leaf'"
-                class="hover:bg-slate-50/90 transition-colors divide-x divide-slate-100"
+                class="group hover:bg-slate-50/90 transition-colors divide-x divide-slate-100"
               >
                 <td v-if="mostrarColunaExpansao" class="py-1 px-1.5 text-center">
                   <button
@@ -1002,7 +1025,7 @@ onUnmounted(() => {
                     {{ col.format ? col.format(row.item[col.accessorKey], row.item) : row.item[col.accessorKey] }}
                   </slot>
                 </td>
-                <td v-if="$slots.actions" class="py-1 px-2 text-center">
+                <td v-if="$slots.actions" class="py-1 px-2 text-center" :class="classesAcoesCorpo">
                   <slot name="actions" :row="row.item" />
                 </td>
               </tr>
@@ -1043,7 +1066,7 @@ onUnmounted(() => {
           <!-- CASO 2: Renderização Plana (Sem agrupamento) com Divisórias Verticais cxGrid -->
           <template v-else>
             <template v-for="(row, idx) in paginatedData" :key="chaveDaLinha(row) || idx">
-              <tr class="hover:bg-slate-50/90 transition-colors divide-x divide-slate-100">
+              <tr class="group hover:bg-slate-50/90 transition-colors divide-x divide-slate-100">
                 <td v-if="mostrarColunaExpansao" class="py-1.5 px-1.5 text-center">
                   <button
                     v-if="expandable"
@@ -1073,7 +1096,7 @@ onUnmounted(() => {
                     {{ col.format ? col.format(row[col.accessorKey], row) : row[col.accessorKey] }}
                   </slot>
                 </td>
-                <td v-if="$slots.actions" class="py-1.5 px-2 text-center">
+                <td v-if="$slots.actions" class="py-1.5 px-2 text-center" :class="classesAcoesCorpo">
                   <slot name="actions" :row="row" />
                 </td>
               </tr>
@@ -1138,7 +1161,7 @@ onUnmounted(() => {
                 </div>
               </template>
             </td>
-            <td v-if="$slots.actions" class="py-1.5 px-2.5 bg-slate-100/90"></td>
+            <td v-if="$slots.actions" class="py-1.5 px-2.5" :class="classesAcoesRodape"></td>
           </tr>
         </tfoot>
       </table>

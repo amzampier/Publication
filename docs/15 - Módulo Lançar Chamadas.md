@@ -97,6 +97,8 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 
 - `UiDataTable` com Chamada, Título, Softwares, Módulo, Tipo, Impacto, Status, Lançamento e Liberação;
   página padrão de 10, ordenação/paginação no cliente.
+- Coluna **Ações fixa** (`stickyActions`) à direita durante a rolagem horizontal, com cabeçalho, linhas
+  e rodapé alinhados e fundo opaco; os controles permanecem acessíveis sem rolar até o fim da grade.
 - Busca gated por `buscar`, filtros por `filtrar`; badge soma busca + filtros.
 - **Importar** (`importar`): ícone somente, imediatamente à esquerda do botão "Filtros".
 - Ações: Detalhes; Editar (`alterar`); Excluir (`excluir`, desabilitado com motivo); Aprovar
