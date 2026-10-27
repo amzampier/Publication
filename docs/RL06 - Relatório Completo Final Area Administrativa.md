@@ -23,6 +23,8 @@
 
 > **Revalidação RL06-2 (27/10/2026):** A-06 e A-08 foram alinhados ao contrato atual; M-05 foi corrigido pela migration 41 (views com projeção explícita e boot check); M-21, M-22, M-23 e M-29 foram corrigidos na documentação/spec. A decisão de produto de 27/10 superou M-01/A-08 quanto à Data de lançamento: ela aceita qualquer data civil válida, enquanto a Data de liberação continua sujeita à regra da Release. O veredito global permanece em aberto até o Change 2 (M-10/M-11/B-07).
 
+> **Revalidação RL06-2 — Change 2 (27/10/2026):** M-10 fechado com projeção mínima, cache de fluxo/anos e invalidação por prefixo; carga N=20 no Painel `ok=20/20`, `503=0`, `500=0` (333 ms) e Esteira `ok=20/20`, `503=0`, `500=0` (224 ms). M-11 fechado no board (contagem/capa, sem array completo), no PDF (teto de 5.000) e no formulário (catálogo remoto). B-07 fechado com importação em lote (`inserirEmLotes` + softwares multi-row); E2E importou 3 linhas e removeu os registros. M-02 aplica `status` antes da paginação; M-03 limpa a data ao remover a Release e valida a herança na aprovação.
+
 > **Objetivo deste documento:** ser o relatório único e definitivo de fechamento da Área Administrativa, consolidando e deduplicando os sete pareceres (documentação, funcional, segurança, banco, UX, performance e execução), classificando a severidade e servindo de plano de correção para que a Área Pública comece sobre uma base aprovada.
 >
 > **Nota de consolidação:** os pareceres de origem usaram prefixos próprios (`DOC`, `FUN`, `SEG`, `BD`, `UX`, `PERF`, `EXE`). Neste relatório, os achados foram deduplicados e renumerados como `RL06-C-*` (Crítica), `RL06-A-*` (Alta), `RL06-M-*` (Média), `RL06-B-*` (Baixa) e `RL06-I-*` (Melhoria). A rastreabilidade está na seção 9.

@@ -132,6 +132,7 @@ export const useEsteiraRevisaoModelo = () => {
       const query: Record<string, string> = {}
       if (busca.value.trim()) query.busca = '1'
       if (filtrosAtivosCount.value > 0) query.filtros = '1'
+      if (filtros.value.status) query.status = filtros.value.status
       query.pagina = String(pagina.value)
       query.porPagina = String(porPagina.value)
       const resposta = await useApiFetch<{

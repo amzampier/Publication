@@ -59,6 +59,44 @@ export async function carregarMidiasPorItem(
   return mapa
 }
 
+export interface ResumoMidias {
+  total: number
+  capa: string
+}
+
+/** Resumo leve para cards: total e capa/primeira URL, sem materializar a galeria. */
+export async function carregarResumoMidiasPorItem(
+  ids: string[]
+): Promise<Map<string, ResumoMidias>> {
+  const mapa = new Map<string, ResumoMidias>()
+  if (!ids.length) return mapa
+  const placeholders = ids.map(() => '?').join(', ')
+  const linhas = await query<Row[]>(
+    `SELECT m.entrega_item_id,
+            COUNT(*) AS total,
+            SUBSTRING_INDEX(
+              GROUP_CONCAT(
+                m.url_arquivo
+                ORDER BY m.destaque_capa DESC, m.ordem_exibicao ASC, m.criado_em ASC, m.id ASC
+                SEPARATOR '\\n'
+              ),
+              '\\n',
+              1
+            ) AS capa
+       FROM anexos_midias m
+      WHERE m.entrega_item_id IN (${placeholders})
+      GROUP BY m.entrega_item_id`,
+    ids
+  )
+  for (const linha of linhas) {
+    mapa.set(texto(linha.entrega_item_id), {
+      total: numero(linha.total),
+      capa: texto(linha.capa)
+    })
+  }
+  return mapa
+}
+
 /**
  * Sincroniza as linhas da chamada com a lista de URLs na ordem recebida.
  * Remove as ausentes e faz upsert por (entrega_item_id, url_arquivo),

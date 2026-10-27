@@ -177,11 +177,15 @@ const montarProgresso = (c: Record<string, number>): ProgressoEsteira => ({
 })
 
 /** Fila do ciclo ativo + opções de filtro + progresso global. */
-export async function listarEsteira(pagina = 1, porPagina = 200): Promise<RespostaEsteira> {
+export async function listarEsteira(
+  pagina = 1,
+  porPagina = 200,
+  status = ''
+): Promise<RespostaEsteira> {
   const page = Math.max(1, Math.trunc(pagina))
   const size = Math.min(500, Math.max(1, Math.trunc(porPagina)))
   const [{ chamadas, total }, mapas, progresso] = await Promise.all([
-    listarChamadasParaEsteira(page, size),
+    listarChamadasParaEsteira(page, size, status),
     carregarPais(),
     contarProgressoEsteira()
   ])

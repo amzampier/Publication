@@ -40,7 +40,7 @@ aprovar, recusar, reabrir, publicar e suspender com parecer e critérios.
 
 ## 1. Visão geral e rota
 
-> **RL06-2:** o filtro de status inclui itens fora do ciclo ativo (ex.: `Publicado`), o histórico de id inexistente responde `404` e o board usa projeção enxuta com cache curto das opções.
+> **RL06-2:** o filtro de status inclui itens fora do ciclo ativo (ex.: `Publicado`), é aplicado na API antes da paginação, o histórico de id inexistente responde `404` e o board usa projeção enxuta com cache curto das opções.
 
 
 A Esteira de Revisão é a **dona do fluxo de homologação** das chamadas de `entregas_itens`. Ela
@@ -205,7 +205,7 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
   - **Vínculos:** Release Week, Manual e Escopo de Projetos com código, nome e status do pai;
   - **Classificação:** parceiro, softwares, módulo, menu, tipo, impacto e tags;
   - **Conteúdo:** **Descrição do Resumo** e **Solução** com `UiRichTextViewer`, título do manual e links;
-  - **Imagens:** grade e galeria a partir de `imagens` (carregadas de `anexos_midias` na listagem), com `urlMiniatura` (`-320.webp`) e fallback ao original;
+  - **Imagens:** a listagem envia apenas contagem/capa; a grade e a galeria completas vêm do detalhe `GET /api/esteira-revisao/:id`, com `urlMiniatura` (`-320.webp`) e fallback ao original;
   - **Histórico da esteira:** `<EsteiraHistorico>`;
   - **Informações de cadastro:** criado/atualizado.
 - Ao abrir, carrega `GET /api/esteira-revisao/:id` (detalhe completo) e

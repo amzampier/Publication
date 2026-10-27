@@ -47,8 +47,17 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { adicionar, atualizar, chamadas, catalogo, carregarCatalogo, autorAtual } =
-  useLancarChamadasModelo()
+const {
+  adicionar,
+  atualizar,
+  chamadas,
+  autorAtual,
+  opcoesRemotas,
+  buscarOpcoes,
+  buscarOpcoesAgora,
+  carregarMaisOpcoes,
+  registrarSelecao
+} = useLancarChamadasModelo()
 
 const etapas = [
   {
@@ -188,32 +197,80 @@ const opcaoVinculavel = (
 ): boolean => !opcao.status || permitidos.includes(opcao.status) || opcao.id === atual
 
 const opcoesRelease = computed(() =>
-  catalogo.value.releases
+  opcoesRemotas.value.releases.itens
     .filter((opcao) =>
       opcaoVinculavel(opcao, STATUS_VINCULO_RELEASE, rascunho.value.releaseId)
     )
     .map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesProjeto = computed(() =>
-  catalogo.value.projetos
+  opcoesRemotas.value.projetos.itens
     .filter((opcao) =>
       opcaoVinculavel(opcao, STATUS_VINCULO_PROJETO, rascunho.value.projetoId)
     )
     .map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesManual = computed(() =>
-  catalogo.value.manuais
+  opcoesRemotas.value.manuais.itens
     .filter((opcao) =>
       opcaoVinculavel(opcao, STATUS_VINCULO_MANUAL, rascunho.value.manualId)
     )
     .map((opcao) => ({ value: opcao.id, label: opcao.label }))
 )
 const opcoesSoftware = computed(() =>
-  catalogo.value.softwares.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  opcoesRemotas.value.softwares.itens.map((opcao) => ({
+    value: opcao.id,
+    label: opcao.label
+  }))
 )
 const opcoesParceiro = computed(() =>
-  catalogo.value.parceiros.map((opcao) => ({ value: opcao.id, label: opcao.label }))
+  opcoesRemotas.value.parceiros.itens.map((opcao) => ({
+    value: opcao.id,
+    label: opcao.label
+  }))
 )
+
+const selecionadoRelease = computed(() => {
+  const id = rascunho.value.releaseId
+  if (!id) return null
+  const encontrado = opcoesRemotas.value.releases.itens.find((opcao) => opcao.id === id)
+  return encontrado
+    ? { value: encontrado.id, label: encontrado.label }
+    : { value: id, label: props.chamada?.release || id }
+})
+const selecionadoProjeto = computed(() => {
+  const id = rascunho.value.projetoId
+  if (!id) return null
+  const encontrado = opcoesRemotas.value.projetos.itens.find((opcao) => opcao.id === id)
+  return encontrado
+    ? { value: encontrado.id, label: encontrado.label }
+    : { value: id, label: props.chamada?.projetoCodigo || id }
+})
+const selecionadoManual = computed(() => {
+  const id = rascunho.value.manualId
+  if (!id) return null
+  const encontrado = opcoesRemotas.value.manuais.itens.find((opcao) => opcao.id === id)
+  return encontrado
+    ? { value: encontrado.id, label: encontrado.label }
+    : { value: id, label: props.chamada?.manualCodigo || id }
+})
+const selecionadoParceiro = computed(() => {
+  const id = rascunho.value.parceiroId
+  if (!id) return null
+  const encontrado = opcoesRemotas.value.parceiros.itens.find((opcao) => opcao.id === id)
+  return encontrado
+    ? { value: encontrado.id, label: encontrado.label }
+    : { value: id, label: props.chamada?.parceiro || id }
+})
+const selecionadosSoftware = computed(() => {
+  const nomes = props.chamada?.softwares ?? []
+  return rascunho.value.softwareIds.map((id, indice) => {
+    const encontrado = opcoesRemotas.value.softwares.itens.find((opcao) => opcao.id === id)
+    return encontrado
+      ? { value: encontrado.id, label: encontrado.label }
+      : { value: id, label: nomes[indice] ?? id }
+  })
+})
 
 const opcoesTipo: SegmentedOption[] = TIPOS_CHAMADA.map((tipo) => ({
   value: tipo,
@@ -252,11 +309,12 @@ const definirData = (campo: 'dataLancamento' | 'dataLiberacao', data: Date | nul
 }
 
 const selecionarRelease = (valor: string) => {
+  const anterior = rascunho.value.releaseId
   rascunho.value.releaseId = valor
-  const release = catalogo.value.releases.find((opcao) => opcao.id === valor)
-  if (release?.dataPublicacao) {
-    rascunho.value.dataLiberacao = release.dataPublicacao
-  }
+  const release = opcoesRemotas.value.releases.itens.find((opcao) => opcao.id === valor)
+  const manterAtual = valor === anterior && Boolean(valor)
+  rascunho.value.dataLiberacao =
+    release?.dataPublicacao ?? (manterAtual ? rascunho.value.dataLiberacao : '')
 }
 
 const focarCampo = (campo: string) => {
@@ -410,8 +468,6 @@ watch(
     etapa.value = 0
     rascunho.value =
       props.modo === 'editar' && props.chamada ? deChamada(props.chamada) : rascunhoVazio()
-    // Catálogo completo só quando o formulário abre; a página não o carrega.
-    void carregarCatalogo()
   }
 )
 </script>
@@ -475,6 +531,14 @@ watch(
               placeholder="Nenhuma release"
               :options="opcoesRelease"
               :error="erros.vinculo"
+              remote
+              :loading="opcoesRemotas.releases.loading"
+              :has-more="opcoesRemotas.releases.hasMore"
+              :selected-option="selecionadoRelease"
+              :remote-error="opcoesRemotas.releases.error"
+              @search="buscarOpcoes('releases', $event)"
+              @load-more="carregarMaisOpcoes('releases')"
+              @retry="buscarOpcoesAgora('releases', '')"
               @update:model-value="selecionarRelease(String($event))"
             />
           </div>
@@ -484,6 +548,14 @@ watch(
               label="Projeto"
               placeholder="Nenhum projeto"
               :options="opcoesProjeto"
+              remote
+              :loading="opcoesRemotas.projetos.loading"
+              :has-more="opcoesRemotas.projetos.hasMore"
+              :selected-option="selecionadoProjeto"
+              :remote-error="opcoesRemotas.projetos.error"
+              @search="buscarOpcoes('projetos', $event)"
+              @load-more="carregarMaisOpcoes('projetos')"
+              @retry="buscarOpcoesAgora('projetos', '')"
               @update:model-value="rascunho.projetoId = String($event)"
             />
           </div>
@@ -493,6 +565,14 @@ watch(
               label="Manual"
               placeholder="Nenhum manual"
               :options="opcoesManual"
+              remote
+              :loading="opcoesRemotas.manuais.loading"
+              :has-more="opcoesRemotas.manuais.hasMore"
+              :selected-option="selecionadoManual"
+              :remote-error="opcoesRemotas.manuais.error"
+              @search="buscarOpcoes('manuais', $event)"
+              @load-more="carregarMaisOpcoes('manuais')"
+              @retry="buscarOpcoesAgora('manuais', '')"
               @update:model-value="rascunho.manualId = String($event)"
             />
           </div>
@@ -570,6 +650,14 @@ watch(
               placeholder="Selecione o parceiro"
               :options="opcoesParceiro"
               :error="erros.parceiroId"
+              remote
+              :loading="opcoesRemotas.parceiros.loading"
+              :has-more="opcoesRemotas.parceiros.hasMore"
+              :selected-option="selecionadoParceiro"
+              :remote-error="opcoesRemotas.parceiros.error"
+              @search="buscarOpcoes('parceiros', $event)"
+              @load-more="carregarMaisOpcoes('parceiros')"
+              @retry="buscarOpcoesAgora('parceiros', '')"
               @update:model-value="rascunho.parceiroId = String($event)"
             />
           </div>
@@ -580,7 +668,18 @@ watch(
               placeholder="Selecione um ou mais softwares"
               :options="opcoesSoftware"
               :error="erros.softwareIds"
-              @update:model-value="rascunho.softwareIds = $event as string[]"
+              remote
+              :loading="opcoesRemotas.softwares.loading"
+              :has-more="opcoesRemotas.softwares.hasMore"
+              :selected-options="selecionadosSoftware"
+              :remote-error="opcoesRemotas.softwares.error"
+              @search="buscarOpcoes('softwares', $event)"
+              @load-more="carregarMaisOpcoes('softwares')"
+              @retry="buscarOpcoesAgora('softwares', '')"
+              @update:model-value="
+                rascunho.softwareIds = $event as string[];
+                registrarSelecao('softwares', $event as string[])
+              "
             />
           </div>
           <UiInput

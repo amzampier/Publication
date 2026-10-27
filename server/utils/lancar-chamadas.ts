@@ -3,8 +3,9 @@ import { unlink } from 'node:fs/promises'
 import { resolve, sep } from 'node:path'
 import { createError } from 'h3'
 import { getTransaction, inserirEmLotes, query } from './db'
-import { cacheado, invalidarCache } from './cache'
+import { cacheado, invalidarCache, invalidarCachePrefixo } from './cache'
 import { publicadoEmFuturo } from '#shared/publicacao'
+import { dataPublicacaoValida } from '#shared/feriados'
 import { ordemChamadas } from '#shared/ordenacao-chamadas'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
@@ -19,6 +20,7 @@ import { pareceCodigo, termoFulltext } from './busca'
 import { escaparLike } from './sql'
 import {
   carregarMidiasPorItem,
+  carregarResumoMidiasPorItem,
   sincronizarMidias,
   urlReferenciadaPorOutraChamada
 } from './midias'
@@ -365,14 +367,16 @@ export async function listarChamadasPaginadas(opts: {
   }
 }
 
-/** Projeção enxuta e filtrada, sem limite, para exportação/board. */
+/** Projeção enxuta e filtrada para exportação/board, com limite operacional. */
 export async function listarChamadasFiltradas(
-  filtros: FiltrosListaChamadas = {}
+  filtros: FiltrosListaChamadas = {},
+  limite = 5000
 ): Promise<ChamadaModelo[]> {
   const { sql, params } = whereChamadas(filtros)
   const linhas = await query<Row[]>(
-    `SELECT ${COLUNAS_LISTA} FROM entregas_itens e ${sql} ORDER BY e.chamada ASC`,
-    params
+    `SELECT ${COLUNAS_LISTA} FROM entregas_itens e ${sql}
+      ORDER BY e.chamada ASC LIMIT ?`,
+    [...params, Math.max(1, Math.trunc(limite))]
   )
   const ids = linhas.map((linha) => texto(linha.id))
   const softwares = await carregarSoftwaresPorItem(ids)
@@ -384,35 +388,48 @@ export async function listarChamadasFiltradas(
 /** Projeção enxuta e paginada para o board da Esteira (sem HTML/mídias). */
 export async function listarChamadasParaEsteira(
   pagina = 1,
-  porPagina = 200
+  porPagina = 200,
+  status = ''
 ): Promise<{ chamadas: ChamadaModelo[]; total: number }> {
   const page = Math.max(1, Math.trunc(pagina))
   const size = Math.min(500, Math.max(1, Math.trunc(porPagina)))
+  const statusFiltro = status.trim()
   const ativo = `(
     EXISTS (SELECT 1 FROM release_week r WHERE r.id = e.release_id AND r.arquivada = 0)
     OR EXISTS (SELECT 1 FROM manuais_mensal m WHERE m.id = e.manual_id AND m.arquivada = 0)
     OR EXISTS (SELECT 1 FROM projetos_escopo p WHERE p.id = e.projeto_id AND p.arquivada = 0)
   )`
+  const filtroStatus = statusFiltro ? ' AND e.status = ?' : ''
   const [linhas, totalRows] = await Promise.all([
     query<Row[]>(
-      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e WHERE ${ativo}
+      `SELECT ${COLUNAS_LISTA} FROM entregas_itens e WHERE ${ativo}${filtroStatus}
         ORDER BY e.chamada ASC LIMIT ? OFFSET ?`,
-      [size, (page - 1) * size]
+      statusFiltro
+        ? [statusFiltro, size, (page - 1) * size]
+        : [size, (page - 1) * size]
     ),
-    query<Array<{ total: number }>>(`SELECT COUNT(*) AS total FROM entregas_itens e WHERE ${ativo}`)
+    query<Array<{ total: number }>>(
+      `SELECT COUNT(*) AS total FROM entregas_itens e WHERE ${ativo}${filtroStatus}`,
+      statusFiltro ? [statusFiltro] : []
+    )
   ])
-    const ids = linhas.map((linha) => texto(linha.id))
-    const [softwares, midias] = await Promise.all([
-      carregarSoftwaresPorItem(ids),
-      carregarMidiasPorItem(ids)
-    ])
-    return {
-      chamadas: linhas.map((linha) =>
-        montarChamada(linha, softwares.get(texto(linha.id)), midias.get(texto(linha.id)))
-      ),
-      total: Number(totalRows[0]?.total ?? 0)
-    }
+  const ids = linhas.map((linha) => texto(linha.id))
+  const [softwares, midias] = await Promise.all([
+    carregarSoftwaresPorItem(ids),
+    carregarResumoMidiasPorItem(ids)
+  ])
+  return {
+    chamadas: linhas.map((linha) => {
+      const id = texto(linha.id)
+      const chamada = montarChamada(linha, softwares.get(id), undefined)
+      const resumo = midias.get(id)
+      chamada.imagensCount = resumo?.total ?? 0
+      chamada.imagens = resumo?.capa ? [resumo.capa] : []
+      return chamada
+    }),
+    total: Number(totalRows[0]?.total ?? 0)
   }
+}
 
 /** Contagens do progresso da Esteira sem materializar todas as chamadas. */
 export async function contarProgressoEsteira(): Promise<Record<string, number>> {
@@ -798,13 +815,14 @@ function prepararChamada(
   }
 }
 
-const SQL_INSERT = `INSERT INTO entregas_itens
+const SQL_INSERT_BASE = `INSERT INTO entregas_itens
   (id, origem, release_id, projeto_id, manual_id, software_id, parceiro_id, autor_id,
    autor_nome, chamada, data_lancamento, data_liberacao, \`release\`, titulo, parceiro, software,
    modulo, menu_funcionalidade, tipo, impacto, descricao_completa, descricao_html,
    solucao, solucao_html, manual_titulo,
    link_manual, link_video, imagens, status, tags)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+ VALUES`
+const SQL_INSERT = `${SQL_INSERT_BASE} (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 const valoresInsert = (p: ChamadaPreparada): unknown[] => [
   p.id,
@@ -858,7 +876,8 @@ export async function criarChamada(
   dados: Record<string, unknown>,
   autor: AutorChamada
 ): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes', 'painel-anos')
+  invalidarCache('chamadas-opcoes')
+  invalidarCachePrefixo('painel')
   const entrada = await validarEntrada(dados)
   const vinculos = await resolverVinculos(entrada)
   const preparada = prepararChamada(randomUUID(), entrada, vinculos, autor, 'Revisar')
@@ -888,7 +907,8 @@ export async function atualizarChamada(
   dados: Record<string, unknown>,
   autor: AutorChamada
 ): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes', 'painel-anos')
+  invalidarCache('chamadas-opcoes')
+  invalidarCachePrefixo('painel')
   const atual = await buscarChamada(id)
   if (!atual) erro404()
 
@@ -1004,7 +1024,8 @@ async function transicionarChamada(
   ator: AtorTransicao,
   opcoes: OpcoesTransicao
 ): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes', 'painel-anos')
+  invalidarCache('chamadas-opcoes')
+  invalidarCachePrefixo('painel')
   const tx = await getTransaction()
   try {
     const resultado = await tx.query<{ affectedRows: number }>(
@@ -1068,6 +1089,13 @@ export async function aprovarChamada(
       [atual.releaseId || null, atual.manualId || null, atual.projetoId || null]
     )
     dataLiberacao = pais[0] ? dataDia(pais[0].data_publicacao) || null : null
+    if (dataLiberacao && !dataPublicacaoValida(dataLiberacao)) {
+      throw createError({
+        statusCode: 409,
+        statusMessage:
+          'A Data de liberação herdada do vínculo pai não é uma segunda-feira ou próximo dia útil válido. Ajuste o vínculo antes de aprovar.'
+      })
+    }
   }
 
   return transicionarChamada(atual, 'Aprovado', dataLiberacao, ator, {
@@ -1175,7 +1203,8 @@ export async function suspenderChamada(
 }
 
 export async function excluirChamada(id: string): Promise<ChamadaModelo> {
-  invalidarCache('chamadas-opcoes', 'painel-anos')
+  invalidarCache('chamadas-opcoes')
+  invalidarCachePrefixo('painel')
   const atual = await buscarChamada(id)
   if (!atual) erro404()
   if (atual.status !== 'Revisar') {
@@ -1231,7 +1260,8 @@ export async function importarChamadas(
   linhas: unknown,
   autor: AutorChamada
 ): Promise<{ importados: number }> {
-  invalidarCache('chamadas-opcoes', 'painel-anos')
+  invalidarCache('chamadas-opcoes')
+  invalidarCachePrefixo('painel')
   if (!Array.isArray(linhas) || linhas.length === 0) {
     erro400('Envie ao menos uma linha para importar.')
   }
@@ -1239,7 +1269,7 @@ export async function importarChamadas(
     erro400(`Limite de ${LIMITE_IMPORTACAO_CHAMADAS} linhas por importação.`)
   }
 
-  const [releases, projetos, manuais, softwares, parceiros, existentes] = await Promise.all([
+  const [releases, projetos, manuais, softwares, parceiros] = await Promise.all([
     query<Row[]>(
       "SELECT id, codigo, data_publicacao FROM release_week WHERE status IN ('Aberta', 'Em Revisão')"
     ),
@@ -1250,8 +1280,7 @@ export async function importarChamadas(
       "SELECT id, codigo FROM manuais_mensal WHERE status IN ('Rascunho', 'Em Revisão')"
     ),
     query<Row[]>('SELECT codigo, descricao FROM softwares'),
-    query<Row[]>('SELECT id, codigo, nome_fantasia FROM parceiros'),
-    query<Row[]>('SELECT chamada FROM entregas_itens')
+    query<Row[]>('SELECT id, codigo, nome_fantasia FROM parceiros')
   ])
 
   const mapaReleases = mapaPorCodigo(releases)
@@ -1259,7 +1288,6 @@ export async function importarChamadas(
   const mapaManuais = mapaPorCodigo(manuais)
   const mapaSoftwares = mapaPorCodigo(softwares)
   const mapaParceiros = mapaPorCodigo(parceiros)
-  const naBase = new Set(existentes.map((row) => texto(row.chamada).toLowerCase()))
   const vistos = new Set<string>()
   const motivos: string[] = []
   const conflitos: string[] = []
@@ -1335,11 +1363,6 @@ export async function importarChamadas(
     }
     vistos.add(chave)
 
-    if (naBase.has(chave)) {
-      conflitos.push(`Linha ${numeroLinha}: chamada já cadastrada (${chamada}).`)
-      continue
-    }
-
     const vinculos: VinculosResolvidos = {
       release: release ?? null,
       projeto: projeto ?? null,
@@ -1358,6 +1381,22 @@ export async function importarChamadas(
     paisParaRevisao.push(...paisDosVinculos(vinculos))
   }
 
+  const chamadasPreparadas = [...new Set(preparadas.map((p) => p.chamada.toLowerCase()))]
+  const existentes = new Set<string>()
+  for (let i = 0; i < chamadasPreparadas.length; i += 150) {
+    const bloco = chamadasPreparadas.slice(i, i + 150)
+    const linhasBase = await query<Array<{ chamada: string }>>(
+      `SELECT chamada FROM entregas_itens WHERE chamada IN (${bloco.map(() => '?').join(', ')})`,
+      bloco
+    )
+    for (const row of linhasBase) existentes.add(texto(row.chamada).toLowerCase())
+  }
+  for (const preparada of preparadas) {
+    if (existentes.has(preparada.chamada.toLowerCase())) {
+      conflitos.push(`Chamada já cadastrada: ${preparada.chamada}.`)
+    }
+  }
+
   if (motivos.length > 0 || conflitos.length > 0) {
     throw createError({
       statusCode: conflitos.length > 0 && motivos.length === 0 ? 409 : 400,
@@ -1368,10 +1407,28 @@ export async function importarChamadas(
 
   const tx = await getTransaction()
   try {
-    for (const preparada of preparadas) {
-      await tx.query(SQL_INSERT, valoresInsert(preparada))
-      await gravarSoftwares(tx, preparada.id, preparada.softwares)
-    }
+    await inserirEmLotes(
+      tx,
+      SQL_INSERT_BASE,
+      30,
+      preparadas.map(valoresInsert),
+      150
+    )
+    const vinculosSoftware = preparadas.flatMap((preparada) =>
+      preparada.softwares.map((software, indice) => [
+        preparada.id,
+        software.codigo,
+        software.nome,
+        indice
+      ])
+    )
+    await inserirEmLotes(
+      tx,
+      'INSERT INTO entregas_itens_softwares (entrega_item_id, software_codigo, software_nome, ordem) VALUES',
+      4,
+      vinculosSoftware,
+      150
+    )
     await sincronizarStatusPais(tx, paisParaRevisao, atorDeAutor(autor))
     await tx.commit()
   } catch (erro) {

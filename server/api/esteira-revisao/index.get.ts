@@ -14,8 +14,9 @@ export default defineEventHandler(async (event) => {
   }
   const pagina = Math.max(1, Math.trunc(Number(consulta.pagina) || 1))
   const porPagina = Math.min(500, Math.max(1, Math.trunc(Number(consulta.porPagina) || 200)))
+  const status = String(consulta.status ?? '').trim()
   try {
-    return await listarEsteira(pagina, porPagina)
+    return await listarEsteira(pagina, porPagina, status)
   } catch (erro) {
     if (!ehSaturacaoDePool(erro)) throw erro
     setResponseStatus(event, 503)

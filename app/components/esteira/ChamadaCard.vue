@@ -42,7 +42,9 @@ const rotuloOrigem = computed(() => {
 
 const tagsVisiveis = computed(() => props.linha.item.tags.slice(0, 3))
 const tagsRestantes = computed(() => Math.max(0, props.linha.item.tags.length - 3))
-const imagens = computed(() => props.linha.item.imagens.length)
+const imagens = computed(
+  () => props.linha.item.imagensCount ?? props.linha.item.imagens.length
+)
 const visivelNoPortal = computed(() => itemVisivelNoPortal(props.linha.item))
 
 const abrirPortal = () => {

@@ -125,7 +125,11 @@ export async function obterPainelExecutivo(
         )
         return linhas.map((linha) => numero(linha.ano))
       })
-    : await anosDasPublicacoes(escopo)
+    : await cacheado(
+      `painel:anos-publicacoes:${escopo.releases ? 'r' : ''}${escopo.manuais ? 'm' : ''}${escopo.escopos ? 'p' : ''}`,
+      30_000,
+      () => anosDasPublicacoes(escopo)
+    )
 
   const anoCorrente = new Date().getFullYear()
   const ano =
@@ -184,29 +188,31 @@ export async function obterPainelExecutivo(
               AND data_liberacao >= ? AND data_liberacao < ?`,
           [inicioAno, fimAno, inicioAno, fimAno, inicioAno, fimAno]
         ),
-        query<Row[]>(
-          `SELECT
-             COALESCE(SUM(CASE WHEN e.status = 'Revisar' THEN 1 ELSE 0 END), 0) AS revisar,
-             COALESCE(SUM(CASE WHEN e.status = 'Aprovado' THEN 1 ELSE 0 END), 0) AS aprovado,
-             COALESCE(SUM(CASE WHEN e.status = 'Recusado' THEN 1 ELSE 0 END), 0) AS recusado,
-             COALESCE(SUM(CASE WHEN e.status = 'Publicar' AND NOT e.visivel THEN 1 ELSE 0 END), 0) AS publicar,
-             COALESCE(SUM(CASE WHEN e.status = 'Publicado' AND e.visivel THEN 1 ELSE 0 END), 0) AS publicado,
-             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 7 THEN 1 ELSE 0 END), 0) AS aging7,
-             COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 15 THEN 1 ELSE 0 END), 0) AS aging15
-           FROM (
-             SELECT e.*,
-                    (r.id IS NOT NULL OR m.id IS NOT NULL OR p.id IS NOT NULL) AS ativo,
-                    (
-                      (r.status = 'Publicado' AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW(6))
-                      OR (m.status = 'Publicado' AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW(6))
-                      OR (p.status = 'Publicado' AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW(6))
-                    ) AS visivel
-               FROM entregas_itens e
-               LEFT JOIN release_week r ON r.id = e.release_id AND r.arquivada = 0
-               LEFT JOIN manuais_mensal m ON m.id = e.manual_id AND m.arquivada = 0
-               LEFT JOIN projetos_escopo p ON p.id = e.projeto_id AND p.arquivada = 0
-           ) e
-          WHERE e.ativo`
+        cacheado('painel:fluxo', 30_000, () =>
+          query<Row[]>(
+            `SELECT
+               COALESCE(SUM(CASE WHEN e.status = 'Revisar' THEN 1 ELSE 0 END), 0) AS revisar,
+               COALESCE(SUM(CASE WHEN e.status = 'Aprovado' THEN 1 ELSE 0 END), 0) AS aprovado,
+               COALESCE(SUM(CASE WHEN e.status = 'Recusado' THEN 1 ELSE 0 END), 0) AS recusado,
+               COALESCE(SUM(CASE WHEN e.status = 'Publicar' AND NOT e.visivel THEN 1 ELSE 0 END), 0) AS publicar,
+               COALESCE(SUM(CASE WHEN e.status = 'Publicado' AND e.visivel THEN 1 ELSE 0 END), 0) AS publicado,
+               COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 7 THEN 1 ELSE 0 END), 0) AS aging7,
+               COALESCE(SUM(CASE WHEN e.status = 'Revisar' AND DATEDIFF(NOW(), COALESCE(e.data_lancamento, e.criado_em)) > 15 THEN 1 ELSE 0 END), 0) AS aging15
+             FROM (
+               SELECT e.status, e.data_lancamento, e.criado_em,
+                      (r.id IS NOT NULL OR m.id IS NOT NULL OR p.id IS NOT NULL) AS ativo,
+                      (
+                        (r.status = 'Publicado' AND r.publicado_em IS NOT NULL AND r.publicado_em <= NOW(6))
+                        OR (m.status = 'Publicado' AND m.publicado_em IS NOT NULL AND m.publicado_em <= NOW(6))
+                        OR (p.status = 'Publicado' AND p.publicado_em IS NOT NULL AND p.publicado_em <= NOW(6))
+                      ) AS visivel
+                 FROM entregas_itens e
+                 LEFT JOIN release_week r ON r.id = e.release_id AND r.arquivada = 0
+                 LEFT JOIN manuais_mensal m ON m.id = e.manual_id AND m.arquivada = 0
+                 LEFT JOIN projetos_escopo p ON p.id = e.projeto_id AND p.arquivada = 0
+             ) e
+            WHERE e.ativo`
+          )
         )
       ])
     : [[], []]

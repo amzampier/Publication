@@ -117,6 +117,7 @@ export interface ChamadaModelo {
   linkManual: string
   linkVideo: string
   imagens: string[]
+  imagensCount?: number
   midias: ImagemChamada[]
   status: StatusChamada
   publicadoEm?: string | null

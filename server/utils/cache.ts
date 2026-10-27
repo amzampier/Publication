@@ -11,6 +11,17 @@ const store = new Map<string, EntradaCache<unknown>>()
 const pendentes = new Map<string, Promise<unknown>>()
 let versao = 0
 
+/** Invalida todas as chaves que começam com o prefixo informado. */
+export function invalidarCachePrefixo(prefixo: string): void {
+  versao += 1
+  for (const chave of store.keys()) {
+    if (chave.startsWith(prefixo)) store.delete(chave)
+  }
+  for (const chave of pendentes.keys()) {
+    if (chave.startsWith(prefixo)) pendentes.delete(chave)
+  }
+}
+
 /** Invalida chaves específicas (ou todo o cache) após escritas (RL05-M-07). */
 export function invalidarCache(...chaves: string[]): void {
   versao += 1

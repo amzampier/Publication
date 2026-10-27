@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { cacheado, invalidarCache } from '../server/utils/cache'
+import { cacheado, invalidarCache, invalidarCachePrefixo } from '../server/utils/cache'
 import { inserirEmLotes } from '../server/utils/db'
 
 describe('cache com single-flight', () => {
@@ -31,6 +31,20 @@ describe('cache com single-flight', () => {
     expect(await cacheado('teste-invalidacao', 1000, produzir)).toBe(1)
     invalidarCache('teste-invalidacao')
     expect(await cacheado('teste-invalidacao', 1000, produzir)).toBe(2)
+  })
+
+  it('invalida apenas as chaves do prefixo', async () => {
+    invalidarCache()
+    let painel = 0
+    let outra = 0
+    await cacheado('painel:fluxo', 1000, async () => ++painel)
+    await cacheado('painel:anos-publicacoes:r', 1000, async () => ++painel)
+    await cacheado('outra-chave', 1000, async () => ++outra)
+
+    invalidarCachePrefixo('painel')
+
+    expect(await cacheado('painel:fluxo', 1000, async () => ++painel)).toBe(3)
+    expect(await cacheado('outra-chave', 1000, async () => ++outra)).toBe(1)
   })
 })
 

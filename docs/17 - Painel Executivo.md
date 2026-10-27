@@ -181,7 +181,7 @@ e a tela não renderiza números. O bloco de fluxo da esteira não faz parte do 
   chamadas (sem chamadas, o ano corrente). Precisa ter quatro dígitos (`1900`–`2999`); inválido →
   `400` sem consultar o banco. A resposta devolve o ano efetivamente usado em `periodo.ano` e a lista
   `anosDisponiveis` (somente anos com chamadas lançadas, em ordem decrescente).
-- **Cache:** nenhum no v1.
+- **Cache:** agregado de fluxo (`painel:fluxo`) e anos de publicação por 30 s; as escritas de Chamadas invalidam o prefixo `painel:*`.
 
 Resposta (`200`):
 
@@ -266,7 +266,7 @@ quando existirem.
   dedicado. O `EXPLAIN` mostra varredura da tabela de chamadas para as séries e rankings. No volume
   atual é aceitável; se o volume crescer, avaliar um índice composto (ex.:
   `(data_lancamento, status)`) em change própria.
-- Sem cache no v1 para não exibir números defasados em uma tela de decisão.
+- Cache curto (30 s) para o agregado de fluxo e anos de publicação, com invalidação por prefixo nas escritas; a tela continua atualizando ao trocar o ano.
 - `dados` não é paginado: o painel é uma visão consolidada, não uma listagem.
 
 ## 10. Testes e verificação

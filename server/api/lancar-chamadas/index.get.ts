@@ -49,7 +49,15 @@ export default defineEventHandler(async (event) => {
   }
 
   if (baixar) {
-    return { chamadas: await listarChamadasFiltradas(filtros) }
+    const limite = Math.min(
+      5000,
+      Math.max(1, Number.parseInt(textoQuery(consulta.limite) || '5000', 10) || 5000)
+    )
+    const chamadas = await listarChamadasFiltradas(filtros, limite + 1)
+    return {
+      chamadas: chamadas.slice(0, limite),
+      excedeu: chamadas.length > limite
+    }
   }
 
   const pagina = Math.max(1, Number.parseInt(textoQuery(consulta.pagina) || '1', 10) || 1)

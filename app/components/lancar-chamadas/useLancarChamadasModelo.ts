@@ -17,6 +17,7 @@ import {
   type OpcaoChamada,
   type OrigemChamada,
   type StatusChamada,
+  type TipoCatalogoChamada,
   type TipoChamada,
   IMPACTOS_CHAMADA as CATALOGOS_CHAMADAS_IMPACTOS,
   ORIGENS_CHAMADA as CATALOGOS_CHAMADAS_ORIGENS,
@@ -70,7 +71,7 @@ const CATALOGO_VAZIO: CatalogosChamada = {
   parceiros: []
 }
 
-type TipoFiltroRemoto = 'softwares' | 'parceiros'
+type TipoFiltroRemoto = TipoCatalogoChamada
 
 interface EstadoOpcoesRemotas {
   itens: OpcaoChamada[]
@@ -114,7 +115,13 @@ export const useLancarChamadasModelo = () => {
   }))
   const opcoesRemotas = useState<Record<TipoFiltroRemoto, EstadoOpcoesRemotas>>(
     'lancar-chamadas-opcoes-remotas',
-    () => ({ softwares: estadoRemotoVazio(), parceiros: estadoRemotoVazio() })
+    () => ({
+      releases: estadoRemotoVazio(),
+      projetos: estadoRemotoVazio(),
+      manuais: estadoRemotoVazio(),
+      softwares: estadoRemotoVazio(),
+      parceiros: estadoRemotoVazio()
+    })
   )
   const catalogoCarregado = useState<boolean>('lancar-chamadas-catalogo-carregado', () => false)
   const catalogoCarregando = useState<boolean>('lancar-chamadas-catalogo-carregando', () => false)
@@ -204,6 +211,9 @@ export const useLancarChamadasModelo = () => {
   }
 
   const debounces: Record<TipoFiltroRemoto, ReturnType<typeof setTimeout> | null> = {
+    releases: null,
+    projetos: null,
+    manuais: null,
     softwares: null,
     parceiros: null
   }
@@ -453,11 +463,18 @@ export const useLancarChamadasModelo = () => {
   const urlExportacaoCsv = (): string =>
     `/api/lancar-chamadas?download=1&formato=csv&${parametrosLista()}`
 
-  const exportarLinhas = async (): Promise<LinhaChamada[]> => {
-    const resposta = await useApiFetch<{ chamadas: ChamadaModelo[] }>(
-      `/api/lancar-chamadas?download=1&${parametrosLista()}`
-    )
-    return (resposta.chamadas ?? []).map(mapearLinha)
+  const exportarLinhas = async (): Promise<{
+    linhas: LinhaChamada[]
+    excedeu: boolean
+  }> => {
+    const resposta = await useApiFetch<{
+      chamadas: ChamadaModelo[]
+      excedeu?: boolean
+    }>(`/api/lancar-chamadas?download=1&limite=5000&${parametrosLista()}`)
+    return {
+      linhas: (resposta.chamadas ?? []).map(mapearLinha),
+      excedeu: Boolean(resposta.excedeu)
+    }
   }
 
   let debounceBusca: ReturnType<typeof setTimeout> | null = null

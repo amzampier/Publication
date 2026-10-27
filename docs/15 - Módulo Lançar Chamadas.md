@@ -20,7 +20,7 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 
 ## 1. Visão geral e rota
 
-> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, a Data de lançamento aceita qualquer data civil válida e a Data de liberação é herdada da Release selecionada e exibida somente leitura (sujeita à regra de publicação da Release). A galeria usa miniaturas WebP com fallback e cache.
+> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, a Data de lançamento aceita qualquer data civil válida e a Data de liberação é herdada da Release selecionada e exibida somente leitura (sujeita à regra de publicação da Release). Remover a Release limpa a data herdada; a aprovação valida a data herdada de Manual/Escopo. O PDF é limitado a 5.000 chamadas. A galeria usa miniaturas WebP com fallback e cache.
 
 
 - **Rota:** `/admin/lancar-chamadas` → `app/pages/admin/lancar-chamadas.vue` com
@@ -120,8 +120,9 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
   Conteúdo e mídias; a Solução é opcional e é o texto exibido na Área Pública. O HTML é sanitizado no
   servidor e o texto puro é derivado para busca/validação.
 - **Data de liberação:** é herdada da Release selecionada (`dataPublicacao`) e exibida somente
-  leitura; sem Release, permanece vazia. O servidor grava a data informada ou, quando vazia, a
-  `data_publicacao` da release; na aprovação, preserva a data existente.
+  leitura; ao remover a Release, a data herdada é limpa. O servidor grava a data informada ou,
+  quando vazia, a `data_publicacao` da release; na aprovação, preserva a data existente e valida a
+  data herdada de Manual/Escopo (`409` se estiver fora da regra de publicação).
 - **Editar:** carrega os dados persistidos; status/autor/timestamps originais são preservados.
 - **Salvar:** valida tudo, envia as imagens data URL ao upload, substitui pelas URLs públicas e só
   então chama `POST`/`PUT`. O botão fica em loading e o modal só fecha no sucesso.
@@ -256,7 +257,7 @@ interface ChamadaModelo {
 
 - Todas as rotas exigem sessão e aplicam RBAC no servidor.
 - A lista devolve `{ chamadas: ChamadaModelo[] }`; as escritas devolvem a chamada no mesmo shape.
-- `?download=1` retorna o mesmo conjunto sob a permissão `download`; o PDF/CSV é gerado no cliente.
+- `?download=1` retorna o mesmo conjunto sob a permissão `download`; o JSON do PDF é limitado a 5.000 chamadas (`excedeu=true` acima disso) e o CSV continua em streaming/keyset.
 - Erros: `400` validação/vínculo, `403` RBAC, `404` id, `409` duplicidade/transição inválida.
 - Escritas geram auditoria no recurso **Lançar as Chamadas** (`Inclusão`, `Alteração`, `Exclusão`,
   `Homologação`); importação registra a contagem.
@@ -364,8 +365,9 @@ como legado e não é usada pela UI.
 
 ## 11. Relatórios PDF/CSV
 
-- PDF A4 paisagem, logo opcional, título, data, contagem, colunas e paginação.
-- CSV com `;`, BOM UTF-8 e neutralização de fórmulas.
+- PDF A4 paisagem, logo opcional, título, data, contagem, colunas e paginação; teto de 5.000
+  chamadas, com aviso para refinar filtros acima disso.
+- CSV com `;`, BOM UTF-8 e neutralização de fórmulas; sem teto do PDF, em streaming.
 - Ambos usam o conjunto vigente (filtros + busca) e exigem `download`; conjunto vazio não gera
   arquivo e exibe aviso.
 

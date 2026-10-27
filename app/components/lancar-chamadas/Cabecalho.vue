@@ -42,12 +42,19 @@ const gerarPdf = async () => {
   exportando.value = true
   try {
     const dados = await exportarLinhas()
-    if (!dados.length) {
+    if (dados.excedeu) {
+      toast.info(
+        'Exportação',
+        'O conjunto excede 5.000 chamadas. Refine os filtros para gerar o PDF.'
+      )
+      return
+    }
+    if (!dados.linhas.length) {
       toast.info('Exportação', 'Não há chamadas para exportar com os filtros atuais.')
       return
     }
     await gerarPdfLancarChamadas({
-      chamadas: dados,
+      chamadas: dados.linhas,
       logoPreview: previewLoginGlobal.value
     })
   } catch (erro) {
