@@ -19,6 +19,8 @@
 
 > **Revalidação 27/10/2026 (pós-RL06):** A-04 fechado com N=20 no dev local — Painel `ok=20/20`, `503=0`, `500=0` (336 ms); Esteira `ok=20/20`, `503=0`, `500=0` (124 ms). A-05 mantém o gate de visibilidade (`sqlVinculoPublicado`/`itemVisivelNoPortal`) com testes explícitos para `release`, `manual` e `projeto` arquivados. Os achados históricos abaixo permanecem como snapshot.
 
+> **M-07 (risco aceito, 27/10/2026):** no ambiente de desenvolvimento, a conta de banco é do operador e pode manter privilégios amplos; o projeto não cria usuários nem altera grants. Em produção, o operador deve provisionar a conta e aplicar o mínimo privilégio.
+
 > **Objetivo deste documento:** ser o relatório único e definitivo de fechamento da Área Administrativa, consolidando e deduplicando os sete pareceres (documentação, funcional, segurança, banco, UX, performance e execução), classificando a severidade e servindo de plano de correção para que a Área Pública comece sobre uma base aprovada.
 >
 > **Nota de consolidação:** os pareceres de origem usaram prefixos próprios (`DOC`, `FUN`, `SEG`, `BD`, `UX`, `PERF`, `EXE`). Neste relatório, os achados foram deduplicados e renumerados como `RL06-C-*` (Crítica), `RL06-A-*` (Alta), `RL06-M-*` (Média), `RL06-B-*` (Baixa) e `RL06-I-*` (Melhoria). A rastreabilidade está na seção 9.

@@ -1,5 +1,6 @@
 import { computed, watch } from 'vue'
 import { useState } from '#app'
+import type { OpcoesCatalogoChamada } from '#shared/lancar-chamadas'
 import { useApiFetch } from '../../composables/useApiFetch'
 import { useAuth } from '../../composables/useAuth'
 import {
@@ -69,6 +70,30 @@ const CATALOGO_VAZIO: CatalogosChamada = {
   parceiros: []
 }
 
+type TipoFiltroRemoto = 'softwares' | 'parceiros'
+
+interface EstadoOpcoesRemotas {
+  itens: OpcaoChamada[]
+  selecionados: OpcaoChamada[]
+  total: number
+  hasMore: boolean
+  loading: boolean
+  error: string
+  q: string
+  pagina: number
+}
+
+const estadoRemotoVazio = (): EstadoOpcoesRemotas => ({
+  itens: [],
+  selecionados: [],
+  total: 0,
+  hasMore: false,
+  loading: false,
+  error: '',
+  q: '',
+  pagina: 1
+})
+
 export const useLancarChamadasModelo = () => {
   const chamadas = useState<ChamadaModelo[]>('lancar-chamadas-base', () => [])
   const catalogo = useState<CatalogosChamada>('lancar-chamadas-catalogo', () => ({
@@ -87,6 +112,12 @@ export const useLancarChamadasModelo = () => {
   const filtros = useState<FiltrosChamada>('lancar-chamadas-filtros', () => ({
     ...FILTROS_VAZIOS
   }))
+  const opcoesRemotas = useState<Record<TipoFiltroRemoto, EstadoOpcoesRemotas>>(
+    'lancar-chamadas-opcoes-remotas',
+    () => ({ softwares: estadoRemotoVazio(), parceiros: estadoRemotoVazio() })
+  )
+  const catalogoCarregado = useState<boolean>('lancar-chamadas-catalogo-carregado', () => false)
+  const catalogoCarregando = useState<boolean>('lancar-chamadas-catalogo-carregando', () => false)
   const { usuario } = useAuth()
 
   const autorAtual = computed(() => ({
@@ -127,17 +158,14 @@ export const useLancarChamadasModelo = () => {
     carregando.value = true
     erro.value = null
     try {
-      const [lista, opcoes] = await Promise.all([
-        useApiFetch<{
-          itens: ChamadaModelo[]
-          chamadas?: ChamadaModelo[]
-          total: number
-          pagina: number
-          porPagina: number
-          kpis: { total: number; revisar: number; aprovado: number; recusado: number }
-        }>(`/api/lancar-chamadas?${parametrosLista()}`),
-        useApiFetch<CatalogosChamada>('/api/lancar-chamadas/opcoes')
-      ])
+      const lista = await useApiFetch<{
+        itens: ChamadaModelo[]
+        chamadas?: ChamadaModelo[]
+        total: number
+        pagina: number
+        porPagina: number
+        kpis: { total: number; revisar: number; aprovado: number; recusado: number }
+      }>(`/api/lancar-chamadas?${parametrosLista()}`)
       chamadas.value = lista.itens ?? lista.chamadas ?? []
       total.value = lista.total ?? chamadas.value.length
       pagina.value = lista.pagina ?? pagina.value
@@ -148,7 +176,6 @@ export const useLancarChamadasModelo = () => {
         aprovado: 0,
         recusado: 0
       }
-      catalogo.value = opcoes
       carregado.value = true
       return true
     } catch (falha) {
@@ -158,12 +185,105 @@ export const useLancarChamadasModelo = () => {
       chamadas.value = []
       total.value = 0
       kpisServidor.value = { total: 0, revisar: 0, aprovado: 0, recusado: 0 }
-      catalogo.value = { ...CATALOGO_VAZIO }
       carregado.value = false
       return false
     } finally {
       carregando.value = false
     }
+  }
+
+  const mesclarOpcoes = (
+    itens: OpcaoChamada[],
+    selecionados: OpcaoChamada[]
+  ): OpcaoChamada[] => {
+    const mapa = new Map<string, OpcaoChamada>()
+    for (const opcao of [...selecionados, ...itens]) {
+      if (!mapa.has(opcao.id)) mapa.set(opcao.id, opcao)
+    }
+    return [...mapa.values()]
+  }
+
+  const debounces: Record<TipoFiltroRemoto, ReturnType<typeof setTimeout> | null> = {
+    softwares: null,
+    parceiros: null
+  }
+
+  const consultarOpcoesRemotas = async (
+    tipo: TipoFiltroRemoto,
+    termo: string,
+    numeroPagina: number
+  ): Promise<void> => {
+    const estado = opcoesRemotas.value[tipo]
+    estado.loading = true
+    estado.error = ''
+    try {
+      const params = new URLSearchParams({
+        tipo,
+        q: termo,
+        pagina: String(numeroPagina),
+        limite: '20'
+      })
+      const resposta = await useApiFetch<OpcoesCatalogoChamada>(
+        `/api/lancar-chamadas/opcoes?${params.toString()}`
+      )
+      const itens = numeroPagina === 1 ? resposta.itens : [...estado.itens, ...resposta.itens]
+      estado.itens = mesclarOpcoes(itens, estado.selecionados)
+      estado.total = resposta.total
+      estado.hasMore = resposta.hasMore
+      estado.q = termo
+      estado.pagina = numeroPagina
+    } catch {
+      estado.error = 'Não foi possível carregar as opções.'
+    } finally {
+      estado.loading = false
+    }
+  }
+
+  /** Carrega a primeira página sem debounce (retry e abertura do select). */
+  const buscarOpcoesAgora = (tipo: TipoFiltroRemoto, termo: string): Promise<void> =>
+    consultarOpcoesRemotas(tipo, termo, 1)
+
+  /** Busca remota com debounce (300 ms); a primeira página da abertura é imediata. */
+  const buscarOpcoes = (tipo: TipoFiltroRemoto, termo: string): void => {
+    if (debounces[tipo]) clearTimeout(debounces[tipo] as ReturnType<typeof setTimeout>)
+    if (!termo.trim()) {
+      void consultarOpcoesRemotas(tipo, termo, 1)
+      return
+    }
+    debounces[tipo] = setTimeout(() => {
+      void consultarOpcoesRemotas(tipo, termo, 1)
+    }, 300)
+  }
+
+  const carregarMaisOpcoes = (tipo: TipoFiltroRemoto): void => {
+    const estado = opcoesRemotas.value[tipo]
+    if (estado.hasMore && !estado.loading) {
+      void consultarOpcoesRemotas(tipo, estado.q, estado.pagina + 1)
+    }
+  }
+
+  const registrarSelecao = (tipo: TipoFiltroRemoto, ids: Array<string | number>): void => {
+    const estado = opcoesRemotas.value[tipo]
+    const mapa = new Map(
+      [...estado.itens, ...estado.selecionados].map((opcao) => [opcao.id, opcao])
+    )
+    estado.selecionados = ids
+      .map((id) => mapa.get(String(id)))
+      .filter((opcao): opcao is OpcaoChamada => Boolean(opcao))
+    estado.itens = mesclarOpcoes(estado.itens, estado.selecionados)
+  }
+
+  const carregarCatalogo = async (forcar = false): Promise<CatalogosChamada> => {
+    if (catalogoCarregado.value && !forcar) return catalogo.value
+    if (catalogoCarregando.value) return catalogo.value
+    catalogoCarregando.value = true
+    try {
+      catalogo.value = await useApiFetch<CatalogosChamada>('/api/lancar-chamadas/opcoes')
+      catalogoCarregado.value = true
+    } finally {
+      catalogoCarregando.value = false
+    }
+    return catalogo.value
   }
 
   const definirPagina = async (valor: number) => {
@@ -191,9 +311,9 @@ export const useLancarChamadasModelo = () => {
 
   const mapearLinha = (chamada: ChamadaModelo): LinhaChamada => {
     const vinculos = [
-      codigoVinculo(catalogo.value.releases, chamada.releaseId),
-      codigoVinculo(catalogo.value.manuais, chamada.manualId),
-      codigoVinculo(catalogo.value.projetos, chamada.projetoId)
+      chamada.release || codigoVinculo(catalogo.value.releases, chamada.releaseId),
+      chamada.manualCodigo || codigoVinculo(catalogo.value.manuais, chamada.manualId),
+      chamada.projetoCodigo || codigoVinculo(catalogo.value.projetos, chamada.projetoId)
     ].filter(Boolean)
     return {
       id: chamada.id,
@@ -243,8 +363,8 @@ export const useLancarChamadasModelo = () => {
     tipos: [...CATALOGOS_CHAMADAS_TIPOS],
     impactos: [...CATALOGOS_CHAMADAS_IMPACTOS],
     origens: [...CATALOGOS_CHAMADAS_ORIGENS],
-    softwares: catalogo.value.softwares,
-    parceiros: catalogo.value.parceiros
+    softwares: opcoesRemotas.value.softwares.itens,
+    parceiros: opcoesRemotas.value.parceiros.itens
   }))
 
   const limparFiltros = () => {
@@ -379,6 +499,13 @@ export const useLancarChamadasModelo = () => {
     filtrosAtivosCount,
     criteriosAtivosCount,
     opcoes,
+    opcoesRemotas,
+    buscarOpcoes,
+    buscarOpcoesAgora,
+    carregarMaisOpcoes,
+    registrarSelecao,
+    carregarCatalogo,
+    catalogoCarregando,
     limparFiltros,
     resolver,
     adicionar,

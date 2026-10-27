@@ -8,6 +8,7 @@ import { useCookie, useState } from '#app'
 import { COOKIE_EMAIL_LEMBRADO } from '../utils/cookies'
 import { useToast } from './useToast'
 import { limparEstadoSessao } from './sessaoEstado'
+import { useBootstrap } from './useBootstrap'
 
 export interface UsuarioLogado {
   id: string
@@ -90,6 +91,9 @@ export const useAuth = () => {
       usuario.value = resp.usuario
       sessaoVerificada.value = true
       emailLembrado.value = credenciais.lembrar ? email : null
+      // Já hidrata shell/permissões/avatar antes de entrar em /admin, evitando
+      // as chamadas SSR separadas no primeiro acesso após o login.
+      await useBootstrap().garantir()
       return true
     } catch (erro) {
       const status = statusDe(erro)
@@ -120,31 +124,18 @@ export const useAuth = () => {
   }
 
   /**
-   * Restaura/valida a sessão (guarda global): com estado em cache não chama a
-   * API; sem ele, GET /api/auth/seguro — no servidor via `useRequestFetch`
-   * (encaminha os cookies da requisição SSR), no cliente via $fetch com
-   * credentials. O access expirado é renovado pelo próprio servidor (rotação
-   * do refresh — D7). Falha/401 → tratado como sem sessão.
+   * Restaura/valida a sessão (guarda global): o contexto inicial é carregado
+   * uma única vez por `useBootstrap` (que também traz shell/permissões/avatar).
+   * Com o estado em cache, não há chamada de API. O access expirado é renovado
+   * pelo próprio servidor (rotação do refresh — D7). Falha/401 é tratado como
+   * sem sessão.
    */
   const ensureSessao = async (): Promise<boolean> => {
-    if (usuario.value) return true
-    if (sessaoVerificada.value) return false
+    if (sessaoVerificada.value) return usuario.value !== null
 
-    try {
-      const fetchSessao = import.meta.server
-        ? useRequestFetch()
-        : $fetch as unknown as typeof useRequestFetch
-      const resp = (await fetchSessao('/api/auth/seguro', {
-        credentials: 'include'
-      })) as { usuario: UsuarioLogado }
-      usuario.value = resp.usuario
-      sessaoVerificada.value = true
-      return true
-    } catch {
-      usuario.value = null
-      sessaoVerificada.value = true
-      return false
-    }
+    const { garantir } = useBootstrap()
+    await garantir()
+    return usuario.value !== null
   }
 
   /**

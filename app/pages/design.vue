@@ -274,6 +274,23 @@ const catalogoPublicacoes = [
   { value: 'changelog', label: 'CHANGELOG — Registro de Alterações', badge: 'Histórico', description: 'Histórico completo de versões' }
 ]
 
+// Demo do modo remoto do UiSelect (seção 9)
+const opcoesRemotasDemo = ref(catalogoPublicacoes.slice(0, 5))
+const selecionadoRemotoDemo = ref('')
+const carregandoRemotoDemo = ref(false)
+let timerRemotoDemo: ReturnType<typeof setTimeout> | null = null
+const buscarRemotoDemo = (termo: string) => {
+  if (timerRemotoDemo) clearTimeout(timerRemotoDemo)
+  carregandoRemotoDemo.value = true
+  timerRemotoDemo = setTimeout(() => {
+    const busca = termo.trim().toLowerCase()
+    opcoesRemotasDemo.value = catalogoPublicacoes
+      .filter((opcao) => !busca || opcao.label.toLowerCase().includes(busca))
+      .slice(0, 5)
+    carregandoRemotoDemo.value = false
+  }, 300)
+}
+
 // Projetos & Áreas responsáveis
 const projetosArea = [
   { value: 'PRJ-100', label: 'PRJ-100 · Portal de Publicações', badge: 'Web', description: 'Área pública e navegação' },
@@ -696,6 +713,24 @@ const multiSelectOpcoes = [
 ]
 const multiSelectDemo = ref<string[]>(['SFT-001'])
 const multiSelectErroDemo = 'Selecione ao menos um software.'
+const multiSelectRemoto = ref<string[]>(['SFT-001'])
+const opcoesMultiRemotas = ref(multiSelectOpcoes.slice(0, 3))
+const carregandoMultiRemoto = ref(false)
+let timerMultiRemoto: ReturnType<typeof setTimeout> | null = null
+const buscarMultiRemoto = (termo: string) => {
+  if (timerMultiRemoto) clearTimeout(timerMultiRemoto)
+  carregandoMultiRemoto.value = true
+  timerMultiRemoto = setTimeout(() => {
+    const busca = termo.trim().toLowerCase()
+    opcoesMultiRemotas.value = multiSelectOpcoes
+      .filter((opcao) => !busca || opcao.label.toLowerCase().includes(busca))
+      .slice(0, 3)
+    carregandoMultiRemoto.value = false
+  }, 300)
+}
+const selecionadosMultiRemotos = computed(() =>
+  multiSelectOpcoes.filter((opcao) => multiSelectRemoto.value.includes(opcao.value))
+)
 const switchDemo = ref(true)
 
 // Demonstração das seções 21/22 — UiEntityCard e UiPagination
@@ -1761,6 +1796,31 @@ const chartRanking = [
                 error="Selecione o status."
               />
             </div>
+          </div>
+
+          <!-- Modo remoto -->
+          <div class="mt-5 border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="text-xs font-bold text-slate-900">Busca remota (modo `remote`)</span>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700 border border-indigo-200">
+                server-side
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1 mb-3">
+              O componente emite <code class="font-mono">search</code> e exibe loading/empty; o modo
+              local continua sendo o padrão.
+            </p>
+            <UiSelect
+              v-model="selecionadoRemotoDemo"
+              label="Publicação (remota)"
+              :options="opcoesRemotasDemo"
+              :remote="true"
+              :loading="carregandoRemotoDemo"
+              placeholder="Digite para buscar no servidor..."
+              search-placeholder="Digite para simular a busca remota..."
+              helper-text="Demonstração local do contrato remoto (o backend real usa tipo/q/limite)."
+              @search="buscarRemotoDemo"
+            />
           </div>
 
           <!-- Rodapé -->
@@ -3415,6 +3475,16 @@ variant="lime"
                 :options="multiSelectOpcoes"
                 :error="multiSelectErroDemo"
                 disabled
+              />
+              <UiMultiSelect
+                v-model="multiSelectRemoto"
+                label="Softwares (busca remota)"
+                :options="opcoesMultiRemotas"
+                :selected-options="selecionadosMultiRemotos"
+                :remote="true"
+                :loading="carregandoMultiRemoto"
+                placeholder="Digite para simular a busca remota..."
+                @search="buscarMultiRemoto"
               />
             </div>
             <p class="mt-3 text-xs text-slate-500">

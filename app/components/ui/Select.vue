@@ -24,6 +24,13 @@ interface Props {
   error?: string
   /** Nome acessível quando não há label visível (ex.: filtros). */
   ariaLabel?: string
+  /** Busca remota: as options são carregadas pelo consumidor. */
+  remote?: boolean
+  loading?: boolean
+  hasMore?: boolean
+  /** Opção selecionada fora da página atual (modo remoto). */
+  selectedOption?: SelectOption | null
+  remoteError?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -38,12 +45,20 @@ const props = withDefaults(defineProps<Props>(), {
   leftIcon: null,
   helperText: '',
   error: '',
-  ariaLabel: ''
+  ariaLabel: '',
+  remote: false,
+  loading: false,
+  hasMore: false,
+  selectedOption: null,
+  remoteError: ''
 })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string | number): void
   (e: 'change', value: string | number): void
+  (e: 'search', value: string): void
+  (e: 'loadMore'): void
+  (e: 'retry'): void
 }>()
 
 const isOpen = ref(false)
@@ -67,6 +82,7 @@ const focusFromLabel = () => {
 }
 
 const selectedOption = computed(() => {
+  if (props.remote && props.selectedOption) return props.selectedOption
   return props.options.find((opt) => opt.value === props.modelValue) || null
 })
 
@@ -79,6 +95,7 @@ const normalizeStr = (str: string) => {
 }
 
 const filteredOptions = computed(() => {
+  if (props.remote) return props.options
   if (!searchQuery.value.trim()) {
     return props.options
   }
@@ -132,6 +149,7 @@ const openDropdown = () => {
   isOpen.value = true
   searchQuery.value = ''
   highlightedIndex.value = 0
+  if (props.remote) emit('search', '')
   nextTick(() => {
     atualizarPosicao()
     searchInputRef.value?.focus({ preventScroll: true })
@@ -160,6 +178,18 @@ const toggleDropdown = () => {
   } else {
     openDropdown()
   }
+}
+
+const aoBuscar = () => {
+  if (props.remote) emit('search', searchQuery.value)
+}
+
+const carregarMais = () => {
+  if (props.remote && props.hasMore && !props.loading) emit('loadMore')
+}
+
+const tentarNovamente = () => {
+  if (props.remote) emit('retry')
 }
 
 const selectOption = (opt: SelectOption) => {
@@ -388,6 +418,7 @@ watch(filteredOptions, () => {
               :placeholder="searchPlaceholder"
               class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none"
               style="outline: none !important; box-shadow: none !important;"
+              @input="aoBuscar"
             />
           </div>
           <p class="text-[10px] text-slate-500 pl-0.5">
@@ -437,13 +468,37 @@ watch(filteredOptions, () => {
             />
           </div>
 
+          <div v-if="loading" class="px-4 py-3 text-center text-xs text-slate-500">
+            Carregando opções...
+          </div>
+
+          <div v-else-if="remoteError" class="px-4 py-3 text-center text-xs text-rose-700">
+            <p>{{ remoteError }}</p>
+            <button
+              type="button"
+              class="mt-1 font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+              @click="tentarNovamente"
+            >
+              Tentar novamente
+            </button>
+          </div>
+
           <div
-            v-if="filteredOptions.length === 0"
+            v-else-if="filteredOptions.length === 0"
             class="px-4 py-6 text-center text-xs text-slate-500"
           >
             Nenhum resultado encontrado para "{{ searchQuery }}"
           </div>
+
         </div>
+        <button
+          v-if="remote && hasMore && !loading"
+          type="button"
+          class="w-full px-4 py-2 text-center text-xs font-semibold text-brand-primary hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+          @click="carregarMais"
+        >
+          Carregar mais
+        </button>
       </div>
     </Transition>
 

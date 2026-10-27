@@ -33,6 +33,7 @@ import {
   normalizarImagensChamada,
   normalizarSoftwareIds,
   normalizarTagsChamada,
+  urlMiniatura,
   validarChamada,
   type CatalogosChamada,
   type ChamadaModelo,
@@ -112,6 +113,8 @@ const COLUNAS = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, e.soft
   e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
   e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
   e.impacto, e.publicado_em, e.descricao_completa, e.descricao_html, e.solucao, e.solucao_html,
+  (SELECT m.codigo FROM manuais_mensal m WHERE m.id = e.manual_id) AS manual_codigo,
+  (SELECT p.codigo FROM projetos_escopo p WHERE p.id = e.projeto_id) AS projeto_codigo,
   e.manual_titulo, e.link_manual, e.link_video,
   e.imagens, e.status, e.tags, e.criado_em, e.atualizado_em,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
@@ -168,6 +171,8 @@ const montarChamada = (
     dataLancamento: dataDia(row.data_lancamento),
     dataLiberacao: dataDia(row.data_liberacao),
     release: texto(row.release),
+    manualCodigo: texto(row.manual_codigo),
+    projetoCodigo: texto(row.projeto_codigo),
     titulo: texto(row.titulo),
     parceiro: texto(row.parceiro),
     softwares: listaSoftwares.map((software) => software.nome),
@@ -240,6 +245,8 @@ const COLUNAS_LISTA = `e.id, e.origem, e.release_id, e.projeto_id, e.manual_id, 
   e.parceiro_id, e.autor_id, e.autor_nome, e.chamada, e.data_lancamento, e.data_liberacao,
   e.release, e.titulo, e.parceiro, e.software, e.modulo, e.menu_funcionalidade, e.tipo,
   e.impacto, e.status, e.publicado_em, e.tags, e.criado_em, e.atualizado_em,
+  (SELECT m.codigo FROM manuais_mensal m WHERE m.id = e.manual_id) AS manual_codigo,
+  (SELECT p.codigo FROM projetos_escopo p WHERE p.id = e.projeto_id) AS projeto_codigo,
   EXISTS (SELECT 1 FROM historico_esteira_revisao h WHERE h.entrega_item_id = e.id) AS tem_historico`
 
 function whereChamadas(filtros: FiltrosListaChamadas): { sql: string; params: unknown[] } {
@@ -394,13 +401,18 @@ export async function listarChamadasParaEsteira(
     ),
     query<Array<{ total: number }>>(`SELECT COUNT(*) AS total FROM entregas_itens e WHERE ${ativo}`)
   ])
-  const ids = linhas.map((linha) => texto(linha.id))
-  const softwares = await carregarSoftwaresPorItem(ids)
-  return {
-    chamadas: linhas.map((linha) => montarChamada(linha, softwares.get(texto(linha.id)), undefined)),
-    total: Number(totalRows[0]?.total ?? 0)
+    const ids = linhas.map((linha) => texto(linha.id))
+    const [softwares, midias] = await Promise.all([
+      carregarSoftwaresPorItem(ids),
+      carregarMidiasPorItem(ids)
+    ])
+    return {
+      chamadas: linhas.map((linha) =>
+        montarChamada(linha, softwares.get(texto(linha.id)), midias.get(texto(linha.id)))
+      ),
+      total: Number(totalRows[0]?.total ?? 0)
+    }
   }
-}
 
 /** Contagens do progresso da Esteira sem materializar todas as chamadas. */
 export async function contarProgressoEsteira(): Promise<Record<string, number>> {
@@ -1187,11 +1199,24 @@ export async function removerImagensChamadas(urls: string[], idAtual: string): P
     try {
       const referenciada = await urlReferenciadaPorOutraChamada(url, idAtual)
       if (referenciada) continue
-      await unlink(caminho)
-    } catch (erro) {
-      if ((erro as { code?: string } | null)?.code !== 'ENOENT') {
-        console.error('[lancar-chamadas] Falha ao remover imagem:', caminho, erro)
+      const variante = urlMiniatura(url)
+      const caminhos = [caminho]
+      if (variante !== url) {
+        const relativoVariante = variante.slice('/uploads/'.length)
+        const caminhoVariante = resolve(uploadsDir(), relativoVariante)
+        if (caminhoVariante.startsWith(`${raiz}${sep}`)) caminhos.push(caminhoVariante)
       }
+      for (const alvo of caminhos) {
+        try {
+          await unlink(alvo)
+        } catch (erro) {
+          if ((erro as { code?: string } | null)?.code !== 'ENOENT') {
+            console.error('[lancar-chamadas] Falha ao remover imagem:', alvo, erro)
+          }
+        }
+      }
+    } catch (erro) {
+      console.error('[lancar-chamadas] Falha ao remover imagem:', caminho, erro)
     }
   }
 }

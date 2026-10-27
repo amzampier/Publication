@@ -18,7 +18,16 @@ import type { FiltrosChamada } from './validadores'
 const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ (e: 'update:modelValue', value: boolean): void }>()
 
-const { filtros, opcoes, limparFiltros } = useLancarChamadasModelo()
+const {
+  filtros,
+  opcoes,
+  opcoesRemotas,
+  buscarOpcoes,
+  buscarOpcoesAgora,
+  carregarMaisOpcoes,
+  registrarSelecao,
+  limparFiltros
+} = useLancarChamadasModelo()
 
 const VAZIO: FiltrosChamada = {
   status: '',
@@ -41,7 +50,14 @@ const rascunho = ref<FiltrosChamada>({
 watch(
   () => props.modelValue,
   (aberto) => {
-    if (aberto) rascunho.value = { ...filtros.value, softwareIds: [...filtros.value.softwareIds] }
+    if (!aberto) return
+    rascunho.value = { ...filtros.value, softwareIds: [...filtros.value.softwareIds] }
+    // Mantém os chips já escolhidos; as opções são carregadas quando cada select abre.
+    registrarSelecao('softwares', rascunho.value.softwareIds)
+    registrarSelecao(
+      'parceiros',
+      rascunho.value.parceiroId ? [rascunho.value.parceiroId] : []
+    )
   }
 )
 
@@ -63,6 +79,16 @@ const opcoesSoftware = computed(() =>
 const opcoesParceiro = computed(() =>
   opcoes.value.parceiros.map((parceiro) => ({ value: parceiro.id, label: parceiro.label }))
 )
+const selecionadosSoftware = computed(() =>
+  opcoesRemotas.value.softwares.selecionados.map((software) => ({
+    value: software.id,
+    label: software.label
+  }))
+)
+const selecionadoParceiro = computed(() => {
+  const parceiro = opcoesRemotas.value.parceiros.selecionados[0]
+  return parceiro ? { value: parceiro.id, label: parceiro.label } : null
+})
 
 const paraData = (iso: string): Date | null => {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
@@ -98,6 +124,8 @@ const cancelar = () => emit('update:modelValue', false)
 
 const limpar = () => {
   rascunho.value = { ...VAZIO }
+  registrarSelecao('softwares', [])
+  registrarSelecao('parceiros', [])
 }
 </script>
 
@@ -145,9 +173,17 @@ const limpar = () => {
         <UiMultiSelect
           :model-value="rascunho.softwareIds"
           :options="opcoesSoftware"
+          :selected-options="selecionadosSoftware"
+          :remote="true"
+          :loading="opcoesRemotas.softwares.loading"
+          :has-more="opcoesRemotas.softwares.hasMore"
+          :remote-error="opcoesRemotas.softwares.error"
           aria-label="Filtrar por softwares"
           placeholder="Todos os softwares"
-          @update:model-value="rascunho.softwareIds = $event as string[]"
+          @search="buscarOpcoes('softwares', $event)"
+          @load-more="carregarMaisOpcoes('softwares')"
+          @retry="buscarOpcoesAgora('softwares', '')"
+          @update:model-value="rascunho.softwareIds = $event as string[]; registrarSelecao('softwares', $event)"
         />
       </UiModalSection>
 
@@ -155,9 +191,17 @@ const limpar = () => {
         <UiSelect
           :model-value="rascunho.parceiroId"
           :options="opcoesParceiro"
+          :selected-option="selecionadoParceiro"
+          :remote="true"
+          :loading="opcoesRemotas.parceiros.loading"
+          :has-more="opcoesRemotas.parceiros.hasMore"
+          :remote-error="opcoesRemotas.parceiros.error"
           aria-label="Filtrar por parceiro"
           placeholder="Todos os parceiros"
-          @update:model-value="rascunho.parceiroId = String($event)"
+          @search="buscarOpcoes('parceiros', $event)"
+          @load-more="carregarMaisOpcoes('parceiros')"
+          @retry="buscarOpcoesAgora('parceiros', '')"
+          @update:model-value="rascunho.parceiroId = String($event); registrarSelecao('parceiros', $event ? [String($event)] : [])"
         />
       </UiModalSection>
 

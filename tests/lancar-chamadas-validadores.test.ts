@@ -143,11 +143,12 @@ describe('validarChamada', () => {
     ).toBe(true)
   })
 
-  it('aceita segunda-feira e o próximo dia útil quando a segunda é feriado', () => {
+  it('aceita qualquer data civil válida no lançamento', () => {
     expect(validarChamada(entradaValida({ dataLancamento: '2026-10-19' })).valido).toBe(true)
     expect(validarChamada(entradaValida({ dataLancamento: '2026-11-03' })).valido).toBe(true)
-    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).erros.dataLancamento).toMatch(/segunda|dia útil/)
-    expect(validarChamada(entradaValida({ dataLancamento: '2026-11-04' })).erros.dataLancamento).toMatch(/segunda|dia útil/)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-10-20' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-11-04' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLancamento: '2026-02-30' })).erros.dataLancamento).toBeTruthy()
   })
 
   it('exige segunda/dia útil na data de liberacao e aceita vazia', () => {

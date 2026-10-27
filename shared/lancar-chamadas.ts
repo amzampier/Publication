@@ -59,6 +59,23 @@ export interface CatalogosChamada {
   parceiros: OpcaoChamada[]
 }
 
+export const TIPOS_CATALOGO_CHAMADA = [
+  'releases',
+  'projetos',
+  'manuais',
+  'softwares',
+  'parceiros'
+] as const
+
+export type TipoCatalogoChamada = (typeof TIPOS_CATALOGO_CHAMADA)[number]
+
+/** Página de um catálogo para os selects remotos de Chamadas. */
+export interface OpcoesCatalogoChamada {
+  itens: OpcaoChamada[]
+  total: number
+  hasMore: boolean
+}
+
 export interface ImagemChamada {
   id: string
   url: string
@@ -83,6 +100,8 @@ export interface ChamadaModelo {
   dataLancamento: string
   dataLiberacao: string
   release: string
+  manualCodigo?: string
+  projetoCodigo?: string
   titulo: string
   parceiro: string
   softwares: string[]
@@ -429,7 +448,6 @@ export function validarChamada(
   const dataLancamento = texto(dados.dataLancamento)
   if (!dataLancamento) erros.dataLancamento = 'Informe a data de lançamento.'
   else if (!ehDataIso(dataLancamento)) erros.dataLancamento = 'A data de lançamento é inválida.'
-  else if (!dataPublicacaoValida(dataLancamento)) erros.dataLancamento = 'A data de lançamento deve ser uma segunda-feira ou o próximo dia útil quando a segunda for feriado.'
 
   const dataLiberacao = texto(dados.dataLiberacao)
   if (dataLiberacao && !ehDataIso(dataLiberacao)) {

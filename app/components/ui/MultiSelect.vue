@@ -17,6 +17,13 @@ interface Props {
   error?: string
   /** Nome acessível quando não há label visível (ex.: filtros). */
   ariaLabel?: string
+  /** Busca remota: as options são carregadas pelo consumidor. */
+  remote?: boolean
+  loading?: boolean
+  hasMore?: boolean
+  /** Itens selecionados fora da página atual (modo remoto). */
+  selectedOptions?: SelectOption[]
+  remoteError?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -30,12 +37,20 @@ const props = withDefaults(defineProps<Props>(), {
   leftIcon: null,
   helperText: '',
   error: '',
-  ariaLabel: ''
+  ariaLabel: '',
+  remote: false,
+  loading: false,
+  hasMore: false,
+  selectedOptions: () => [],
+  remoteError: ''
 })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: Array<string | number>): void
   (e: 'change', value: Array<string | number>): void
+  (e: 'search', value: string): void
+  (e: 'loadMore'): void
+  (e: 'retry'): void
 }>()
 
 const isOpen = ref(false)
@@ -59,9 +74,18 @@ const focusFromLabel = () => {
   triggerRef.value?.focus()
 }
 
-const selecionados = computed(() =>
-  props.options.filter((opt) => props.modelValue.includes(opt.value))
-)
+const selecionados = computed(() => {
+  const mapa = new Map<string | number, SelectOption>()
+  const candidatos = props.remote
+    ? [...props.selectedOptions, ...props.options]
+    : props.options
+  for (const opt of candidatos) {
+    if (props.modelValue.includes(opt.value) && !mapa.has(opt.value)) {
+      mapa.set(opt.value, opt)
+    }
+  }
+  return [...mapa.values()]
+})
 
 const normalizeStr = (str: string) =>
   str
@@ -70,6 +94,7 @@ const normalizeStr = (str: string) =>
     .toLowerCase()
 
 const filteredOptions = computed(() => {
+  if (props.remote) return props.options
   if (!searchQuery.value.trim()) return props.options
   const q = normalizeStr(searchQuery.value)
   return props.options.filter((opt) => {
@@ -118,6 +143,7 @@ const openDropdown = () => {
   isOpen.value = true
   searchQuery.value = ''
   highlightedIndex.value = 0
+  if (props.remote) emit('search', '')
   nextTick(() => {
     atualizarPosicao()
     searchInputRef.value?.focus({ preventScroll: true })
@@ -137,6 +163,18 @@ const closeDropdown = (devolverFoco = false) => {
 const toggleDropdown = () => {
   if (isOpen.value) closeDropdown(true)
   else openDropdown()
+}
+
+const aoBuscar = () => {
+  if (props.remote) emit('search', searchQuery.value)
+}
+
+const carregarMais = () => {
+  if (props.remote && props.hasMore && !props.loading) emit('loadMore')
+}
+
+const tentarNovamente = () => {
+  if (props.remote) emit('retry')
 }
 
 const emitir = (valores: Array<string | number>) => {
@@ -351,6 +389,7 @@ watch(filteredOptions, () => {
               :placeholder="searchPlaceholder"
               class="flex-1 bg-transparent text-xs text-slate-800 placeholder:text-slate-500 focus:outline-none"
               style="outline: none !important; box-shadow: none !important;"
+              @input="aoBuscar"
             >
           </div>
           <p class="text-[10px] text-slate-500 pl-0.5">
@@ -397,10 +436,37 @@ watch(filteredOptions, () => {
             <Check v-if="modelValue.includes(opt.value)" class="h-3.5 w-3.5 text-lime-700 shrink-0 ml-2" />
           </div>
 
-          <div v-if="filteredOptions.length === 0" class="px-4 py-6 text-center text-xs text-slate-500">
+          <div v-if="loading" class="px-4 py-3 text-center text-xs text-slate-500">
+            Carregando opções...
+          </div>
+
+          <div v-else-if="remoteError" class="px-4 py-3 text-center text-xs text-rose-700">
+            <p>{{ remoteError }}</p>
+            <button
+              type="button"
+              class="mt-1 font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+              @click="tentarNovamente"
+            >
+              Tentar novamente
+            </button>
+          </div>
+
+          <div
+            v-else-if="filteredOptions.length === 0"
+            class="px-4 py-6 text-center text-xs text-slate-500"
+          >
             Nenhum resultado encontrado para "{{ searchQuery }}"
           </div>
+
         </div>
+        <button
+          v-if="remote && hasMore && !loading"
+          type="button"
+          class="w-full px-4 py-2 text-center text-xs font-semibold text-brand-primary hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50"
+          @click="carregarMais"
+        >
+          Carregar mais
+        </button>
       </div>
     </Transition>
 

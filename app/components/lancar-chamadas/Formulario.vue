@@ -47,7 +47,8 @@ const emit = defineEmits<{
 }>()
 
 const { toast } = useToast()
-const { adicionar, atualizar, chamadas, catalogo, autorAtual } = useLancarChamadasModelo()
+const { adicionar, atualizar, chamadas, catalogo, carregarCatalogo, autorAtual } =
+  useLancarChamadasModelo()
 
 const etapas = [
   {
@@ -327,7 +328,7 @@ const enviarImagem = async (dataUrl: string, dataLancamento: string): Promise<st
   dados.append('ano', dataLancamento.slice(0, 4))
   dados.append('mes', dataLancamento.slice(5, 7))
   dados.append('file', arquivo)
-  const resposta = await useApiFetch<{ url: string }>('/api/uploads', {
+  const resposta = await useApiFetch<{ url: string }>('/api/uploads?pasta=chamadas', {
     method: 'POST',
     body: dados
   })
@@ -409,6 +410,8 @@ watch(
     etapa.value = 0
     rascunho.value =
       props.modo === 'editar' && props.chamada ? deChamada(props.chamada) : rascunhoVazio()
+    // Catálogo completo só quando o formulário abre; a página não o carrega.
+    void carregarCatalogo()
   }
 )
 </script>
@@ -534,7 +537,7 @@ watch(
             <UiDatePicker
               :model-value="paraData(rascunho.dataLancamento)"
               label="Data de lançamento"
-              helper-text="Sempre segunda-feira."
+              helper-text="Data em que a chamada foi lançada."
               :error="erros.dataLancamento"
               @update:model-value="definirData('dataLancamento', $event)"
             />

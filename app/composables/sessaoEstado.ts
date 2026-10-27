@@ -8,9 +8,11 @@
 // Este arquivo usa os literais de default (não importa os composables) para
 // evitar ciclos de import e manter a limpeza independente.
 import { useState } from '#app'
+import { resetBootstrap } from './useBootstrap'
 
 /** Chaves `useState` que compõem o estado derivado da sessão. */
 export const CHAVES_ESTADO_SESSAO = [
+  'bootstrap-carregado',
   'perfis-base',
   'perfis-carregando',
   'perfis-carregado',
@@ -101,4 +103,5 @@ export function limparEstadoSessao(): void {
   useState<boolean>('usuario-avatar-carregado', () => false).value = false
   useState('config-globais-cache', () => null).value = null
   useState('config-shell-cache', () => null).value = null
+  resetBootstrap()
 }

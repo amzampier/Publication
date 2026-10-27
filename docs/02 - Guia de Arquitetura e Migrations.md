@@ -166,7 +166,7 @@ export async function getTransaction(): Promise<Transaction> {
 
 ---
 
-> **Conta de banco (provisionamento externo):** a conta, a senha e os privilégios são provisionados pelo operador do ambiente; a aplicação não cria, altera ou remove usuários nem concede/revoga privilégios. O pool e as migrations usam a mesma conta `DB_*`. Como `runMigrations()` executa DDL no boot, a conta precisa de `CREATE`/`ALTER` quando houver migrations pendentes, além do DML de runtime e do `EVENT` usado pelo expurgo agendado.
+> **Conta de banco (provisionamento externo):** a conta, a senha e os privilégios são provisionados pelo operador do ambiente; a aplicação não cria, altera ou remove usuários nem concede/revoga privilégios. O pool e as migrations usam a mesma conta `DB_*`. Como `runMigrations()` executa DDL no boot, a conta precisa de `CREATE`/`ALTER` quando houver migrations pendentes, além do DML de runtime e do `EVENT` usado pelo expurgo agendado. **M-07 (risco aceito):** no ambiente de desenvolvimento a conta configurada pode manter privilégios amplos; em produção, o operador deve provisionar uma conta própria com o mínimo privilégio.
 
 ### 3.2. Estrutura Padrão de um Endpoint de API
 
@@ -346,6 +346,7 @@ await registrarAuditoria(event, {
 
 Além das rotas de CRUD por módulo, a aplicação expõe endpoints de apoio — com contrato observável (método, sessão exigida, payload e respostas):
 
+- `GET /api/auth/contexto` — contexto inicial da sessão (session-only): devolve `{ usuario, shell, permissoes, avatar }` em **uma única validação**. O layout admin usa esse endpoint no SSR; `/api/auth/seguro`, `/api/configuracoes/shell`, `/api/usuarios/eu/permissoes` e `/api/usuarios/eu` permanecem disponíveis para os fluxos específicos.
 - `GET /api/usuarios/eu` e `PATCH /api/usuarios/eu` — registro do próprio usuário (sessão apenas; PATCH grava dados/endereço/SMTP/avatar, **não** e-mail/perfil/situação/senha).
 - `GET /api/usuarios/eu/permissoes` — matriz de permissões do próprio usuário (sessão apenas), que alimenta `usePermissions().can()`.
 - `POST /api/convite` — find-or-create por e-mail + envio (requer `gestao-usuarios`/`convite`; para conta já existente, também `alterar`).
@@ -593,7 +594,7 @@ O composable `useApiFetch` encapsula o `$fetch` nativo do Nuxt, trazendo:
 ### 5.3. Gerenciamento de Autenticação e Permissões no Cliente
 
 1. **`useAuth.ts`**:
-   - Controla os estados reativos `usuario` e `sessaoVerificada` (via `useState`) e as ações `entrar`, `sair`, `ensureSessao` e `sessaoInvalidada`. A sessão é real (cookies HttpOnly) e hidratada por `GET /api/auth/seguro` no primeiro acesso; **não** usa `sessionStorage` nem cookie de sessão fino.
+   - Controla os estados reativos `usuario` e `sessaoVerificada` (via `useState`) e as ações `entrar`, `sair`, `ensureSessao` e `sessaoInvalidada`. A sessão é real (cookies HttpOnly) e hidratada por `useBootstrap()`/`GET /api/auth/contexto` no primeiro acesso (usuário + shell + permissões + avatar em uma validação); **não** usa `sessionStorage` nem cookie de sessão fino.
 2. **`app/middleware/auth.global.ts`**:
    - Middleware global de rota: intercepta todas as navegações.
    - Área Pública e as telas de autenticação (`/admin/login`, `/admin/esqueci-senha`) são liberadas; as demais rotas `/admin/**` exigem sessão (`ensureSessao`) e, sem ela, vão para `/admin/login?redirect=`. Sessões com senha provisória são conduzidas a `/admin/primeiro-acesso`.

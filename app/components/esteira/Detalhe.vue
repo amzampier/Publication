@@ -16,6 +16,7 @@ import {
   VARIANTE_STATUS_CHAMADA,
   formatarData,
   formatarDataHora,
+  urlMiniatura,
   type ItemEsteira
 } from './validadores'
 
@@ -65,6 +66,13 @@ const imagemAtual = computed(() => props.item?.imagens[indiceImagem.value] ?? ''
 const abrirGaleria = (indice: number) => {
   indiceImagem.value = indice
   galeriaAberta.value = true
+}
+
+const usarOriginal = (evento: Event, original: string) => {
+  const img = evento.target as HTMLImageElement
+  if (img.dataset.fallback === '1') return
+  img.dataset.fallback = '1'
+  img.src = original
 }
 
 const anterior = () => {
@@ -302,9 +310,12 @@ watch(
             @click="abrirGaleria(indice)"
           >
             <img
-              :src="imagem"
+              :src="urlMiniatura(imagem)"
               :alt="`Imagem de evidência ${indice + 1}`"
+              loading="lazy"
+              decoding="async"
               class="h-24 w-full object-cover transition-transform group-hover:scale-105"
+              @error="usarOriginal($event, imagem)"
             >
             <span
               v-if="item.imagens.length > 1"
@@ -395,7 +406,14 @@ watch(
         :class="indice === indiceImagem ? 'border-brand-focus' : 'border-transparent opacity-70 hover:opacity-100'"
         @click="indiceImagem = indice"
       >
-        <img :src="imagem" :alt="`Miniatura ${indice + 1}`" class="h-14 w-20 object-cover">
+        <img
+          :src="urlMiniatura(imagem)"
+          :alt="`Miniatura ${indice + 1}`"
+          loading="lazy"
+          decoding="async"
+          class="h-14 w-20 object-cover"
+          @error="usarOriginal($event, imagem)"
+        >
       </button>
     </div>
 

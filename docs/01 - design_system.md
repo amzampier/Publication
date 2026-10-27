@@ -531,12 +531,18 @@ toast.warning('Revisão Pendente', 'O Manual de Instalação aguarda aprovação
 | `leftIcon` | `Component \| null` | `null` | Ícone à esquerda do gatilho |
 | `helperText` / `error` | `string` | `''` | Ajuda abaixo / erro **sem texto visível** (só overlay + `AlertCircle`; mensagem `sr-only` com `role="alert"`) |
 | `labelClass` | `string` | `''` | Classes extras no label |
+| `remote` | `boolean` | `false` | Modo de busca remota; o consumidor carrega as opções |
+| `loading` | `boolean` | `false` | Indicador de carregamento da busca remota |
+| `hasMore` | `boolean` | `false` | Exibe “Carregar mais” no modo remoto |
+| `selectedOption` | `SelectOption \| null` | `null` | Mantém o label selecionado fora da página atual |
+| `remoteError` | `string` | `''` | Falha da busca remota, com nova tentativa |
 
-- **Emits:** `update:modelValue(value: string | number)` · **`change(value: string | number)`** (valor, nunca `Event`).
+- **Emits:** `update:modelValue(value: string | number)` · **`change(value: string | number)`** (valor, nunca `Event`); no modo remoto também `search(termo)`, `loadMore` e `retry`.
 - **Slots:** `leftIcon` (com fallback para a prop), `rightIcon`.
 - **ARIA:** gatilho `role="combobox"` com `aria-haspopup="listbox"`, `aria-expanded`, `aria-controls`, **`aria-activedescendant`**; lista `role="listbox"`; itens `role="option"` + `aria-selected`; label clicável foca o gatilho.
 - **Teclado:** `Enter`/`Space`/`↓` abrem · `Esc` fecha · `↑`/`↓` navegam · `Enter` seleciona · `Tab` passa adiante. Com o dropdown **aberto** o `Esc` é consumido no próprio select (`stopPropagation`) — **não fecha um `UiModal` aberto por baixo**; o `Esc` seguinte, sem popup, fecha o modal (precedência: popup → modal). Ao fechar por **seleção (mouse ou teclado)**, `Esc` ou toggle, o foco **volta ao gatilho de forma determinística** — sem isso o `mousedown` na opção arrastava o foco para o ancestral focável mais próximo (o painel do `UiModal`, `tabindex="-1"`): o `Tab` seguinte caía no `X` do cabeçalho e o `Enter` fechava o modal, perdendo o formulário.
 - **Busca em tempo real:** normalização **NFD insensível a acentos e maiúsculas** sobre `label`, `value`, `description` e `badge`; contador "N opções encontradas"; foco automático no campo de busca ao abrir; vazio ⇒ "Nenhum resultado encontrado para ...".
+- **Modo remoto (`remote`):** o componente não filtra localmente; emite `search` ao abrir e ao digitar, mostra `loading`, `remoteError` com “Tentar novamente”, `hasMore` com “Carregar mais” e mantém o label via `selectedOption` quando o valor não está na página. O modo local (sem `remote`) permanece inalterado.
 - **Visual:** gatilho `h-[34px]` (mesmo gabarito do `Input`); aberto = `border-b-brand-focus border-b-2` + chevron verde rotacionado; **erro** = overlay `border-2 border-rose-700` com recorte `.ds-bottom-clip` + `AlertCircle` com `<UiTooltip>` (mensagem no hover) e **sem texto abaixo do gatilho** (mensagem `sr-only` com `role="alert"`); item destacado `bg-lime-50/60`, selecionado `font-semibold` + `Check` verde.
 - **Gotchas:** fecha com clique fora (listener global `window`); o **X de limpar** tem `aria-label="Limpar seleção"`, responde a `Enter`/`Space` nativamente (o `handleKeyDown` ignora keydown originado em `button`, caso contrário o `preventDefault` de abrir o dropdown cancelaria o `click` gerado pelo `Enter`) e devolve o foco ao gatilho ao limpar (o próprio X é desmontado); **auto-inversão vertical** — se não há espaço abaixo do gatilho para a lista, o dropdown abre **para cima** (`bottom-full mb-1`), medindo o limite do **ancestral rolável mais próximo** (container do formulário/corpo do modal, não só o viewport) × altura da lista, na abertura e a cada `scroll`/`resize` (listener em capture), evitando barra de rolagem no formulário; foco da busca usa `preventScroll` para não induzir scroll ao abrir; badges/contexto por item servem para listas densas (Catálogo de Publicações).
 
@@ -1267,12 +1273,20 @@ kit; espelhado em `docs/09`)
 | `helperText` | `string` | `''` | Texto auxiliar abaixo do campo |
 | `error` | `string` | `''` | Erro canônico (ícone + tooltip + região viva) |
 | `ariaLabel` | `string` | `''` | Nome acessível quando não há label visível |
+| `remote` | `boolean` | `false` | Modo de busca remota; o consumidor carrega as opções |
+| `loading` | `boolean` | `false` | Indicador de carregamento da busca remota |
+| `hasMore` | `boolean` | `false` | Exibe “Carregar mais” no modo remoto |
+| `selectedOptions` | `SelectOption[]` | `[]` | Mantém chips selecionados fora da página atual |
+| `remoteError` | `string` | `''` | Falha da busca remota, com nova tentativa |
 
-- **Emits:** `update:modelValue(valores: Array<string | number>)` e `change(valores)`.
+- **Emits:** `update:modelValue(valores: Array<string | number>)` e `change(valores)`; no modo remoto também `search(termo)`, `loadMore` e `retry`.
 - **Seleção:** os itens escolhidos viram **chips removíveis** dentro do campo; clicar numa opção
   alterna a seleção e mantém a lista aberta.
 - **Busca:** filtra as opções por texto, insensível a acentos e maiúsculas; a lista informa quando não
   há correspondência.
+- **Modo remoto (`remote`):** não filtra localmente; emite `search` ao abrir/digitar, carrega mais
+  páginas via `loadMore`, exibe `loading`/`remoteError` e mantém os chips selecionados via
+  `selectedOptions` mesmo quando o item não está na página atual.
 - **Teclado:** `Enter`/`Space`/setas abrem; setas navegam; `Enter` alterna; `Escape` fecha;
   `Backspace` com a busca vazia remove o último chip.
 - **Acessibilidade:** gatilho `role="combobox"` com `aria-expanded`/`aria-controls`/`aria-activedescendant`;

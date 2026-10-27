@@ -20,7 +20,7 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 
 ## 1. Visão geral e rota
 
-> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, as datas de lançamento/liberação exigem segunda-feira ou o próximo dia útil quando a segunda for feriado, e a Data de liberação é herdada da Release selecionada e exibida somente leitura. A galeria usa miniaturas WebP com fallback e cache.
+> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, a Data de lançamento aceita qualquer data civil válida e a Data de liberação é herdada da Release selecionada e exibida somente leitura (sujeita à regra de publicação da Release). A galeria usa miniaturas WebP com fallback e cache.
 
 
 - **Rota:** `/admin/lancar-chamadas` → `app/pages/admin/lancar-chamadas.vue` com
@@ -268,9 +268,10 @@ interface ChamadaModelo {
   `Chamada | Título | Data de Lançamento | Data de Liberação | Release | Projeto | Manual |
   Softwares | Parceiro | Módulo | Menu/Funcionalidade | Tipo | Impacto | Descrição Completa |
   Título do Manual | Link do Manual | Link do Vídeo | Tags`.
-- Datas aceitam `dd/mm/aaaa`, `AAAA-MM-DD` e data do Excel; seguem a mesma validação da criação
-  (segunda-feira ou próximo dia útil quando a segunda-feira for feriado). Linha fora da regra é
-  inválida e bloqueia a importação.
+- Datas aceitam `dd/mm/aaaa`, `AAAA-MM-DD` e data do Excel. A Data de lançamento aceita
+  qualquer data civil válida; a Data de liberação, quando informada, segue a validação de
+  publicação (segunda-feira ou próximo dia útil quando a segunda-feira for feriado). Linha com
+  data inválida ou liberação fora da regra é inválida e bloqueia a importação.
 - Vínculos por código: release/projeto/manual por `codigo`; softwares por `codigo` (um ou mais
   separados por `;`); parceiro por `codigo` (`RW-...`, `PE-...`, `MAN-...`, `SFT-...`, `PAR-...`).
 - Tags separadas por `;`, com os mesmos limites do formulário.
@@ -285,6 +286,8 @@ interface ChamadaModelo {
   derivados de `data_lancamento`.
 - Destino físico: `uploads/chamadas/<ano>/<mes>/`; URL de acesso controlado:
   `/uploads/chamadas/<ano>/<mes>/<arquivo>`.
+- O upload grava o original e, quando o processamento está disponível, a variante `-320.webp`
+  (320 px, WebP) usada pela galeria; a miniatura é intencional, não uma segunda cópia da imagem.
 - Formatos PNG/JPEG/WebP/GIF, até 5 MB e no máximo 100 imagens por chamada; o servidor valida magic
   bytes e deriva a extensão segura.
 - A mídia de chamada **não** é ativo estático público. O servimento passa por rota autorizada: exige `lancar-chamadas`/`visualizar` para a leitura administrativa ou, para anônimo, chamada `Publicado` com ao menos um vínculo ativo para conteúdo pai `Publicado` e não arquivado. Logomarcas, avatares e logos continuam públicos.
@@ -293,8 +296,9 @@ interface ChamadaModelo {
 - As imagens são persistidas em `anexos_midias` (uma linha por imagem, com ordem, capa, nome e MIME);
   a API devolve `midias` e mantém `imagens` como lista derivada de URLs. O JSON
   `entregas_itens.imagens` permanece como snapshot legado até a change de limpeza.
-- Na edição, imagens retiradas do array têm a linha removida e o arquivo apagado após o commit; na
-  exclusão, as linhas são removidas por `ON DELETE CASCADE` e os arquivos após o commit.
+- Na edição, imagens retiradas do array têm a linha removida e o original + a variante `-320.webp`
+  apagados após o commit; na exclusão, as linhas são removidas por `ON DELETE CASCADE` e os dois
+  arquivos após o commit.
 - A limpeza é best-effort, só atua em `/uploads/chamadas/`, preserva arquivos referenciados por outra
   chamada (consulta indexada em `anexos_midias.url_arquivo`) e não remove nada quando a exclusão é
   bloqueada.

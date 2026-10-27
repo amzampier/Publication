@@ -57,8 +57,8 @@ export default defineEventHandler(async (event) => {
   }
 
   // A aplicação envia `pasta` (e ano/mês de chamadas) na query para que a
-  // autorização ocorra ANTES de consumir o multipart. O campo no corpo continua
-  // aceito para compatibilidade, mas a checagem prévia é obrigatória na query.
+  // autorização ocorra ANTES de consumir o multipart. O destino no corpo não
+  // substitui a query: sem ela, a requisição é recusada antes do parse.
   const consulta = getQuery(event)
   const destinoQuery = String(consulta.pasta ?? '').trim()
   if (!destinoQuery) {
