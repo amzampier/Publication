@@ -258,6 +258,7 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 | Ação | Método e rota | Permissão |
 |---|---|---|
 | Listar board + opções + progresso | `GET /api/esteira-revisao` | `visualizar`; `buscar`/`filtrar` via `?busca=1`/`?filtros=1` |
+| Progresso global | `GET /api/esteira-revisao/progresso` | `visualizar` |
 | Detalhe | `GET /api/esteira-revisao/:id` | `visualizar` |
 | Histórico | `GET /api/esteira-revisao/:id/historico` | `visualizar` |
 | Aprovar | `PUT /api/esteira-revisao/:id/aprovar` | `publicar` |
@@ -363,6 +364,9 @@ avançou        = aprovado + publicar
 
 - **Painel global:** não muda com os filtros do board; o card Demandas por origem mostra as contagens por
   vínculo ativo.
+- **Sincronização após decisão:** aprovar, recusar, reabrir, publicar e suspender atualizam o item no
+  board e consultam `GET /api/esteira-revisao/progresso` em seguida. O painel reflete os novos totais
+  sem F5; se a leitura falhar, a transição permanece concluída e o painel é corrigido na próxima carga.
 - **Quebra por origem:** usa os vínculos **ativos** de cada item; uma chamada com dois vínculos
   ativos aparece nas duas abas e conta **uma vez** no total geral.
 - **Recusadas:** não entram no numerador do percentual (aguardam correção); o acionador do painel

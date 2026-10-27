@@ -320,6 +320,17 @@ export const useEsteiraRevisaoModelo = () => {
     historico.value = cache
   }
 
+  const sincronizarProgresso = async (): Promise<void> => {
+    try {
+      const resposta = await useApiFetch<{ progresso: ProgressoEsteira }>(
+        '/api/esteira-revisao/progresso'
+      )
+      if (resposta?.progresso) progresso.value = resposta.progresso
+    } catch {
+      // A transição já foi concluída; o painel será corrigido na próxima carga.
+    }
+  }
+
   const decidir = async (
     id: string,
     acao: AcaoEsteira,
@@ -330,6 +341,7 @@ export const useEsteiraRevisaoModelo = () => {
       body: opcoesAcao
     })
     atualizarNaLista(atualizado, opcoesAcao)
+    await sincronizarProgresso()
     return atualizado
   }
 

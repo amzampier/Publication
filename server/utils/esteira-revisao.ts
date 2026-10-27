@@ -176,6 +176,11 @@ const montarProgresso = (c: Record<string, number>): ProgressoEsteira => ({
   }
 })
 
+/** Progresso global do ciclo ativo, usado pela sincronização após transições. */
+export async function obterProgressoEsteira(): Promise<ProgressoEsteira> {
+  return montarProgresso(await contarProgressoEsteira())
+}
+
 /** Fila do ciclo ativo + opções de filtro + progresso global. */
 export async function listarEsteira(
   pagina = 1,
