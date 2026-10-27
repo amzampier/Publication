@@ -12,11 +12,15 @@ export function cspPara(caminho: string, producao: boolean): string {
   const script = producao
     ? "script-src 'self' 'unsafe-inline'"
     : "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  const connect = producao ? "connect-src 'self'" : "connect-src 'self' ws: wss:"
+  // ViaCEP é consultada direto pelo navegador (capability busca-cep); as fontes
+  // do design system vêm do Google Fonts (docs/01 §1).
+  const connect = producao
+    ? "connect-src 'self' https://viacep.com.br"
+    : "connect-src 'self' https://viacep.com.br ws: wss:"
   return [
     "default-src 'self'",
     script,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob:",
     "font-src 'self' https://fonts.gstatic.com data:",
     connect,

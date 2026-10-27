@@ -36,4 +36,16 @@ describe('headers de segurança', () => {
     expect(headersSeguranca('/admin', true, true)['Strict-Transport-Security']).toBeDefined()
     expect(cspPara('/uploads/chamadas/2026/10/a.png', true)).toBe("default-src 'none'; sandbox")
   })
+
+  it('libera ViaCEP e Google Fonts sem abrir hosts arbitrários', () => {
+    for (const producao of [false, true]) {
+      const csp = cspPara('/admin', producao)
+      expect(csp).toContain("connect-src 'self' https://viacep.com.br")
+      expect(csp).toContain("style-src 'self' 'unsafe-inline' https://fonts.googleapis.com")
+      expect(csp).toContain("font-src 'self' https://fonts.gstatic.com data:")
+      expect(csp).not.toContain('connect-src *')
+    }
+    expect(cspPara('/admin', false)).toContain('ws: wss:')
+    expect(cspPara('/admin', true)).not.toContain('ws: wss:')
+  })
 })

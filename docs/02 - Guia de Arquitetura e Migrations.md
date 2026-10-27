@@ -166,7 +166,7 @@ export async function getTransaction(): Promise<Transaction> {
 
 ---
 
-> **Menor privilégio (RL06-2):** o usuário de banco da aplicação deve ter apenas DML no schema `publications` + `EVENT`, sem `GRANT OPTION`/DDL. Use `scripts/db-least-privilege.sql` e ajuste `DB_USER`/`DB_PASSWORD` no `.env`.
+> **Conta de banco (provisionamento externo):** a conta, a senha e os privilégios são provisionados pelo operador do ambiente; a aplicação não cria, altera ou remove usuários nem concede/revoga privilégios. O pool e as migrations usam a mesma conta `DB_*`. Como `runMigrations()` executa DDL no boot, a conta precisa de `CREATE`/`ALTER` quando houver migrations pendentes, além do DML de runtime e do `EVENT` usado pelo expurgo agendado.
 
 ### 3.2. Estrutura Padrão de um Endpoint de API
 
@@ -778,12 +778,12 @@ Na inicialização:
 - **Bundle (B-06):** antes da RL06-3 a rota de Lançar as Chamadas gerava ~234 kB (gzip ~34 kB) e o editor TipTap entrava no caminho; após o wrapper `UiRichTextLazy`, a rota ficou em ~239 kB (gzip ~35 kB, incluindo o menu de relatórios) e o editor foi isolado em chunk próprio de ~445 kB (gzip ~139 kB), baixado apenas ao abrir o modal.
 - **Cache de SSR:** `server/utils/cache.ts` mantém TTL curto e single-flight por chave. `getConfiguracoes()` usa `config-globais` e `listarOpcoesChamadas()` usa `chamadas-opcoes`; o `PUT /api/configuracoes` invalida as chaves. O layout admin carrega shell e permissões em paralelo, e `getSessionUser` reutiliza `event.context.sessaoUsuario`.
 - **Importações em lote:** `inserirEmLotes` grava blocos de 100–200 linhas dentro da mesma transação. As mídias usam um upsert multi-row, preservando `ordem_exibicao` e capa. O conjunto continua atômico: falha em qualquer bloco faz rollback.
-- **Imutabilidade:** a migration `32_rl06_3_imutabilidade.sql` cria gatilhos que rejeitam `UPDATE` em `auditoria`/`historico_esteira_revisao` e `DELETE` comum; o expurgo da auditoria usa a variável de sessão `@rl06_permitir_auditoria` no EVENT diário. `scripts/db-least-privilege.sql` concede UPDATE/DELETE apenas nas tabelas operacionais e DELETE de auditoria somente para o expurgo controlado.
+- **Imutabilidade:** a migration `32_rl06_3_imutabilidade.sql` cria gatilhos que rejeitam `UPDATE` em `auditoria`/`historico_esteira_revisao` e `DELETE` comum; o expurgo da auditoria usa a variável de sessão `@rl06_permitir_auditoria` no EVENT diário. Os grants da conta de banco (incluindo o `DELETE` de auditoria usado pelo expurgo) são definidos pelo operador; a aplicação não concede nem revoga privilégios.
 - **Rollback:** remova os quatro gatilhos, recrie o EVENT da migration 10 se necessário e apague o registro `32_rl06_3_imutabilidade.sql` de `_migrations` (o bloco de rollback está no próprio SQL).
 
 > **Publicação efetiva (RL06 B-05):** a migration 33 adiciona `publicado_em` em `release_week`, `manuais_mensal`, `projetos_escopo` e `entregas_itens`, com backfill e índices de leitura pública.
 
-> **Segurança/infra:** headers globais + CSP são aplicados por middleware e `routeRules`; escritas autenticadas por cookie exigem Origin/Referer same-origin ou `X-CSRF-Token` (cookie `csrf_token`). O rate limit usa a tabela `rate_limit_contadores` (migration 34) com UPSERT atômico por IP+rota, limpeza diária e fallback em memória.
+> **Segurança/infra:** headers globais + CSP são aplicados por middleware e `routeRules`; a CSP libera somente `https://viacep.com.br` em `connect-src`, `https://fonts.googleapis.com` em `style-src` e `https://fonts.gstatic.com` em `font-src`. Escritas autenticadas por cookie exigem Origin/Referer same-origin ou `X-CSRF-Token` (cookie `csrf_token`). O rate limit usa a tabela `rate_limit_contadores` (migration 34) com UPSERT atômico por IP+rota, limpeza diária e fallback em memória.
 
 > **Performance (escalar):** o CSV usa keyset/cursor e calcula contagem/KPIs uma vez; a importação de Chamadas grava em lotes (inserirEmLotes) e softwares em multi-row; o board da Esteira é paginado; o Painel carrega o RBAC uma vez por request e agrega itensFluxo com joins/índice idx_entregas_fluxo; DB_POOL_LIMIT/DB_POOL_QUEUE_LIMIT são lidos em runtime.
 >
