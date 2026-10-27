@@ -251,8 +251,8 @@ Data/Hora (`mono`), Usuário, Ação (badge), Recurso, IP (`mono`) e Detalhes; r
   interrompe a operação principal (verificado com a tabela renomeada: a escrita respondeu 201
   e só o console registrou `[auditoria] Falha ao registrar evento de auditoria:`).
 - **Mapeamento com a tabela** (migration 01 §18): `recurso` da tela → coluna `entidade`;
-  `entidade_id` = id da entidade afetada (`''` quando não aplicável); `acao` guarda o **tipo**
-  (é o que mantém o badge da tabela íntegro); o texto humano vai em `detalhes`.
+`entidade_id` = id da entidade afetada (`''` quando não aplicável); `acao` guarda o **tipo**
+(é o que mantém o badge da tabela íntegro); o texto humano vai em `detalhes`. Em Softwares, `entidade_id` usa `softwares.uuid`; o código `SFT-XXX` permanece legível em `detalhes`.
 
 ### 6.2 Rotas auditadas (59 pontos)
 

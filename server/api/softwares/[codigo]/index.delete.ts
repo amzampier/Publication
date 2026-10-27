@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
     await registrarAuditoria(event, {
       acao: 'Exclusão',
       recurso: 'Softwares',
-      entidadeId: codigo,
+      entidadeId: existente.uuid,
       detalhes: `Removeu o software '${existente.descricao}' (${codigo})`
     })
   }

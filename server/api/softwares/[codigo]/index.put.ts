@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
   await registrarAuditoria(event, {
     acao: 'Alteração',
     recurso: 'Softwares',
-    entidadeId: codigo,
+    entidadeId: atualizado.uuid,
     detalhes: `Alterou o software '${atualizado.descricao}' (${codigo})`
   })
   return atualizado

@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
   await registrarAuditoria(event, {
     acao: 'Inclusão',
     recurso: 'Softwares',
-    entidadeId: software.codigo,
+    entidadeId: software.uuid,
     detalhes: `Criou o software '${software.descricao}' (${software.codigo})`
   })
   return software

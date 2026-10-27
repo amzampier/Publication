@@ -12,6 +12,7 @@ export type SituacaoSoftware = 'Ativo' | 'Inativo'
 /** Shape da tela (SoftwareModelo) — o frontend nunca vê o shape tabular do banco. */
 export interface SoftwareApi {
   codigo: string
+  uuid: string
   descricao: string
   categoria: CategoriaSoftware
   situacao: SituacaoSoftware
@@ -125,7 +126,7 @@ export function validarLinhaImportacao(linha: unknown): LinhaSoftwareValidada {
 
 type Row = Record<string, unknown>
 
-const COLUNAS = 'codigo, descricao, categoria, situacao, criado_em, atualizado_em'
+const COLUNAS = 'codigo, uuid, descricao, categoria, situacao, criado_em, atualizado_em'
 
 const dataIso = (valor: unknown): string => {
   if (valor instanceof Date) return valor.toISOString()
@@ -142,6 +143,7 @@ const texto = (valor: unknown): string =>
 
 const montarSoftware = (row: Row): SoftwareApi => ({
   codigo: texto(row.codigo),
+  uuid: texto(row.uuid),
   descricao: texto(row.descricao),
   categoria: (texto(row.categoria) || 'Delphi') as CategoriaSoftware,
   situacao: (texto(row.situacao) || 'Ativo') as SituacaoSoftware,

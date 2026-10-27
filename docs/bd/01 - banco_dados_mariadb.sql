@@ -732,6 +732,8 @@ CREATE OR REPLACE VIEW manuais AS
 -- 40: EVENT ev_expurgo_rate_limit.
 -- 41: views com projeção explícita (incluindo publicado_em/tags_texto) e
 --     comentários de data_lancamento/data_liberacao.
+-- 42: softwares.uuid UUID NOT NULL DEFAULT UUID() + UNIQUE uk_softwares_uuid;
+--     `codigo` continua PK/FK e o UUID é usado em auditoria.entidade_id.
 --
 -- projetos_escopo (pós-19/23/33):
 --   arquivada TINYINT(1) NOT NULL DEFAULT 0,
