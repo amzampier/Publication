@@ -108,6 +108,15 @@ export default defineNuxtConfig({
       background: '#112051'
     },
     head: {
+      // Aplica o tema público antes do primeiro paint (change area-publica-shell).
+      // O escuro fica no container [data-publico-shell], nunca no <html>, para
+      // não vazar para a Área Administrativa.
+      script: [
+        {
+          tagPosition: 'bodyClose',
+          innerHTML: `(function(){try{var m=document.cookie.match(/(?:^|; )publico-tema=(claro|escuro)/);var t=m?m[1]:(window.matchMedia('(prefers-color-scheme: dark)').matches?'escuro':'claro');if(!m){document.cookie='publico-tema='+t+';path=/;max-age=31536000;samesite=lax'}if(t==='escuro'){var e=document.querySelector('[data-publico-shell]');if(e)e.classList.add('dark')}}catch(e){}})();`
+        }
+      ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },

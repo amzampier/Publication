@@ -45,7 +45,7 @@ async function obterCsrf(): Promise<string | null> {
 }
 
 export function useApiFetch<T = any>(
-  request: Parameters<typeof $fetch>[0],
+  request: string,
   opts?: Parameters<typeof $fetch>[1]
 ) {
   const usuario = useState<UsuarioLogado | null>('auth-usuario', () => null)
@@ -68,8 +68,14 @@ export function useApiFetch<T = any>(
     // (mesmo padrão de useAuth.ensureSessao) — essencial para rotas protegidas
     // chamadas no setup do layout (ex.: GET /api/configuracoes no admin, que o
     // auth-api.ts exige sessão). No cliente é $fetch com credentials, como antes.
-    const fetchInterno = import.meta.server ? useRequestFetch() : $fetch
-    return fetchInterno<T>(request, {
+    type BuscarApi = (
+      url: string,
+      options?: Record<string, unknown>
+    ) => Promise<T>
+    const fetchInterno = import.meta.server
+      ? (useRequestFetch() as unknown as BuscarApi)
+      : ($fetch as unknown as BuscarApi)
+    return fetchInterno(request, {
       ...opts,
       headers,
       credentials: 'include'

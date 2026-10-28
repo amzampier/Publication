@@ -58,8 +58,14 @@ export function useBootstrap() {
   const carregar = async (): Promise<void> => {
     const atual = geracao
     try {
-      const buscar = import.meta.server ? useRequestFetch() : $fetch
-      const dados = await buscar<RespostaContexto>('/api/auth/contexto', {
+      type BuscarContexto = (
+        url: string,
+        options?: Record<string, unknown>
+      ) => Promise<RespostaContexto>
+      const buscar = import.meta.server
+        ? (useRequestFetch() as unknown as BuscarContexto)
+        : ($fetch as unknown as BuscarContexto)
+      const dados = await buscar('/api/auth/contexto', {
         credentials: 'include'
       })
       if (atual === geracao) aplicar(dados)

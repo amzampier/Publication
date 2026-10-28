@@ -61,6 +61,13 @@ import {
 } from '@lucide/vue'
 
 import { useToast } from '../composables/useToast'
+import { carregarIdentidadeLogin } from '../composables/useLogomarcaLogin'
+import { useTemaPublico } from '../composables/useTemaPublico'
+import type {
+  PublicoEscopoResumo,
+  PublicoManualResumo,
+  PublicoReleaseResumo
+} from '#shared/publico'
 import type { ColumnDef } from '../utils/dataGrid'
 import type { Notificacao } from '../config/navigation'
 import {
@@ -82,6 +89,8 @@ useHead({
 })
 
 const { toast } = useToast()
+
+await carregarIdentidadeLogin()
 
 // Estados da Família Checkbox (Seção 5.9 do Guia de Estilo)
 const demoRichText = ref('<p>Texto <strong>rico</strong> de demonstração.</p>')
@@ -133,6 +142,147 @@ const inputCep = ref('')
 const inputTelefone = ref('')
 
 const publicacaoSelecionada = ref('rel-2026-w40')
+
+// Seção 29 — shell público (dados de demonstração espelhando a imagem)
+const { escuro: publicoEscuro } = useTemaPublico()
+const publicoSidebarAberta = ref(false)
+const publicoReleases: PublicoReleaseResumo[] = [
+  {
+    id: 'demo-release-39',
+    ano: 2026,
+    mes: 'Setembro',
+    semana: 39,
+    versao: '26.06a',
+    release: '26.06a10.05a',
+    destaqueSemana: true,
+    chamadas: 4,
+    publicadoEm: '2026-09-28T00:00:00.000Z'
+  },
+  {
+    id: 'demo-release-38',
+    ano: 2026,
+    mes: 'Setembro',
+    semana: 38,
+    versao: '26.05b',
+    release: '26.05b08.02a',
+    destaqueSemana: false,
+    chamadas: 2,
+    publicadoEm: '2026-09-21T00:00:00.000Z'
+  },
+  {
+    id: 'demo-release-37',
+    ano: 2026,
+    mes: 'Setembro',
+    semana: 37,
+    versao: '26.04a',
+    release: '26.04a05.01b',
+    destaqueSemana: false,
+    chamadas: 1,
+    publicadoEm: '2026-09-14T00:00:00.000Z'
+  },
+  {
+    id: 'demo-release-30',
+    ano: 2026,
+    mes: 'Agosto',
+    semana: 30,
+    versao: '26.03a',
+    release: '26.03a01.02c',
+    destaqueSemana: false,
+    chamadas: 1,
+    publicadoEm: '2026-07-27T00:00:00.000Z'
+  }
+]
+
+const publicoManuais: PublicoManualResumo[] = [
+  {
+    id: 'demo-manual-set-1',
+    ano: 2026,
+    mes: 'Setembro',
+    mesNumero: 9,
+    titulo: 'Manual de Operações — Setembro',
+    publicadoEm: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-manual-set-2',
+    ano: 2026,
+    mes: 'Setembro',
+    mesNumero: 9,
+    titulo: 'Manual de Fiscal — Setembro',
+    publicadoEm: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-manual-set-3',
+    ano: 2026,
+    mes: 'Setembro',
+    mesNumero: 9,
+    titulo: 'Manual de WMS — Setembro',
+    publicadoEm: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-manual-set-4',
+    ano: 2026,
+    mes: 'Setembro',
+    mesNumero: 9,
+    titulo: 'Manual de Retaguarda — Setembro',
+    publicadoEm: '2026-09-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-manual-ago-1',
+    ano: 2026,
+    mes: 'Agosto',
+    mesNumero: 8,
+    titulo: 'Manual de Operações — Agosto',
+    publicadoEm: '2026-08-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-manual-ago-2',
+    ano: 2026,
+    mes: 'Agosto',
+    mesNumero: 8,
+    titulo: 'Manual de PDV — Agosto',
+    publicadoEm: '2026-08-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-manual-dez-2025',
+    ano: 2025,
+    mes: 'Dezembro',
+    mesNumero: 12,
+    titulo: 'Manual de Encerramento — Dezembro/2025',
+    publicadoEm: '2025-12-01T00:00:00.000Z'
+  }
+]
+
+const publicoEscopos: PublicoEscopoResumo[] = [
+  {
+    id: 'demo-escopo-2026-1',
+    codigo: 'PE-2026.01',
+    nome: 'Escopo de Projeto Anual 2026 — Gestão e Logística',
+    versao: 'v2026.1',
+    ano: 2026,
+    chamadas: 4,
+    sistemas: [
+      { nome: 'ERP Enterprise', chamadas: 1 },
+      { nome: 'PDV Touch', chamadas: 1 },
+      { nome: 'Mobile Força de Vendas', chamadas: 0 },
+      { nome: 'WMS Logística', chamadas: 1 },
+      { nome: 'Portal B2B', chamadas: 1 }
+    ],
+    publicadoEm: '2026-10-01T00:00:00.000Z'
+  },
+  {
+    id: 'demo-escopo-2025-1',
+    codigo: 'PE-2025.01',
+    nome: 'Escopo de Projeto Anual 2025 — Retaguarda',
+    versao: 'v2025.1',
+    ano: 2025,
+    chamadas: 2,
+    sistemas: [
+      { nome: 'Retaguarda', chamadas: 1 },
+      { nome: 'Portal B2B', chamadas: 1 }
+    ],
+    publicadoEm: '2025-10-01T00:00:00.000Z'
+  }
+]
 
 // Demo do UiSegmented (seção 9)
 const segmentosStatusDemo: { value: string; label: string; tone?: 'emerald' | 'slate' }[] = [
@@ -3585,6 +3735,53 @@ variant="lime"
                 <ClientOnly>
                   <UiRichTextLazy v-model="demoRichText" label="Demonstração" />
                 </ClientOnly>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="publico" class="scroll-mt-24">
+          <h2 class="text-base font-bold text-slate-900">29. Shell da Área Pública (Header + Sidebar)</h2>
+          <p class="mt-1 text-xs text-slate-500">
+            Header branco com logo da tela de login + “Dicas Teorema”, busca, tema e “Entrar”; sidebar
+            fixa em <code class="font-mono text-slate-700">w-72</code> com Releases Week, Manuais
+            Mensais e Escopo de Projetos.
+          </p>
+
+          <div
+            id="publico-shell"
+            data-publico-shell
+            :class="['mt-4 overflow-hidden rounded-xl border border-slate-200', { dark: publicoEscuro }]"
+          >
+            <LayoutPublicHeader
+              demo
+              :sidebar-aberta="publicoSidebarAberta"
+              @toggle-sidebar="publicoSidebarAberta = !publicoSidebarAberta"
+            />
+            <div class="flex items-start bg-slate-50 dark:bg-slate-950">
+              <LayoutPublicSidebar
+                demo
+                :aberta="publicoSidebarAberta"
+                :releases="publicoReleases"
+                :manuais="publicoManuais"
+                :escopos="publicoEscopos"
+                @fechar="publicoSidebarAberta = false"
+              />
+              <div class="min-w-0 flex-1 p-6">
+                <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
+                  Conteúdo público
+                </p>
+                <h3 class="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                  Painel de Destaques &amp; Busca
+                </h3>
+                <p class="mt-2 max-w-md text-sm text-slate-600 dark:text-slate-300">
+                  Selecione uma release, um mês de manual ou um escopo na sidebar. O shell é
+                  interativo e o tema claro/escuro vale somente para a Área Pública.
+                </p>
+                <p class="mt-4 text-[11px] text-slate-500 dark:text-slate-400">
+                  A sidebar é um componente real: abra anos/meses, selecione uma release, um mês ou um
+                  sistema e veja os estados ativos.
+                </p>
               </div>
             </div>
           </div>

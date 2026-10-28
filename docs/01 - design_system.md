@@ -107,6 +107,8 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 > **Accent em chrome escuro:** `#4ed813` é reservado a fundos escuros (chips e ícones sobre o navy da sidebar). Sobre superfícies claras use `#1a9e07` (foco, bordas e divisórias) e `#0f7a06` (texto) — nunca `#4ed813` puro sobre branco (1,88:1).
 >
 > **Texto rico (conteúdo):** os campos `UiRichText`/`UiRichTextViewer` (§5.25) usam uma allowlist de cores de **conteúdo** em `shared/rich-text.ts` (sem cor, `#112051`, `#0364f7`, `#0f7a06`, `#047857`, `#dc2626`, `#be123c`, `#92400e`, `#334155`) e tamanhos relativos (`0.9em`, `1em`, `1.15em`, `1.3em`). O **vermelho de conteúdo** `#dc2626` é distinto do vermelho de **erro** `#be123c` (`rose-700`) usado em validação.
+>
+> **Exceção editorial da Área Pública (change `area-publica-shell`):** o shell e o conteúdo da Área Pública usam indigo (`#4f46e5`), esmeralda (`#059669`) e púrpura (`#9333ea`) sobre `slate` para identificar, respectivamente, navegação principal, Manuais Mensais e Escopo de Projetos. Essa paleta é exclusiva da Área Pública; a Área Administrativa continua nos 8 tokens oficiais. Foco `brand.focus #1a9e07` e erro `rose-700 #be123c` permanecem canônicos. Detalhes em [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) §9.
 
 ### 2.2 Foco canônico verde `#1a9e07`
 
@@ -215,6 +217,23 @@ Definida em [`app/assets/css/main.css`](../app/assets/css/main.css):
   (`app/composables/shellTintas.ts`).
 
 - **Estados:** o ativo do modelo atual usa `lime-300` porque o `lime-700` do legado daria ≈3:1 sobre navy (falha para 12px); o menu Account é **branco no atual** (§3.2 — ícones com as cores cheias, rótulo `text-slate-700`, hover via `.ds-item-hover-dark` com fallback `#0f172a`) e **navy no legado** (fallback `#f8fafc` pela regra `.ds-shell-antigo .ds-item-hover-dark:hover` em `main.css`); o modo rail usa os mesmos ternários (markup único, sem duplicação).
+
+### 3.6 Shell da Área Pública
+
+- `app/layouts/default.vue` monta `PublicHeader` + `PublicSidebar` + `<main>`; o shell administrativo
+  de `/admin/**` não é reutilizado.
+- Header: `h-16 bg-white border-b border-slate-200`; à esquerda a logo de `logo_login_url` (a mesma
+  da tela de login) + **“Dicas Teorema”**, com fallback `Building2`; à direita busca global, tema e
+  “Entrar”. No mobile, menu, busca e “Entrar” em ícone.
+- Sidebar: `w-72`, branca, sem rail, `sticky top-16`; blocos Home, Releases Week (ano -> mês ->
+  semana), Manuais Mensais (ano -> mês) e Escopo de Projetos (projeto -> sistemas). Abaixo de `lg`
+  vira drawer com backdrop, `role="dialog"` e foco controlado.
+- Tema claro/escuro exclusivo da Área Pública (`darkMode: 'class'`), aplicado em
+  `[data-publico-shell]`; o `/admin` permanece no tema atual. O cookie `publico-tema` e o script
+  anti-flash preservam a escolha.
+- Paleta: indigo/esmeralda/púrpura sobre `slate` (exceção §2.1); foco `brand-focus`, erro `rose-700`.
+- Vitrine: `/design` §29 (shell público com dados de demonstração).
+- Referência completa: [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md).
 
 <!-- B3 -->
 ## 4. Convenções Globais

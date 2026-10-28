@@ -62,8 +62,11 @@ spec `openspec/specs/design-system/layout-navigation/spec.md`
   trilho transparente), então a rolagem do conteúdo administrativo é sutil e não pesa visualmente.
 - **Convenção de área:** cada página de `app/pages/admin/**` declara
   `definePageMeta({ layout: 'admin' })` e renderiza dentro do shell. `app/layouts/default.vue` é o
-  layout da Área Pública (conteúdo puro sobre `bg-slate-50`, sem header/sidebar) — página sem esse
-  meta nunca exibe chrome administrativo. Fronteira conforme
+  layout da Área Pública e, desde o change `area-publica-shell`, monta o **shell público próprio**
+  (`PublicHeader` + `PublicSidebar`) — não o shell administrativo. Página sem esse meta nunca exibe
+  chrome administrativo. Shell público documentado em
+  [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) e na
+  spec `design-system/public-layout`. Fronteira conforme
   [`02 - Guia de Arquitetura`](02%20-%20Guia%20de%20Arquitetura%20e%20Migrations.md) §2.1,
   implementada pela change OpenSpec `separate-public-admin-areas`.
 - A seção 14 do `/design` usa `definePageMeta({ layout: false })` e reproduz o shell em modo demo.

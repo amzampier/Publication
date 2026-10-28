@@ -102,7 +102,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
       :for="inputId"
       :class="[
         'text-xs font-medium select-none flex items-center justify-between',
-        error ? 'text-rose-700' : 'text-slate-700',
+        error ? 'text-rose-700' : 'text-slate-700 dark:text-slate-200',
         labelClass
       ]"
     >
@@ -113,8 +113,10 @@ const aplicarMascara = (valor: string, mascara: string): string => {
     <!-- Container do Input -->
     <div
       :class="[
-        'relative flex items-center border border-slate-200 rounded-lg transition-all h-[34px]',
-        disabled ? 'bg-slate-200 cursor-not-allowed opacity-60' : 'bg-white hover:border-slate-300'
+        'relative flex items-center border border-slate-200 dark:border-slate-700 rounded-lg transition-all h-[34px]',
+        disabled
+          ? 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed opacity-60'
+          : 'bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
       ]"
     >
       <!-- Destaque de Foco: Borda inferior e rigorosamente apenas os dois cantos inferiores arredondados em brand-focus (foco canônico) -->
@@ -132,7 +134,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
       <!-- Ícone Esquerdo -->
       <div
         v-if="leftIcon || $slots.leftIcon"
-        class="pl-3.5 pr-1.5 text-slate-500 flex items-center pointer-events-none shrink-0"
+        class="pl-3.5 pr-1.5 text-slate-500 dark:text-slate-400 flex items-center pointer-events-none shrink-0"
       >
         <component :is="leftIcon" v-if="leftIcon" class="h-4 w-4" />
         <slot name="leftIcon" />
@@ -150,7 +152,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
         :aria-label="ariaLabel || undefined"
         :aria-describedby="error ? erroId : undefined"
         :class="[
-          'w-full h-full bg-transparent text-slate-900 text-xs placeholder:text-slate-500',
+          'w-full h-full bg-transparent text-slate-900 dark:text-slate-100 text-xs placeholder:text-slate-500 dark:placeholder:text-slate-400',
           'border-none outline-none focus:outline-none ring-0 focus:ring-0 disabled:cursor-not-allowed',
           mono ? 'font-mono tabular-nums font-medium tracking-tight' : 'font-normal',
           (leftIcon || $slots.leftIcon) ? 'pl-1.5' : 'pl-3.5',
@@ -182,7 +184,7 @@ const aplicarMascara = (valor: string, mascara: string): string => {
       <button
         v-else-if="rightIcon || $slots.rightIcon"
         type="button"
-        class="absolute right-3 flex items-center rounded text-slate-500 hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+        class="absolute right-3 flex items-center rounded text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
         :aria-label="rightIconLabel"
         :disabled="disabled"
         @click="emit('rightIconClick')"

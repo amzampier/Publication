@@ -14,6 +14,9 @@ export default defineEventHandler(async (event) => {
   // change auth-layout-logomarca-login: as telas sem sessão (/admin/login,
   // /admin/esqueci-senha) hidratam a logomarca via este endpoint mínimo.
   if (caminho.startsWith('/api/configuracoes/identidade')) return
+  // Leitura pública da Área Pública (change area-publica-shell): somente GET/HEAD.
+  const metodo = event.method ?? ''
+  if ((metodo === 'GET' || metodo === 'HEAD') && caminho.startsWith('/api/publico/')) return
 
   const sessao = await getSessionUser(event)
   if (!sessao) {
