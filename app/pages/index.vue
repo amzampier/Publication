@@ -1,33 +1,118 @@
 <script setup lang="ts">
-import type { PublicoSelecao } from '#shared/publico'
+import { computed } from 'vue'
+import { normalizarTipo } from '#shared/publico'
+import { usePublicoPainel } from '../composables/usePublicoPainel'
 
-const selecao = useState<PublicoSelecao | null>('publico-selecao', () => null)
+const {
+  painel,
+  carregandoPainel,
+  erroPainel,
+  recarregarPainel,
+  historico,
+  carregandoHistorico,
+  carregandoMais,
+  erroHistorico,
+  recarregarHistorico,
+  carregarMais,
+  temMais,
+  filtros,
+  limparFiltros
+} = usePublicoPainel()
+
+const temDadosPainel = computed(
+  () =>
+    Boolean(painel.value.releaseDestaque) ||
+    painel.value.manuaisDestaque.length > 0 ||
+    painel.value.maisVistas.length > 0
+)
+
+const rotuloHero = computed(() =>
+  painel.value.releaseDestaque?.destaqueSemana
+    ? 'Última Release Liberada da Semana'
+    : 'Última Release Publicada'
+)
+
+const atualizarSoftware = (valor: string) => {
+  filtros.software = valor
+}
+
+const atualizarTipo = (valor: string) => {
+  filtros.tipo = normalizarTipo(valor)
+}
+
+useHead({
+  title: 'Painel de Destaques & Busca - Dicas Teorema',
+  meta: [
+    {
+      name: 'description',
+      content:
+        'Acompanhe a release da semana, os manuais em destaque e o histórico de Releases Week da Dicas Teorema.'
+    }
+  ]
+})
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-4rem)] p-6 sm:p-8">
-    <div class="mx-auto max-w-3xl">
-      <p class="text-xs font-semibold tracking-wider text-slate-500 uppercase dark:text-slate-400">
-        Área Pública
-      </p>
-      <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-        {{ selecao ? selecao.titulo : 'Painel de Destaques & Busca' }}
-      </h1>
-      <p v-if="selecao" class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-        {{ selecao.detalhe }}
-      </p>
-      <p v-else class="mt-2 text-sm text-slate-600 dark:text-slate-300">
-        Selecione uma release, um mês de manual ou um escopo na navegação lateral para explorar o
-        conteúdo publicado.
-      </p>
+  <div class="mx-auto max-w-[85rem] px-4 py-6 sm:px-6 lg:px-8">
+    <h1 class="sr-only">Painel de Destaques &amp; Busca</h1>
 
-      <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">Conteúdo em preparação</p>
-        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          As páginas de destaque, release, manuais e escopo serão adicionadas em uma próxima
-          entrega. A navegação já exibe apenas o conteúdo publicado.
-        </p>
+    <UiErrorState
+      v-if="erroPainel"
+      :message="erroPainel"
+      @retry="recarregarPainel"
+    />
+
+    <div
+      v-else-if="carregandoPainel && !temDadosPainel"
+      class="space-y-4"
+      aria-busy="true"
+    >
+      <span class="sr-only">Carregando painel de destaques…</span>
+      <div class="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800"></div>
+      <div class="grid gap-6 lg:grid-cols-3">
+        <div class="h-64 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800 lg:col-span-2"></div>
+        <div class="h-64 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800"></div>
       </div>
     </div>
+
+    <template v-else>
+      <PublicoPainelUltimaRelease
+        :release="painel.releaseDestaque"
+        :rotulo="rotuloHero"
+      />
+
+      <div class="mt-6 grid gap-6 lg:grid-cols-3">
+        <div class="min-w-0 lg:col-span-2">
+          <PublicoPainelManuaisDestaque :manuais="painel.manuaisDestaque" />
+        </div>
+        <div class="min-w-0">
+          <PublicoPainelMaisVistas
+            :releases="painel.maisVistas"
+            :modo="painel.modoMaisVistas"
+          />
+        </div>
+      </div>
+
+      <div class="mt-8">
+        <PublicoPainelHistorico
+          :itens="historico.itens"
+          :total="historico.total"
+          :pagina="historico.pagina"
+          :por-pagina="historico.porPagina"
+          :software="filtros.software"
+          :tipo="filtros.tipo"
+          :opcoes="painel.filtros"
+          :carregando="carregandoHistorico"
+          :carregando-mais="carregandoMais"
+          :erro="erroHistorico"
+          :tem-mais="temMais"
+          @update:software="atualizarSoftware"
+          @update:tipo="atualizarTipo"
+          @limpar="limparFiltros"
+          @carregar-mais="carregarMais"
+          @recarregar="recarregarHistorico"
+        />
+      </div>
+    </template>
   </div>
 </template>

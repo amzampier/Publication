@@ -8,7 +8,10 @@ import {
   AlertTriangle,
   Rocket,
   Archive,
-  MessageSquareWarning
+  MessageSquareWarning,
+  Wrench,
+  Sparkles,
+  PlusCircle
 } from '@lucide/vue'
 
 export type BadgeVariant =
@@ -22,6 +25,9 @@ export type BadgeVariant =
   | 'publicado'
   | 'arquivado'
   | 'alteracoes'
+  | 'correcao'
+  | 'melhoria'
+  | 'nova'
 
 interface Props {
   variant?: BadgeVariant
@@ -101,6 +107,27 @@ const variantConfig = computed(() => {
         dot: 'bg-amber-600',
         icon: MessageSquareWarning,
         label: 'Alterações Solicitadas'
+      }
+    case 'correcao':
+      return {
+        bg: 'bg-rose-50 border-rose-200 text-rose-700',
+        dot: 'bg-rose-700',
+        icon: Wrench,
+        label: 'Correção'
+      }
+    case 'melhoria':
+      return {
+        bg: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+        dot: 'bg-emerald-700',
+        icon: Sparkles,
+        label: 'Melhoria'
+      }
+    case 'nova':
+      return {
+        bg: 'bg-indigo-50 border-indigo-200 text-indigo-800',
+        dot: 'bg-indigo-700',
+        icon: PlusCircle,
+        label: 'Nova Funcionalidade'
       }
     case 'neutral':
     default:

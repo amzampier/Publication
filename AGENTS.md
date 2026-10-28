@@ -41,15 +41,17 @@ raw SQL — no ORM), `bcrypt` + `jose` (auth) and `resend` (e-mail). Lint/test/t
   passa pelo fluxo OpenSpec (`/opsx-propose` → apply → `/opsx-sync` → `/opsx-archive`).
 - **Componentes:** use sempre `app/components/ui/*` (auto-import `Ui*`) e
   `app/components/layout/*` (`AppHeader`, `AppSidebar` — shell de `app/layouts/admin.vue`; `app/layouts/default.vue` é o layout da Área Pública).
-  Nunca crie botão/campo/tooltip paralelos. A vitrine `app/pages/design.vue` (seções 1-28,
-  `layout: false`) deve espelhar os componentes reais.
+  Nunca crie botão/campo/tooltip paralelos. A vitrine `app/pages/design.vue` (seções 1-29,
+  `layout: false`) deve espelhar os componentes reais, incluindo o shell público e o Painel de
+  Destaques da Área Pública.
 - **Cores (tokens `brand.*` em `tailwind.config.js`):**
   - foco/abertura de controle = `brand-focus` `#1a9e07` — nunca `lime-500`
   - erro/validação = `rose-700` `#be123c` (overlay, label e ícone) — nunca `rose-500/600` nem `#b91c1c`
   - accent = `brand-accent` `#4ed813` — nunca `lime-400`
   - degradê só no `Button variant="primary"`, no header do modal, na trilha/barra preenchida do
-  `UiSlider`/`UiLoading` (`#112051` → `#0364f7` → `#4ed813`) e no card de resumo do Meu Perfil
-  (`brand-structure` diluído → branco, vertical); demais superfícies sólidas
+  `UiSlider`/`UiLoading` (`#112051` → `#0364f7` → `#4ed813`), no card de resumo do Meu Perfil
+  (`brand-structure` diluído → branco, vertical) e no hero do Painel de Destaques da Área Pública
+  (`from-brand-primary via-slate-950 to-indigo-950`); demais superfícies sólidas
 - **Foco/erro recortado:** overlay `absolute -inset-[1px] rounded-lg border-2` com a classe
   `.ds-bottom-clip` (definida em `app/assets/css/main.css`, servida graças ao
   `tailwindcss.cssPath` em `nuxt.config.ts` — não remova essa linha; sem ela o CSS some em silêncio).

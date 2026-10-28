@@ -65,8 +65,13 @@ import { carregarIdentidadeLogin } from '../composables/useLogomarcaLogin'
 import { useTemaPublico } from '../composables/useTemaPublico'
 import type {
   PublicoEscopoResumo,
+  PublicoFiltrosPainel,
+  PublicoHistorico,
+  PublicoManualItemDestaque,
   PublicoManualResumo,
-  PublicoReleaseResumo
+  PublicoReleaseDestaque,
+  PublicoReleaseResumo,
+  PublicoReleaseResumoPainel
 } from '#shared/publico'
 import type { ColumnDef } from '../utils/dataGrid'
 import type { Notificacao } from '../config/navigation'
@@ -283,6 +288,184 @@ const publicoEscopos: PublicoEscopoResumo[] = [
     publicadoEm: '2025-10-01T00:00:00.000Z'
   }
 ]
+
+const publicoDestaque: PublicoReleaseDestaque = {
+  id: 'demo-release-39',
+  semana: 39,
+  ano: 2026,
+  mes: 'Setembro',
+  versao: '26.06a',
+  release: '26.06a10.05a',
+  nome: 'Release Week 39 - Otimização Fiscal e Sincronização PDV Offline',
+  descricao:
+    'Esta release semanal contempla 4 entregas prioritárias, englobando a correção de inconsistência no cálculo do DIFAL no ERP Enterprise, nova camada de contingência para o PDV Touch e melhorias na roteirização do WMS Logística.',
+  publicadoEm: '2026-09-28T00:00:00.000Z',
+  totalVisualizacoes: 1434,
+  destaqueSemana: true,
+  revisorNome: 'Carlos Eduardo Mendes',
+  chamadas: [
+    {
+      id: 'demo-chamada-1',
+      chamada: '0000578990',
+      titulo: 'Ajuste no cálculo de partilha do ICMS/DIFAL interestadual para não contribuintes',
+      software: 'ERP Enterprise',
+      modulo: 'Fiscal',
+      tipo: 'Correção',
+      parceiro: 'Distribuidora Master',
+      fotos: 2,
+      linkVideo: '',
+      linkManual: ''
+    },
+    {
+      id: 'demo-chamada-2',
+      chamada: '0000578991',
+      titulo: 'Contingência Offline inteligente com fila assíncrona IndexedDB',
+      software: 'PDV Touch',
+      modulo: 'Frente de Caixa',
+      tipo: 'Melhoria',
+      parceiro: 'Rede FarmaMais',
+      fotos: 1,
+      linkVideo: '',
+      linkManual: ''
+    },
+    {
+      id: 'demo-chamada-3',
+      chamada: '0000578992',
+      titulo: 'Agrupador de separação por rota e cubagem no armazém',
+      software: 'WMS Logística',
+      modulo: 'WMS',
+      tipo: 'Nova Funcionalidade',
+      parceiro: 'Logística Express',
+      fotos: 1,
+      linkVideo: '',
+      linkManual: ''
+    }
+  ]
+}
+
+const publicoManuaisDestaque: PublicoManualItemDestaque[] = [
+  {
+    card: 'item',
+    id: 'demo-manual-item-1',
+    manualId: 'demo-manual-set-1',
+    titulo: 'Guia Completo: Configuração e Emissão de DIFAL no ERP Enterprise',
+    descricao:
+      'Passo a passo definitivo para parametrizar as alíquotas interestaduais, fundo de combate à pobreza (FCP) e a tabela de equivalência para operações com consumidores finais não contribuintes do ICMS.',
+    software: 'ERP Enterprise',
+    modulo: 'Configuração Fiscal',
+    tipo: 'Correção',
+    mes: 'Setembro',
+    ano: 2026,
+    linkVideo: 'https://example.com/video-difal',
+    linkManual: 'https://example.com/manual-difal',
+    publicadoEm: '2026-09-02T00:00:00.000Z'
+  },
+  {
+    card: 'item',
+    id: 'demo-manual-item-2',
+    manualId: 'demo-manual-set-2',
+    titulo: 'Manual Operacional: Contingência e Venda Offline no PDV Touch',
+    descricao:
+      'Como proceder em caso de queda de internet na frente de caixa, validação de cupons fiscais emitidos em contingência e processo de conciliação assíncrona ao restabelecer o sinal.',
+    software: 'PDV Touch',
+    modulo: 'Vendas & PDV',
+    tipo: 'Melhoria',
+    mes: 'Setembro',
+    ano: 2026,
+    linkVideo: '',
+    linkManual: 'https://example.com/manual-pdv',
+    publicadoEm: '2026-09-03T00:00:00.000Z'
+  }
+]
+
+const publicoMaisVistas: PublicoReleaseResumoPainel[] = [
+  {
+    id: 'demo-release-37',
+    semana: 37,
+    ano: 2026,
+    versao: '26.04a',
+    release: '26.04a05.01b',
+    nome: 'Release Week 37 - Portal B2B e Catálogo de Preços Escalonados',
+    descricao:
+      'Grande atualização do Portal B2B para clientes atacadistas, incluindo tabelas com precificação regressiva por volume de compra e emissão de...',
+    chamadas: 1,
+    contagens: { correcao: 0, melhoria: 1, nova: 0 },
+    publicadoEm: '2026-09-14T00:00:00.000Z',
+    totalVisualizacoes: 3108
+  },
+  {
+    id: 'demo-release-38',
+    semana: 38,
+    ano: 2026,
+    versao: '26.05b',
+    release: '26.05b08.02a',
+    nome: 'Release Week 38 - Módulo de Devoluções e PIX Dinâmico Integrado',
+    descricao:
+      'Release focada no fechamento do módulo financeiro com suporte a QR Code PIX dinâmico e conciliação bancária imediata no PDV e Portal B2B...',
+    chamadas: 2,
+    contagens: { correcao: 1, melhoria: 0, nova: 1 },
+    publicadoEm: '2026-09-21T00:00:00.000Z',
+    totalVisualizacoes: 2183
+  },
+  {
+    id: 'demo-release-36',
+    semana: 36,
+    ano: 2026,
+    versao: '26.03a',
+    release: '26.03a01.02c',
+    nome: 'Release Week 36 - Mobile Força de Vendas e Geolocalização',
+    descricao:
+      'Melhorias no aplicativo mobile para vendedores externos com check-in por geolocalização e sincronização de pedidos em segundo plano...',
+    chamadas: 1,
+    contagens: { correcao: 0, melhoria: 1, nova: 0 },
+    publicadoEm: '2026-09-07T00:00:00.000Z',
+    totalVisualizacoes: 1850
+  }
+]
+
+const publicoFiltros: PublicoFiltrosPainel = {
+  softwares: ['ERP Enterprise', 'PDV Touch', 'WMS Logística'],
+  tipos: ['Correção', 'Melhoria', 'Nova Funcionalidade']
+}
+
+const publicoHistorico: PublicoHistorico = {
+  itens: [
+    {
+      id: 'demo-release-39',
+      semana: 39,
+      ano: 2026,
+      versao: '26.06a',
+      release: '26.06a10.05a',
+      nome: 'Release Week 39 - Otimização Fiscal e Sincronização PDV Offline',
+      descricao:
+        'Esta release semanal contempla 4 entregas prioritárias, englobando a correção de inconsistência no cálculo do DIFAL no ERP Enterprise...',
+      chamadas: 4,
+      contagens: { correcao: 2, melhoria: 1, nova: 1 },
+      publicadoEm: '2026-09-28T00:00:00.000Z',
+      totalVisualizacoes: 1434
+    },
+    ...publicoMaisVistas
+  ].sort((a, b) => b.publicadoEm.localeCompare(a.publicadoEm)),
+  total: 4,
+  pagina: 1,
+  porPagina: 6
+}
+
+const publicoFiltroSoftware = ref('')
+const publicoFiltroTipo = ref('')
+
+const atualizarFiltroSoftwareDemo = (valor: string) => {
+  publicoFiltroSoftware.value = valor
+}
+
+const atualizarFiltroTipoDemo = (valor: string) => {
+  publicoFiltroTipo.value = valor
+}
+
+const limparFiltrosDemo = () => {
+  publicoFiltroSoftware.value = ''
+  publicoFiltroTipo.value = ''
+}
 
 // Demo do UiSegmented (seção 9)
 const segmentosStatusDemo: { value: string; label: string; tone?: 'emerald' | 'slate' }[] = [
@@ -917,7 +1100,8 @@ const secoes = [
   { id: 'rich-text', label: '25. Texto Rico (UiRichText)' },
   { id: 'multi-select', label: '26. Seleção Múltipla (UiMultiSelect)' },
   { id: 'charts', label: '27. Gráficos' },
-  { id: 'apoio', label: '28. Componentes de apoio' }
+  { id: 'apoio', label: '28. Componentes de apoio' },
+  { id: 'publico', label: '29. Área Pública (Shell + Painel)' }
 ]
 const chartCategorias = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const chartSeries = [
@@ -3741,11 +3925,12 @@ variant="lime"
         </section>
 
         <section id="publico" class="scroll-mt-24">
-          <h2 class="text-base font-bold text-slate-900">29. Shell da Área Pública (Header + Sidebar)</h2>
+          <h2 class="text-base font-bold text-slate-900">29. Área Pública (Shell + Painel de Destaques)</h2>
           <p class="mt-1 text-xs text-slate-500">
             Header branco com logo da tela de login + “Dicas Teorema”, busca, tema e “Entrar”; sidebar
             fixa em <code class="font-mono text-slate-700">w-72</code> com Releases Week, Manuais
-            Mensais e Escopo de Projetos.
+            Mensais e Escopo de Projetos. Abaixo, o painel de destaques com hero, manuais, ranking e
+            histórico.
           </p>
 
           <div
@@ -3784,6 +3969,50 @@ variant="lime"
                 </p>
               </div>
             </div>
+          </div>
+
+          <div class="mt-8 space-y-6">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Painel de Destaques</h3>
+              <p class="mt-1 text-xs text-slate-500">
+                Hero, manuais, ranking e histórico com dados de demonstração.
+              </p>
+            </div>
+
+            <PublicoPainelUltimaRelease
+              demo
+              :release="publicoDestaque"
+              rotulo="Última Release Liberada da Semana"
+            />
+
+            <div class="grid gap-6 lg:grid-cols-3">
+              <div class="min-w-0 lg:col-span-2">
+                <PublicoPainelManuaisDestaque demo :manuais="publicoManuaisDestaque" />
+              </div>
+              <div class="min-w-0">
+                <PublicoPainelMaisVistas demo :releases="publicoMaisVistas" modo="vistas" />
+              </div>
+            </div>
+
+            <PublicoPainelHistorico
+              demo
+              :itens="publicoHistorico.itens"
+              :total="publicoHistorico.total"
+              :pagina="publicoHistorico.pagina"
+              :por-pagina="publicoHistorico.porPagina"
+              :software="publicoFiltroSoftware"
+              :tipo="publicoFiltroTipo"
+              :opcoes="publicoFiltros"
+              :carregando="false"
+              :carregando-mais="false"
+              erro=""
+              :tem-mais="false"
+              @update:software="atualizarFiltroSoftwareDemo"
+              @update:tipo="atualizarFiltroTipoDemo"
+              @limpar="limparFiltrosDemo"
+              @carregar-mais="() => {}"
+              @recarregar="() => {}"
+            />
           </div>
         </section>
       </main>

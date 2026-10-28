@@ -57,6 +57,34 @@ describe('visibilidade pública', () => {
     ).toBe(true)
   })
 
+  it('exige ao menos um pai publicado quando há vínculo duplo', () => {
+    const ts = '2026-10-01T00:00:00.000Z'
+    expect(
+      itemVisivelNoPortal('Publicado', {
+        release: pai({ status: 'Rascunho' }),
+        manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026' })
+      }, ts)
+    ).toBe(true)
+    expect(
+      itemVisivelNoPortal('Publicado', {
+        release: pai({ status: 'Em Revisão' }),
+        manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026', status: 'Aprovado' })
+      }, ts)
+    ).toBe(false)
+    expect(
+      itemVisivelNoPortal('Publicado', {
+        release: pai({ arquivada: true }),
+        manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026' })
+      }, ts)
+    ).toBe(true)
+    expect(
+      itemVisivelNoPortal('Publicado', {
+        release: pai(),
+        manual: pai({ id: 'manual-1', codigo: 'MAN-10/2026' })
+      }, '2099-01-01T00:00:00.000Z')
+    ).toBe(false)
+  })
+
   it('gera a expressão SQL para os três vínculos', () => {
     const sql = sqlVinculoPublicado('e')
     expect(sql).toContain('release_week')

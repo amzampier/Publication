@@ -764,8 +764,11 @@ Continuam fora deste documento:
 
 ### 12.4 Próximo passo
 
-O shell e a leitura pública foram implementados no change `area-publica-shell`. As próximas
-entregas são as páginas de conteúdo (destaques, release, mês de manual, escopo/sistema), a busca
+O shell e a leitura pública foram implementados no change `area-publica-shell`. O painel de entrada
+da Área Pública (hero, manuais, ranking/recentes e histórico) está no change
+`painel-publico-destaques` e é documentado em
+[`20 - Painel de Destaque Area Publica.md`](20%20-%20Painel%20de%20Destaque%20Area%20Publica.md).
+As próximas entregas são as páginas de conteúdo (release, item de manual, escopo/sistema), a busca
 global e os deep links.
 
 ---

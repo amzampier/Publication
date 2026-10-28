@@ -108,7 +108,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 >
 > **Texto rico (conteúdo):** os campos `UiRichText`/`UiRichTextViewer` (§5.25) usam uma allowlist de cores de **conteúdo** em `shared/rich-text.ts` (sem cor, `#112051`, `#0364f7`, `#0f7a06`, `#047857`, `#dc2626`, `#be123c`, `#92400e`, `#334155`) e tamanhos relativos (`0.9em`, `1em`, `1.15em`, `1.3em`). O **vermelho de conteúdo** `#dc2626` é distinto do vermelho de **erro** `#be123c` (`rose-700`) usado em validação.
 >
-> **Exceção editorial da Área Pública (change `area-publica-shell`):** o shell e o conteúdo da Área Pública usam indigo (`#4f46e5`), esmeralda (`#059669`) e púrpura (`#9333ea`) sobre `slate` para identificar, respectivamente, navegação principal, Manuais Mensais e Escopo de Projetos. Essa paleta é exclusiva da Área Pública; a Área Administrativa continua nos 8 tokens oficiais. Foco `brand.focus #1a9e07` e erro `rose-700 #be123c` permanecem canônicos. Detalhes em [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) §9.
+> **Exceção editorial da Área Pública (change `area-publica-shell`):** o shell e o conteúdo da Área Pública usam indigo (`#4f46e5`), esmeralda (`#059669`) e púrpura (`#9333ea`) sobre `slate` para identificar, respectivamente, navegação principal, Manuais Mensais e Escopo de Projetos. Essa paleta é exclusiva da Área Pública; a Área Administrativa continua nos 8 tokens oficiais. Foco `brand.focus #1a9e07` e erro `rose-700 #be123c` permanecem canônicos. Detalhes em [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) §9. O **Painel de Destaques da Área Pública** acrescenta o degradê escuro sutil do hero (`from-brand-primary via-slate-950 to-indigo-950`), delimitado a essa superfície, e os badges de tipo `correcao` (`rose-700`), `melhoria` (`emerald-700`) e `nova` (`indigo-700`), sempre com rótulo textual e ícone; ver [`20 - Painel de Destaque Area Publica.md`](20%20-%20Painel%20de%20Destaque%20Area%20Publica.md).
 
 ### 2.2 Foco canônico verde `#1a9e07`
 
@@ -232,7 +232,8 @@ Definida em [`app/assets/css/main.css`](../app/assets/css/main.css):
   `[data-publico-shell]`; o `/admin` permanece no tema atual. O cookie `publico-tema` e o script
   anti-flash preservam a escolha.
 - Paleta: indigo/esmeralda/púrpura sobre `slate` (exceção §2.1); foco `brand-focus`, erro `rose-700`.
-- Vitrine: `/design` §29 (shell público com dados de demonstração).
+- Painel de Destaques: hero da release, manuais em destaque por item, ranking/recentes e histórico filtrável; hero com degradê sutil (exceção §2.1) e badges de tipo `correcao`/`melhoria`/`nova`.
+- Vitrine: `/design` §29 (shell público + painel de destaques com dados de demonstração).
 - Referência completa: [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md).
 
 <!-- B3 -->
@@ -321,7 +322,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `size` | `'sm' \| 'md'` | `'md'` | `sm` 10px · `md` 11px |
 
 - **Emits:** nenhum · **Slots:** `default` (substitui o rótulo interno).
-- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week e `alteracoes` é a do catálogo mensal de Manuais).
+- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes' | 'correcao' | 'melhoria' | 'nova'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week e `alteracoes` é a do catálogo mensal de Manuais).
 
 | Variant | Rótulo (PT) | Fundo / Borda / Texto | Ícone |
 | :--- | :--- | :--- | :--- |
@@ -335,7 +336,11 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `publicado` | Publicado | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `Rocket` |
 | `arquivado` | Arquivado | `bg-slate-100` / `border-slate-300` / `text-slate-600` | `Archive` |
 | `alteracoes` | Alterações Solicitadas | `bg-amber-50` / `border-amber-200` / `text-amber-800` | `MessageSquareWarning` |
+| `correcao` | Correção | `bg-rose-50` / `border-rose-200` / `text-rose-700` | `Wrench` |
+| `melhoria` | Melhoria | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `Sparkles` |
+| `nova` | Nova Funcionalidade | `bg-indigo-50` / `border-indigo-200` / `text-indigo-800` | `PlusCircle` |
 
+- **Badges de tipo no painel público:** `correcao`/`melhoria`/`nova` são exclusivos do conteúdo editorial da Área Pública; o `rose-700` de Correção não substitui o `rose-700` de erro/validação. O rótulo textual e o ícone são obrigatórios.
 - **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
 - **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone. Com `prefers-reduced-motion: reduce` a pulsão para (regra global de `main.css` — vale para animações e transições de todo o kit).
 

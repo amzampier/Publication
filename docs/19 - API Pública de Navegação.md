@@ -2,13 +2,16 @@
 
 **Versão:** 1.0.0 · **Data:** 2026-10-28 · **Idioma:** Português do Brasil (pt-BR)
 **Status:** Implementado no change `area-publica-shell`.
-**Escopo:** leitura anônima dos resumos publicados que alimentam o header e a sidebar da Área
-Pública.
-**Arquivos-fonte:** [`shared/publico.ts`](../shared/publico.ts) ·
-[`server/utils/publico.ts`](../server/utils/publico.ts) ·
-[`server/api/publico/navegacao.get.ts`](../server/api/publico/navegacao.get.ts) ·
+**Escopo:** leitura anônima dos resumos publicados que alimentam o header, a sidebar e o Painel de
+Destaques da Área Pública, incluindo o histórico filtrável de Releases Week.
+**Arquivos-fonte:** [`shared/publico.ts`](../shared/publico.ts) →
+[`server/utils/publico.ts`](../server/utils/publico.ts) →
+[`server/api/publico/navegacao.get.ts`](../server/api/publico/navegacao.get.ts) →
+[`server/api/publico/painel.get.ts`](../server/api/publico/painel.get.ts) →
+[`server/api/publico/releases.get.ts`](../server/api/publico/releases.get.ts) →
 [`server/middleware/auth-api.ts`](../server/middleware/auth-api.ts)
 **Documentação visual:** [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md)
+e [`20 - Painel de Destaque Area Publica.md`](20%20-%20Painel%20de%20Destaque%20Area%20Publica.md)
 
 > Esta API é **somente leitura** e **anônima**. Ela existe para o shell da Área Pública; não
 > substitui as APIs administrativas e não expõe conteúdo em rascunho, revisão, arquivado ou
@@ -180,3 +183,148 @@ Uma chamada com múltiplos softwares conta em cada sistema. Por isso, a soma de
   sem cookie deve retornar `401`.
 - Conferência de conteúdo: publicar uma release, um manual e um escopo e confirmar que aparecem;
   arquivar ou manter em rascunho e confirmar que desaparecem.
+
+## 8. Painel de Destaques
+
+### 8.1 Rota
+
+```
+GET /api/publico/painel
+```
+
+- **Autenticação:** nenhuma.
+- **Cache:** `Cache-Control: public, max-age=60, stale-while-revalidate=300`.
+- **Formato:** JSON.
+- **Erros:** `500` genérico em falha de banco, sem detalhe de infraestrutura.
+
+### 8.2 Resposta
+
+```ts
+interface PublicoPainel {
+  releaseDestaque: PublicoReleaseDestaque | null
+  manuaisDestaque: PublicoManualItemDestaque[]
+  maisVistas: PublicoReleaseResumoPainel[]
+  modoMaisVistas: 'vistas' | 'recentes'
+  filtros: { softwares: string[]; tipos: TipoItem[] }
+}
+```
+
+- `releaseDestaque`: release com `destaque_semana = 1` mais recente; fallback para a release
+  publicada mais recente; `null` quando não há release publicada.
+- `manuaisDestaque`: até dois itens publicados de manuais com `destaque_semana = 1`; card de
+  fallback `card: 'catalogo'` quando o manual não tem item publicado.
+- `maisVistas`: até três releases, excluindo o hero; `modoMaisVistas = 'recentes'` quando nenhuma
+  release tem `total_visualizacoes > 0`.
+- `filtros`: softwares e tipos derivados apenas de chamadas publicadas em releases públicas.
+
+### 8.3 Campos públicos
+
+**Expõe:** identificadores públicos, semana, ano, mês, versão, release, título, descrição, tipo,
+software, módulo, parceiro, chamada, `publicadoEm`, `totalVisualizacoes`, contagem de fotos,
+`linkVideo`, `linkManual` e `revisorNome`.
+
+**Não expõe:** autor, feedback de revisor, IDs internos, status interno, arquivamento, auditoria,
+anexos completos, caminhos físicos e timestamps internos.
+
+O crédito do revisor é o único dado de revisor exposto; `revisor_feedback`, `autor_id` e
+`autor_nome` permanecem internos.
+
+### 8.4 Exemplo
+
+```json
+{
+  "releaseDestaque": {
+    "id": "7a0d...",
+    "semana": 39,
+    "ano": 2026,
+    "mes": "Setembro",
+    "versao": "26.06a",
+    "release": "26.06a10.05a",
+    "nome": "Release Week 39 - Otimização Fiscal e Sincronização PDV Offline",
+    "descricao": "Esta release semanal contempla 5 entregas prioritárias...",
+    "publicadoEm": "2026-09-28T00:00:00.000Z",
+    "totalVisualizacoes": 1434,
+    "destaqueSemana": true,
+    "revisorNome": "Carlos Eduardo Mendes",
+    "chamadas": [
+      {
+        "id": "e1...",
+        "chamada": "0000578990",
+        "titulo": "Ajuste no cálculo de partilha do ICMS/DIFAL",
+        "software": "ERP Enterprise",
+        "modulo": "Fiscal",
+        "tipo": "Correção",
+        "parceiro": "Distribuidora Master",
+        "fotos": 2,
+        "linkVideo": "",
+        "linkManual": ""
+      }
+    ]
+  },
+  "manuaisDestaque": [],
+  "maisVistas": [],
+  "modoMaisVistas": "recentes",
+  "filtros": { "softwares": ["ERP Enterprise"], "tipos": ["Correção", "Melhoria"] }
+}
+```
+
+## 9. Histórico público de Releases Week
+
+### 9.1 Rota
+
+```
+GET /api/publico/releases?software=&tipo=&pagina=&porPagina=
+```
+
+- **Autenticação:** nenhuma.
+- **Cache:** `Cache-Control: public, max-age=30, stale-while-revalidate=120`.
+- **Normalização:** `pagina` inválida vira `1`; `porPagina` padrão `6` e máximo `50`; `tipo` fora do
+  enum é ignorado; `software` desconhecido produz resultado vazio.
+- **Formato:** JSON.
+
+### 9.2 Resposta
+
+```ts
+interface PublicoHistorico {
+  itens: PublicoReleaseResumoPainel[]
+  total: number
+  pagina: number
+  porPagina: number
+}
+```
+
+Cada item contém `id`, `semana`, `ano`, `versao`, `release`, `nome`, `descricao`, `chamadas`,
+`contagens` (`correcao`, `melhoria`, `nova`), `publicadoEm` e `totalVisualizacoes`.
+
+### 9.3 Filtros
+
+- `software`: nome público do software; seleciona releases com ao menos uma chamada publicada
+  daquele software (snapshot ou relação N:N).
+- `tipo`: `Correção`, `Melhoria` ou `Nova Funcionalidade`; seleciona releases com ao menos uma
+  chamada publicada daquele tipo.
+- Os filtros combinam com E lógico.
+- As contagens por tipo refletem todas as chamadas publicadas da release, não apenas as que
+  correspondem ao filtro.
+
+### 9.4 Gate
+
+As duas leituras do painel usam o mesmo gate do restante da Área Pública:
+
+```sql
+status = 'Publicado'
+AND arquivada = 0
+AND publicado_em IS NOT NULL
+AND publicado_em <= NOW(6)
+```
+
+As chamadas filhas também precisam de `status = 'Publicado'` e `publicado_em` efetivo. Arquivar o
+pai esconde pai e filhas; publicação futura não aparece.
+
+### 9.5 Verificação
+
+- `npm run test` cobre as regras puras em `tests/publico-painel.test.ts` e o gate em
+  `tests/visibilidade-publica.test.ts`.
+- Manual: `GET /api/publico/painel` e `GET /api/publico/releases` sem cookie devem retornar `200`;
+  `GET /api/release-week` sem cookie deve continuar retornando `401`.
+- Manual: alternar `software`, `tipo` e `pagina` e confirmar que o painel e a URL refletem o estado.
+- Manual: publicar, arquivar e agendar conteúdo e confirmar que o painel esconde o não público.
