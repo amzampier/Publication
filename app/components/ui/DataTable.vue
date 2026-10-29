@@ -724,6 +724,9 @@ onUnmounted(() => {
             {{ filtersCount }}
           </UiBadge>
         </UiButton>
+
+        <!-- Slot opt-in imediatamente à direita do botão Filtros (ex.: limpar filtros) -->
+        <slot name="filtersRight" />
       </div>
     </div>
 

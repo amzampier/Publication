@@ -309,12 +309,55 @@ const definirData = (campo: 'dataLancamento' | 'dataLiberacao', data: Date | nul
 }
 
 const selecionarRelease = (valor: string) => {
-  const anterior = rascunho.value.releaseId
   rascunho.value.releaseId = valor
-  const release = opcoesRemotas.value.releases.itens.find((opcao) => opcao.id === valor)
-  const manterAtual = valor === anterior && Boolean(valor)
-  rascunho.value.dataLiberacao =
-    release?.dataPublicacao ?? (manterAtual ? rascunho.value.dataLiberacao : '')
+  recomputarDataLiberacao()
+}
+
+const selecionarProjeto = (valor: string) => {
+  rascunho.value.projetoId = valor
+  recomputarDataLiberacao()
+}
+
+const selecionarManual = (valor: string) => {
+  rascunho.value.manualId = valor
+  recomputarDataLiberacao()
+}
+
+/**
+ * Recomputa a Data de liberação pela precedência Release > Manual > Projeto.
+ * Preserva a data atual quando um vínculo selecionado não está na página
+ * carregada do catálogo (edição com vínculo fora da página).
+ */
+const recomputarDataLiberacao = () => {
+  const release = rascunho.value.releaseId
+    ? opcoesRemotas.value.releases.itens.find((opcao) => opcao.id === rascunho.value.releaseId)
+    : undefined
+  const manual = rascunho.value.manualId
+    ? opcoesRemotas.value.manuais.itens.find((opcao) => opcao.id === rascunho.value.manualId)
+    : undefined
+  const projeto = rascunho.value.projetoId
+    ? opcoesRemotas.value.projetos.itens.find((opcao) => opcao.id === rascunho.value.projetoId)
+    : undefined
+
+  const herdada = release?.dataPublicacao || manual?.dataPublicacao || projeto?.dataPublicacao
+  if (herdada) {
+    rascunho.value.dataLiberacao = herdada
+    return
+  }
+
+  const temVinculo = Boolean(
+    rascunho.value.releaseId || rascunho.value.manualId || rascunho.value.projetoId
+  )
+  if (!temVinculo) {
+    rascunho.value.dataLiberacao = ''
+    return
+  }
+
+  const todosConhecidos =
+    (!rascunho.value.releaseId || Boolean(release)) &&
+    (!rascunho.value.manualId || Boolean(manual)) &&
+    (!rascunho.value.projetoId || Boolean(projeto))
+  if (todosConhecidos) rascunho.value.dataLiberacao = ''
 }
 
 const focarCampo = (campo: string) => {
@@ -556,7 +599,7 @@ watch(
               @search="buscarOpcoes('projetos', $event)"
               @load-more="carregarMaisOpcoes('projetos')"
               @retry="buscarOpcoesAgora('projetos', '')"
-              @update:model-value="rascunho.projetoId = String($event)"
+              @update:model-value="selecionarProjeto(String($event))"
             />
           </div>
           <div>
@@ -573,7 +616,7 @@ watch(
               @search="buscarOpcoes('manuais', $event)"
               @load-more="carregarMaisOpcoes('manuais')"
               @retry="buscarOpcoesAgora('manuais', '')"
-              @update:model-value="rascunho.manualId = String($event)"
+              @update:model-value="selecionarManual(String($event))"
             />
           </div>
           <div class="flex flex-col gap-1.5">
@@ -627,7 +670,7 @@ watch(
               :model-value="paraData(rascunho.dataLiberacao)"
               label="Data de liberação"
               disabled
-              helper-text="Preenchida automaticamente com a publicação da Release vinculada."
+              helper-text="Preenchida automaticamente com a publicação da Release, Manual ou Projeto vinculado."
               :error="erros.dataLiberacao"
               @update:model-value="definirData('dataLiberacao', $event)"
             />

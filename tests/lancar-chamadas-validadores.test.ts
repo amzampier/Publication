@@ -3,7 +3,6 @@ import {
   buscarChamadas,
   calcularKpis,
   derivarOrigem,
-  ehSegundaFeira,
   filtrarChamadas,
   formatarData,
   formatarNumero,
@@ -20,7 +19,6 @@ import {
   podeDesaprovar,
   podeExcluir,
   podeRecusar,
-  proximaSegunda,
   urlMiniatura,
   urlOriginalDaMiniatura,
   validarChamada,
@@ -153,11 +151,12 @@ describe('validarChamada', () => {
     expect(validarChamada(entradaValida({ dataLancamento: '2026-02-30' })).erros.dataLancamento).toBeTruthy()
   })
 
-  it('exige segunda/dia útil na data de liberacao e aceita vazia', () => {
-    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-21' })).erros.dataLiberacao).toMatch(/segunda|dia útil/)
+  it('aceita qualquer data civil valida na data de liberacao e recusa malformada', () => {
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-20' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-24' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-25' })).valido).toBe(true)
     expect(validarChamada(entradaValida({ dataLiberacao: '' })).valido).toBe(true)
-    expect(validarChamada(entradaValida({ dataLiberacao: '2026-10-26' })).valido).toBe(true)
-    expect(validarChamada(entradaValida({ dataLiberacao: '2026-11-03' })).valido).toBe(true)
+    expect(validarChamada(entradaValida({ dataLiberacao: '2026-02-30' })).erros.dataLiberacao).toBeTruthy()
   })
 
   it('recusa links que não sejam http(s)', () => {
@@ -225,17 +224,6 @@ describe('derivarOrigem', () => {
 })
 
 describe('datas', () => {
-  it('identifica segunda-feira sem deslocamento de fuso', () => {
-    expect(ehSegundaFeira('2026-10-19')).toBe(true)
-    expect(ehSegundaFeira('2026-10-20')).toBe(false)
-    expect(ehSegundaFeira('data-invalida')).toBe(false)
-  })
-
-  it('calcula a próxima segunda-feira, inclusive quando já é segunda', () => {
-    expect(proximaSegunda(new Date(2026, 9, 21))).toBe('2026-10-26')
-    expect(proximaSegunda(new Date(2026, 9, 19))).toBe('2026-10-19')
-  })
-
   it('formata data e número em pt-BR', () => {
     expect(formatarData('2026-10-19')).toBe('19/10/2026')
     expect(formatarData('')).toBe('—')

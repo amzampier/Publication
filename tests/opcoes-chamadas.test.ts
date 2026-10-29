@@ -59,4 +59,44 @@ describe('opÃ§Ãµes remotas de Chamadas', () => {
     const sqls = mocks.query.mock.calls.map(([sql]) => String(sql))
     expect(sqls.some((sql) => sql.includes('razao_social LIKE ?'))).toBe(true)
   })
+
+  it('expÃµe a data de publicaÃ§Ã£o de projetos e manuais', async () => {
+    mocks.query.mockImplementation((sql: string) => {
+      if (String(sql).includes('COUNT(*)')) return Promise.resolve([{ total: 1 }])
+      if (String(sql).includes('FROM projetos_escopo')) {
+        return Promise.resolve([
+          { id: 'pe-1', codigo: 'PE-2026.01', nome: 'Projeto A', data_publicacao: '2026-10-27', status: 'HomologaÃ§Ã£o' }
+        ])
+      }
+      return Promise.resolve([
+        { id: 'man-1', codigo: 'MAN-10/2026', titulo: 'Manual Outubro', data_publicacao: '2026-10-31', status: 'Rascunho' }
+      ])
+    })
+
+    const projetos = await listarOpcoesPorTipo('projetos', 'pe', 20)
+    expect(projetos.itens[0]).toMatchObject({ id: 'pe-1', dataPublicacao: '2026-10-27' })
+
+    const manuais = await listarOpcoesPorTipo('manuais', 'man', 20)
+    expect(manuais.itens[0]).toMatchObject({ id: 'man-1', dataPublicacao: '2026-10-31' })
+
+    const sqls = mocks.query.mock.calls.map(([sql]) => String(sql))
+    expect(sqls.some((sql) => sql.includes('FROM projetos_escopo') && sql.includes('data_publicacao'))).toBe(true)
+    expect(sqls.some((sql) => sql.includes('FROM manuais_mensal') && sql.includes('data_publicacao'))).toBe(true)
+  })
+
+  it('filtra pais em status vinculavel no servidor', async () => {
+    mocks.query.mockImplementation((sql: string) => {
+      if (String(sql).includes('COUNT(*)')) return Promise.resolve([{ total: 0 }])
+      return Promise.resolve([])
+    })
+
+    await listarOpcoesPorTipo('releases', '', 20)
+    await listarOpcoesPorTipo('projetos', '', 20)
+    await listarOpcoesPorTipo('manuais', '', 20)
+
+    const sqls = mocks.query.mock.calls.map(([sql]) => String(sql))
+    expect(sqls.some((sql) => sql.includes('FROM release_week') && sql.includes("status IN ('Aberta', 'Em Revisão')"))).toBe(true)
+    expect(sqls.some((sql) => sql.includes('FROM projetos_escopo') && sql.includes("status IN ('Em Andamento', 'Homologação')"))).toBe(true)
+    expect(sqls.some((sql) => sql.includes('FROM manuais_mensal') && sql.includes("status IN ('Rascunho', 'Em Revisão')"))).toBe(true)
+  })
 })

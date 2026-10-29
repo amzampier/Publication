@@ -99,7 +99,8 @@ Definições normativas. O `ANO` é o ano selecionado; `HOJE` é a data civil lo
 - **`origem = Ambos`:** uma chamada pode ter `release_id` e `manual_id`. Ela aparece nas duas abas da
   tabela e a soma das abas **pode superar** o total de chamadas. Isso é esperado; não é duplicidade.
 - **Data de liberação herdada:** a aprovação preenche `data_liberacao` com a `data_publicacao` do pai
-  (Release/Manual/Escopo), que pode estar no futuro. Por isso a série de liberadas corta em `HOJE`.
+  (Release/Manual/Escopo, nesta ordem), que pode estar no futuro e em qualquer dia da semana. A
+  Chamada não aplica a regra de segunda-feira; por isso a série de liberadas corta em `HOJE`.
 - **Arquivadas:** entram no histórico de publicações do ano; não entram no ciclo operacional da
   Esteira (vínculo arquivado é inativo).
 - **Ciclo ativo global:** o fluxo e a taxa de recusa não são filtrados pelo ano; usam o mesmo

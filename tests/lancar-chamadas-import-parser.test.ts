@@ -11,8 +11,22 @@ const catalogos: CatalogosChamada = {
   releases: [
     { id: 'rw-1', label: 'RW-43/2026 - Release Week 43', sigla: 'RW-43/2026', dataPublicacao: '2026-10-26' }
   ],
-  projetos: [{ id: 'pe-1', label: 'PE-2026.01', sigla: 'PE-2026.01' }],
-  manuais: [{ id: 'man-1', label: 'MAN-10/2026', sigla: 'MAN-10/2026' }],
+  projetos: [
+    {
+      id: 'pe-1',
+      label: 'PE-2026.01',
+      sigla: 'PE-2026.01',
+      dataPublicacao: '2026-10-27'
+    }
+  ],
+  manuais: [
+    {
+      id: 'man-1',
+      label: 'MAN-10/2026',
+      sigla: 'MAN-10/2026',
+      dataPublicacao: '2026-10-30'
+    }
+  ],
   softwares: [
     { id: 'SFT-001', label: 'Teorema ERP', sigla: 'SFT-001' },
     { id: 'SFT-002', label: 'Arquivos Digitais - SPED', sigla: 'SFT-002' }
@@ -107,21 +121,57 @@ describe('classificarLinhasChamadas', () => {
     expect(terca[0]?.dataLancamento).toBe('2026-10-20')
   })
 
-  it('aceita projeto ou manual como vínculo e não exige liberação', () => {
+  it('herda a liberação de projeto ou manual e aceita qualquer dia', () => {
     const projeto = classificarLinhasChamadas(
       [linha({ release: '', projeto: 'PE-2026.01', dataLiberacao: '' })],
       [],
       catalogos
     )
     expect(projeto[0]?.situacaoImportacao).toBe('pronto')
-    expect(projeto[0]?.dataLiberacao).toBe('')
+    expect(projeto[0]?.dataLiberacao).toBe('2026-10-27')
 
     const manual = classificarLinhasChamadas(
-      [linha({ release: '', manual: 'MAN-10/2026' })],
+      [linha({ release: '', manual: 'MAN-10/2026', dataLiberacao: '' })],
       [],
       catalogos
     )
     expect(manual[0]?.situacaoImportacao).toBe('pronto')
+    expect(manual[0]?.dataLiberacao).toBe('2026-10-30')
+
+    const semData = classificarLinhasChamadas(
+      [linha({ release: '', projeto: 'PE-2026.01', dataLiberacao: '' })],
+      [],
+      {
+        ...catalogos,
+        projetos: [{ id: 'pe-1', label: 'PE-2026.01', sigla: 'PE-2026.01' }]
+      }
+    )
+    expect(semData[0]?.situacaoImportacao).toBe('pronto')
+    expect(semData[0]?.dataLiberacao).toBe('')
+  })
+
+  it('prioriza a release sobre manual e projeto na herança', () => {
+    const [resultado] = classificarLinhasChamadas(
+      [
+        linha({
+          release: 'RW-43/2026',
+          projeto: 'PE-2026.01',
+          manual: 'MAN-10/2026',
+          dataLiberacao: ''
+        })
+      ],
+      [],
+      catalogos
+    )
+    expect(resultado?.dataLiberacao).toBe('2026-10-26')
+
+    const [explicita] = classificarLinhasChamadas(
+      [linha({ release: 'RW-43/2026', dataLiberacao: '20/10/2026' })],
+      [],
+      catalogos
+    )
+    expect(explicita?.situacaoImportacao).toBe('pronto')
+    expect(explicita?.dataLiberacao).toBe('2026-10-20')
   })
 
   it('normaliza tipo e impacto sem diferenciar maiúsculas', () => {

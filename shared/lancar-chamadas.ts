@@ -1,5 +1,4 @@
 import { MAX_TEXTO_RICO } from './rich-text'
-import { dataPublicacaoValida } from './feriados'
 
 // Regras puras do módulo Lançar as Chamadas — compartilhadas entre app e testes
 // (`#shared/lancar-chamadas`). Sem imports de Nuxt/Vue. A fonte de verdade dos
@@ -306,13 +305,6 @@ export function ehDataIso(valor: string): boolean {
   )
 }
 
-/** `true` quando a data civil é segunda-feira (UTC, sem deslocamento de fuso). */
-export function ehSegundaFeira(valor: string): boolean {
-  if (!ehDataIso(valor)) return false
-  const [ano = 0, mes = 0, dia = 0] = valor.split('-').map(Number)
-  return new Date(Date.UTC(ano, mes - 1, dia)).getUTCDay() === 1
-}
-
 /** Data local de hoje em `AAAA-MM-DD`. */
 export function hojeIso(): string {
   return isoDeData(new Date())
@@ -324,13 +316,6 @@ export function isoDeData(data: Date): string {
   const mes = String(data.getMonth() + 1).padStart(2, '0')
   const dia = String(data.getDate()).padStart(2, '0')
   return `${ano}-${mes}-${dia}`
-}
-
-/** Próxima segunda-feira a partir de `base` (inclui o próprio dia). */
-export function proximaSegunda(base: Date = new Date()): string {
-  const data = new Date(base.getFullYear(), base.getMonth(), base.getDate())
-  while (data.getDay() !== 1) data.setDate(data.getDate() + 1)
-  return isoDeData(data)
 }
 
 /** Formata `AAAA-MM-DD` (ou ISO) em `dd/mm/aaaa`, sem deslocamento de fuso. */
@@ -458,8 +443,6 @@ export function validarChamada(
   const dataLiberacao = texto(dados.dataLiberacao)
   if (dataLiberacao && !ehDataIso(dataLiberacao)) {
     erros.dataLiberacao = 'A data de liberação é inválida.'
-  } else if (dataLiberacao && !dataPublicacaoValida(dataLiberacao)) {
-    erros.dataLiberacao = 'A data de liberação deve ser uma segunda-feira ou o próximo dia útil quando a segunda for feriado.'
   }
 
   const tipo = texto(dados.tipo)

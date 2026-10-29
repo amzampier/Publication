@@ -165,8 +165,9 @@ admin/escopo-projetos.vue                            (page - definePageMeta + co
 - **Editar:** código somente leitura (`mono`), softwares contemplados em `UiBadge` somente leitura
   (nomes da API) quando há itens.
 - **Validação:** nome (≤255), versão (≤50), ano 1900–2100, quatro datas civis,
-  `dataFinal >= dataInicio`, status do domínio e unicidade `(ano, versao)`. Erro no campo e foco no
-  primeiro problema.
+  `dataFinal >= dataInicio`, status do domínio e unicidade `(ano, versao)`. A **Data de Publicação**
+  aceita qualquer data civil válida, **sem regra de segunda-feira** ou próximo dia útil. Erro no campo e
+  foco no primeiro problema.
 - Salvar chama `POST /api/escopo-projetos` ou `PUT /api/escopo-projetos/:id`; `400/409` são
   mapeados para `data.erros` e focam o primeiro campo; sucesso fecha o modal com `toast.success`.
 
@@ -193,7 +194,8 @@ admin/escopo-projetos.vue                            (page - definePageMeta + co
   commit em `POST /api/escopo-projetos/importar`.
 - Parser puro (`classificarLinhasEscopoProjetos`) com `exceljs` carregado dinamicamente; normaliza
   datas do Excel/`dd/mm/aaaa`; a classificação é `pronto` / `já cadastrado` / `repetido` /
-  `inválido`.
+  `inválido`. A **Data de Publicação** importada aceita qualquer data civil válida, sem regra de
+  segunda-feira.
 
 ### 3.11 `validadores.ts`, `shared/escopo-projetos.ts` e `useEscopoProjetosModelo.ts`
 

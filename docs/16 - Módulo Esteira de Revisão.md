@@ -312,7 +312,8 @@ admin/esteira-revisao.vue                       (page — definePageMeta + coord
 ```
 
 - **Aprovar:** só de `Revisar`; preserva a `data_liberacao` existente e herda a `data_publicacao` do
-  conteúdo pai (Release Week, Manual ou Escopo, nesta ordem) somente quando estiver vazia; grava
+  conteúdo pai (Release Week, Manual ou Escopo, nesta ordem) somente quando estiver vazia; a data
+  herdada aceita qualquer dia da semana, sem regra de segunda-feira; grava
   `criterios_aceite_atendidos = 1`.
 - **Recusar:** só de `Revisar`; parecer obrigatório; não altera `data_liberacao`; grava
   `criterios_aceite_atendidos = 0`.

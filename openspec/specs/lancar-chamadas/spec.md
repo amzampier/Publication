@@ -264,7 +264,7 @@ SHALL ser editável no formulário. A **Descrição completa** e a **Solução**
 
 ### Requirement: A validação impede dados inválidos
 
-O sistema SHALL validar, no cliente, os campos antes de salvar: **Chamada** obrigatória, com no máximo 60 caracteres e sem duplicidade no conjunto carregado; **Título** obrigatório, com no máximo 255 caracteres; **Software**, **Parceiro**, **Módulo** e **Descrição completa** obrigatórios; **Módulo** com no máximo 100 caracteres; **Título do manual** com no máximo 255 caracteres; **Data de lançamento** obrigatória e qualquer data civil válida; **Data de liberação** opcional e, quando preenchida, em segunda-feira ou no próximo dia útil quando a segunda-feira da semana for feriado; links com URL `http(s)` quando informados; no máximo 12 tags, cada uma com até 30 caracteres; no máximo 100 imagens por chamada, nos formatos PNG, JPG ou WebP, com até 5 MB por arquivo, tanto por seleção quanto por colagem. A obrigatoriedade da **Descrição completa** SHALL considerar o texto puro derivado do conteúdo rico: uma descrição que renderiza vazia SHALL ser tratada como ausente. A **Solução**, quando informada, SHALL respeitar um teto de tamanho em texto puro. O primeiro erro SHALL receber foco e permanecer visível no campo.
+O sistema SHALL validar, no cliente, os campos antes de salvar: **Chamada** obrigatória, com no máximo 60 caracteres e sem duplicidade no conjunto carregado; **Título** obrigatório, com no máximo 255 caracteres; **Software**, **Parceiro**, **Módulo** e **Descrição completa** obrigatórios; **Módulo** com no máximo 100 caracteres; **Título do manual** com no máximo 255 caracteres; **Data de lançamento** obrigatória e qualquer data civil válida; **Data de liberação** opcional e, quando preenchida, qualquer data civil válida — sem exigência de segunda-feira ou próximo dia útil; links com URL `http(s)` quando informados; no máximo 12 tags, cada uma com até 30 caracteres; no máximo 100 imagens por chamada, nos formatos PNG, JPG ou WebP, com até 5 MB por arquivo, tanto por seleção quanto por colagem. A obrigatoriedade da **Descrição completa** SHALL considerar o texto puro derivado do conteúdo rico: uma descrição que renderiza vazia SHALL ser tratada como ausente. A **Solução**, quando informada, SHALL respeitar um teto de tamanho em texto puro. O primeiro erro SHALL receber foco e permanecer visível no campo.
 
 #### Scenario: Campos obrigatórios ausentes
 
@@ -273,7 +273,12 @@ O sistema SHALL validar, no cliente, os campos antes de salvar: **Chamada** obri
 
 #### Scenario: Data fora de segunda-feira
 
-- **WHEN** a data de liberação informada não é segunda-feira nem o próximo dia útil de uma segunda-feira feriado
+- **WHEN** a Data de liberação informada é uma terça, quinta, sexta, sábado ou domingo válidos, ou seja, fora de segunda-feira
+- **THEN** o campo é aceito e o formulário permite gravar
+
+#### Scenario: Data de liberação malformada
+
+- **WHEN** a Data de liberação informada não é uma data civil válida
 - **THEN** o campo exibe erro e o formulário não grava
 
 #### Scenario: Descrição formatada vazia
@@ -590,7 +595,7 @@ os relatórios.
 
 ### Requirement: A importação XLSX cria chamadas em lote
 
-A tela SHALL oferecer a ação **Importar**, visível apenas com `lancar-chamadas`/`importar`, que aceita um arquivo `.xlsx` no modelo versionado e apresenta um preview antes de confirmar. O preview SHALL classificar cada linha como `pronto`, `já cadastrado`, `repetido` ou `inválido` e exibir os erros por linha e coluna. O servidor SHALL revalidar as linhas e os vínculos, rejeitar payload fora do contrato, limitar a importação a 500 linhas e gravar todas as linhas válidas em uma única transação. Linhas inválidas, duplicadas ou já cadastradas SHALL impedir a importação completa, sem gravação parcial. As chamadas importadas SHALL nascer com status `Revisar`, SHALL resolver release, projeto, manual, **um ou mais softwares separados por `;`** e parceiro pelos códigos da planilha, SHALL aceitar múltiplas tags separadas por `;` e NÃO SHALL importar imagens, status ou situação. As datas de lançamento e de liberação SHALL ser datas ISO válidas; a Data de lançamento SHALL aceitar qualquer data civil válida, e a Data de liberação, quando informada, SHALL seguir a validação de publicação (segunda-feira ou o próximo dia útil quando a segunda-feira da semana for feriado); uma linha com data inválida SHALL ser classificada como `inválida` e bloquear a importação completa.
+A tela SHALL oferecer a ação **Importar**, visível apenas com `lancar-chamadas`/`importar`, que aceita um arquivo `.xlsx` no modelo versionado e apresenta um preview antes de confirmar. O preview SHALL classificar cada linha como `pronto`, `já cadastrado`, `repetido` ou `inválido` e exibir os erros por linha e coluna. O servidor SHALL revalidar as linhas e os vínculos, rejeitar payload fora do contrato, limitar a importação a 500 linhas e gravar todas as linhas válidas em uma única transação. Linhas inválidas, duplicadas ou já cadastradas SHALL impedir a importação completa, sem gravação parcial. As chamadas importadas SHALL nascer com status `Revisar`, SHALL resolver release, projeto, manual, **um ou mais softwares separados por `;`** e parceiro pelos códigos da planilha, SHALL aceitar múltiplas tags separadas por `;` e NÃO SHALL importar imagens, status ou situação. As datas de lançamento e de liberação SHALL ser datas ISO válidas; a Data de lançamento e a Data de liberação SHALL aceitar qualquer data civil válida, sem regra de segunda-feira; quando a Data de liberação vier vazia, o preview SHALL herdá-la da `data_publicacao` do vínculo selecionado na ordem Release, Manual e Projeto; uma linha com data inválida SHALL ser classificada como `inválida` e bloquear a importação completa.
 
 #### Scenario: Importação válida
 
@@ -601,6 +606,16 @@ A tela SHALL oferecer a ação **Importar**, visível apenas com `lancar-chamada
 
 - **WHEN** a planilha traz uma data de lançamento válida em uma terça-feira
 - **THEN** a linha é classificada como `pronto` e a chamada pode ser importada
+
+#### Scenario: Data de liberação em qualquer dia
+
+- **WHEN** a planilha traz uma Data de liberação válida em uma terça-feira
+- **THEN** a linha é classificada como `pronto` e a chamada pode ser importada
+
+#### Scenario: Liberação herdada do vínculo na planilha
+
+- **WHEN** a linha vem sem Data de liberação e o vínculo selecionado possui `data_publicacao`
+- **THEN** o preview preenche a Data de liberação com essa data, priorizando Release, depois Manual e depois Projeto
 
 #### Scenario: Software múltiplo na planilha
 
@@ -619,7 +634,7 @@ A tela SHALL oferecer a ação **Importar**, visível apenas com `lancar-chamada
 
 #### Scenario: Linha inválida
 
-- **WHEN** o arquivo contém campo obrigatório vazio, código de vínculo inexistente, data inválida ou data de liberação fora da segunda-feira/próximo dia útil permitido
+- **WHEN** o arquivo contém campo obrigatório vazio, código de vínculo inexistente ou data malformada
 - **THEN** o preview marca a linha como `inválida`, indica o erro e a importação completa é bloqueada
 
 #### Scenario: Limite de linhas
@@ -1155,26 +1170,89 @@ A exportação **PDF** do conjunto filtrado SHALL ter um limite de **5.000 chama
 - **WHEN** o conjunto filtrado excede 5.000 chamadas e o usuário exporta CSV
 - **THEN** o CSV continua sendo gerado em streaming
 
-### Requirement: A Data de liberação é limpa ao remover a Release e validada na herança
+### Requirement: A Data de liberação é herdada do vínculo selecionado
 
-Ao remover a Release selecionada, o formulário SHALL limpar a **Data de liberação** herdada. Ao aprovar uma chamada sem data de liberação, o servidor SHALL herdar a data do vínculo pai (Release, Manual ou Escopo) e SHALL validá-la como data de publicação (segunda-feira ou próximo dia útil quando a segunda for feriado). Data herdada inválida SHALL impedir a aprovação com erro claro; uma data já existente SHALL ser preservada.
+O formulário SHALL preencher a **Data de liberação** com a `data_publicacao` do vínculo selecionado, com precedência **Release > Manual > Projeto**, sempre que a data estiver vazia ou vier da herança do próprio formulário; o campo permanece somente leitura. Ao selecionar ou remover um vínculo, o formulário SHALL recomputar a data a partir dos vínculos restantes e SHALL limpá-la quando nenhum vínculo com data de publicação permanecer. O servidor SHALL aplicar a mesma herança, na mesma ordem, quando a chamada for criada, atualizada ou importada sem Data de liberação. Ao aprovar uma chamada sem Data de liberação, o servidor SHALL herdá-la do vínculo pai e SHALL aceitar qualquer data civil válida, sem regra de segunda-feira ou próximo dia útil. Uma data já existente SHALL ser preservada. A Data de liberação informada ou herdada SHALL ser uma data civil válida.
 
-#### Scenario: Remover a Release limpa a data
+#### Scenario: Projeto único preenche a data
 
-- **WHEN** o usuário seleciona uma Release e depois volta para “Nenhuma release”
-- **THEN** a Data de liberação herdada é limpa
+- **WHEN** o usuário seleciona apenas um Projeto com `data_publicacao` e ainda não há Data de liberação
+- **THEN** o formulário preenche a Data de liberação com a publicação do Projeto
+
+#### Scenario: Manual preenche quando não há Release
+
+- **WHEN** o usuário seleciona um Manual com `data_publicacao` e não há Release selecionada
+- **THEN** o formulário preenche a Data de liberação com a publicação do Manual
+
+#### Scenario: Release tem precedência
+
+- **WHEN** Release, Manual e Projeto estão selecionados
+- **THEN** a Data de liberação usa a publicação da Release
+
+#### Scenario: Remover vínculo recomputa a data
+
+- **WHEN** o usuário remove a Release e restam Manual ou Projeto com `data_publicacao`
+- **THEN** o formulário recomputa a Data de liberação pelo vínculo restante de maior precedência
+
+#### Scenario: Sem vínculo com data a liberação é limpa
+
+- **WHEN** o usuário remove todos os vínculos que possuíam `data_publicacao`
+- **THEN** o formulário limpa a Data de liberação
+
+#### Scenario: Criação deriva a data no servidor
+
+- **WHEN** uma chamada é criada sem Data de liberação e o vínculo possui `data_publicacao`
+- **THEN** o servidor grava a data herdada, aceitando qualquer dia da semana
 
 #### Scenario: Aprovação herda data válida
 
-- **WHEN** a chamada está sem Data de liberação e o vínculo pai possui data de publicação válida
+- **WHEN** a chamada está sem Data de liberação e o vínculo pai possui data de publicação em qualquer dia da semana
 - **THEN** a aprovação grava essa data e a chamada avança para `Aprovado`
-
-#### Scenario: Aprovação recusa data herdada inválida
-
-- **WHEN** a chamada está sem Data de liberação e o vínculo pai possui data fora da regra de publicação
-- **THEN** a aprovação é recusada com mensagem clara e a chamada permanece em `Revisar`
 
 #### Scenario: Data existente é preservada
 
 - **WHEN** a chamada já possui Data de liberação
 - **THEN** a aprovação preserva a data existente
+
+### Requirement: A tela oferece um filtro rápido de origem
+
+A tela de Lançar as Chamadas SHALL oferecer, na barra de ferramentas da listagem e imediatamente à esquerda do botão **Filtros**, um seletor rápido de **Origem** com as opções `Release`, `Projeto`, `Manual` e `Ambos`, além do estado sem filtro ("Todas as origens"). A seleção SHALL refinar a listagem e os KPIs pelo campo `origem`, SHALL ser contabilizada no badge de filtros ativos e SHALL ser limpa pelo `X` do próprio seletor ou por "Limpar Filtros". O controle SHALL respeitar a permissão `lancar-chamadas`/`filtrar`. A escolha SHALL coexistir com os demais filtros do modal, sem substituí-los.
+
+#### Scenario: Filtrar por origem
+
+- **WHEN** o usuário escolhe `Projeto` no seletor rápido de Origem
+- **THEN** a listagem e os KPIs passam a exibir apenas as chamadas com origem `Projeto`
+
+#### Scenario: Origem combinada com o modal
+
+- **WHEN** o usuário já aplicou filtros no modal e escolhe uma origem no seletor rápido
+- **THEN** os dois filtros são aplicados em conjunto e o badge de filtros ativos reflete a soma
+
+#### Scenario: Limpar a origem
+
+- **WHEN** o usuário aciona o `X` do seletor ou "Limpar Filtros"
+- **THEN** o filtro de origem volta a "Todas as origens" e a listagem/KPIs refletem o conjunto sem esse recorte
+
+#### Scenario: Sem permissão de filtro
+
+- **WHEN** o perfil não concede `lancar-chamadas`/`filtrar`
+- **THEN** o seletor rápido de Origem não é exibido
+
+### Requirement: A tela oferece limpeza rápida de busca e filtros
+
+A tela de Lançar as Chamadas SHALL oferecer, imediatamente à direita do botão **Filtros**, um botão de limpar com ícone `X`, visível somente quando houver busca ou filtro ativo. O acionamento SHALL zerar a busca e todos os filtros (inclusive a origem rápida), SHALL refazer a listagem e os KPIs sem recorte e SHALL fechar nenhum modal — a limpeza ocorre direto na toolbar. O controle SHALL respeitar a permissão `lancar-chamadas`/`filtrar`.
+
+#### Scenario: Limpar direto na toolbar
+
+- **WHEN** há busca ou qualquer filtro ativo e o usuário aciona o `X` ao lado do botão Filtros
+- **THEN** a busca e todos os filtros são zerados, a listagem/KPIs voltam ao conjunto completo e o badge de filtros ativos desaparece
+
+#### Scenario: Botão oculto sem filtros ativos
+
+- **WHEN** não há busca nem filtro ativo
+- **THEN** o botão de limpar não é exibido
+
+#### Scenario: Limpar não abre o modal
+
+- **WHEN** o usuário aciona o `X` de limpeza rápida
+- **THEN** o modal de Filtros não é aberto e a grade permanece na tela

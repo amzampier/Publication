@@ -38,6 +38,19 @@ describe('classificarLinhasEscopoProjetos', () => {
     expect(resultados[1]?.situacaoImportacao).toBe('repetido')
   })
 
+  it('aceita data de publicação em qualquer dia e recusa malformada', () => {
+    const terca = classificarLinhasEscopoProjetos([linha({ dataPublicacao: '27/10/2026' })], [])
+    expect(terca[0]?.situacaoImportacao).toBe('pronto')
+    expect(terca[0]?.dataPublicacao).toBe('2026-10-27')
+
+    const sabado = classificarLinhasEscopoProjetos([linha({ dataPublicacao: '31/10/2026' })], [])
+    expect(sabado[0]?.situacaoImportacao).toBe('pronto')
+
+    const invalida = classificarLinhasEscopoProjetos([linha({ dataPublicacao: '31/02/2026' })], [])
+    expect(invalida[0]?.situacaoImportacao).toBe('invalido')
+    expect(invalida[0]?.motivo).toMatch(/data de publicação/i)
+  })
+
   it('recusa o status Publicado na importação', () => {
     const [resultado] = classificarLinhasEscopoProjetos(
       [linha({ status: 'Publicado' })],

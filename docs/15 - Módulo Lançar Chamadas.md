@@ -20,7 +20,7 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
 
 ## 1. Visão geral e rota
 
-> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, a Data de lançamento aceita qualquer data civil válida e a Data de liberação é herdada da Release selecionada e exibida somente leitura (sujeita à regra de publicação da Release). Remover a Release limpa a data herdada; a aprovação valida a data herdada de Manual/Escopo. O PDF é limitado a 5.000 chamadas. A galeria usa miniaturas WebP com fallback e cache.
+> **RL06-2:** a listagem é paginada no servidor (`pagina`/`porPagina`), o detalhe completo é carregado por `GET /api/lancar-chamadas/:id`, a Data de lançamento aceita qualquer data civil válida e a Data de liberação é herdada da Release, do Manual ou do Projeto selecionado (precedência Release > Manual > Projeto) e exibida somente leitura, aceitando qualquer dia da semana. Remover um vínculo recomputa a data pelos vínculos restantes. A aprovação preserva a data existente e herda qualquer data civil válida do pai. O PDF é limitado a 5.000 chamadas. A galeria usa miniaturas WebP com fallback e cache.
 
 
 - **Rota:** `/admin/lancar-chamadas` → `app/pages/admin/lancar-chamadas.vue` com
@@ -42,7 +42,9 @@ upload de imagens e relatórios PDF/CSV sobre `entregas_itens`, com persistênci
   aprovar, recusar e desaprovar.
 - **Vínculos permitidos:** o formulário só oferece **Release Week** em `Aberta`/`Em Revisão`,
   **Manuais** em `Rascunho`/`Em Revisão` e **Escopo de Projetos** em `Em Andamento`/`Homologação`.
-  A importação XLSX rejeita linhas com pai fora desses status; na edição, o vínculo atual é preservado.
+  O catálogo remoto aplica esses status no **servidor**, antes da paginação, para a primeira página
+  já abrir com opções vinculáveis (sem depender de digitar uma busca). A importação XLSX rejeita
+  linhas com pai fora desses status; na edição, o vínculo atual é preservado.
 - **Status do pai:** ao criar, importar ou trocar vínculos, o conteúdo pai vinculado passa
   automaticamente para `Em Revisão` (Release/Manual) ou `Homologação` (Escopo), inclusive se estava
   `Aprovado`/`Publicado`; o pai é reaberto para revisão e as filhas em `Publicado` sem outro pai
@@ -101,6 +103,10 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
   e rodapé alinhados e fundo opaco; os controles permanecem acessíveis sem rolar até o fim da grade.
 - Busca gated por `buscar`, filtros por `filtrar`; badge soma busca + filtros.
 - **Importar** (`importar`): ícone somente, imediatamente à esquerda do botão "Filtros".
+- **Origem rápida** (`filtrar`): `UiSelect` com Release/Projeto/Manual/Ambos e "Todas as origens" ao
+  lado esquerdo do botão "Filtros"; aplica direto na listagem/KPIs e entra no badge de filtros ativos.
+- **Limpar rápido** (`filtrar`): botão `X` à direita do botão "Filtros", visível quando há busca ou
+  filtro ativo, limpa busca + filtros sem abrir o modal.
 - Ações: Detalhes; Editar (`alterar`); Excluir (`excluir`, desabilitado com motivo); Aprovar
   (`publicar`); Desaprovar (`alterar`, em `Aprovado` ou `Recusado`); Recusar (`alterar`, apenas em
   `Revisar`).
@@ -121,10 +127,11 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
 - **Descrição do Resumo e Solução:** usam o `UiRichText` (negrito, cor e tamanho de fonte) na etapa
   Conteúdo e mídias; a Solução é opcional e é o texto exibido na Área Pública. O HTML é sanitizado no
   servidor e o texto puro é derivado para busca/validação.
-- **Data de liberação:** é herdada da Release selecionada (`dataPublicacao`) e exibida somente
-  leitura; ao remover a Release, a data herdada é limpa. O servidor grava a data informada ou,
-  quando vazia, a `data_publicacao` da release; na aprovação, preserva a data existente e valida a
-  data herdada de Manual/Escopo (`409` se estiver fora da regra de publicação).
+- **Data de liberação:** é herdada da Release, do Manual ou do Projeto selecionado
+  (`dataPublicacao`), com precedência **Release > Manual > Projeto**, e exibida somente leitura.
+  Ao trocar/remover um vínculo, a data é recomputada; sem vínculo com data, fica vazia. O servidor
+  grava a data informada ou, quando vazia, a `data_publicacao` do vínculo na mesma ordem; na
+  aprovação, preserva a data existente e herda qualquer data civil válida, sem regra de segunda-feira.
 - **Editar:** carrega os dados persistidos; status/autor/timestamps originais são preservados.
 - **Salvar:** valida tudo, envia as imagens data URL ao upload, substitui pelas URLs públicas e só
   então chama `POST`/`PUT`. O botão fica em loading e o modal só fecha no sucesso.
@@ -156,8 +163,8 @@ admin/lancar-chamadas.vue                         (page - layout admin + coorden
   na recusa) e o aprovar exige o checkbox de critérios de aceite atendidos; **Desaprovar** aceita
   parecer opcional.
 - **Aprovar** preserva a `data_liberacao` existente e herda a `data_publicacao` do conteúdo pai
-  (Release Week, Manual ou Escopo, nesta ordem) somente quando ela estiver vazia. **Recusar** não
-  altera a data.
+  (Release Week, Manual ou Escopo, nesta ordem) somente quando ela estiver vazia, aceitando qualquer
+  dia da semana. **Recusar** não altera a data.
 - **Desaprovar** volta `Aprovado` **ou** `Recusado` para `Revisar`, limpa a data de liberação e grava
   a transição (com `criterios_aceite_atendidos = 0`).
 - Toda transição grava `historico_esteira_revisao` (status anterior/novo, responsável, perfil,
@@ -230,7 +237,7 @@ interface ChamadaModelo {
 | `autor_id` / `autor_nome` | Sessão do operador |
 | `chamada` | Obrigatória, ≤60 e única (`uk_entregas_chamada`) |
 | `titulo` | Obrigatório, ≤255 |
-| `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação herdada da Release e somente leitura no formulário, **somente se estiver vazia** (a data existente é preservada); a recusa não altera e a desaprovação limpa |
+| `data_lancamento` / `data_liberacao` | Lançamento no dia; liberação herdada de Release/Manual/Projeto (Release > Manual > Projeto) e somente leitura no formulário, **somente se estiver vazia** (a data existente é preservada); aceita qualquer dia da semana; a recusa não altera e a desaprovação limpa |
 | `modulo` / `menu_funcionalidade` | Texto livre |
 | `tipo` / `impacto` | Enums do banco |
 | `descricao_completa` | Obrigatória (texto puro derivado do HTML) |
@@ -271,9 +278,10 @@ interface ChamadaModelo {
   `Chamada | Título | Data de Lançamento | Data de Liberação | Release | Projeto | Manual |
   Softwares | Parceiro | Módulo | Menu/Funcionalidade | Tipo | Impacto | Descrição Completa |
   Título do Manual | Link do Manual | Link do Vídeo | Tags`.
-- Datas aceitam `dd/mm/aaaa`, `AAAA-MM-DD` e data do Excel. A Data de lançamento aceita
-  qualquer data civil válida; a Data de liberação, quando informada, segue a validação de
-  publicação (segunda-feira ou próximo dia útil quando a segunda-feira for feriado). Linha com
+- Datas aceitam `dd/mm/aaaa`, `AAAA-MM-DD` e data do Excel. A Data de lançamento e a Data de
+  liberação aceitam qualquer data civil válida, sem regra de segunda-feira. Quando a Data de
+  liberação vier vazia, o preview a herda da `data_publicacao` do vínculo na ordem Release, Manual e
+  Projeto. Linha com
   data inválida ou liberação fora da regra é inválida e bloqueia a importação.
 - Vínculos por código: release/projeto/manual por `codigo`; softwares por `codigo` (um ou mais
   separados por `;`); parceiro por `codigo` (`RW-...`, `PE-...`, `MAN-...`, `SFT-...`, `PAR-...`).
@@ -312,6 +320,7 @@ interface ChamadaModelo {
 - **Listagem:** `onMounted` chama `carregarChamadas()`; a API devolve as chamadas persistidas.
 - **Busca/filtros:** refletem na tabela e nos KPIs no cliente.
 - **Nova:** abre na etapa Vínculos com a data de lançamento do dia; a Data de liberação é herdada da
+  publicação de Release, Manual ou Projeto (Release > Manual > Projeto), conforme o vínculo escolhido.
   Release selecionada e exibida somente leitura (vazia se não houver Release).
 - **Editar:** resolve por id, abre preenchido; o status/autoria são preservados.
 - **Detalhes:** modal somente leitura.
@@ -346,8 +355,9 @@ interface ChamadaModelo {
 - `manualTitulo`: opcional, ≤255.
 - Ao menos um vínculo (Release, Projeto ou Manual).
 - `dataLancamento`: obrigatória, qualquer data civil válida (o formulário inicia com a data do dia).
-  `dataLiberacao`: herdada da Release selecionada e somente leitura; sem Release, vazia. O servidor
-  usa a data informada ou, quando vazia, a `data_publicacao` da release vinculada. A recusa não
+  `dataLiberacao`: herdada de Release/Manual/Projeto (Release > Manual > Projeto) e somente leitura;
+  aceita qualquer dia da semana. O servidor usa a data informada ou, quando vazia, a
+  `data_publicacao` do vínculo na mesma ordem. A recusa não
   altera a data e a desaprovação a limpa.
 - Links: `http(s)` quando informados.
 - Tags: até 12, cada uma até 30 caracteres, sem duplicatas.

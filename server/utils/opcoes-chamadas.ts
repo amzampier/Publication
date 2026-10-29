@@ -38,7 +38,7 @@ const CONFIG: Record<TipoCatalogoChamada, ConfigCatalogo> = {
     tabela: 'release_week',
     colunas: 'id, codigo, nome, data_publicacao, status',
     camposBusca: ['codigo', 'nome'],
-    whereBase: ['arquivada = 0'],
+    whereBase: ['arquivada = 0', "status IN ('Aberta', 'Em Revisão')"],
     ordem: 'data_publicacao DESC, codigo DESC',
     mapear: (row) => ({
       id: texto(row.id),
@@ -50,27 +50,29 @@ const CONFIG: Record<TipoCatalogoChamada, ConfigCatalogo> = {
   },
   projetos: {
     tabela: 'projetos_escopo',
-    colunas: 'id, codigo, nome, status',
+    colunas: 'id, codigo, nome, data_publicacao, status',
     camposBusca: ['codigo', 'nome'],
-    whereBase: ['arquivada = 0'],
+    whereBase: ['arquivada = 0', "status IN ('Em Andamento', 'Homologação')"],
     ordem: 'ano DESC, versao DESC, codigo ASC',
     mapear: (row) => ({
       id: texto(row.id),
       label: `${texto(row.codigo)} - ${texto(row.nome)}`,
       sigla: texto(row.codigo),
+      dataPublicacao: dataDia(row.data_publicacao),
       status: texto(row.status)
     })
   },
   manuais: {
     tabela: 'manuais_mensal',
-    colunas: 'id, codigo, titulo, status',
+    colunas: 'id, codigo, titulo, data_publicacao, status',
     camposBusca: ['codigo', 'titulo'],
-    whereBase: ['arquivada = 0'],
+    whereBase: ['arquivada = 0', "status IN ('Rascunho', 'Em Revisão')"],
     ordem: 'ano DESC, mes_numero DESC',
     mapear: (row) => ({
       id: texto(row.id),
       label: `${texto(row.codigo)} - ${texto(row.titulo)}`,
       sigla: texto(row.codigo),
+      dataPublicacao: dataDia(row.data_publicacao),
       status: texto(row.status)
     })
   },

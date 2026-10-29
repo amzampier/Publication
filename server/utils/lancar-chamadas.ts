@@ -5,7 +5,6 @@ import { createError } from 'h3'
 import { getTransaction, inserirEmLotes, query } from './db'
 import { cacheado, invalidarCache, invalidarCachePrefixo } from './cache'
 import { publicadoEmFuturo } from '#shared/publicacao'
-import { dataPublicacaoValida } from '#shared/feriados'
 import { ordemChamadas } from '#shared/ordenacao-chamadas'
 import { richTextParaTexto, sanitizarRichText } from './richText'
 import { uploadsDir } from './uploads'
@@ -491,13 +490,13 @@ async function consultarOpcoesChamadas(): Promise<CatalogosChamada> {
         ORDER BY data_publicacao DESC, codigo DESC`
     ),
     query<Row[]>(
-      `SELECT id, codigo, nome, status
+      `SELECT id, codigo, nome, data_publicacao, status
          FROM projetos_escopo
         WHERE arquivada = 0
         ORDER BY ano DESC, versao DESC, codigo ASC`
     ),
     query<Row[]>(
-      `SELECT id, codigo, titulo, status
+      `SELECT id, codigo, titulo, data_publicacao, status
          FROM manuais_mensal
         WHERE arquivada = 0
         ORDER BY ano DESC, mes_numero DESC`
@@ -530,10 +529,12 @@ async function consultarOpcoesChamadas(): Promise<CatalogosChamada> {
     })),
     projetos: projetos.map((row) => ({
       ...opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.nome)}`, texto(row.codigo)),
+      dataPublicacao: dataDia(row.data_publicacao),
       status: texto(row.status)
     })),
     manuais: manuais.map((row) => ({
       ...opcao(texto(row.id), `${texto(row.codigo)} - ${texto(row.titulo)}`, texto(row.codigo)),
+      dataPublicacao: dataDia(row.data_publicacao),
       status: texto(row.status)
     })),
     softwares: softwares.map((row) =>
@@ -622,7 +623,7 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
 
   const projeto = entrada.projetoId
     ? (await query<Row[]>(
-        'SELECT id, codigo FROM projetos_escopo WHERE id = ? LIMIT 1',
+        'SELECT id, codigo, data_publicacao FROM projetos_escopo WHERE id = ? LIMIT 1',
         [entrada.projetoId]
       ))[0] ?? null
     : null
@@ -632,7 +633,7 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
 
   const manual = entrada.manualId
     ? (await query<Row[]>(
-        'SELECT id, codigo FROM manuais_mensal WHERE id = ? LIMIT 1',
+        'SELECT id, codigo, data_publicacao FROM manuais_mensal WHERE id = ? LIMIT 1',
         [entrada.manualId]
       ))[0] ?? null
     : null
@@ -686,7 +687,9 @@ async function resolverVinculos(entrada: EntradaChamada): Promise<VinculosResolv
     parceiro,
     dataLiberacao:
       entrada.dataLiberacao ||
-      (release?.data_publicacao ? dataDia(release.data_publicacao) : ''),
+      (release?.data_publicacao ? dataDia(release.data_publicacao) : '') ||
+      (manual?.data_publicacao ? dataDia(manual.data_publicacao) : '') ||
+      (projeto?.data_publicacao ? dataDia(projeto.data_publicacao) : ''),
     origem
   }
 }
@@ -917,7 +920,7 @@ export async function atualizarChamada(
     chamada: 'chamada' in dados ? dados.chamada : atual.chamada,
     titulo: 'titulo' in dados ? dados.titulo : atual.titulo,
     dataLancamento: 'dataLancamento' in dados ? dados.dataLancamento : atual.dataLancamento,
-    dataLiberacao: atual.dataLiberacao,
+    dataLiberacao: 'dataLiberacao' in dados ? dados.dataLiberacao : atual.dataLiberacao,
     releaseId: 'releaseId' in dados ? dados.releaseId : atual.releaseId,
     projetoId: 'projetoId' in dados ? dados.projetoId : atual.projetoId,
     manualId: 'manualId' in dados ? dados.manualId : atual.manualId,
@@ -1090,13 +1093,6 @@ export async function aprovarChamada(
       [atual.releaseId || null, atual.manualId || null, atual.projetoId || null]
     )
     dataLiberacao = pais[0] ? dataDia(pais[0].data_publicacao) || null : null
-    if (dataLiberacao && !dataPublicacaoValida(dataLiberacao)) {
-      throw createError({
-        statusCode: 409,
-        statusMessage:
-          'A Data de liberação herdada do vínculo pai não é uma segunda-feira ou próximo dia útil válido. Ajuste o vínculo antes de aprovar.'
-      })
-    }
   }
 
   return transicionarChamada(atual, 'Aprovado', dataLiberacao, ator, {
@@ -1275,10 +1271,10 @@ export async function importarChamadas(
       "SELECT id, codigo, data_publicacao FROM release_week WHERE status IN ('Aberta', 'Em Revisão')"
     ),
     query<Row[]>(
-      "SELECT id, codigo FROM projetos_escopo WHERE status IN ('Em Andamento', 'Homologação')"
+      "SELECT id, codigo, data_publicacao FROM projetos_escopo WHERE status IN ('Em Andamento', 'Homologação')"
     ),
     query<Row[]>(
-      "SELECT id, codigo FROM manuais_mensal WHERE status IN ('Rascunho', 'Em Revisão')"
+      "SELECT id, codigo, data_publicacao FROM manuais_mensal WHERE status IN ('Rascunho', 'Em Revisão')"
     ),
     query<Row[]>('SELECT codigo, descricao FROM softwares'),
     query<Row[]>('SELECT id, codigo, nome_fantasia FROM parceiros')
@@ -1321,7 +1317,9 @@ export async function importarChamadas(
 
     const dataLiberacao =
       texto(linha.dataLiberacao) ||
-      (release ? dataDia(release.data_publicacao) : '')
+      (release ? dataDia(release.data_publicacao) : '') ||
+      (manual ? dataDia(manual.data_publicacao) : '') ||
+      (projeto ? dataDia(projeto.data_publicacao) : '')
 
     const entrada: EntradaChamada = {
       chamada,

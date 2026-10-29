@@ -1,6 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Eye, Import, Pencil, Search, ShieldCheck, Trash2, Undo2, XCircle } from '@lucide/vue'
+import { computed, ref } from 'vue'
+import {
+  Eye,
+  GitBranch,
+  Import,
+  Pencil,
+  Search,
+  ShieldCheck,
+  Trash2,
+  Undo2,
+  X,
+  XCircle
+} from '@lucide/vue'
 import type { ColumnDef } from '../../utils/dataGrid'
 import { VARIANTE_CHAMADA as VARIANTE_STATUS } from '#shared/status-badge'
 import type { ActionMenuItem } from '../ui/ActionMenu.vue'
@@ -32,6 +43,8 @@ const {
   linhas,
   carregando,
   busca,
+  filtros,
+  opcoes,
   criteriosAtivosCount,
   resolver,
   pagina,
@@ -39,8 +52,22 @@ const {
   total,
   definirPagina,
   definirPorPagina,
-  definirOrdenacao
+  definirOrdenacao,
+  limparFiltros
 } = useLancarChamadasModelo()
+
+const opcoesOrigem = computed(() =>
+  opcoes.value.origens.map((valor) => ({ value: valor, label: valor }))
+)
+
+const selecionarOrigem = (valor: string | number) => {
+  filtros.value.origem = String(valor) as typeof filtros.value.origem
+}
+
+const limparFiltrosEBusca = () => {
+  limparFiltros()
+  busca.value = ''
+}
 
 const tabelaRef = ref<{ focarBusca: () => void } | null>(null)
 defineExpose({ focarBusca: () => tabelaRef.value?.focarBusca() })
@@ -157,6 +184,33 @@ const acionar = (id: string, linha: LinhaChamada) => {
             @click="emit('importar')"
           >
             <Import class="h-4 w-4" />
+          </button>
+        </UiTooltip>
+        <UiSelect
+          v-if="can('lancar-chamadas', 'filtrar')"
+          :model-value="filtros.origem"
+          :options="opcoesOrigem"
+          aria-label="Filtrar por origem"
+          placeholder="Todas as origens"
+          :left-icon="GitBranch"
+          class="w-full min-w-0 sm:w-44"
+          @update:model-value="selecionarOrigem($event)"
+        />
+      </template>
+
+      <template #filtersRight>
+        <UiTooltip
+          v-if="criteriosAtivosCount > 0"
+          content="Limpar filtros e busca"
+          position="top"
+        >
+          <button
+            type="button"
+            class="inline-flex items-center justify-center rounded p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-rose-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-focus"
+            aria-label="Limpar filtros e busca"
+            @click="limparFiltrosEBusca"
+          >
+            <X class="h-4 w-4" />
           </button>
         </UiTooltip>
       </template>

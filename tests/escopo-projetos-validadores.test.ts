@@ -74,6 +74,15 @@ describe('validarEscopo', () => {
     expect(resultado.erros.ano).toBeTruthy()
   })
 
+  it('aceita data de publicação em qualquer dia e recusa malformada', () => {
+    expect(validarEscopo({ ...dadosValidos, dataPublicacao: '2026-10-27' }).valido).toBe(true)
+    expect(validarEscopo({ ...dadosValidos, dataPublicacao: '2026-10-30' }).valido).toBe(true)
+    expect(validarEscopo({ ...dadosValidos, dataPublicacao: '2026-10-31' }).valido).toBe(true)
+    expect(
+      validarEscopo({ ...dadosValidos, dataPublicacao: '2026-02-30' }).erros.dataPublicacao
+    ).toContain('inválida')
+  })
+
   it('recusa (ano, versão) duplicado, exceto o próprio registro', () => {
     const existente = escopo()
     expect(validarEscopo(dadosValidos, [existente]).erros.versao).toBeTruthy()

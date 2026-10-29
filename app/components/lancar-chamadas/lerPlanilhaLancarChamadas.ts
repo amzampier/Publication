@@ -144,7 +144,9 @@ export function classificarLinhasChamadas(
     const tags = tagsDaLinha(bruta.tags)
     const dataLiberacao =
       dataLiberacaoBruta ||
-      (release?.dataPublicacao ? normalizarData(release.dataPublicacao) : '')
+      (release?.dataPublicacao ? normalizarData(release.dataPublicacao) : '') ||
+      (manual?.dataPublicacao ? normalizarData(manual.dataPublicacao) : '') ||
+      (projeto?.dataPublicacao ? normalizarData(projeto.dataPublicacao) : '')
     const motivos: string[] = []
 
     if (!chamada) motivos.push('Informe a chamada.')
