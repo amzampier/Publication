@@ -1,6 +1,7 @@
 // Contrato de exibição do shell da Área Pública. Sem imports de Nuxt/Vue:
 // server, app e testes compartilham os mesmos tipos, agrupamentos e rótulos.
 import { MESES, type TipoItem } from './manuais'
+import type { ImpactoItem } from './escopo-projetos'
 
 export type TemaPublico = 'claro' | 'escuro'
 
@@ -41,6 +42,50 @@ export interface PublicoEscopoResumo {
   chamadas: number
   sistemas: PublicoSistemaResumo[]
   publicadoEm: string
+}
+
+export type PublicoEscopoDetalhe = PublicoEscopoResumo
+
+export interface PublicoEvidencia {
+  id: string
+  url: string
+  alt: string
+  capa: boolean
+}
+
+export interface PublicoChamadaEscopo {
+  id: string
+  chamada: string
+  titulo: string
+  descricao: string
+  solucao: string
+  tipo: TipoItem
+  impacto: ImpactoItem
+  modulo: string
+  parceiro: string
+  manualTitulo: string
+  softwares: string[]
+  tags: string[]
+  evidencias: PublicoEvidencia[]
+  linkManual: string
+  linkVideo: string
+  dataLiberacao: string
+}
+
+export interface PublicoEscopoChamadas {
+  itens: PublicoChamadaEscopo[]
+  total: number
+  pagina: number
+  porPagina: number
+  sistemaSelecionado: string
+}
+
+export interface PublicoResumoEscopo {
+  chamadasProjeto: number
+  totalSistemas: number
+  chamadasSistema: number
+  sistemaSelecionado: string
+  sistemaValido: boolean
 }
 
 export interface PublicoNavegacao {
@@ -167,6 +212,46 @@ export function rotuloManuais(quantidade: number): string {
 
 export function rotuloSistemas(quantidade: number): string {
   return `${quantidade} ${quantidade === 1 ? 'sistema' : 'sistemas'}`
+}
+
+export function rotuloEvidencias(quantidade: number): string {
+  return `${quantidade} ${quantidade === 1 ? 'evidência' : 'evidências'}`
+}
+
+export function rotuloImpacto(impacto: ImpactoItem | string): string {
+  return `Impacto: ${impacto}`
+}
+
+export function varianteImpacto(impacto: ImpactoItem | string): 'critico' | 'neutral' {
+  return impacto === 'Crítico' ? 'critico' : 'neutral'
+}
+
+export function normalizarSistema(valor: unknown): string {
+  return typeof valor === 'string' ? valor.trim() : ''
+}
+
+export function sistemaPertenceAoEscopo(
+  escopo: Pick<PublicoEscopoDetalhe, 'sistemas'>,
+  sistema: unknown
+): boolean {
+  const nome = normalizarSistema(sistema)
+  if (!nome) return true
+  return escopo.sistemas.some((item) => item.nome === nome)
+}
+
+export function resumirEscopo(
+  escopo: Pick<PublicoEscopoDetalhe, 'chamadas' | 'sistemas'>,
+  sistema: unknown
+): PublicoResumoEscopo {
+  const nome = normalizarSistema(sistema)
+  const encontrado = nome ? escopo.sistemas.find((item) => item.nome === nome) : undefined
+  return {
+    chamadasProjeto: escopo.chamadas,
+    totalSistemas: escopo.sistemas.length,
+    chamadasSistema: encontrado?.chamadas ?? 0,
+    sistemaSelecionado: nome,
+    sistemaValido: sistemaPertenceAoEscopo(escopo, nome)
+  }
 }
 
 export function normalizarTemaPublico(valor: unknown): TemaPublico | null {

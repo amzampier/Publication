@@ -108,7 +108,7 @@ Cores semânticas de badge/estado (esmeralda = Concluído, índigo = Reconciliad
 >
 > **Texto rico (conteúdo):** os campos `UiRichText`/`UiRichTextViewer` (§5.25) usam uma allowlist de cores de **conteúdo** em `shared/rich-text.ts` (sem cor, `#112051`, `#0364f7`, `#0f7a06`, `#047857`, `#dc2626`, `#be123c`, `#92400e`, `#334155`) e tamanhos relativos (`0.9em`, `1em`, `1.15em`, `1.3em`). O **vermelho de conteúdo** `#dc2626` é distinto do vermelho de **erro** `#be123c` (`rose-700`) usado em validação.
 >
-> **Exceção editorial da Área Pública (change `area-publica-shell`):** o shell e o conteúdo da Área Pública usam indigo (`#4f46e5`), esmeralda (`#059669`) e púrpura (`#9333ea`) sobre `slate` para identificar, respectivamente, navegação principal, Manuais Mensais e Escopo de Projetos. Essa paleta é exclusiva da Área Pública; a Área Administrativa continua nos 8 tokens oficiais. Foco `brand.focus #1a9e07` e erro `rose-700 #be123c` permanecem canônicos. Detalhes em [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) §9. O **Painel de Destaques da Área Pública** acrescenta o degradê escuro sutil do hero (`from-brand-primary via-slate-950 to-indigo-950`), delimitado a essa superfície, e os badges de tipo `correcao` (`rose-700`), `melhoria` (`emerald-700`) e `nova` (`indigo-700`), sempre com rótulo textual e ícone; ver [`20 - Painel de Destaque Area Publica.md`](20%20-%20Painel%20de%20Destaque%20Area%20Publica.md).
+> **Exceção editorial da Área Pública (change `area-publica-shell`):** o shell e o conteúdo da Área Pública usam indigo-600 (`#4f46e5`), esmeralda (`#059669`) e indigo-700 (`#4338ca`) sobre `slate` para identificar, respectivamente, navegação principal, Manuais Mensais e Escopo de Projetos. Essa paleta é exclusiva da Área Pública; a Área Administrativa continua nos 8 tokens oficiais. Foco `brand.focus #1a9e07` e erro `rose-700 #be123c` permanecem canônicos. Detalhes em [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) §9. O **Painel de Destaques da Área Pública** e a **página pública de Escopo de Projetos** acrescentam o degradê escuro sutil do hero (`from-brand-primary via-slate-950 to-indigo-950`), delimitado a essas superfícies, e os badges de tipo `correcao` (`rose-700`), `melhoria` (`emerald-700`) e `nova` (`indigo-700`), sempre com rótulo textual e ícone; a página do Escopo mantém a identidade indigo-700 (`#4338ca`) nos chips, ícones e badges. O **container do título dos cards do Escopo** usa o degradê horizontal do cabeçalho de modal (`from-brand-primary to-brand-structure`) com o filete accent de 2,5px na borda esquerda. Ver [`20 - Painel de Destaque Area Publica.md`](20%20-%20Painel%20de%20Destaque%20Area%20Publica.md) e [`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).
 
 ### 2.2 Foco canônico verde `#1a9e07`
 
@@ -225,16 +225,19 @@ Definida em [`app/assets/css/main.css`](../app/assets/css/main.css):
 - Header: `h-16 bg-white border-b border-slate-200`; à esquerda a logo de `logo_login_url` (a mesma
   da tela de login) + **“Dicas Teorema”**, com fallback `Building2`; à direita busca global, tema e
   “Entrar”. No mobile, menu, busca e “Entrar” em ícone.
-- Sidebar: `w-72`, branca, sem rail, `sticky top-16`; blocos Home, Releases Week (ano -> mês ->
+- Shell: `h-screen` com o header fixo no topo; a sidebar `w-72` ocupa `h-full` e não rola com a
+  página. Apenas o `main` tem `overflow-y-auto`; a sidebar tem rolagem interna do `nav`.
+- Sidebar: `w-72`, branca, sem rail; blocos Home, Releases Week (ano -> mês ->
   semana), Manuais Mensais (ano -> mês) e Escopo de Projetos (projeto -> sistemas). Abaixo de `lg`
   vira drawer com backdrop, `role="dialog"` e foco controlado.
 - Tema claro/escuro exclusivo da Área Pública (`darkMode: 'class'`), aplicado em
   `[data-publico-shell]`; o `/admin` permanece no tema atual. O cookie `publico-tema` e o script
   anti-flash preservam a escolha.
-- Paleta: indigo/esmeralda/púrpura sobre `slate` (exceção §2.1); foco `brand-focus`, erro `rose-700`.
+- Paleta: indigo/esmeralda/indigo-700 sobre `slate` (exceção §2.1); foco `brand-focus`, erro `rose-700`.
 - Painel de Destaques: hero da release, manuais em destaque por item, ranking/recentes e histórico filtrável; hero com degradê sutil (exceção §2.1) e badges de tipo `correcao`/`melhoria`/`nova`.
-- Vitrine: `/design` §29 (shell público + painel de destaques com dados de demonstração).
-- Referência completa: [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md).
+- Página pública de Escopo: `/escopos/[id]` (com `?sistema=`) lista as chamadas publicadas do escopo/sistema; cabeçalho com versão, ano, sistema selecionado, contagens e “Voltar aos Destaques”; cards com código, parceiro, tipo, impacto e sistemas na ordem da esquerda, “Publicado em” à direita, título em container com o degradê do cabeçalho de modal e borda accent, descrição em container com borda verde e solução em container com borda em `brand.structure`, título do manual, documentação externa em botão primário, tags alinhadas à direita e evidências em galeria. O clique no sistema da sidebar navega e o ativo deriva da URL. Hero com o mesmo degradê do Painel (exceção §2.1) e identidade indigo-700.
+- Vitrine: `/design` §29 (shell público + painel de destaques) e §30 (página do Escopo com dados de demonstração).
+- Referências completas: [`18 - Sidebar e Header Area Publica.md`](18%20-%20Sidebar%20e%20Header%20Area%20Publica.md) e [`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).
 
 <!-- B3 -->
 ## 4. Convenções Globais
@@ -322,7 +325,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `size` | `'sm' \| 'md'` | `'md'` | `sm` 10px · `md` 11px |
 
 - **Emits:** nenhum · **Slots:** `default` (substitui o rótulo interno).
-- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes' | 'correcao' | 'melhoria' | 'nova'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week e `alteracoes` é a do catálogo mensal de Manuais).
+- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes' | 'correcao' | 'melhoria' | 'nova' | 'critico'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week, `alteracoes` é a do catálogo mensal de Manuais e `critico` é a do impacto crítico das chamadas do Escopo público).
 
 | Variant | Rótulo (PT) | Fundo / Borda / Texto | Ícone |
 | :--- | :--- | :--- | :--- |
@@ -339,8 +342,13 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `correcao` | Correção | `bg-rose-50` / `border-rose-200` / `text-rose-700` | `Wrench` |
 | `melhoria` | Melhoria | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `Sparkles` |
 | `nova` | Nova Funcionalidade | `bg-indigo-50` / `border-indigo-200` / `text-indigo-800` | `PlusCircle` |
+| `critico` | Crítico | `bg-rose-50` / `border-rose-200` / `text-rose-700` | `AlertTriangle` |
 
 - **Badges de tipo no painel público:** `correcao`/`melhoria`/`nova` são exclusivos do conteúdo editorial da Área Pública; o `rose-700` de Correção não substitui o `rose-700` de erro/validação. O rótulo textual e o ícone são obrigatórios.
+- **Badge `critico`:** usado pelo impacto crítico do card do Escopo público. Não pulsa; o card
+  correspondente recebe moldura rose com barra de 4px na **borda esquerda** (acompanhando os cantos
+  superior e inferior do card) e anel/sombra discreta, sempre com o texto “Impacto: Crítico” como
+  sinal principal. No tema escuro usa `dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300`.
 - **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
 - **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone. Com `prefers-reduced-motion: reduce` a pulsão para (regra global de `main.css` — vale para animações e transições de todo o kit).
 

@@ -45,7 +45,7 @@ O sidebar possui exatamente 4 blocos de navegação:
   2. Ao clicar no **Ano**, expande os **Meses** daquele ano.
   3. **Ao clicar no Mês:** Aciona a exibição dos manuais daquele mês na página principal (emite `select-manual-month({ ano, mes })`), e destaca o mês selecionado com `bg-emerald-100 text-emerald-950 font-bold border-emerald-400`. Exibe um badge com a contagem de manuais (`{manList.length} manual(is)`).
 
-### Seção 3: Escopo de Projetos (Ícone `FolderGit2` Púrpura)
+### Seção 3: Escopo de Projetos (Ícone `FolderGit2` Indigo-700)
 - **Hierarquia (2 Níveis Apenas):** Versão do Projeto $\rightarrow$ Sistemas Contemplados.
 - **Regra Crucial:** **NÃO trazer as chamadas contempladas aninhadas na sidebar**; ao clicar no sistema, as chamadas contempladas daquele sistema são mostradas diretamente na página!
 - **Comportamento Solicitado:**
@@ -345,9 +345,9 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
           <button
             type="button"
             @click="openScopes = !openScopes"
-            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-800 hover:text-purple-700 transition-colors cursor-pointer"
+            class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-800 hover:text-indigo-700 transition-colors cursor-pointer"
           >
-            <FolderGit2 class="w-3.5 h-3.5 text-purple-600" />
+            <FolderGit2 class="w-3.5 h-3.5 text-indigo-700" />
             <span>Escopo de Projetos</span>
             <ChevronDown v-if="openScopes" class="w-3.5 h-3.5 text-slate-400" />
             <ChevronRight v-else class="w-3.5 h-3.5 text-slate-400" />
@@ -364,7 +364,7 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
             class="rounded-2xl border transition-all overflow-hidden"
             :class="[
               activeView === 'scope' && selectedScopeId === sc.id
-                ? 'border-purple-300 bg-purple-50/20 shadow-xs'
+                ? 'border-indigo-300 bg-indigo-50/20 shadow-xs'
                 : 'border-slate-200/90 bg-white hover:border-slate-300'
             ]"
           >
@@ -376,11 +376,11 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
                   @click="toggleProject(sc.id)"
                   class="flex items-center gap-1.5 min-w-0 text-left cursor-pointer group flex-1"
                 >
-                  <span class="text-purple-600 transition-transform">
+                  <span class="text-indigo-700 transition-transform">
                     <ChevronDown v-if="isProjectExpanded(sc.id, index)" class="w-3.5 h-3.5" />
                     <ChevronRight v-else class="w-3.5 h-3.5" />
                   </span>
-                  <span class="font-mono font-bold text-purple-800 bg-purple-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
+                  <span class="font-mono font-bold text-indigo-800 bg-indigo-100 px-1.5 py-0.5 rounded text-[10px] shrink-0">
                     {{ sc.versao }}
                   </span>
                   <span class="text-[10px] text-slate-500 font-medium shrink-0">
@@ -391,7 +391,7 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
                 <button
                   type="button"
                   @click="$emit('select-scope', sc.id)"
-                  class="text-[10px] font-semibold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-lg border border-purple-200 transition-all cursor-pointer shrink-0"
+                  class="text-[10px] font-semibold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-lg border border-indigo-200 transition-all cursor-pointer shrink-0"
                   title="Mostrar todas as chamadas deste projeto na página"
                 >
                   Ver Tudo
@@ -403,14 +403,14 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
                 @click="toggleProject(sc.id)"
                 class="text-left w-full cursor-pointer group"
               >
-                <p class="font-semibold text-slate-800 text-xs line-clamp-1 group-hover:text-purple-900 leading-snug">
+                <p class="font-semibold text-slate-800 text-xs line-clamp-1 group-hover:text-indigo-900 leading-snug">
                   {{ sc.nome }}
                 </p>
               </button>
 
               <div class="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 text-[10px] text-slate-500">
                 <span class="flex items-center gap-1">
-                  <Monitor class="w-3 h-3 text-purple-500" />
+                  <Monitor class="w-3 h-3 text-indigo-500" />
                   <strong class="text-slate-700">{{ getProjectSystems(sc).length }}</strong> sistemas
                 </span>
                 <span>
@@ -436,15 +436,15 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
                 class="w-full flex items-center justify-between p-2 rounded-xl text-xs transition-all cursor-pointer border"
                 :class="[
                   isSystemActive(sc.id, sw)
-                    ? 'bg-purple-100 text-purple-950 font-bold border-purple-400 shadow-xs ring-1 ring-purple-500/30'
-                    : 'bg-white hover:bg-purple-50/70 text-slate-700 border-slate-200/80 hover:text-slate-900'
+                    ? 'bg-indigo-100 text-indigo-950 font-bold border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
+                    : 'bg-white hover:bg-indigo-50/70 text-slate-700 border-slate-200/80 hover:text-slate-900'
                 ]"
                 :title="`Ver chamadas contempladas do sistema ${sw} na página`"
               >
                 <div class="flex items-center gap-1.5 min-w-0">
                   <Monitor
                     class="w-3.5 h-3.5 shrink-0"
-                    :class="isSystemActive(sc.id, sw) ? 'text-purple-700' : 'text-purple-500'"
+                    :class="isSystemActive(sc.id, sw) ? 'text-indigo-700' : 'text-indigo-500'"
                   />
                   <span class="truncate font-medium text-xs">{{ sw }}</span>
                 </div>
@@ -453,7 +453,7 @@ Copie e salve este arquivo em `components/PublicSidebar.vue`:
                   class="text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold shrink-0"
                   :class="[
                     isSystemActive(sc.id, sw)
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-indigo-700 text-white'
                       : 'bg-slate-100 text-slate-700'
                   ]"
                 >

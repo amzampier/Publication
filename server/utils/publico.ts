@@ -3,6 +3,7 @@
 import {
   normalizarPagina,
   normalizarPorPagina,
+  normalizarSistema,
   normalizarSoftware,
   normalizarTipo,
   ranquearMaisVistas,
@@ -10,7 +11,11 @@ import {
   selecionarReleaseDestaque,
   TIPOS_ITEM,
   type PublicoChamadaDestaque,
+  type PublicoChamadaEscopo,
+  type PublicoEscopoChamadas,
+  type PublicoEscopoDetalhe,
   type PublicoEscopoResumo,
+  type PublicoEvidencia,
   type PublicoFiltrosPainel,
   type PublicoHistorico,
   type PublicoManualDestaqueResumo,
@@ -23,6 +28,7 @@ import {
   type PublicoReleaseResumoPainel,
   type PublicoSistemaResumo
 } from '#shared/publico'
+import { normalizarTagsChamada } from '#shared/lancar-chamadas'
 import { query } from './db'
 import { paraIso } from './datas'
 
@@ -40,6 +46,32 @@ const booleano = (valor: unknown): boolean => Number(valor ?? 0) === 1
 const gatePai = (alias: string): string =>
   `${alias}.status = 'Publicado' AND ${alias}.arquivada = 0
    AND ${alias}.publicado_em IS NOT NULL AND ${alias}.publicado_em <= NOW(6)`
+
+const gateChamada = (alias: string): string =>
+  `${alias}.status = 'Publicado' AND ${alias}.publicado_em IS NOT NULL
+   AND ${alias}.publicado_em <= NOW(6)`
+
+const dataDia = (valor: unknown): string => {
+  if (valor instanceof Date) {
+    const ano = valor.getFullYear()
+    const mes = String(valor.getMonth() + 1).padStart(2, '0')
+    const dia = String(valor.getDate()).padStart(2, '0')
+    return `${ano}-${mes}-${dia}`
+  }
+  return texto(valor).slice(0, 10)
+}
+
+const tagsJson = (valor: unknown): string[] => {
+  if (Array.isArray(valor)) return normalizarTagsChamada(valor)
+  if (typeof valor === 'string' && valor) {
+    try {
+      return normalizarTagsChamada(JSON.parse(valor))
+    } catch {
+      return []
+    }
+  }
+  return []
+}
 
 async function listarReleases(): Promise<PublicoReleaseResumo[]> {
   const linhas = await query<Row[]>(
@@ -87,23 +119,12 @@ async function listarManuais(): Promise<PublicoManualResumo[]> {
   }))
 }
 
-async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
-  const linhas = await query<Row[]>(
-    `SELECT p.id, p.codigo, p.nome, p.versao, p.ano, p.publicado_em,
-            (SELECT COUNT(*)
-               FROM entregas_itens e
-              WHERE e.projeto_id = p.id
-                AND e.status = 'Publicado'
-                AND e.publicado_em IS NOT NULL
-                AND e.publicado_em <= NOW(6)) AS chamadas
-       FROM projetos_escopo p
-      WHERE ${gatePai('p')}
-      ORDER BY p.ano DESC, p.nome ASC`
-  )
+async function listarSistemasPorEscopo(
+  ids: string[]
+): Promise<Map<string, PublicoSistemaResumo[]>> {
+  const sistemasPorProjeto = new Map<string, PublicoSistemaResumo[]>()
+  if (!ids.length) return sistemasPorProjeto
 
-  if (!linhas.length) return []
-
-  const ids = linhas.map((linha) => texto(linha.id)).filter(Boolean)
   const placeholders = ids.map(() => '?').join(', ')
   const sistemas = await query<Row[]>(
     `SELECT projeto_id, nome, SUM(chamadas) AS chamadas
@@ -112,9 +133,7 @@ async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
            FROM entregas_itens e
            JOIN entregas_itens_softwares j ON j.entrega_item_id = e.id
           WHERE e.projeto_id IN (${placeholders})
-            AND e.status = 'Publicado'
-            AND e.publicado_em IS NOT NULL
-            AND e.publicado_em <= NOW(6)
+            AND ${gateChamada('e')}
             AND TRIM(j.software_nome) <> ''
           GROUP BY e.projeto_id, TRIM(j.software_nome)
 
@@ -126,9 +145,7 @@ async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
            FROM entregas_itens e
            LEFT JOIN softwares sw ON sw.codigo = e.software_id
           WHERE e.projeto_id IN (${placeholders})
-            AND e.status = 'Publicado'
-            AND e.publicado_em IS NOT NULL
-            AND e.publicado_em <= NOW(6)
+            AND ${gateChamada('e')}
             AND NOT EXISTS (
               SELECT 1 FROM entregas_itens_softwares x WHERE x.entrega_item_id = e.id
             )
@@ -140,7 +157,6 @@ async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
     [...ids, ...ids]
   )
 
-  const sistemasPorProjeto = new Map<string, PublicoSistemaResumo[]>()
   for (const linha of sistemas) {
     const projetoId = texto(linha.projeto_id)
     const nome = texto(linha.nome)
@@ -149,6 +165,27 @@ async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
     lista.push({ nome, chamadas: numero(linha.chamadas) })
     sistemasPorProjeto.set(projetoId, lista)
   }
+
+  return sistemasPorProjeto
+}
+
+async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
+  const linhas = await query<Row[]>(
+    `SELECT p.id, p.codigo, p.nome, p.versao, p.ano, p.publicado_em,
+            (SELECT COUNT(DISTINCT e.id)
+               FROM entregas_itens e
+              WHERE e.projeto_id = p.id
+                AND ${gateChamada('e')}) AS chamadas
+       FROM projetos_escopo p
+      WHERE ${gatePai('p')}
+      ORDER BY p.ano DESC, p.nome ASC`
+  )
+
+  if (!linhas.length) return []
+
+  const sistemasPorProjeto = await listarSistemasPorEscopo(
+    linhas.map((linha) => texto(linha.id)).filter(Boolean)
+  )
 
   return linhas.map((linha) => ({
     id: texto(linha.id),
@@ -162,6 +199,188 @@ async function listarEscopos(): Promise<PublicoEscopoResumo[]> {
   }))
 }
 
+/** Escopo público por id; `null` quando inexistente, não publicado ou arquivado. */
+export async function buscarEscopoPublico(
+  id: string
+): Promise<PublicoEscopoDetalhe | null> {
+  const linhas = await query<Row[]>(
+    `SELECT p.id, p.codigo, p.nome, p.versao, p.ano, p.publicado_em,
+            (SELECT COUNT(DISTINCT e.id)
+               FROM entregas_itens e
+              WHERE e.projeto_id = p.id
+                AND ${gateChamada('e')}) AS chamadas
+       FROM projetos_escopo p
+      WHERE p.id = ? AND ${gatePai('p')}
+      LIMIT 1`,
+    [id]
+  )
+
+  const linha = linhas[0]
+  if (!linha) return null
+
+  const sistemas = await listarSistemasPorEscopo([id])
+  return {
+    id: texto(linha.id),
+    codigo: texto(linha.codigo),
+    nome: texto(linha.nome),
+    versao: texto(linha.versao),
+    ano: numero(linha.ano),
+    chamadas: numero(linha.chamadas),
+    sistemas: sistemas.get(id) ?? [],
+    publicadoEm: iso(linha.publicado_em)
+  }
+}
+
+async function carregarSoftwaresPorItem(ids: string[]): Promise<Map<string, string[]>> {
+  const mapa = new Map<string, string[]>()
+  if (!ids.length) return mapa
+
+  const placeholders = ids.map(() => '?').join(', ')
+  const linhas = await query<Row[]>(
+    `SELECT j.entrega_item_id, TRIM(j.software_nome) AS nome
+       FROM entregas_itens_softwares j
+      WHERE j.entrega_item_id IN (${placeholders})
+        AND TRIM(j.software_nome) <> ''
+     UNION
+     SELECT e.id AS entrega_item_id,
+            COALESCE(NULLIF(TRIM(sw.descricao), ''), NULLIF(TRIM(e.software), '')) AS nome
+       FROM entregas_itens e
+       LEFT JOIN softwares sw ON sw.codigo = e.software_id
+      WHERE e.id IN (${placeholders})
+        AND NOT EXISTS (
+          SELECT 1 FROM entregas_itens_softwares x WHERE x.entrega_item_id = e.id
+        )
+        AND COALESCE(NULLIF(TRIM(sw.descricao), ''), NULLIF(TRIM(e.software), '')) IS NOT NULL
+     ORDER BY entrega_item_id ASC, nome ASC`,
+    [...ids, ...ids]
+  )
+
+  for (const linha of linhas) {
+    const itemId = texto(linha.entrega_item_id)
+    const nome = texto(linha.nome)
+    if (!itemId || !nome) continue
+    const lista = mapa.get(itemId) ?? []
+    if (!lista.includes(nome)) lista.push(nome)
+    mapa.set(itemId, lista)
+  }
+
+  return mapa
+}
+
+async function carregarEvidenciasPorItem(
+  ids: string[]
+): Promise<Map<string, PublicoEvidencia[]>> {
+  const mapa = new Map<string, PublicoEvidencia[]>()
+  if (!ids.length) return mapa
+
+  const placeholders = ids.map(() => '?').join(', ')
+  const linhas = await query<Row[]>(
+    `SELECT m.id, m.entrega_item_id, m.url_arquivo, m.legenda_alt, m.destaque_capa
+       FROM anexos_midias m
+      WHERE m.entrega_item_id IN (${placeholders})
+        AND m.tipo_mime LIKE 'image/%'
+      ORDER BY m.entrega_item_id ASC, m.destaque_capa DESC, m.ordem_exibicao ASC,
+               m.criado_em ASC, m.id ASC`,
+    ids
+  )
+
+  for (const linha of linhas) {
+    const itemId = texto(linha.entrega_item_id)
+    const url = texto(linha.url_arquivo)
+    if (!itemId || !url) continue
+    const lista = mapa.get(itemId) ?? []
+    lista.push({
+      id: texto(linha.id),
+      url,
+      alt: texto(linha.legenda_alt),
+      capa: booleano(linha.destaque_capa)
+    })
+    mapa.set(itemId, lista)
+  }
+
+  return mapa
+}
+
+/** Chamadas públicas do escopo, opcionalmente filtradas por sistema. */
+export async function listarChamadasEscopoPublico(params: {
+  id: string
+  sistema?: unknown
+  pagina?: unknown
+  porPagina?: unknown
+}): Promise<PublicoEscopoChamadas> {
+  const sistema = normalizarSistema(params.sistema)
+  const pagina = normalizarPagina(params.pagina)
+  const porPagina = normalizarPorPagina(params.porPagina)
+  const offset = (pagina - 1) * porPagina
+  const filtros: string[] = []
+  const valores: unknown[] = []
+
+  if (sistema) {
+    filtros.push(`(
+      EXISTS (SELECT 1 FROM entregas_itens_softwares j
+               WHERE j.entrega_item_id = e.id AND j.software_nome = ?)
+      OR (
+        NOT EXISTS (SELECT 1 FROM entregas_itens_softwares j WHERE j.entrega_item_id = e.id)
+        AND COALESCE(NULLIF(TRIM(sw.descricao), ''), NULLIF(TRIM(e.software), '')) = ?
+      )
+    )`)
+    valores.push(sistema, sistema)
+  }
+
+  const filtroSql = filtros.length ? ` AND ${filtros.join(' AND ')}` : ''
+  const [linhas, totais] = await Promise.all([
+    query<Row[]>(
+      `SELECT e.id, e.chamada, e.titulo, e.descricao_completa, e.solucao, e.tipo,
+              e.impacto, e.modulo, e.parceiro, e.manual_titulo, e.data_liberacao,
+              e.link_manual, e.link_video, e.tags
+         FROM entregas_itens e
+         LEFT JOIN softwares sw ON sw.codigo = e.software_id
+        WHERE e.projeto_id = ? AND ${gateChamada('e')}${filtroSql}
+        ORDER BY e.ordem_apresentacao ASC, e.chamada ASC
+        LIMIT ? OFFSET ?`,
+      [params.id, ...valores, porPagina, offset]
+    ),
+    query<Row[]>(
+      `SELECT COUNT(DISTINCT e.id) AS total
+         FROM entregas_itens e
+         LEFT JOIN softwares sw ON sw.codigo = e.software_id
+        WHERE e.projeto_id = ? AND ${gateChamada('e')}${filtroSql}`,
+      [params.id, ...valores]
+    )
+  ])
+
+  const ids = linhas.map((linha) => texto(linha.id)).filter(Boolean)
+  const [softwares, evidencias] = await Promise.all([
+    carregarSoftwaresPorItem(ids),
+    carregarEvidenciasPorItem(ids)
+  ])
+
+  return {
+    itens: linhas.map((linha) => ({
+      id: texto(linha.id),
+      chamada: texto(linha.chamada),
+      titulo: texto(linha.titulo),
+      descricao: texto(linha.descricao_completa),
+      solucao: texto(linha.solucao),
+      tipo: texto(linha.tipo) as PublicoChamadaEscopo['tipo'],
+      impacto: texto(linha.impacto) as PublicoChamadaEscopo['impacto'],
+      modulo: texto(linha.modulo),
+      parceiro: texto(linha.parceiro),
+      manualTitulo: texto(linha.manual_titulo),
+      softwares: softwares.get(texto(linha.id)) ?? [],
+      tags: tagsJson(linha.tags),
+      evidencias: evidencias.get(texto(linha.id)) ?? [],
+      linkManual: texto(linha.link_manual),
+      linkVideo: texto(linha.link_video),
+      dataLiberacao: dataDia(linha.data_liberacao)
+    })),
+    total: numero(totais[0]?.total),
+    pagina,
+    porPagina,
+    sistemaSelecionado: sistema
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Painel de Destaques da Área Pública
 // ---------------------------------------------------------------------------
@@ -171,10 +390,6 @@ interface ReleasePainelResumo extends PublicoReleaseResumoPainel {
   destaqueSemana: boolean
   revisorNome: string
 }
-
-const gateChamada = (alias: string): string =>
-  `${alias}.status = 'Publicado' AND ${alias}.publicado_em IS NOT NULL
-   AND ${alias}.publicado_em <= NOW(6)`
 
 const paraResumoPainel = (row: ReleasePainelResumo): PublicoReleaseResumoPainel => ({
   id: row.id,

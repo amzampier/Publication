@@ -18,6 +18,8 @@ A persistência é real em `projetos_escopo`; **não existe seed** e o módulo n
 **Autoridade visual:** [`01 - design_system.md`](01%20-%20design_system.md)
 **Autoridade de comportamento:** `openspec/specs/escopo-projetos` (delta
 `escopo-projetos-backend-e-importacao`)
+**Área Pública:** a leitura pública do escopo (`/escopos/[id]?sistema=`) está em
+[`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).
 
 > Este documento é a referência da tela `/admin/escopo-projetos` e da API. Em caso de divergência
 > com a spec, a spec prevalece.

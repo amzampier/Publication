@@ -24,6 +24,7 @@ const props = withDefaults(
     carregando?: boolean
     erro?: string
     aberta?: boolean
+    escopoInicial?: { escopoId: string; sistema: string | null } | null
     demo?: boolean
   }>(),
   {
@@ -33,6 +34,7 @@ const props = withDefaults(
     carregando: false,
     erro: '',
     aberta: false,
+    escopoInicial: null,
     demo: false
   }
 )
@@ -55,6 +57,20 @@ const secoesAbertas = ref({ releases: true, manuais: true, escopos: true })
 const releaseSelecionada = ref<string | null>(null)
 const manualSelecionado = ref<{ ano: number; mes: string } | null>(null)
 const escopoSelecionado = ref<{ escopoId: string; sistema: string | null } | null>(null)
+
+watch(
+  () => props.escopoInicial,
+  (selecionado) => {
+    if (selecionado) {
+      releaseSelecionada.value = null
+      manualSelecionado.value = null
+      escopoSelecionado.value = { ...selecionado }
+      return
+    }
+    if (!props.demo) escopoSelecionado.value = null
+  },
+  { immediate: true }
+)
 
 const homeAtivo = computed(
   () =>
@@ -171,7 +187,7 @@ onBeforeUnmount(() => {
       demo
         ? 'relative h-[620px]'
         : [
-            'fixed top-16 bottom-0 left-0 z-30 transition-transform duration-200 lg:sticky lg:top-16 lg:bottom-auto lg:z-auto lg:h-[calc(100vh-4rem)]',
+            'fixed top-16 bottom-0 left-0 z-30 transition-transform duration-200 lg:static lg:top-auto lg:bottom-auto lg:z-auto lg:h-full',
             aberta ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           ]
     ]"
@@ -260,8 +276,8 @@ onBeforeUnmount(() => {
           id="escopos"
           titulo="Escopo de Projetos"
           :icone="FolderGit2"
-          cor="text-purple-600 dark:text-purple-400"
-          hover-cor="hover:text-purple-700 dark:hover:text-purple-400"
+          cor="text-indigo-700 dark:text-indigo-400"
+          hover-cor="hover:text-indigo-800 dark:hover:text-indigo-300"
           :quantidade="escoposOrdenados.length"
           :aberta="secoesAbertas.escopos"
           @toggle="alternarSecao('escopos')"

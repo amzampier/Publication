@@ -64,12 +64,12 @@ ALVO
 ### 1.1 Estrutura do shell
 
 ```
-<div class="min-h-screen bg-slate-50">
-  <PublicHeader />                                  <- h-16 sticky top-0 z-40
-  <div class="flex items-start">
-    <PublicSidebar />                               <- w-72 sticky top-16
-    <main class="flex-1 min-w-0">
-      <slot />                                      <- conteúdo público
+<div class="flex h-screen flex-col overflow-hidden bg-slate-50">
+  <PublicHeader />                                  <- h-16 shrink-0 (fixo no topo)
+  <div class="flex min-h-0 flex-1 items-stretch">
+    <PublicSidebar />                               <- w-72 h-full (fixa ao lado)
+    <main class="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <slot />                                      <- conteúdo público (rola)
     </main>
   </div>
 </div>
@@ -90,7 +90,7 @@ Wireframe:
 | v MANUAIS MENSAIS(7) |                                                         |
 | v ESCOPO...      (2) |                                                         |
 +----------------------+---------------------------------------------------------+
-       w-72 sticky                           flex-1 min-w-0
+       w-72 fixa                         main com rolagem própria
 ```
 
 ### 1.2 Regras de área
@@ -100,7 +100,7 @@ Wireframe:
 - A sidebar **não é retrátil**: não existe rail nem largura `w-[46px]` na Área Pública. Ela é fixa
   em `w-72` no desktop e vira drawer abaixo de `lg` (ver [§7](#7-responsividade)).
 - O shell público **não herda** o navy da sidebar administrativa nem o rail; a identidade visual é a
-  da imagem/DT01 (indigo, esmeralda e púrpura sobre `slate`), registrada como exceção em
+  da imagem/DT01 (indigo, esmeralda e indigo-700 sobre `slate`), registrada como exceção em
   [§9](#9-tokens-e-exceção-de-paleta).
 - O conteúdo principal é livre; este documento não define as páginas de destaque, release, manual,
   escopo ou busca.
@@ -161,7 +161,9 @@ Notas:
 
 - Container: `h-16 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-40
   bg-white border-b border-slate-200 text-slate-900`.
-- O header é **sticky**; a sidebar começa em `top-16` e ocupa `h-[calc(100vh-4rem)]`.
+- O shell ocupa `h-screen` e não rola: o header fica fixo no topo (`h-16 shrink-0`) e a sidebar
+  ocupa `h-full`. Apenas o `main` tem `overflow-y-auto`; a sidebar tem rolagem interna própria no
+  `nav` quando necessário.
 - Não há seletor de empresa/filial. O nome “Dicas Teorema” é fixo e não vem de configuração.
 
 ### 3.2 Zona esquerda
@@ -214,7 +216,7 @@ Ordem fixa, da esquerda para a direita: **busca global -> tema -> Entrar**.
 |---|---|
 | Claro (padrão) | `bg-white`, borda `slate-200`, texto `slate-900` |
 | Escuro | `bg-slate-900`, borda `slate-800`, texto `slate-100` |
-| Rolagem | O header permanece sticky; a sombra só aparece após rolagem (`shadow-sm`), se desejado |
+| Rolagem | O header e a sidebar permanecem fixos; apenas o `main` rola (`overflow-y-auto`). A sombra do header não é automática |
 | Busca focada | Anel/borda `brand-focus`; nenhum outro campo do header recebe foco simultâneo |
 | Mobile | Menu, logo, busca em ícone, tema e Entrar em ícone; nome oculto |
 
@@ -226,19 +228,22 @@ Ordem fixa, da esquerda para a direita: **busca global -> tema -> Entrar**.
 
 ```
 <aside id="public-sidebar"
-  class="w-72 shrink-0 bg-white border-r border-slate-200/90
-         sticky top-16 h-[calc(100vh-4rem)] overflow-hidden select-none">
-  <div class="flex-1 h-full overflow-y-auto p-4 space-y-6 scrollbar-discreta">
+  class="w-72 shrink-0 h-full bg-white border-r border-slate-200/90
+         overflow-hidden select-none">
+  <nav class="flex-1 h-full overflow-y-auto p-4 space-y-6 scrollbar-discreta">
     ...
-  </div>
+  </nav>
 </aside>
 ```
 
 - Largura fixa `w-72` (18rem / 288px) no desktop.
+- A sidebar ocupa `h-full` e fica fixa ao lado do conteúdo; não rola junto com a página.
 - Fundo branco no tema claro; `slate-900` no tema escuro.
 - `select-none` para não selecionar texto ao arrastar/clicar.
-- Rolagem interna com `.scrollbar-discreta` (já existe em `app/assets/css/main.css`).
-- Sem rail e sem botão de recolher. A sidebar é sempre expandida no desktop; no mobile vira drawer.
+- Rolagem interna do `nav` com `.scrollbar-discreta` (já existe em `app/assets/css/main.css`);
+  apenas o `main` rola com a página de conteúdo.
+- Sem rail e sem botão de recolher. A sidebar é sempre expandida no desktop; no mobile vira drawer
+  (`fixed top-16 bottom-0`).
 - A ordem dos blocos é fixa: **Home -> Releases Week -> Manuais Mensais -> Escopo de Projetos**.
 
 ### 4.2 Bloco 0 — Painel de Destaques & Busca
@@ -346,7 +351,7 @@ v MANUAIS MENSAIS                  (7)
 
 ### 4.6 Seção 3 — Escopo de Projetos
 
-Ícone: `FolderGit2`, `text-purple-600`. Contador: quantidade de escopos publicados.
+Ícone: `FolderGit2`, `text-indigo-700`. Contador: quantidade de escopos publicados.
 
 ```
 v ESCOPO DE PROJETOS               (2)
@@ -367,17 +372,18 @@ v ESCOPO DE PROJETOS               (2)
 #### Nível 1 — Card do projeto
 
 - Container: `rounded-2xl border transition-all overflow-hidden`.
-  - **Ativo:** `border-purple-300 bg-purple-50/20 shadow-sm`.
+  - **Ativo:** `border-indigo-300 bg-indigo-50/20 shadow-sm`.
   - **Inativo:** `border-slate-200/90 bg-white hover:border-slate-300`.
 - Área superior `p-2.5`:
-  - Linha de cabeçalho: chevron púrpura; chip de versão `font-mono font-bold text-purple-800
-    bg-purple-100 px-1.5 py-0.5 rounded text-[10px]`; “Ano {ano}” em `text-[10px] text-slate-500
+  - Linha de cabeçalho: chevron indigo-700; chip de versão `font-mono font-bold text-indigo-800
+    bg-indigo-100 px-1.5 py-0.5 rounded text-[10px]`; “Ano {ano}” em `text-[10px] text-slate-500
     font-medium`.
-  - Ação **“Ver Tudo”**: `text-[10px] font-semibold text-purple-700 hover:text-purple-900
-    bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded-lg border border-purple-200`.
-  - Nome do projeto: `font-semibold text-slate-800 text-xs line-clamp-1`.
+  - Ação **“Ver Tudo”**: `text-[10px] font-semibold text-indigo-700 hover:text-indigo-900
+    bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-lg border border-indigo-200`.
+  - Nome do projeto: `font-semibold text-slate-800 text-xs line-clamp-1`, recuado em `pl-[26px]`
+    para alinhar com o texto do chip de versão acima.
   - Rodapé: `flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 text-[10px]
-    text-slate-500`; `Monitor w-3 h-3 text-purple-500` + `{n} sistemas`; `{n} chamadas`.
+    text-slate-500`; `Monitor w-3 h-3 text-indigo-500` + `{n} sistemas`; `{n} chamadas`.
 - O card abre/fecha o nível de sistemas; o chevron gira 180°.
 
 #### Nível 2 — Sistemas contemplados
@@ -387,14 +393,16 @@ v ESCOPO DE PROJETOS               (2)
   tracking-wider`.
 - Item de sistema: botão `w-full flex items-center justify-between p-2 rounded-xl text-xs border
   transition-all`.
-  - **Ativo:** `bg-purple-100 text-purple-950 font-bold border-purple-400 shadow-sm
-    ring-1 ring-purple-500/30`; ícone `text-purple-700`; badge `bg-purple-600 text-white`.
-  - **Inativo:** `bg-white hover:bg-purple-50/70 text-slate-700 border-slate-200/80
-    hover:text-slate-900`; ícone `text-purple-500`; badge `bg-slate-100 text-slate-700`.
+  - **Ativo:** `bg-indigo-100 text-indigo-950 font-bold border-indigo-400 shadow-sm
+    ring-1 ring-indigo-500/30`; ícone `text-indigo-700`; badge `bg-indigo-700 text-white`.
+  - **Inativo:** `bg-white hover:bg-indigo-50/70 text-slate-700 border-slate-200/80
+    hover:text-slate-900`; ícone `text-indigo-500`; badge `bg-slate-100 text-slate-700`.
   - Conteúdo: `Monitor w-3.5 h-3.5 shrink-0`, nome `truncate font-medium`, contador
     `text-[10px] font-mono px-1.5 py-0.5 rounded-full font-bold`.
 - Estado vazio: “Nenhum escopo publicado.” em `text-[11px] text-slate-500 px-2 py-1.5`.
-- “Ver Tudo” é uma ação visual; o destino e o conteúdo ficam fora deste documento.
+- “Ver Tudo” navega para `/escopos/{id}`; o clique em um sistema navega para
+  `/escopos/{id}?sistema={nome}`. O cabeçalho, os cards e as contagens da página estão em
+  [`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).
 
 ### 4.7 Estados e comportamento visual
 
@@ -404,8 +412,8 @@ v ESCOPO DE PROJETOS               (2)
 | Home ativo | Pill indigo preenchido; `aria-current="page"` |
 | Release ativa | Fundo `indigo-50`, texto `indigo-900`, borda guia `indigo-600` |
 | Mês de manual ativo | Fundo `emerald-100`, borda `emerald-400`, badge `emerald-700` |
-| Escopo ativo | Borda/fundo púrpura suave; card expandido |
-| Sistema ativo | Fundo `purple-100`, borda `purple-400`, badge `purple-600` |
+| Escopo ativo | Borda/fundo indigo suave; card expandido |
+| Sistema ativo | Fundo `indigo-100`, borda `indigo-400`, badge `indigo-700` |
 | Hover | Sempre mais claro que o ativo; nunca usar a cor cheia como fundo de hover |
 | Contadores | Sempre visíveis no cabeçalho da seção; `0` é permitido |
 | “NOVA” | Só quando `destaqueSemana`; texto âmbar, não apenas cor |
@@ -514,7 +522,7 @@ e Portal B2B (1).
 | Cards e dropdowns | `bg-slate-900 border-slate-700` |
 | Hover neutro | `bg-slate-800` |
 | Divisórias | `border-slate-800` / `border-slate-700` |
-| Acentos | `indigo-400`, `emerald-400`, `purple-400`, `amber-400` para texto/ícones; fundos de seleção com `/{15}` ou `/{20}` |
+| Acentos | `indigo-400` (navegação), `emerald-400` (Manuais), `indigo-700` (Escopo), `amber-400` (NOVA) para texto/ícones; fundos de seleção com `/{15}` ou `/{20}` |
 
 ### 6.4 Regras de contraste
 
@@ -522,7 +530,7 @@ e Portal B2B (1).
 - Nunca usar `#4ed813` puro como texto sobre branco; no shell público, o verde de foco continua
   `brand-focus #1a9e07`.
 - “NOVA” em `amber-700` no claro e `amber-400` no escuro, sempre com o texto visível.
-- Badges selecionados usam fundo escuro + texto branco (ex.: `emerald-700`/`purple-600`).
+- Badges selecionados usam fundo escuro + texto branco (ex.: `emerald-700`/`indigo-700`).
 - O tema escuro não pode reduzir a legibilidade de contadores e chips; validar com contraste
   mínimo 4.5:1 para texto pequeno.
 
@@ -532,7 +540,7 @@ e Portal B2B (1).
 
 | Viewport | Header | Sidebar | Conteúdo |
 |---|---|---|---|
-| `>= 1024px` (`lg`) | Completo: logo + nome + busca + tema + Entrar | `w-72` estática, `sticky top-16` | `flex-1 min-w-0`, sem overflow horizontal |
+| `>= 1024px` (`lg`) | Completo: logo + nome + busca + tema + Entrar | `w-72` fixa, `h-full`, sem rolar com a página | `flex-1 min-w-0`, rolagem própria, sem overflow horizontal |
 | `768px`–`1023px` | Menu + logo + busca em ícone + tema + Entrar em ícone | Drawer fechado por padrão | Largura total |
 | `< 768px` | Menu + logo + busca em ícone + tema + Entrar em ícone | Drawer fechado; `w-72` sobreposto | Largura total |
 
@@ -614,11 +622,11 @@ navy administrativo. Isso é uma exceção deliberada e deve ser registrada em
 | `publico-manuais-selected` | `emerald-100` `#d1fae5` | Fundo do mês selecionado |
 | `publico-manuais-ink` | `emerald-950` `#022c22` | Texto do mês selecionado |
 | `publico-manuais-border` | `emerald-400` `#34d399` | Borda do mês selecionado |
-| `publico-escopos` | `purple-600` `#9333ea` | Ícone de Escopo de Projetos |
-| `publico-escopos-soft` | `purple-50` `#faf5ff` | Hover/ação “Ver Tudo” |
-| `publico-escopos-selected` | `purple-100` `#f3e8ff` | Fundo do sistema ativo |
-| `publico-escopos-ink` | `purple-950` `#3b0764` | Texto do sistema ativo |
-| `publico-escopos-border` | `purple-400` `#c084fc` | Borda do sistema ativo |
+| `publico-escopos` | `indigo-700` `#4338ca` | Ícone de Escopo de Projetos |
+| `publico-escopos-soft` | `indigo-50` `#eef2ff` | Hover/ação “Ver Tudo” |
+| `publico-escopos-selected` | `indigo-100` `#e0e7ff` | Fundo do sistema ativo |
+| `publico-escopos-ink` | `indigo-950` `#1e1b4b` | Texto do sistema ativo |
+| `publico-escopos-border` | `indigo-400` `#818cf8` | Borda do sistema ativo |
 | `publico-alerta` | `amber-700` `#b45309` | Texto “NOVA” no claro |
 | `publico-alerta-escuro` | `amber-400` `#fbbf24` | Texto “NOVA” no escuro |
 | Neutros | `slate-50` a `slate-950` | Superfícies, bordas, textos e contadores |
@@ -653,7 +661,7 @@ O shell será construído em fases visuais, sem antecipar API, busca ou páginas
 | 3. Sidebar: base | Home + cabeçalhos das 3 seções + contadores | Estados aberto/fechado e `aria-expanded` corretos |
 | 4. Releases Week | Ano -> mês -> card, chip de versão, “NOVA”, subtítulo | Hierarquia e estados ativo/hover da imagem |
 | 5. Manuais Mensais | Ano -> mês, sem terceiro nível, mês selecionado | Cartões verdes e contadores |
-| 6. Escopo de Projetos | Card do projeto + “Ver Tudo” + sistemas | Card púrpura e contadores por sistema |
+| 6. Escopo de Projetos | Card do projeto + “Ver Tudo” + sistemas | Card indigo-700 e contadores por sistema |
 | 7. Tema | Tokens escuros do shell público | Alternância sem vazar para `/admin` e sem flash |
 | 8. Responsividade | Drawer + versões compactas do header | 1440/1024/768/390 sem overflow |
 | 9. Acessibilidade e QA | Foco, teclado, contraste, estados vazios | Checklist da §11 completo |
@@ -699,7 +707,7 @@ O shell será construído em fases visuais, sem antecipar API, busca ou páginas
 - [ ] Fallback “Dicas Teorema” com `Building2` quando não há logo.
 - [ ] Busca: normal, foco, preenchida, limpar, mobile.
 - [ ] Tema: Lua no claro, Sol no escuro, preferência persistida.
-- [ ] Home ativo em indigo; releases em indigo; manuais em esmeralda; escopos em púrpura.
+- [ ] Home ativo em indigo; releases em indigo; manuais em esmeralda; escopos em indigo-700 (`#4338ca`).
 - [ ] Todas as seções abrem/fecham; contadores aparecem.
 - [ ] “NOVA” só na release em destaque.
 - [ ] Mês de manual selecionado e sistema de escopo selecionado.
@@ -758,9 +766,12 @@ A leitura pública implementada está em
 Continuam fora deste documento:
 
 - Busca global server-side e painel de resultados.
-- Deep links (`?release=`, `?manual=`, `?escopo=&sistema=`).
-- Páginas de destaques, release, mês de manual, escopo/sistema e resultados de busca.
+- Deep links de release e manual (`?release=`, `?manual=`) e as páginas de release, mês de manual e
+  resultados de busca.
 - Testes automatizados de UI do shell (a leitura, o agrupamento e o tema têm testes puros).
+
+A página pública do Escopo de Projetos (`/escopos/[id]?sistema=`) está implementada e é documentada
+em [`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).
 
 ### 12.4 Próximo passo
 
@@ -768,8 +779,10 @@ O shell e a leitura pública foram implementados no change `area-publica-shell`.
 da Área Pública (hero, manuais, ranking/recentes e histórico) está no change
 `painel-publico-destaques` e é documentado em
 [`20 - Painel de Destaque Area Publica.md`](20%20-%20Painel%20de%20Destaque%20Area%20Publica.md).
-As próximas entregas são as páginas de conteúdo (release, item de manual, escopo/sistema), a busca
-global e os deep links.
+A página pública do Escopo de Projetos está no change `escopo-projeto-area-publica` e é documentada
+em [`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).
+As próximas entregas são as páginas públicas de release e manual, a busca global e os deep links
+restantes.
 
 ---
 

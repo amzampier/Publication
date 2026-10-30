@@ -57,7 +57,9 @@ atual) com degradê horizontal, da esquerda para a direita; a borda da caixa do 
 degradê cônico giratório percorrendo as
 mesmas três cores na mesma ordem (`#112051` → `#0364f7` → `#4ed813`) ao redor da caixa; e o
 **card de resumo da tela Meu Perfil** com degradê vertical suave, do `brand.structure` bem diluído
-no topo esmaecendo até o branco na base.
+no topo esmaecendo até o branco na base; e o **container do título dos cards da página pública de
+Escopo de Projetos**, com o mesmo degradê horizontal do cabeçalho de modal e o filete de accent de
+2,5px na borda esquerda.
 
 #### Scenario: Degradê no botão primário
 - **WHEN** um `Button` com `variant="primary"` é renderizado
@@ -66,6 +68,11 @@ no topo esmaecendo até o branco na base.
 #### Scenario: Degradê no cabeçalho do modal
 - **WHEN** um modal é aberto
 - **THEN** o seu cabeçalho exibe o mesmo degradê horizontal, preservando o filete de accent de 2,5px na borda esquerda
+
+#### Scenario: Degradê no título do card do Escopo público
+- **WHEN** o container do título de um card da página pública de Escopo de Projetos é renderizado
+- **THEN** ele exibe o degradê horizontal `brand.primary` → `brand.structure` e o filete de accent de
+  2,5px na borda esquerda, com o título em texto legível
 
 #### Scenario: Degradê na trilha do slider
 - **WHEN** um `UiSlider` é renderizado com um valor intermediário
@@ -195,21 +202,26 @@ listagem, detalhe, modal e painel.
 ### Requirement: A Área Pública usa a paleta editorial documentada como exceção
 
 O sistema SHALL permitir, exclusivamente no shell e no conteúdo da Área Pública, a paleta editorial
-composta por indigo para a navegação principal, esmeralda para Manuais Mensais e púrpura para Escopo
-de Projetos, sobre neutros `slate`, sem alterar a paleta das telas administrativas. O foco dos
+composta por indigo para a navegação principal, esmeralda para Manuais Mensais e indigo-700
+(`#4338ca`) para Escopo de Projetos, sobre neutros `slate`, sem alterar a paleta das telas
+administrativas. O foco dos
 controles SHALL continuar em `brand.focus` (`#1a9e07`) e o erro/validação SHALL continuar em
 `rose-700` (`#be123c`). Nenhuma superfície pública SHALL usar `lime-500` para foco nem introduzir
-degradê fora das superfícies já permitidas pelo design system, exceto o hero do **Painel de Destaques
-da Área Pública**, que SHALL usar um degradê escuro sutil delimitado ao conteúdo público. No painel
-público, os badges de tipo SHALL usar `rose-700` para **Correção**, `emerald-700` para **Melhoria** e
-`indigo-700` para **Nova Funcionalidade**, sempre com rótulo textual e ícone, sem substituir o
-`rose-700` canônico de erro/validação.
+degradê fora das superfícies já permitidas pelo design system, exceto os heros do **Painel de
+Destaques da Área Pública** e da **página pública de Escopo de Projetos**, que SHALL usar o mesmo
+degradê escuro sutil delimitado ao conteúdo público, e o **container do título dos cards da página
+pública de Escopo de Projetos**, que SHALL usar o degradê horizontal do cabeçalho de modal com o
+filete de accent de 2,5px na borda esquerda. A identidade indigo-700 (`#4338ca`) do Escopo de
+Projetos SHALL permanecer nos chips, ícones e badges da página pública do escopo. No painel público, os badges de
+tipo SHALL usar `rose-700` para **Correção**, `emerald-700` para **Melhoria** e `indigo-700` para
+**Nova Funcionalidade**, sempre com rótulo textual e ícone, sem substituir o `rose-700` canônico de
+erro/validação.
 
 #### Scenario: Seções usam a paleta editorial
 
 - **WHEN** o shell público é renderizado no tema claro
 - **THEN** a navegação principal usa indigo, Manuais Mensais usa esmeralda e Escopo de Projetos usa
-  púrpura, sobre neutros `slate`
+  indigo-700 (`#4338ca`), sobre neutros `slate`
 
 #### Scenario: Foco e erro permanecem canônicos
 
@@ -227,6 +239,18 @@ público, os badges de tipo SHALL usar `rose-700` para **Correção**, `emerald-
 - **THEN** ele usa o degradê escuro sutil aprovado para o conteúdo público, sem aplicar o degradê a
   outras superfícies públicas
 
+#### Scenario: Degradê no hero do escopo público
+
+- **WHEN** o cabeçalho da página pública de Escopo de Projetos é renderizado
+- **THEN** ele usa o mesmo degradê escuro sutil do Painel de Destaques, delimitado ao conteúdo
+  público, com a identidade indigo-700 nos chips, ícones e badges
+
+#### Scenario: Degradê no título do card do Escopo público
+
+- **WHEN** o container do título de um card da página pública de Escopo de Projetos é renderizado
+- **THEN** ele usa o degradê horizontal do cabeçalho de modal e o filete de accent de 2,5px na borda
+  esquerda, com contraste legível
+
 #### Scenario: Badges de tipo com rótulo e cor
 
 - **WHEN** um card do painel público exibe o tipo de uma chamada
@@ -237,4 +261,5 @@ público, os badges de tipo SHALL usar `rose-700` para **Correção**, `emerald-
 
 - **WHEN** o shell público é inspecionado
 - **THEN** não há `lime-500` em foco nem degradê fora do `UiButton primary`, do cabeçalho de modal,
-  da trilha do `UiSlider`/`UiLoading`, do card de resumo do Meu Perfil e do hero do Painel de Destaques
+  da trilha do `UiSlider`/`UiLoading`, do card de resumo do Meu Perfil, dos heros das páginas
+  públicas de conteúdo e do container do título dos cards da página pública de Escopo

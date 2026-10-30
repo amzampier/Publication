@@ -328,3 +328,110 @@ pai esconde pai e filhas; publicação futura não aparece.
   `GET /api/release-week` sem cookie deve continuar retornando `401`.
 - Manual: alternar `software`, `tipo` e `pagina` e confirmar que o painel e a URL refletem o estado.
 - Manual: publicar, arquivar e agendar conteúdo e confirmar que o painel esconde o não público.
+
+## 10. Página pública do Escopo de Projetos
+
+### 10.1 Rotas
+
+```http
+GET /api/publico/escopos/:id
+GET /api/publico/escopos/:id/chamadas?sistema=&pagina=&porPagina=
+```
+
+- **Autenticação:** nenhuma; o middleware libera apenas `GET`/`HEAD` em `/api/publico/**`.
+- **Cache:**
+  - detalhe: `public, max-age=60, stale-while-revalidate=300`;
+  - chamadas: `public, max-age=30, stale-while-revalidate=120`.
+- **Formato:** JSON.
+- **Erros:** `404` para escopo inexistente, não publicado ou arquivado; `500` genérico em falha de
+  banco, sem SQL, host ou stack trace.
+
+### 10.2 Resposta do detalhe
+
+```ts
+interface PublicoEscopoDetalhe {
+  id: string
+  codigo: string
+  nome: string
+  versao: string
+  ano: number
+  chamadas: number
+  sistemas: { nome: string; chamadas: number }[]
+  publicadoEm: string
+}
+```
+
+`chamadas` é o total de chamadas públicas do escopo. `sistemas` é derivado das chamadas públicas,
+com a junção `entregas_itens_softwares` e fallback para o software principal. Uma chamada com dois
+softwares conta em cada sistema; a soma de `sistemas[].chamadas` pode ser maior que `chamadas`.
+`publicadoEm` é o carimbo efetivo de publicação.
+
+### 10.3 Resposta das chamadas
+
+```ts
+interface PublicoChamadaEscopo {
+  id: string
+  chamada: string
+  titulo: string
+  descricao: string
+  solucao: string
+  tipo: TipoItem
+  impacto: ImpactoItem
+  modulo: string
+  parceiro: string
+  manualTitulo: string
+  softwares: string[]
+  tags: string[]
+  evidencias: { id: string; url: string; alt: string; capa: boolean }[]
+  linkManual: string
+  linkVideo: string
+  dataLiberacao: string
+}
+
+interface PublicoEscopoChamadas {
+  itens: PublicoChamadaEscopo[]
+  total: number
+  pagina: number
+  porPagina: number
+  sistemaSelecionado: string
+}
+```
+
+- `descricao` é o texto puro de `descricao_completa`.
+- `solucao` é o texto puro de `solucao`.
+- `impacto` é o valor de `impacto` (`Baixo`, `Médio`, `Alto` ou `Crítico`), exibido com rótulo
+  textual no card.
+- `evidencias` vem de `anexos_midias` com `tipo_mime LIKE 'image/%'`, ordenada por capa/ordem.
+- `softwares` vem da junção N:N, com fallback para o software principal.
+- O padrão é 6 itens por página; o máximo de `porPagina` é 50.
+- `pagina` inválida vira 1; `sistema` desconhecido produz lista vazia; `id` não público responde
+  `404`.
+
+### 10.4 Gate e filtro
+
+O detalhe aplica o gate de `projetos_escopo`; as chamadas aplicam o gate de `entregas_itens` e o
+vínculo `e.projeto_id = ?`. O filtro por sistema usa `EXISTS` na junção, com fallback para o software
+principal quando não há junção. Arquivar o escopo esconde o escopo e as chamadas; publicação futura
+não aparece.
+
+### 10.5 Privacidade
+
+**Expõe:** identificadores públicos, código, nome, versão, ano, contagens, sistemas, data efetiva de
+publicação, chamada, título, descrição em texto puro, solução em texto puro, tipo, impacto, módulo,
+parceiro, título do manual, softwares, tags, evidências (URL, alt e capa), links externos e data de
+liberação.
+
+**Não expõe:** autor, revisor, feedback, status interno, arquivamento, `descricao_html`,
+`solucao_html`, auditoria, anexos completos, caminhos físicos ou timestamps internos.
+
+### 10.6 Verificação
+
+- `npm run test` cobre as regras puras em `tests/publico-escopo.test.ts` e o gate em
+  `tests/visibilidade-publica.test.ts`.
+- Manual: `GET /api/publico/escopos/:id` e `GET /api/publico/escopos/:id/chamadas` sem cookie devem
+  retornar `200`; um id não público deve retornar `404`.
+- Manual: filtrar por sistema, paginar, testar `pagina=abc`, `porPagina=999` e um sistema
+  desconhecido.
+- Manual: conferir que chamadas em rascunho, revisão, arquivadas ou com publicação futura não
+  aparecem na lista nem nas contagens.
+- Documentação visual: [`21 - Módulo Escopo Projeto Área Pública.md`](21%20-%20M%C3%B3dulo%20Escopo%20Projeto%20%C3%81rea%20P%C3%BAblica.md).

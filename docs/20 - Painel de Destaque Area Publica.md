@@ -141,7 +141,8 @@ ALVO
 - Hero: largura total.
 - Manuais + ranking: `grid gap-6 lg:grid-cols-3`; manuais ocupam 2 colunas, ranking 1.
 - Histórico: `grid gap-4 md:grid-cols-2 xl:grid-cols-3`.
-- A sidebar pública permanece `w-72` no desktop; o painel vive em `main` com `min-w-0`.
+- A sidebar pública permanece `w-72` no desktop e fica fixa; o painel vive em `main` com `min-w-0`
+  e rolagem própria (`overflow-y-auto`).
 
 ## 4. Última Release Liberada da Semana
 
@@ -512,8 +513,9 @@ revisão, aprovação sem publicação efetiva e publicação futura não aparec
 
 - Releases (hero, ranking, histórico): índigo.
 - Manuais: esmeralda.
-- Escopo de Projetos: púrpura (já no shell; não usado no painel).
-- O histórico é de releases e usa índigo, não púrpura, para manter a identidade da seção.
+- Escopo de Projetos: indigo-700 (`#4338ca`; já no shell, não usado no painel).
+- O histórico é de releases e usa indigo, não o indigo-700 do Escopo, para manter a identidade da
+  seção.
 
 ### 11.3 Badges de tipo
 

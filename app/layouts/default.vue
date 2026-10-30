@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { PublicoSelecao } from '#shared/publico'
 import {
   contarSistemas,
@@ -16,8 +16,26 @@ const { escuro } = useTemaPublico()
 
 await carregarIdentidadeLogin()
 
+const rota = useRoute()
 const sidebarAberta = ref(false)
+const mainRef = ref<HTMLElement | null>(null)
 const selecao = useState<PublicoSelecao | null>('publico-selecao', () => null)
+
+watch(
+  () => rota.fullPath,
+  () => {
+    mainRef.value?.scrollTo({ top: 0 })
+  }
+)
+
+const escopoDaRota = computed<{ escopoId: string; sistema: string | null } | null>(() => {
+  if (!rota.path.startsWith('/escopos/')) return null
+  const id = typeof rota.params.id === 'string' ? rota.params.id : ''
+  if (!id) return null
+  const sistema =
+    typeof rota.query.sistema === 'string' ? rota.query.sistema.trim() : ''
+  return { escopoId: id, sistema: sistema || null }
+})
 
 const selecionarRelease = (id: string) => {
   const release = releases.value.find((item) => item.id === id)
@@ -44,7 +62,7 @@ const selecionarManual = (payload: { ano: number; mes: string }) => {
   sidebarAberta.value = false
 }
 
-const selecionarEscopo = (payload: { escopoId: string; sistema: string | null }) => {
+const selecionarEscopo = async (payload: { escopoId: string; sistema: string | null }) => {
   const escopo = escopos.value.find((item) => item.id === payload.escopoId)
   if (!escopo) return
 
@@ -63,11 +81,19 @@ const selecionarEscopo = (payload: { escopoId: string; sistema: string | null })
     }
   }
   sidebarAberta.value = false
+
+  await navigateTo({
+    path: `/escopos/${escopo.id}`,
+    query: payload.sistema ? { sistema: payload.sistema } : {}
+  })
 }
 
-const irHome = () => {
+const irHome = async () => {
   selecao.value = null
   sidebarAberta.value = false
+  if (rota.path.startsWith('/escopos/')) {
+    await navigateTo('/')
+  }
 }
 </script>
 
@@ -76,7 +102,7 @@ const irHome = () => {
     id="publico-shell"
     data-publico-shell
     :class="[
-      'min-h-screen overflow-x-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100',
+      'flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100',
       { dark: escuro }
     ]"
   >
@@ -85,7 +111,7 @@ const irHome = () => {
       @toggle-sidebar="sidebarAberta = !sidebarAberta"
     />
 
-    <div class="flex items-start">
+    <div class="flex min-h-0 flex-1 items-stretch">
       <LayoutPublicSidebar
         :releases="releases"
         :manuais="manuais"
@@ -93,6 +119,7 @@ const irHome = () => {
         :carregando="carregando"
         :erro="erro"
         :aberta="sidebarAberta"
+        :escopo-inicial="escopoDaRota"
         @fechar="sidebarAberta = false"
         @recarregar="recarregar"
         @ir-home="irHome"
@@ -108,7 +135,10 @@ const irHome = () => {
         @click="sidebarAberta = false"
       />
 
-      <main class="min-w-0 flex-1">
+      <main
+        ref="mainRef"
+        class="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto"
+      >
         <slot />
       </main>
     </div>

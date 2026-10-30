@@ -63,7 +63,11 @@ import {
 import { useToast } from '../composables/useToast'
 import { carregarIdentidadeLogin } from '../composables/useLogomarcaLogin'
 import { useTemaPublico } from '../composables/useTemaPublico'
+import { formatarData } from '#shared/escopo-projetos'
+import { resumirEscopo } from '#shared/publico'
 import type {
+  PublicoChamadaEscopo,
+  PublicoEscopoDetalhe,
   PublicoEscopoResumo,
   PublicoFiltrosPainel,
   PublicoHistorico,
@@ -286,6 +290,60 @@ const publicoEscopos: PublicoEscopoResumo[] = [
       { nome: 'Portal B2B', chamadas: 1 }
     ],
     publicadoEm: '2025-10-01T00:00:00.000Z'
+  }
+]
+
+const publicoEscopoDetalhe: PublicoEscopoDetalhe = publicoEscopos[0]!
+const publicoResumoEscopo = resumirEscopo(publicoEscopoDetalhe, 'WMS Logística')
+const publicoPublicacaoEscopo = formatarData(publicoEscopoDetalhe.publicadoEm)
+
+const publicoChamadasEscopo: PublicoChamadaEscopo[] = [
+  {
+    id: 'demo-escopo-chamada-1',
+    chamada: 'CH-2026-6542',
+    titulo: 'Roteirizador Inteligente de Cargas com Otimização de Combustível',
+    descricao:
+      'Algoritmo que analisa peso por eixo, janelas de entrega de clientes e restrições de tráfego urbano em tempo real.',
+    solucao:
+      'Roteirização dinâmica com priorização por janela de entrega e balanceamento de carga por eixo, integrada ao mapa de tráfego.',
+    tipo: 'Melhoria',
+    impacto: 'Crítico',
+    modulo: 'Logística',
+    parceiro: 'Logística Express',
+    manualTitulo: 'Manual de Roteirização de Cargas',
+    softwares: ['WMS Logística'],
+    tags: ['wms', 'roteirizador', 'logistica', 'frotas'],
+    evidencias: [
+      {
+        id: 'demo-escopo-evidencia-1',
+        url: '/uploads/chamadas/2026/10/imagem-13.png',
+        alt: 'Tela do roteirizador com mapa e janelas de entrega',
+        capa: true
+      }
+    ],
+    linkManual: 'https://docs.teorema.inf.br/',
+    linkVideo: '',
+    dataLiberacao: '2026-10-20'
+  },
+  {
+    id: 'demo-escopo-chamada-2',
+    chamada: 'CH-2026-6558',
+    titulo: 'Conferência cega no recebimento com leitura de código de barras',
+    descricao:
+      'Novo fluxo de recebimento que valida volumes e notas fiscais sem digitação manual, com leitura de código de barras e tratamento de divergências.',
+    solucao:
+      'Conferência cega com leitura de código de barras, bloqueio de divergências e registro automático da conferência no estoque.',
+    tipo: 'Nova Funcionalidade',
+    impacto: 'Médio',
+    modulo: 'Estoque',
+    parceiro: 'Distribuidora Master',
+    manualTitulo: 'Manual de Conferência Cega',
+    softwares: ['WMS Logística', 'ERP Enterprise'],
+    tags: ['recebimento', 'codigo de barras'],
+    evidencias: [],
+    linkManual: '',
+    linkVideo: 'https://www.youtube.com/',
+    dataLiberacao: '2026-10-22'
   }
 ]
 
@@ -1101,7 +1159,8 @@ const secoes = [
   { id: 'multi-select', label: '26. Seleção Múltipla (UiMultiSelect)' },
   { id: 'charts', label: '27. Gráficos' },
   { id: 'apoio', label: '28. Componentes de apoio' },
-  { id: 'publico', label: '29. Área Pública (Shell + Painel)' }
+  { id: 'publico', label: '29. Área Pública (Shell + Painel)' },
+  { id: 'escopo-publico', label: '30. Escopo de Projeto (Área Pública)' }
 ]
 const chartCategorias = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 const chartSeries = [
@@ -1442,6 +1501,11 @@ const chartRanking = [
             <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
               <span class="text-[10px] text-slate-500">Alterações (Manuais)</span>
               <UiBadge variant="alteracoes" />
+            </div>
+
+            <div class="p-3 border border-slate-200 rounded-lg flex flex-col items-center gap-2 text-center">
+              <span class="text-[10px] text-slate-500">Crítico (Escopo)</span>
+              <UiBadge variant="critico" />
             </div>
           </div>
         </section>
@@ -4013,6 +4077,33 @@ variant="lime"
               @carregar-mais="() => {}"
               @recarregar="() => {}"
             />
+          </div>
+        </section>
+
+        <section id="escopo-publico" class="scroll-mt-24">
+          <h2 class="text-base font-bold text-slate-900">30. Escopo de Projeto (Área Pública)</h2>
+          <p class="mt-1 text-xs text-slate-500">
+            Cabeçalho do escopo com versão, ano, sistema selecionado e contagens; abaixo, os cards
+            das chamadas com tipo, softwares, parceiro, tags, evidências em galeria e documentação
+            externa. Use o cabeçalho e os cards reais com dados de demonstração.
+          </p>
+
+          <div class="mt-4 space-y-4">
+            <PublicoEscopoCabecalho
+              demo
+              :escopo="publicoEscopoDetalhe"
+              :resumo="publicoResumoEscopo"
+            />
+
+            <div class="grid gap-4">
+              <PublicoEscopoChamadaCard
+                v-for="chamada in publicoChamadasEscopo"
+                :key="chamada.id"
+                demo
+                :chamada="chamada"
+                :publicacao="publicoPublicacaoEscopo"
+              />
+            </div>
           </div>
         </section>
       </main>

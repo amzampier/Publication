@@ -28,6 +28,7 @@ export type BadgeVariant =
   | 'correcao'
   | 'melhoria'
   | 'nova'
+  | 'critico'
 
 interface Props {
   variant?: BadgeVariant
@@ -128,6 +129,13 @@ const variantConfig = computed(() => {
         dot: 'bg-indigo-700',
         icon: PlusCircle,
         label: 'Nova Funcionalidade'
+      }
+    case 'critico':
+      return {
+        bg: 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300',
+        dot: 'bg-rose-700',
+        icon: AlertTriangle,
+        label: 'Crítico'
       }
     case 'neutral':
     default:
