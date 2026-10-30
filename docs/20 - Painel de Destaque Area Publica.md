@@ -33,19 +33,20 @@ e o delta de `design-system/brand-tokens`. Em caso de divergência, a spec preva
 4. [Última Release Liberada da Semana](#4-última-release-liberada-da-semana)
 5. [Manuais em Destaque dessa Semana](#5-manuais-em-destaque-dessa-semana)
 6. [Releases Mais Vistas](#6-releases-mais-vistas)
-7. [Histórico de Releases Week](#7-histórico-de-releases-week)
-8. [Busca](#8-busca)
-9. [Contrato de dados e API](#9-contrato-de-dados-e-api)
-10. [Regras de seleção, gate e contagens](#10-regras-de-seleção-gate-e-contagens)
-11. [Visual, tokens e tema](#11-visual-tokens-e-tema)
-12. [Responsividade](#12-responsividade)
-13. [Acessibilidade](#13-acessibilidade)
-14. [Estados](#14-estados)
-15. [Componentização](#15-componentização)
-16. [Desempenho e índices](#16-desempenho-e-índices)
-17. [Testes e verificação](#17-testes-e-verificação)
-18. [Governança](#18-governança)
-19. [Checklist](#19-checklist)
+7. [Escopo de Projeto](#7-escopo-de-projeto)
+8. [Histórico de Releases Week](#8-histórico-de-releases-week)
+9. [Busca](#9-busca)
+10. [Contrato de dados e API](#10-contrato-de-dados-e-api)
+11. [Regras de seleção, gate e contagens](#11-regras-de-seleção-gate-e-contagens)
+12. [Visual, tokens e tema](#12-visual-tokens-e-tema)
+13. [Responsividade](#13-responsividade)
+14. [Acessibilidade](#14-acessibilidade)
+15. [Estados](#15-estados)
+16. [Componentização](#16-componentização)
+17. [Desempenho e índices](#17-desempenho-e-índices)
+18. [Testes e verificação](#18-testes-e-verificação)
+19. [Governança](#19-governança)
+20. [Checklist](#20-checklist)
 
 ---
 
@@ -267,9 +268,50 @@ ALVO
 > O contador de visualizações ainda não é incrementado pela aplicação. O fallback para recentes é
 > deliberado; quando o contador existir, a mesma seção passa a refletir os acessos reais.
 
-## 7. Histórico de Releases Week
+## 7. Escopo de Projeto
 
 ### 7.1 Anatomia
+
+```
++----------------------------------------------------------------------------------+
+| H2: Escopo de Projeto                                   Ultimo projeto liberado  |
+| +------------------------------------------------------+ +---------------------+ |
+| | [PE-2026.01] [v26.06a] [Ano 2026]  Publicado em 29/10 | | Chamadas criticas 2 | |
+| | H3: Projeto 26.06a                                    | | [!] #0000456822     | |
+| | 8 chamadas . 3 sistemas                               | | [Impacto: Critico]  | |
+| | [SPED 3] [Atualizador 2] [Balcao 3]                   | | Registro 1601...    | |
+| | [ Ver escopo completo -> ]                            | | SPED . MT8          | |
+| +------------------------------------------------------+ +---------------------+ |
++----------------------------------------------------------------------------------+
+```
+
+- Grid `lg:grid-cols-3`: o card do escopo ocupa `lg:col-span-2` e o card de críticas uma
+  coluna; abaixo de `lg`, os dois empilham.
+- Sem escopo publicado, a seção inteira não é renderizada. Com escopo e sem críticas, apenas o
+  card do escopo é exibido.
+
+### 7.2 Regras
+
+- O escopo é o publicado mais recente por `publicado_em DESC`, com desempate por `ano DESC` e
+  `versao DESC`; aplica o gate público do escopo.
+- O card exibe código, nome, versão, ano, data efetiva, total de chamadas e sistemas com contagens.
+- O CTA **“Ver escopo completo”** aponta para `/escopos/{id}`.
+- As chamadas críticas vêm do escopo em destaque, com `impacto = 'Crítico'` e gate público nas
+  chamadas; são até três, por `ordem_apresentacao` e depois `chamada`.
+- Cada crítica exibe código, título, sistema(s) e parceiro, com o badge `critico` e o texto
+  **“Impacto: Crítico”** (ícone `AlertTriangle`), sem depender apenas de cor. Cada item leva para
+  `/escopos/{id}`.
+- Identidade indigo-700 (`#4338ca`) no escopo; rose-700 nas críticas.
+
+### 7.3 API
+
+`GET /api/publico/painel` passa a retornar `escopoDestaque` e `chamadasCriticas`, sem novo
+endpoint e mantendo o cache público de curta duração. Sem escopo, `escopoDestaque` é `null` e
+`chamadasCriticas` é `[]`.
+
+## 8. Histórico de Releases Week
+
+### 8.1 Anatomia
 
 ```
 +----------------------------------------------------------------------------------+
@@ -291,7 +333,7 @@ ALVO
 +----------------------------------------------------------------------------------+
 ```
 
-### 7.2 Regras
+### 8.2 Regras
 
 - Exibir todas as releases publicadas, ordenadas por `publicado_em` decrescente.
 - Paginação de seis itens; **“Carregar mais”** anexa a página seguinte sem duplicar itens.
@@ -310,16 +352,16 @@ ALVO
   página 1.
 - Sem resultados, exibir estado vazio com **“Limpar filtros”**.
 
-## 8. Busca
+## 9. Busca
 
 - A busca global continua no header público (doc 18) e não ganha um segundo campo no painel.
 - O painel de resultados da busca é outra capability; o título “Painel de Destaques & Busca” é
   mantido por ser o nome do atalho da sidebar.
 - O painel não executa busca server-side nesta entrega.
 
-## 9. Contrato de dados e API
+## 10. Contrato de dados e API
 
-### 9.1 Endpoints
+### 10.1 Endpoints
 
 ```
 GET /api/publico/painel
@@ -337,7 +379,7 @@ GET /api/publico/releases?software=&tipo=&pagina=&porPagina=
 - Erros de banco: `500` genérico, sem SQL, host ou stack trace.
 - Escritas em `/api/publico/**` continuam bloqueadas.
 
-### 9.2 DTOs
+### 10.2 DTOs
 
 ```ts
 type PublicoModoRanking = 'vistas' | 'recentes'
@@ -412,12 +454,35 @@ interface PublicoFiltrosPainel {
   tipos: TipoItem[]
 }
 
+interface PublicoChamadaCritica {
+  id: string
+  chamada: string
+  titulo: string
+  softwares: string[]
+  parceiro: string
+  tipo: TipoItem
+  impacto: ImpactoItem
+}
+
+interface PublicoEscopoResumo {
+  id: string
+  codigo: string
+  nome: string
+  versao: string
+  ano: number
+  chamadas: number
+  sistemas: Array<{ nome: string; chamadas: number }>
+  publicadoEm: string
+}
+
 interface PublicoPainel {
   releaseDestaque: PublicoReleaseDestaque | null
   manuaisDestaque: PublicoManualItemDestaque[]
   maisVistas: PublicoReleaseResumoPainel[]
   modoMaisVistas: PublicoModoRanking
   filtros: PublicoFiltrosPainel
+  escopoDestaque: PublicoEscopoResumo | null
+  chamadasCriticas: PublicoChamadaCritica[]
 }
 
 interface PublicoHistorico {
@@ -428,18 +493,19 @@ interface PublicoHistorico {
 }
 ```
 
-### 9.3 Privacidade
+### 10.3 Privacidade
 
 **Expõe:** identificadores públicos, semana, ano, mês, versão, release, título, descrição, tipo,
 software, módulo, parceiro, chamada, data efetiva, visualizações, contagem de fotos, links de
-vídeo/manual e `revisorNome`.
+vídeo/manual e `revisorNome`; no escopo em destaque, código, nome, versão, ano, chamadas, sistemas e
+`publicadoEm`; nas chamadas críticas, código, título, sistemas, parceiro, tipo e impacto.
 
 **Não expõe:** `autor_id`, `autor_nome`, `revisor_id`, `revisor_feedback`, status interno,
 arquivamento, auditoria, anexos completos, caminhos físicos e timestamps internos.
 
 O crédito do revisor é o único dado de revisor exposto. O feedback e a autoria permanecem internos.
 
-### 9.4 Normalização
+### 10.4 Normalização
 
 - `pagina` inválida -> 1.
 - `porPagina` padrão 6, máximo 50.
@@ -447,9 +513,9 @@ O crédito do revisor é o único dado de revisor exposto. O feedback e a autori
 - `software` desconhecido -> resultado vazio.
 - `software` é comparado com o nome público do software (snapshot do item).
 
-## 10. Regras de seleção, gate e contagens
+## 11. Regras de seleção, gate e contagens
 
-### 10.1 Gate público
+### 11.1 Gate público
 
 Toda leitura aplica:
 
@@ -461,19 +527,22 @@ AND publicado_em <= NOW(6)
 ```
 
 Para as chamadas filhas, o mesmo gate é aplicado. Arquivar o pai esconde o pai e as filhas. Rascunho,
-revisão, aprovação sem publicação efetiva e publicação futura não aparecem.
+revisão, aprovação sem publicação efetiva e publicação futura não aparecem. O escopo em destaque e
+as chamadas críticas seguem exatamente o mesmo gate.
 
-### 10.2 Seleção
+### 11.2 Seleção
 
 | Seção | Regra |
 |---|---|
 | Hero | `destaque_semana = 1` mais recente; fallback para a publicada mais recente |
 | Chamadas do hero | Até 3, por `ordem_apresentacao`; empate por `chamada`/`id` |
 | Manuais | Manuais em destaque, um item por manual, até 2 cards; fallback de catálogo |
+| Escopo em destaque | Escopo publicado mais recente por `publicado_em DESC`, desempate por `ano DESC` e `versao DESC` |
+| Chamadas críticas | Até 3 chamadas do escopo com `impacto = 'Crítico'`, por `ordem_apresentacao` e depois `chamada` |
 | Mais vistas | Exclui o hero; top 3 por views; fallback recente; completa posições |
 | Histórico | Publicadas por `publicado_em` desc; 6 por página; filtros software/tipo |
 
-### 10.3 Contagens
+### 11.3 Contagens
 
 - `contagens.correcao` / `melhoria` / `nova` contam chamadas publicadas da release.
 - A soma das três contagens é igual a `chamadas` da release.
@@ -481,21 +550,21 @@ revisão, aprovação sem publicação efetiva e publicação futura não aparec
 - Uma chamada com múltiplos softwares pode aparecer em mais de uma opção de filtro; o filtro de
   software seleciona a release, não multiplica o card.
 
-### 10.4 Datas
+### 11.4 Datas
 
 - Exibição e ordenação usam `publicado_em` (carimbo efetivo).
 - `data_publicacao` (data editorial) não é usada como gate nem como ordenação no painel.
 - Formato visual: `dd/mm/aaaa`; semana/versão/release em `font-mono tabular-nums`.
 
-### 10.5 Terminologia
+### 11.5 Terminologia
 
 - No público, adotar **“chamadas”** para os itens editoriais, alinhado ao doc 18.
 - O CTA do histórico pode ser **“Ver chamadas”**; o hero usa **“Ver release completa”**.
 - A copy editorial pode usar “entregas” dentro da descrição da release.
 
-## 11. Visual, tokens e tema
+## 12. Visual, tokens e tema
 
-### 11.1 Hero
+### 12.1 Hero
 
 - Superfície: `rounded-2xl border border-slate-800 bg-gradient-to-br from-brand-primary via-slate-950 to-indigo-950 text-slate-100`.
 - É a **única nova superfície com degradê** na Área Pública; registrar no doc 01 §2.1 e no delta de
@@ -509,15 +578,16 @@ revisão, aprovação sem publicação efetiva e publicação futura não aparec
 - Foco: `ring-2 ring-brand-focus/50`.
 - Tema escuro: manter o hero e ajustar contraste de bordas/chips; não usar cores administrativas.
 
-### 11.2 Seções
+### 12.2 Seções
 
 - Releases (hero, ranking, histórico): índigo.
 - Manuais: esmeralda.
-- Escopo de Projetos: indigo-700 (`#4338ca`; já no shell, não usado no painel).
+- Escopo de Projetos: indigo-700 (`#4338ca`), agora também no painel (card do escopo e chips).
+- Chamadas críticas: rose-700 (`#be123c`) no card, no ícone `AlertTriangle` e no badge `critico`.
 - O histórico é de releases e usa indigo, não o indigo-700 do Escopo, para manter a identidade da
   seção.
 
-### 11.3 Badges de tipo
+### 12.3 Badges de tipo
 
 | Tipo | Cor | Ícone | Rótulo |
 |---|---|---|---|
@@ -530,7 +600,7 @@ revisão, aprovação sem publicação efetiva e publicação futura não aparec
 - As variantes `correcao`, `melhoria` e `nova` entram no `UiBadge`; o doc 01 §5.2 e a vitrine são
   atualizados no mesmo change.
 
-### 11.4 Cards e superfícies
+### 12.4 Cards e superfícies
 
 - Tema claro: cards `bg-white border-slate-200`; hover `border-slate-300`.
 - Tema escuro: cards `bg-slate-900 border-slate-800`; hover `border-slate-700`.
@@ -540,34 +610,35 @@ revisão, aprovação sem publicação efetiva e publicação futura não aparec
 - Não usar `lime-500` para foco; foco canônico `brand-focus` `#1a9e07`.
 - Erro/validação continua `rose-700` `#be123c`.
 
-## 12. Responsividade
+## 13. Responsividade
 
-| Viewport | Hero | Manuais + ranking | Histórico |
-|---|---|---|---|
-| `>= 1280px` | Largura total; 3 cards de chamada lado a lado | 2 colunas + 1 coluna | 3 colunas |
-| `1024px - 1279px` | Largura total; 3 cards | 2 colunas + 1 coluna | 2 colunas |
-| `768px - 1023px` | Largura total; cards empilhados se necessário | Empilhados | 2 colunas |
-| `< 768px` | Largura total; cards empilhados | Empilhados | 1 coluna |
+| Viewport | Hero | Manuais + ranking | Escopo + críticas | Histórico |
+|---|---|---|---|---|
+| `>= 1280px` | Largura total; 3 cards de chamada lado a lado | 2 colunas + 1 coluna | 2 colunas + 1 coluna | 3 colunas |
+| `1024px - 1279px` | Largura total; 3 cards | 2 colunas + 1 coluna | 2 colunas + 1 coluna | 2 colunas |
+| `768px - 1023px` | Largura total; cards empilhados se necessário | Empilhados | Empilhados | 2 colunas |
+| `< 768px` | Largura total; cards empilhados | Empilhados | Empilhados | 1 coluna |
 
 - Chips quebram linha; filtros empilham no mobile.
 - Alvos de toque mínimos de 44x44 no mobile.
 - Nenhum overflow horizontal entre 320px e 1440px.
 - O drawer da sidebar continua independente e com foco controlado.
 
-## 13. Acessibilidade
+## 14. Acessibilidade
 
-- `h1` “Painel de Destaques & Busca”; `h2` por seção com `aria-labelledby`; `h3` nos cards.
-- Links de CTA com nome acessível que inclua a semana ou o título do item.
-- Badges de tipo com texto; nunca apenas cor.
+- `h1` "Painel de Destaques & Busca"; `h2` por seção com `aria-labelledby`; `h3` nos cards.
+- A seção de Escopo usa `h2` "Escopo de Projeto" e `h3` para o escopo e para "Chamadas críticas".
+- Links de CTA com nome acessível que inclua a semana, o título do item ou o nome do escopo.
+- Badges de tipo e impacto crítico com texto; nunca apenas cor.
 - Visualizações com `aria-label` (“1.434 visualizações”).
 - Filtros com rótulos visíveis; resultado anunciado por `aria-live="polite"`.
 - Carregamento com `aria-busy="true"`; erro com `role="alert"` e “Tentar novamente”.
-- Foco visível em todos os controles; ordem de tabulação: hero -> manuais -> ranking -> filtros ->
-  cards do histórico.
+- Foco visível em todos os controles; ordem de tabulação: hero -> manuais -> ranking -> escopo ->
+  críticas -> filtros -> cards do histórico.
 - Links externos com `target="_blank"` e `rel="noopener noreferrer"`.
 - Contraste AA nos temas claro e escuro; respeitar `prefers-reduced-motion`.
 
-## 14. Estados
+## 15. Estados
 
 | Estado | Comportamento |
 |---|---|
@@ -577,11 +648,13 @@ revisão, aprovação sem publicação efetiva e publicação futura não aparec
 | Hero vazio | “Nenhuma release publicada ainda.” sem CTA |
 | Manuais vazios | “Nenhum manual em destaque nesta semana.” |
 | Ranking vazio | “Ainda não há releases publicadas.” |
-| Histórico vazio | “Nenhuma release encontrada para os filtros selecionados.” + “Limpar filtros” |
+| Histórico vazio | "Nenhuma release encontrada para os filtros selecionados." + "Limpar filtros" |
 | Filtros | Loading apenas na lista; controles utilizáveis |
-| Views zero | Contador oculto; ranking em modo “recentes” |
+| Views zero | Contador oculto; ranking em modo "recentes" |
+| Sem escopo publicado | A seção de Escopo não é renderizada; as demais seguem íntegras |
+| Escopo sem críticas | Apenas o card do escopo; o card de críticas não é renderizado |
 
-## 15. Componentização
+## 16. Componentização
 
 ```
 app/pages/index.vue                         (composição + SEO + URL)
@@ -590,6 +663,7 @@ app/components/publico/
   PainelUltimaRelease.vue                   (hero + cards)
   PainelManuaisDestaque.vue                 (cards por item)
   PainelMaisVistas.vue                      (ranking/recentes)
+  PainelEscopoDestaque.vue                  (escopo + chamadas críticas)
   PainelHistorico.vue                       (filtros + grid + carregar mais)
   PainelReleaseCard.vue                     (card reutilizado)
 ```
@@ -600,14 +674,16 @@ app/components/publico/
 - O hero usa `UiButton variant="primary"`; o gradiente do botão é o canônico.
 - A página não usa `layout: false`; o shell público permanece.
 
-## 16. Desempenho e índices
+## 17. Desempenho e índices
 
 - Consultas agregadas no servidor, sem N+1:
   1. hero + chamadas + fotos;
   2. manuais + itens + fotos;
   3. ranking + contagem de chamadas;
   4. histórico + contagens por tipo;
-  5. opções de filtro.
+  5. opções de filtro;
+  6. escopo em destaque + sistemas;
+  7. chamadas críticas do escopo + softwares.
 - Filtros de software/tipo com `EXISTS`, não `JOIN` que multiplique a release.
 - Contagem de fotos por subquery em `anexos_midias`.
 - Histórico devolve apenas a página; não materializa todas as chamadas.
@@ -618,9 +694,11 @@ app/components/publico/
   - `entregas_itens_softwares (software_codigo, entrega_item_id)`
   - `anexos_midias (entrega_item_id)`
   - `manuais_mensal (status, arquivada, publicado_em, destaque_semana)`
+  - `projetos_escopo (status, arquivada, publicado_em)`
+  - `entregas_itens (projeto_id, impacto, status, publicado_em)`
 - Nenhuma migration é obrigatória no v1; se um índice for necessário, a migration é aditiva.
 
-## 17. Testes e verificação
+## 18. Testes e verificação
 
 - `tests/publico-painel.test.ts` cobre:
   - destaque com flag e fallback;
@@ -631,20 +709,23 @@ app/components/publico/
   - contagens por tipo;
   - filtros combinados;
   - normalização de página/tamanho/tipo/software;
+  - seleção do último escopo por publicação, ano e versão;
+  - ordenação e limite das chamadas críticas;
   - rótulos pt-BR.
 - `tests/visibilidade-publica.test.ts` cobre o gate pai/filho e publicação futura.
 - Manual:
   - publicar, arquivar e agendar conteúdo;
   - conferir que o painel e as contagens escondem o não público;
+  - conferir o último escopo, as críticas restritas a ele e a seção oculta sem escopo;
   - testar os filtros e a paginação;
   - conferir os temas e os viewports 1440/1024/768/390;
   - percorrer por teclado e verificar foco, `aria-live` e contraste.
 - Gates: `npm run lint`, `npm run test`, `npm run typecheck`, `npm run build`.
 
-## 18. Governança
+## 19. Governança
 
 - Este documento é a referência **visual e de conteúdo**; a autoridade de comportamento é
-  `openspec/changes/painel-publico-destaques/specs/painel-publico/spec.md`.
+  `openspec/specs/painel-publico/spec.md`.
 - A exceção do degradê do hero e os badges de tipo passam pelo delta de
   `design-system/brand-tokens`.
 - As páginas de detalhe e o contador de visualizações são changes separados.
@@ -656,9 +737,9 @@ app/components/publico/
   - `AGENTS.md` (faixa de seções da vitrine).
 - O change de implementação é `painel-publico-destaques`; o archive ocorre depois dos gates.
 
-## 19. Checklist
+## 20. Checklist
 
-### 19.1 Conteúdo
+### 20.1 Conteúdo
 
 - [ ] Hero seleciona destaque e fallback corretamente.
 - [ ] Hero limita a três chamadas e ordena por `ordem_apresentacao`.
@@ -672,34 +753,39 @@ app/components/publico/
 - [ ] Filtros de software/tipo combinam com E lógico.
 - [ ] Contagens do card não são alteradas pelo filtro.
 - [ ] URL preserva `software`, `tipo` e `pagina`.
+- [ ] Escopo em destaque é o publicado mais recente por `publicado_em`.
+- [ ] Chamadas críticas são do escopo em destaque, até três, com badge e link.
+- [ ] Seção do escopo some sem escopo publicado; card de críticas some sem críticas.
 
-### 19.2 Gate e privacidade
+### 20.2 Gate e privacidade
 
 - [ ] Rascunho, revisão, aprovação sem publicação, arquivamento e publicação futura não aparecem.
 - [ ] Chamada filha não publicada não entra em hero, manuais ou contagens.
 - [ ] `origem = 'Ambos'` pode aparecer nas duas seções sem ser duplicidade.
 - [ ] Nenhum autor, feedback, ID interno ou auditoria é exposto.
 - [ ] `revisorNome` só aparece quando existe.
+- [ ] Escopo e chamadas críticas não publicados ficam fora da seção e das contagens.
 
-### 19.3 Visual e responsividade
+### 20.3 Visual e responsividade
 
 - [ ] Hero escuro com degradê sutil, sem degradê em outras superfícies.
-- [ ] Releases em índigo; manuais em esmeralda.
+- [ ] Releases em índigo; manuais em esmeralda; escopo em indigo-700.
+- [ ] Chamadas críticas em rose-700, com `AlertTriangle` e badge textual.
 - [ ] Badges de tipo com cor, ícone e rótulo.
 - [ ] Tema claro e escuro com contraste AA.
 - [ ] 1440, 1024, 768 e 390 sem overflow horizontal.
 - [ ] Drawer da sidebar preservado.
 
-### 19.4 Acessibilidade e qualidade
+### 20.4 Acessibilidade e qualidade
 
-- [ ] H1/H2/H3 e `aria-labelledby` corretos.
-- [ ] CTAs com nomes acessíveis.
+- [ ] H1/H2/H3 e `aria-labelledby` corretos, incluindo “Escopo de Projeto” e “Chamadas críticas”.
+- [ ] CTAs com nomes acessíveis, incluindo o nome do escopo.
 - [ ] Filtros com rótulo e `aria-live`.
 - [ ] Foco visível e ordem de tabulação previsível.
 - [ ] Links externos com `rel` seguro.
 - [x] `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build` passam (verificado em 2026-10-28).
 
-### 19.5 Verificação executada
+### 20.5 Verificação executada
 
 - `npm run lint`, `npm run typecheck`, `npm run test` (339 testes) e `npm run build` passaram.
 - Leitura anônima: `GET /api/publico/painel` e `GET /api/publico/releases` responderam `200`; `GET /api/release-week` sem cookie respondeu `401`.

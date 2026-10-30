@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
           :class="
             homeAtivo
               ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+              : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100'
           "
           :aria-current="homeAtivo ? 'page' : undefined"
           @click="irHome"

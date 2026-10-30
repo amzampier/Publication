@@ -73,6 +73,8 @@ ALVO
 - Com `sistema`, a página mostra apenas as chamadas associadas àquele software.
 - A página é somente leitura, anônima e não expõe controles administrativos.
 - O título visível é **“Escopo de Projetos: {nome}”**, com `h1` no cabeçalho.
+- O Painel de Destaques (`/`) exibe o último escopo publicado e até três chamadas críticas desse
+  escopo, com CTA para esta página (ver doc 20 §7).
 
 ## 2. Navegação e seleção pela URL
 

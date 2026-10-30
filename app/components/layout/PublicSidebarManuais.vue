@@ -76,7 +76,7 @@ const mesSelecionado = (ano: number, mes: string): boolean =>
         :class="
           mesSelecionado(ano.ano, mes.mes)
             ? 'border-emerald-400 bg-emerald-100 font-bold text-emerald-950 shadow-sm ring-1 ring-emerald-500/30 dark:border-emerald-500 dark:bg-emerald-500/15 dark:text-emerald-200'
-            : 'border-slate-200/80 bg-white text-slate-700 hover:bg-emerald-50/70 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-emerald-500/10 dark:hover:text-slate-100'
+            : 'border-slate-200/80 bg-white text-slate-700 hover:bg-emerald-50/70 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-emerald-500/20 dark:hover:text-slate-100'
         "
         :aria-current="mesSelecionado(ano.ano, mes.mes) ? 'true' : undefined"
         :aria-label="`${mes.mes} de ${ano.ano}: ${rotuloManuais(mes.manuais.length)}`"

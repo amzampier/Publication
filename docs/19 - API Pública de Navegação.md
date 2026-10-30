@@ -206,6 +206,8 @@ interface PublicoPainel {
   maisVistas: PublicoReleaseResumoPainel[]
   modoMaisVistas: 'vistas' | 'recentes'
   filtros: { softwares: string[]; tipos: TipoItem[] }
+  escopoDestaque: PublicoEscopoResumo | null
+  chamadasCriticas: PublicoChamadaCritica[]
 }
 ```
 
@@ -216,12 +218,20 @@ interface PublicoPainel {
 - `maisVistas`: até três releases, excluindo o hero; `modoMaisVistas = 'recentes'` quando nenhuma
   release tem `total_visualizacoes > 0`.
 - `filtros`: softwares e tipos derivados apenas de chamadas publicadas em releases públicas.
+- `escopoDestaque`: último escopo publicado por `publicado_em` (desempate por ano e versão); `null`
+  quando não há escopo publicado. Contém código, nome, versão, ano, chamadas, sistemas e
+  `publicadoEm`.
+- `chamadasCriticas`: até três chamadas publicadas com `impacto = 'Crítico'` do escopo em destaque,
+  ordenadas por `ordem_apresentacao` e `chamada`; lista vazia quando o escopo não tem críticas ou
+  quando não há escopo.
 
 ### 8.3 Campos públicos
 
 **Expõe:** identificadores públicos, semana, ano, mês, versão, release, título, descrição, tipo,
 software, módulo, parceiro, chamada, `publicadoEm`, `totalVisualizacoes`, contagem de fotos,
-`linkVideo`, `linkManual` e `revisorNome`.
+`linkVideo`, `linkManual` e `revisorNome`; para o escopo em destaque, código, nome, versão, ano,
+chamadas, sistemas e `publicadoEm`; para as chamadas críticas, código, título, sistemas, parceiro,
+tipo e impacto.
 
 **Não expõe:** autor, feedback de revisor, IDs internos, status interno, arquivamento, auditoria,
 anexos completos, caminhos físicos e timestamps internos.
@@ -264,7 +274,28 @@ O crédito do revisor é o único dado de revisor exposto; `revisor_feedback`, `
   "manuaisDestaque": [],
   "maisVistas": [],
   "modoMaisVistas": "recentes",
-  "filtros": { "softwares": ["ERP Enterprise"], "tipos": ["Correção", "Melhoria"] }
+  "filtros": { "softwares": ["ERP Enterprise"], "tipos": ["Correção", "Melhoria"] },
+  "escopoDestaque": {
+    "id": "ab7d...",
+    "codigo": "PE-2026.01",
+    "nome": "Projeto 26.06a",
+    "versao": "26.06a",
+    "ano": 2026,
+    "chamadas": 8,
+    "sistemas": [{ "nome": "Arquivos Digitais - SPED", "chamadas": 3 }],
+    "publicadoEm": "2026-10-29T21:48:58.552Z"
+  },
+  "chamadasCriticas": [
+    {
+      "id": "177a...",
+      "chamada": "0000456822",
+      "titulo": "Registro 1601 - SPED Fiscal",
+      "softwares": ["Arquivos Digitais - SPED"],
+      "parceiro": "MT8 Soluções",
+      "tipo": "Melhoria",
+      "impacto": "Crítico"
+    }
+  ]
 }
 ```
 

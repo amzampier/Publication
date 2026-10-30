@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   contarTipos,
   filtrarHistorico,
+  limitarChamadasCriticas,
   normalizarPagina,
   normalizarPorPagina,
   normalizarSoftware,
@@ -10,12 +11,15 @@ import {
   rotuloFotos,
   rotuloTipo,
   rotuloVisualizacoes,
+  selecionarEscopoDestaque,
   selecionarItensDestaque,
   selecionarManuaisDestaque,
   selecionarReleaseDestaque,
   varianteTipoItem
 } from '../shared/publico'
 import type {
+  PublicoChamadaCritica,
+  PublicoEscopoResumo,
   PublicoManualDestaqueResumo,
   PublicoManualItemDestaque,
   PublicoReleaseDestaque,
@@ -97,6 +101,33 @@ const filtravel = (
 ): PublicoReleaseFiltravel => ({
   ...resumo(),
   softwares: ['ERP Enterprise'],
+  ...overrides
+})
+
+const escopo = (
+  overrides: Partial<PublicoEscopoResumo> = {}
+): PublicoEscopoResumo => ({
+  id: 'escopo-1',
+  codigo: 'ESC-2026-1',
+  nome: 'Projeto 26.06a',
+  versao: '26.06a',
+  ano: 2026,
+  chamadas: 4,
+  sistemas: [{ nome: 'ERP Enterprise', chamadas: 3 }],
+  publicadoEm: '2026-10-29T00:00:00.000Z',
+  ...overrides
+})
+
+const critica = (
+  overrides: Partial<PublicoChamadaCritica> = {}
+): PublicoChamadaCritica => ({
+  id: 'critica-1',
+  chamada: 'CH-1',
+  titulo: 'Falha crítica no cálculo',
+  softwares: ['ERP Enterprise'],
+  parceiro: 'Parceiro X',
+  tipo: 'Correção',
+  impacto: 'Crítico',
   ...overrides
 })
 
@@ -307,5 +338,41 @@ describe('contagens, filtros e normalização do painel', () => {
     expect(varianteTipoItem('Melhoria')).toBe('melhoria')
     expect(varianteTipoItem('Nova Funcionalidade')).toBe('nova')
     expect(varianteTipoItem(null)).toBe('neutral')
+  })
+})
+
+describe('escopo em destaque e chamadas críticas', () => {
+  it('seleciona o escopo com publicação mais recente', () => {
+    const selecionado = selecionarEscopoDestaque([
+      escopo({ id: 'antigo', publicadoEm: '2026-09-01T00:00:00.000Z' }),
+      escopo({ id: 'recente', publicadoEm: '2026-10-29T00:00:00.000Z' })
+    ])
+
+    expect(selecionado?.id).toBe('recente')
+    expect(selecionarEscopoDestaque([])).toBeNull()
+  })
+
+  it('desempata por ano e versão quando a publicação é igual', () => {
+    const selecionado = selecionarEscopoDestaque([
+      escopo({ id: 'ano-menor', ano: 2025, versao: '26.06a' }),
+      escopo({ id: 'versao-menor', ano: 2026, versao: '25.12a' }),
+      escopo({ id: 'versao-maior', ano: 2026, versao: '26.06a' })
+    ])
+
+    expect(selecionado?.id).toBe('versao-maior')
+  })
+
+  it('ordena as críticas por apresentação e chamada, limitando a três', () => {
+    const criticas = limitarChamadasCriticas([
+      critica({ id: 'c4', chamada: 'CH-4', ordemApresentacao: 4 }),
+      critica({ id: 'c1', chamada: 'CH-1', ordemApresentacao: 1 }),
+      critica({ id: 'c2b', chamada: 'CH-2B', ordemApresentacao: 2 }),
+      critica({ id: 'c2a', chamada: 'CH-2A', ordemApresentacao: 2 }),
+      critica({ id: 'c3', chamada: 'CH-3', ordemApresentacao: 3 })
+    ])
+
+    expect(criticas.map((item) => item.id)).toEqual(['c1', 'c2a', 'c2b'])
+    expect(limitarChamadasCriticas([], 3)).toEqual([])
+    expect(limitarChamadasCriticas([critica()], 0)).toEqual([])
   })
 })

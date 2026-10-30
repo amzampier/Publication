@@ -23,7 +23,8 @@ const temDadosPainel = computed(
   () =>
     Boolean(painel.value.releaseDestaque) ||
     painel.value.manuaisDestaque.length > 0 ||
-    painel.value.maisVistas.length > 0
+    painel.value.maisVistas.length > 0 ||
+    Boolean(painel.value.escopoDestaque)
 )
 
 const rotuloHero = computed(() =>
@@ -91,6 +92,13 @@ useHead({
             :modo="painel.modoMaisVistas"
           />
         </div>
+      </div>
+
+      <div v-if="painel.escopoDestaque" class="mt-8">
+        <PublicoPainelEscopoDestaque
+          :escopo="painel.escopoDestaque"
+          :criticas="painel.chamadasCriticas"
+        />
       </div>
 
       <div class="mt-8">

@@ -66,6 +66,7 @@ import { useTemaPublico } from '../composables/useTemaPublico'
 import { formatarData } from '#shared/escopo-projetos'
 import { resumirEscopo } from '#shared/publico'
 import type {
+  PublicoChamadaCritica,
   PublicoChamadaEscopo,
   PublicoEscopoDetalhe,
   PublicoEscopoResumo,
@@ -296,6 +297,27 @@ const publicoEscopos: PublicoEscopoResumo[] = [
 const publicoEscopoDetalhe: PublicoEscopoDetalhe = publicoEscopos[0]!
 const publicoResumoEscopo = resumirEscopo(publicoEscopoDetalhe, 'WMS Logística')
 const publicoPublicacaoEscopo = formatarData(publicoEscopoDetalhe.publicadoEm)
+
+const publicoCriticasPainel: PublicoChamadaCritica[] = [
+  {
+    id: 'demo-critica-1',
+    chamada: 'CH-2026-6542',
+    titulo: 'Divergência no cálculo de frete com múltiplas janelas de entrega',
+    softwares: ['WMS Logística'],
+    parceiro: 'Logística Express',
+    tipo: 'Correção',
+    impacto: 'Crítico'
+  },
+  {
+    id: 'demo-critica-2',
+    chamada: 'CH-2026-6558',
+    titulo: 'Bloqueio indevido de volumes na conferência cega',
+    softwares: ['WMS Logística', 'ERP Enterprise'],
+    parceiro: 'Distribuidora Master',
+    tipo: 'Correção',
+    impacto: 'Crítico'
+  }
+]
 
 const publicoChamadasEscopo: PublicoChamadaEscopo[] = [
   {
@@ -4039,7 +4061,7 @@ variant="lime"
             <div>
               <h3 class="text-sm font-bold text-slate-900">Painel de Destaques</h3>
               <p class="mt-1 text-xs text-slate-500">
-                Hero, manuais, ranking e histórico com dados de demonstração.
+                Hero, manuais, ranking, escopo com chamadas críticas e histórico com dados de demonstração.
               </p>
             </div>
 
@@ -4057,6 +4079,12 @@ variant="lime"
                 <PublicoPainelMaisVistas demo :releases="publicoMaisVistas" modo="vistas" />
               </div>
             </div>
+
+            <PublicoPainelEscopoDestaque
+              demo
+              :escopo="publicoEscopoDetalhe"
+              :criticas="publicoCriticasPainel"
+            />
 
             <PublicoPainelHistorico
               demo

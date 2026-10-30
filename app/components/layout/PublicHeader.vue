@@ -27,7 +27,7 @@ const { preview: logomarca } = useLogomarcaLogin()
     <div class="flex min-w-0 items-center gap-3">
       <button
         type="button"
-        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100 lg:hidden"
+        class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:text-slate-100 lg:hidden"
         :aria-label="sidebarAberta ? 'Fechar menu da Área Pública' : 'Abrir menu da Área Pública'"
         :aria-expanded="sidebarAberta"
         aria-controls="public-sidebar"
@@ -64,7 +64,7 @@ const { preview: logomarca } = useLogomarcaLogin()
       <PublicThemeToggle />
       <NuxtLink
         to="/admin/login"
-        class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white sm:px-3"
+        class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-focus/50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-700 dark:hover:text-white sm:px-3"
         aria-label="Entrar na Área Administrativa"
       >
         <LogIn class="h-4 w-4" aria-hidden="true" />

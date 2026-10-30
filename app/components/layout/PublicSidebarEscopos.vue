@@ -120,7 +120,7 @@ const sistemaAtivo = (escopoId: string, sistema: string): boolean =>
         :class="
           sistemaAtivo(escopo.id, sistema.nome)
             ? 'border-indigo-400 bg-indigo-100 font-bold text-indigo-950 shadow-sm ring-1 ring-indigo-500/30 dark:border-indigo-500 dark:bg-indigo-500/15 dark:text-indigo-200'
-            : 'border-slate-200/80 bg-white text-slate-700 hover:bg-indigo-50/70 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-indigo-500/10 dark:hover:text-slate-100'
+            : 'border-slate-200/80 bg-white text-slate-700 hover:bg-indigo-50/70 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-indigo-500/20 dark:hover:text-slate-100'
         "
         :aria-current="sistemaAtivo(escopo.id, sistema.nome) ? 'true' : undefined"
         :aria-label="`${sistema.nome}: ${rotuloChamadas(sistema.chamadas)}`"

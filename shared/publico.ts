@@ -369,12 +369,25 @@ export interface PublicoFiltrosPainel {
   tipos: TipoItem[]
 }
 
+export interface PublicoChamadaCritica {
+  id: string
+  chamada: string
+  titulo: string
+  softwares: string[]
+  parceiro: string
+  tipo: TipoItem
+  impacto: ImpactoItem
+  ordemApresentacao?: number
+}
+
 export interface PublicoPainel {
   releaseDestaque: PublicoReleaseDestaque | null
   manuaisDestaque: PublicoManualItemDestaque[]
   maisVistas: PublicoReleaseResumoPainel[]
   modoMaisVistas: PublicoModoRanking
   filtros: PublicoFiltrosPainel
+  escopoDestaque: PublicoEscopoResumo | null
+  chamadasCriticas: PublicoChamadaCritica[]
 }
 
 export interface PublicoHistorico {
@@ -418,6 +431,38 @@ export function selecionarItensDestaque<
       const chaveA = `${a.chamada ?? ''}${a.id ?? ''}`
       const chaveB = `${b.chamada ?? ''}${b.id ?? ''}`
       return chaveA.localeCompare(chaveB, 'pt-BR', { numeric: true })
+    })
+    .slice(0, maximo)
+}
+
+/** Último escopo liberado: `publicadoEm` desc, depois ano e versão decrescentes. */
+export function selecionarEscopoDestaque<
+  T extends { publicadoEm: string; ano: number; versao: string }
+>(escopos: T[]): T | null {
+  return (
+    [...escopos].sort(
+      (a, b) =>
+        b.publicadoEm.localeCompare(a.publicadoEm) ||
+        b.ano - a.ano ||
+        compararTexto(b.versao, a.versao)
+    )[0] ?? null
+  )
+}
+
+/** Até `limite` chamadas críticas por `ordem_apresentacao` e depois `chamada`. */
+export function limitarChamadasCriticas<
+  T extends { ordemApresentacao?: number; chamada?: string; id?: string }
+>(chamadas: T[], limite = 3): T[] {
+  const maximo = Math.max(0, limite)
+  return [...chamadas]
+    .sort((a, b) => {
+      const ordemA = a.ordemApresentacao ?? 0
+      const ordemB = b.ordemApresentacao ?? 0
+      if (ordemA !== ordemB) return ordemA - ordemB
+      return (
+        compararTexto(a.chamada ?? '', b.chamada ?? '') ||
+        compararTexto(a.id ?? '', b.id ?? '')
+      )
     })
     .slice(0, maximo)
 }

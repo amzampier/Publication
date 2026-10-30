@@ -513,14 +513,15 @@ e Portal B2B (1).
 
 | Superfície | Token visual |
 |---|---|
-| Página | `bg-slate-950` |
+| Página | `bg-slate-800` |
 | Texto principal | `text-slate-100` |
 | Texto secundário | `text-slate-400` |
 | Texto discreto | `text-slate-500` |
 | Header | `bg-slate-900 border-b border-slate-800` |
 | Sidebar | `bg-slate-900 border-r border-slate-800` |
 | Cards e dropdowns | `bg-slate-900 border-slate-700` |
-| Hover neutro | `bg-slate-800` |
+| Hover neutro | `bg-slate-700` sobre superfícies `slate-900` |
+| Hover de opção com vínculo | tints `indigo-500/20` ou `emerald-500/20` sobre `slate-900` |
 | Divisórias | `border-slate-800` / `border-slate-700` |
 | Acentos | `indigo-400` (navegação), `emerald-400` (Manuais), `indigo-700` (Escopo), `amber-400` (NOVA) para texto/ícones; fundos de seleção com `/{15}` ou `/{20}` |
 

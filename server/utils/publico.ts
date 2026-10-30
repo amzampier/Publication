@@ -10,6 +10,7 @@ import {
   selecionarManuaisDestaque,
   selecionarReleaseDestaque,
   TIPOS_ITEM,
+  type PublicoChamadaCritica,
   type PublicoChamadaDestaque,
   type PublicoChamadaEscopo,
   type PublicoEscopoChamadas,
@@ -572,12 +573,79 @@ async function listarFiltrosPainel(): Promise<PublicoFiltrosPainel> {
   }
 }
 
+async function listarEscopoDestaquePainel(): Promise<PublicoEscopoResumo | null> {
+  const linhas = await query<Row[]>(
+    `SELECT p.id, p.codigo, p.nome, p.versao, p.ano, p.publicado_em,
+            (SELECT COUNT(DISTINCT e.id)
+               FROM entregas_itens e
+              WHERE e.projeto_id = p.id
+                AND ${gateChamada('e')}) AS chamadas
+       FROM projetos_escopo p
+      WHERE ${gatePai('p')}
+      ORDER BY p.publicado_em DESC, p.ano DESC, p.versao DESC
+      LIMIT 1`
+  )
+
+  const linha = linhas[0]
+  if (!linha) return null
+
+  const id = texto(linha.id)
+  const sistemas = await listarSistemasPorEscopo([id])
+  return {
+    id,
+    codigo: texto(linha.codigo),
+    nome: texto(linha.nome),
+    versao: texto(linha.versao),
+    ano: numero(linha.ano),
+    chamadas: numero(linha.chamadas),
+    sistemas: sistemas.get(id) ?? [],
+    publicadoEm: iso(linha.publicado_em)
+  }
+}
+
+async function listarChamadasCriticasPainel(
+  escopoId: string
+): Promise<PublicoChamadaCritica[]> {
+  const linhas = await query<Row[]>(
+    `SELECT e.id, e.chamada, e.titulo, e.parceiro, e.tipo, e.impacto,
+            e.ordem_apresentacao
+       FROM entregas_itens e
+      WHERE e.projeto_id = ?
+        AND e.impacto = 'Crítico'
+        AND ${gateChamada('e')}
+      ORDER BY e.ordem_apresentacao ASC, e.chamada ASC
+      LIMIT 3`,
+    [escopoId]
+  )
+
+  if (!linhas.length) return []
+  const ids = linhas.map((linha) => texto(linha.id)).filter(Boolean)
+  const softwares = await carregarSoftwaresPorItem(ids)
+
+  return linhas.map((linha) => {
+    const id = texto(linha.id)
+    return {
+      id,
+      chamada: texto(linha.chamada),
+      titulo: texto(linha.titulo),
+      softwares: softwares.get(id) ?? [],
+      parceiro: texto(linha.parceiro),
+      tipo: texto(linha.tipo) as PublicoChamadaCritica['tipo'],
+      impacto: texto(linha.impacto) as PublicoChamadaCritica['impacto']
+    }
+  })
+}
+
 export async function listarPainelPublico(): Promise<PublicoPainel> {
-  const [resumos, manuaisDestaque, filtros] = await Promise.all([
+  const [resumos, manuaisDestaque, filtros, escopoDestaque] = await Promise.all([
     listarResumosPainel(),
     listarManuaisPainel(),
-    listarFiltrosPainel()
+    listarFiltrosPainel(),
+    listarEscopoDestaquePainel()
   ])
+  const chamadasCriticas = escopoDestaque
+    ? await listarChamadasCriticasPainel(escopoDestaque.id)
+    : []
 
   const selecionada = selecionarReleaseDestaque(resumos)
   const ranking = ranquearMaisVistas(
@@ -609,7 +677,9 @@ export async function listarPainelPublico(): Promise<PublicoPainel> {
     manuaisDestaque,
     maisVistas: ranking.itens,
     modoMaisVistas: ranking.modo,
-    filtros
+    filtros,
+    escopoDestaque,
+    chamadasCriticas
   }
 }
 

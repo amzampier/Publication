@@ -111,7 +111,7 @@ const alternarMes = (ano: number, mes: string, indice: number) => {
             :class="
               selecionada === rel.id
                 ? 'border-l-2 border-indigo-600 bg-indigo-50 font-semibold text-indigo-900 dark:border-indigo-400 dark:bg-indigo-500/15 dark:text-indigo-200'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100'
             "
             :aria-current="selecionada === rel.id ? 'true' : undefined"
             :aria-label="`Semana ${rel.semana}, versão ${rel.versao}, ${rotuloChamadas(rel.chamadas)}`"

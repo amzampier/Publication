@@ -17,7 +17,9 @@ const PAINEL_VAZIO: PublicoPainel = {
   manuaisDestaque: [],
   maisVistas: [],
   modoMaisVistas: 'recentes',
-  filtros: { softwares: [], tipos: [] }
+  filtros: { softwares: [], tipos: [] },
+  escopoDestaque: null,
+  chamadasCriticas: []
 }
 
 const HISTORICO_VAZIO: PublicoHistorico = {

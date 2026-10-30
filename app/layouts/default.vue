@@ -102,7 +102,8 @@ const irHome = async () => {
     id="publico-shell"
     data-publico-shell
     :class="[
-      'flex h-screen flex-col overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100',
+      'flex h-screen flex-col overflow-hidden',
+      escuro ? 'bg-slate-800 text-slate-100' : 'bg-slate-50 text-slate-900',
       { dark: escuro }
     ]"
   >
