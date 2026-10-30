@@ -91,7 +91,7 @@ describe('rótulos públicos do escopo', () => {
     expect(rotuloImpacto('Alto')).toBe('Impacto: Alto')
     expect(rotuloImpacto('Crítico')).toBe('Impacto: Crítico')
     expect(varianteImpacto('Crítico')).toBe('critico')
-    expect(varianteImpacto('Alto')).toBe('neutral')
+    expect(varianteImpacto('Alto')).toBe('alto')
     expect(varianteImpacto('Baixo')).toBe('neutral')
   })
 })

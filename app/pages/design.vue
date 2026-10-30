@@ -316,6 +316,15 @@ const publicoCriticasPainel: PublicoChamadaCritica[] = [
     parceiro: 'Distribuidora Master',
     tipo: 'Correção',
     impacto: 'Crítico'
+  },
+  {
+    id: 'demo-alto-1',
+    chamada: 'CH-2026-6571',
+    titulo: 'Divergência de saldo após a conferência de recebimento',
+    softwares: ['WMS Logística'],
+    parceiro: 'Logística Express',
+    tipo: 'Melhoria',
+    impacto: 'Alto'
   }
 ]
 
@@ -356,7 +365,7 @@ const publicoChamadasEscopo: PublicoChamadaEscopo[] = [
     solucao:
       'Conferência cega com leitura de código de barras, bloqueio de divergências e registro automático da conferência no estoque.',
     tipo: 'Nova Funcionalidade',
-    impacto: 'Médio',
+    impacto: 'Alto',
     modulo: 'Estoque',
     parceiro: 'Distribuidora Master',
     manualTitulo: 'Manual de Conferência Cega',

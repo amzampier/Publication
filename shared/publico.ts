@@ -222,8 +222,12 @@ export function rotuloImpacto(impacto: ImpactoItem | string): string {
   return `Impacto: ${impacto}`
 }
 
-export function varianteImpacto(impacto: ImpactoItem | string): 'critico' | 'neutral' {
-  return impacto === 'Crítico' ? 'critico' : 'neutral'
+export function varianteImpacto(
+  impacto: ImpactoItem | string
+): 'critico' | 'alto' | 'neutral' {
+  if (impacto === 'Crítico') return 'critico'
+  if (impacto === 'Alto') return 'alto'
+  return 'neutral'
 }
 
 export function normalizarSistema(valor: unknown): string {

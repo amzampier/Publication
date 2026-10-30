@@ -134,11 +134,10 @@ system. O tipo SHALL usar badge com rótulo textual; o impacto SHALL ser exibido
 os sistemas SHALL ser exibidos como chips de todos os softwares da chamada, sem repetição. A
 descrição SHALL ser apresentada em um container com borda verde (`brand.focus`) e a solução em um
 container com borda em `brand.structure`, ambos visualmente delimitados. As tags SHALL ser exibidas
-à direita, precedidas do rótulo **“Tags:”**. O impacto **Crítico** SHALL receber destaque visual no
-card — moldura rose com barra de 4px na borda esquerda (acompanhando os cantos superior e inferior),
-anel/sombra e badge de alerta com `AlertTriangle` e o texto “Impacto: Crítico” —, sem depender apenas
-de cor; os demais impactos SHALL permanecer com o badge neutro. O
-card NÃO SHALL exibir autor, revisor, status interno ou auditoria.
+à direita, precedidas do rótulo **“Tags:”**. O impacto **Crítico** SHALL receber destaque visual no card — borda base rose de 1px, cometa SVG rose percorrendo o contorno em loop de 5s e badge `critico` com `AlertTriangle` e o texto “Impacto: Crítico” —, sem depender apenas de cor. O impacto **Alto** SHALL receber o mesmo tratamento em laranja — borda base orange, cometa SVG orange no mesmo loop de 5s e badge `alto` com `Gauge` e o texto “Impacto: Alto” —, também sem depender apenas de cor. Os demais impactos SHALL permanecer com o badge neutro. Cada card
+SHALL ter o `id` de âncora `chamada-{id}`; quando a URL contiver esse hash, a página SHALL abrir
+rolada até o card, sem destaque adicional. O card NÃO SHALL exibir autor, revisor, status interno ou
+auditoria.
 
 #### Scenario: Card completo
 - **WHEN** uma chamada tem tipo, impacto, softwares, parceiro, publicação, tags, evidências e links
@@ -183,9 +182,19 @@ card NÃO SHALL exibir autor, revisor, status interno ou auditoria.
 
 #### Scenario: Destaque do impacto crítico
 - **WHEN** o impacto da chamada é `Crítico`
-- **THEN** o card recebe moldura rose com barra de 4px na borda esquerda, anel/sombra e badge
-  `critico` com `AlertTriangle` e
-  “Impacto: Crítico”; os demais impactos mantêm o badge neutro
+- **THEN** o card exibe borda base rose e um cometa SVG rose percorrendo o contorno em loop de 5s, além do badge `critico` com `AlertTriangle` e “Impacto: Crítico”; os demais impactos mantêm o badge neutro
+
+#### Scenario: Destaque do impacto alto
+- **WHEN** o impacto da chamada é `Alto`
+- **THEN** o card exibe borda base orange e um cometa SVG orange percorrendo o contorno no mesmo loop de 5s, além do badge `alto` com `Gauge` e “Impacto: Alto”, sem depender apenas de cor
+
+#### Scenario: Movimento reduzido
+- **WHEN** o visitante prefere movimento reduzido (`prefers-reduced-motion: reduce`)
+- **THEN** o cometa não é animado e o card mantém uma borda estática de 2px na cor do impacto, com o badge e o texto do impacto preservados
+
+#### Scenario: Ancoragem da chamada
+- **WHEN** a página é aberta com `#chamada-{id}` de uma chamada publicada
+- **THEN** a página abre rolada até o card correspondente, sem destaque adicional
 
 #### Scenario: Dados opcionais ausentes
 - **WHEN** a chamada não tem tags, evidências ou links

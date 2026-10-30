@@ -276,19 +276,19 @@ ALVO
 +----------------------------------------------------------------------------------+
 | H2: Escopo de Projeto                                   Ultimo projeto liberado  |
 | +------------------------------------------------------+ +---------------------+ |
-| | [PE-2026.01] [v26.06a] [Ano 2026]  Publicado em 29/10 | | Chamadas criticas 2 | |
-| | H3: Projeto 26.06a                                    | | [!] #0000456822     | |
-| | 8 chamadas . 3 sistemas                               | | [Impacto: Critico]  | |
-| | [SPED 3] [Atualizador 2] [Balcao 3]                   | | Registro 1601...    | |
-| | [ Ver escopo completo -> ]                            | | SPED . MT8          | |
-| +------------------------------------------------------+ +---------------------+ |
+| | [PE-2026.01] [v26.06a] [Ano 2026]  Publicado em 29/10 | | Chamadas em destaque 2 | |
+| | H3: Projeto 26.06a                                    | | [!] #0000456822       | |
+| | 8 chamadas . 3 sistemas                               | | [Impacto: Critico]    | |
+| | [SPED 3] [Atualizador 2] [Balcao 3]                   | | #0000457104           | |
+| | [ Ver escopo completo -> ]                            | | [Impacto: Alto]       | |
+| +------------------------------------------------------+ +-----------------------+ |
 +----------------------------------------------------------------------------------+
 ```
 
-- Grid `lg:grid-cols-3`: o card do escopo ocupa `lg:col-span-2` e o card de críticas uma
+- Grid `lg:grid-cols-3`: o card do escopo ocupa `lg:col-span-2` e o card de destaques uma
   coluna; abaixo de `lg`, os dois empilham.
-- Sem escopo publicado, a seção inteira não é renderizada. Com escopo e sem críticas, apenas o
-  card do escopo é exibido.
+- Sem escopo publicado, a seção inteira não é renderizada. Com escopo e sem chamadas em destaque,
+  apenas o card do escopo é exibido.
 
 ### 7.2 Regras
 
@@ -296,18 +296,21 @@ ALVO
   `versao DESC`; aplica o gate público do escopo.
 - O card exibe código, nome, versão, ano, data efetiva, total de chamadas e sistemas com contagens.
 - O CTA **“Ver escopo completo”** aponta para `/escopos/{id}`.
-- As chamadas críticas vêm do escopo em destaque, com `impacto = 'Crítico'` e gate público nas
-  chamadas; são até três, por `ordem_apresentacao` e depois `chamada`.
-- Cada crítica exibe código, título, sistema(s) e parceiro, com o badge `critico` e o texto
-  **“Impacto: Crítico”** (ícone `AlertTriangle`), sem depender apenas de cor. Cada item leva para
-  `/escopos/{id}`.
-- Identidade indigo-700 (`#4338ca`) no escopo; rose-700 nas críticas.
+- As chamadas em destaque vêm do escopo em destaque, com `impacto` `Crítico` ou `Alto` e gate público
+  nas chamadas; são até três, com as críticas antes das altas e, dentro de cada impacto, por
+  `ordem_apresentacao` e depois `chamada`.
+- Cada item exibe código, título, sistema(s) e parceiro, com o badge do impacto — `critico` +
+  `AlertTriangle` + **“Impacto: Crítico”**, ou `alto` + `Gauge` + **“Impacto: Alto”** —, sem depender
+  apenas de cor. Cada item leva para `/escopos/{id}#chamada-{id}`; ao abrir, a página já aparece
+  rolada até o card, sem destaque adicional.
+- Identidade indigo-700 (`#4338ca`) no escopo; rose-700 nas críticas e laranja (`orange-700`/`orange-600`)
+  nas altas.
 
 ### 7.3 API
 
-`GET /api/publico/painel` passa a retornar `escopoDestaque` e `chamadasCriticas`, sem novo
-endpoint e mantendo o cache público de curta duração. Sem escopo, `escopoDestaque` é `null` e
-`chamadasCriticas` é `[]`.
+`GET /api/publico/painel` passa a retornar `escopoDestaque` e `chamadasCriticas` (com impactos
+`Crítico` e `Alto`), sem novo endpoint e mantendo o cache público de curta duração. Sem escopo,
+`escopoDestaque` é `null` e `chamadasCriticas` é `[]`.
 
 ## 8. Histórico de Releases Week
 
@@ -498,7 +501,8 @@ interface PublicoHistorico {
 **Expõe:** identificadores públicos, semana, ano, mês, versão, release, título, descrição, tipo,
 software, módulo, parceiro, chamada, data efetiva, visualizações, contagem de fotos, links de
 vídeo/manual e `revisorNome`; no escopo em destaque, código, nome, versão, ano, chamadas, sistemas e
-`publicadoEm`; nas chamadas críticas, código, título, sistemas, parceiro, tipo e impacto.
+`publicadoEm`; nas chamadas em destaque, código, título, sistemas, parceiro, tipo e impacto
+(`Crítico` ou `Alto`).
 
 **Não expõe:** `autor_id`, `autor_nome`, `revisor_id`, `revisor_feedback`, status interno,
 arquivamento, auditoria, anexos completos, caminhos físicos e timestamps internos.
@@ -528,7 +532,7 @@ AND publicado_em <= NOW(6)
 
 Para as chamadas filhas, o mesmo gate é aplicado. Arquivar o pai esconde o pai e as filhas. Rascunho,
 revisão, aprovação sem publicação efetiva e publicação futura não aparecem. O escopo em destaque e
-as chamadas críticas seguem exatamente o mesmo gate.
+as chamadas em destaque seguem exatamente o mesmo gate.
 
 ### 11.2 Seleção
 
@@ -538,7 +542,7 @@ as chamadas críticas seguem exatamente o mesmo gate.
 | Chamadas do hero | Até 3, por `ordem_apresentacao`; empate por `chamada`/`id` |
 | Manuais | Manuais em destaque, um item por manual, até 2 cards; fallback de catálogo |
 | Escopo em destaque | Escopo publicado mais recente por `publicado_em DESC`, desempate por `ano DESC` e `versao DESC` |
-| Chamadas críticas | Até 3 chamadas do escopo com `impacto = 'Crítico'`, por `ordem_apresentacao` e depois `chamada` |
+| Chamadas em destaque | Até 3 chamadas do escopo com `impacto` `Crítico` ou `Alto`, com as críticas antes das altas e, dentro de cada impacto, por `ordem_apresentacao` e depois `chamada` |
 | Mais vistas | Exclui o hero; top 3 por views; fallback recente; completa posições |
 | Histórico | Publicadas por `publicado_em` desc; 6 por página; filtros software/tipo |
 
@@ -583,7 +587,8 @@ as chamadas críticas seguem exatamente o mesmo gate.
 - Releases (hero, ranking, histórico): índigo.
 - Manuais: esmeralda.
 - Escopo de Projetos: indigo-700 (`#4338ca`), agora também no painel (card do escopo e chips).
-- Chamadas críticas: rose-700 (`#be123c`) no card, no ícone `AlertTriangle` e no badge `critico`.
+- Chamadas em destaque: rose-700 (`#be123c`) no card, no ícone `AlertTriangle` e no badge `critico`;
+  altas em laranja (`orange-700`/`orange-600`) com `Gauge` e badge `alto`.
 - O histórico é de releases e usa indigo, não o indigo-700 do Escopo, para manter a identidade da
   seção.
 
@@ -612,7 +617,7 @@ as chamadas críticas seguem exatamente o mesmo gate.
 
 ## 13. Responsividade
 
-| Viewport | Hero | Manuais + ranking | Escopo + críticas | Histórico |
+| Viewport | Hero | Manuais + ranking | Escopo + destaques | Histórico |
 |---|---|---|---|---|
 | `>= 1280px` | Largura total; 3 cards de chamada lado a lado | 2 colunas + 1 coluna | 2 colunas + 1 coluna | 3 colunas |
 | `1024px - 1279px` | Largura total; 3 cards | 2 colunas + 1 coluna | 2 colunas + 1 coluna | 2 colunas |
@@ -627,14 +632,14 @@ as chamadas críticas seguem exatamente o mesmo gate.
 ## 14. Acessibilidade
 
 - `h1` "Painel de Destaques & Busca"; `h2` por seção com `aria-labelledby`; `h3` nos cards.
-- A seção de Escopo usa `h2` "Escopo de Projeto" e `h3` para o escopo e para "Chamadas críticas".
+- A seção de Escopo usa `h2` "Escopo de Projeto" e `h3` para o escopo e para "Chamadas em destaque".
 - Links de CTA com nome acessível que inclua a semana, o título do item ou o nome do escopo.
-- Badges de tipo e impacto crítico com texto; nunca apenas cor.
+- Badges de tipo e de impacto (`Crítico`/`Alto`) com texto; nunca apenas cor.
 - Visualizações com `aria-label` (“1.434 visualizações”).
 - Filtros com rótulos visíveis; resultado anunciado por `aria-live="polite"`.
 - Carregamento com `aria-busy="true"`; erro com `role="alert"` e “Tentar novamente”.
 - Foco visível em todos os controles; ordem de tabulação: hero -> manuais -> ranking -> escopo ->
-  críticas -> filtros -> cards do histórico.
+  destaques -> filtros -> cards do histórico.
 - Links externos com `target="_blank"` e `rel="noopener noreferrer"`.
 - Contraste AA nos temas claro e escuro; respeitar `prefers-reduced-motion`.
 
@@ -652,7 +657,7 @@ as chamadas críticas seguem exatamente o mesmo gate.
 | Filtros | Loading apenas na lista; controles utilizáveis |
 | Views zero | Contador oculto; ranking em modo "recentes" |
 | Sem escopo publicado | A seção de Escopo não é renderizada; as demais seguem íntegras |
-| Escopo sem críticas | Apenas o card do escopo; o card de críticas não é renderizado |
+| Escopo sem destaques | Apenas o card do escopo; o card de destaques não é renderizado |
 
 ## 16. Componentização
 
@@ -663,7 +668,7 @@ app/components/publico/
   PainelUltimaRelease.vue                   (hero + cards)
   PainelManuaisDestaque.vue                 (cards por item)
   PainelMaisVistas.vue                      (ranking/recentes)
-  PainelEscopoDestaque.vue                  (escopo + chamadas críticas)
+  PainelEscopoDestaque.vue                  (escopo + chamadas em destaque)
   PainelHistorico.vue                       (filtros + grid + carregar mais)
   PainelReleaseCard.vue                     (card reutilizado)
 ```
@@ -683,7 +688,7 @@ app/components/publico/
   4. histórico + contagens por tipo;
   5. opções de filtro;
   6. escopo em destaque + sistemas;
-  7. chamadas críticas do escopo + softwares.
+  7. chamadas em destaque do escopo + softwares.
 - Filtros de software/tipo com `EXISTS`, não `JOIN` que multiplique a release.
 - Contagem de fotos por subquery em `anexos_midias`.
 - Histórico devolve apenas a página; não materializa todas as chamadas.
@@ -710,7 +715,7 @@ app/components/publico/
   - filtros combinados;
   - normalização de página/tamanho/tipo/software;
   - seleção do último escopo por publicação, ano e versão;
-  - ordenação e limite das chamadas críticas;
+  - ordenação e limite das chamadas em destaque;
   - rótulos pt-BR.
 - `tests/visibilidade-publica.test.ts` cobre o gate pai/filho e publicação futura.
 - Manual:
@@ -754,8 +759,8 @@ app/components/publico/
 - [ ] Contagens do card não são alteradas pelo filtro.
 - [ ] URL preserva `software`, `tipo` e `pagina`.
 - [ ] Escopo em destaque é o publicado mais recente por `publicado_em`.
-- [ ] Chamadas críticas são do escopo em destaque, até três, com badge e link.
-- [ ] Seção do escopo some sem escopo publicado; card de críticas some sem críticas.
+- [ ] Chamadas em destaque são do escopo em destaque, até três, com badge do impacto e link.
+- [ ] Seção do escopo some sem escopo publicado; card de destaques some sem destaques.
 
 ### 20.2 Gate e privacidade
 
@@ -764,13 +769,13 @@ app/components/publico/
 - [ ] `origem = 'Ambos'` pode aparecer nas duas seções sem ser duplicidade.
 - [ ] Nenhum autor, feedback, ID interno ou auditoria é exposto.
 - [ ] `revisorNome` só aparece quando existe.
-- [ ] Escopo e chamadas críticas não publicados ficam fora da seção e das contagens.
+- [ ] Escopo e chamadas em destaque não publicados ficam fora da seção e das contagens.
 
 ### 20.3 Visual e responsividade
 
 - [ ] Hero escuro com degradê sutil, sem degradê em outras superfícies.
 - [ ] Releases em índigo; manuais em esmeralda; escopo em indigo-700.
-- [ ] Chamadas críticas em rose-700, com `AlertTriangle` e badge textual.
+- [ ] Chamadas em destaque: críticas em rose-700 com `AlertTriangle`; altas em laranja com `Gauge`; badges textuais.
 - [ ] Badges de tipo com cor, ícone e rótulo.
 - [ ] Tema claro e escuro com contraste AA.
 - [ ] 1440, 1024, 768 e 390 sem overflow horizontal.
@@ -778,7 +783,7 @@ app/components/publico/
 
 ### 20.4 Acessibilidade e qualidade
 
-- [ ] H1/H2/H3 e `aria-labelledby` corretos, incluindo “Escopo de Projeto” e “Chamadas críticas”.
+- [ ] H1/H2/H3 e `aria-labelledby` corretos, incluindo "Escopo de Projeto" e "Chamadas em destaque".
 - [ ] CTAs com nomes acessíveis, incluindo o nome do escopo.
 - [ ] Filtros com rótulo e `aria-live`.
 - [ ] Foco visível e ordem de tabulação previsível.

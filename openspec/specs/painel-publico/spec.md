@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Definir o painel de entrada da Área Pública que reúne a release da semana, os manuais em destaque, o escopo de projeto com chamadas críticas, as releases mais acessadas e o histórico filtrável de publicações.
+Definir o painel de entrada da Área Pública que reúne a release da semana, os manuais em destaque, o escopo de projeto com chamadas em destaque, as releases mais acessadas e o histórico filtrável de publicações.
 
 ## Requirements
 
@@ -220,40 +220,49 @@ SHALL apontar para `/escopos/{id}`. Sem escopo publicado, a seção NÃO SHALL s
 - **THEN** a seção “Escopo de Projeto” não é renderizada, sem espaço vazio, e as demais seções do
   painel continuam íntegras
 
-### Requirement: O painel exibe as chamadas críticas do escopo em destaque
+### Requirement: O painel exibe as chamadas em destaque do escopo
 
-O painel SHALL exibir, na seção de Escopo de Projeto, o card **“Chamadas críticas”** com até três
-chamadas publicadas do escopo em destaque cujo `impacto` seja `Crítico`, ordenadas por
-`ordem_apresentacao` e depois por `chamada`. Cada chamada SHALL exibir código, título, sistema(s) e
-parceiro; a chamada SHALL usar o badge `critico` com `AlertTriangle` e o texto **“Impacto: Crítico”**,
-sem depender apenas de cor. Cada item SHALL abrir `/escopos/{id}` do escopo correspondente. Sem
-chamadas críticas publicadas, o card NÃO SHALL ser renderizado, mantendo o card do escopo visível.
+O painel SHALL exibir, na seção de Escopo de Projeto, o card **“Chamadas em destaque”** com até três
+chamadas publicadas do escopo em destaque cujo `impacto` seja `Crítico` ou `Alto`, ordenadas com as
+`Crítico` antes das `Alto` e, dentro de cada impacto, por `ordem_apresentacao` e depois por `chamada`.
+Cada chamada SHALL exibir código, título, sistema(s), parceiro e o badge do impacto — `critico` com
+`AlertTriangle` e **“Impacto: Crítico”**, ou `alto` com `Gauge` e **“Impacto: Alto”** —, sem depender
+apenas de cor. Cada item SHALL abrir `/escopos/{id}#chamada-{id}` do escopo correspondente, e a página
+de destino SHALL abrir rolada até o card da chamada. Sem chamadas `Crítico` ou `Alto` publicadas, o
+card NÃO SHALL ser renderizado, mantendo o card do escopo visível.
 
-#### Scenario: Lista de críticas
+#### Scenario: Lista em destaque
 
-- **WHEN** o escopo em destaque tem chamadas publicadas com impacto `Crítico`
-- **THEN** o card exibe até três delas por `ordem_apresentacao`, com código, título, sistema(s),
-  parceiro e o badge crítico
+- **WHEN** o escopo em destaque tem chamadas publicadas com impacto `Crítico` ou `Alto`
+- **THEN** o card exibe até três delas, com as críticas antes das altas, código, título, sistema(s),
+  parceiro e o badge do impacto correspondente
 
-#### Scenario: Mais de três críticas
+#### Scenario: Abrir a chamada em destaque
 
-- **WHEN** o escopo tem mais de três chamadas críticas publicadas
+- **WHEN** o visitante clica em uma chamada do card “Chamadas em destaque”
+- **THEN** a navegação abre `/escopos/{id}#chamada-{id}` já rolada até o card correspondente, sem
+  destaque adicional
+
+#### Scenario: Mais de três chamadas em destaque
+
+- **WHEN** o escopo tem mais de três chamadas publicadas com impacto `Crítico` ou `Alto`
 - **THEN** o card exibe apenas as três primeiras pela ordenação definida
 
-#### Scenario: Sem chamadas críticas
+#### Scenario: Sem chamadas em destaque
 
-- **WHEN** o escopo em destaque não tem chamada publicada com impacto `Crítico`
-- **THEN** o card “Chamadas críticas” não é renderizado e o card do escopo permanece visível
+- **WHEN** o escopo em destaque não tem chamada publicada com impacto `Crítico` ou `Alto`
+- **THEN** o card “Chamadas em destaque” não é renderizado e o card do escopo permanece visível
 
-#### Scenario: Dados opcionais da crítica
+#### Scenario: Dados opcionais da chamada em destaque
 
-- **WHEN** a chamada crítica não tem parceiro ou sistema publicado
+- **WHEN** a chamada em destaque não tem parceiro ou sistema publicado
 - **THEN** o item omite o dado ausente, sem espaço vazio ou rótulo quebrado
 
 #### Scenario: Impacto não depende de cor
 
-- **WHEN** uma chamada crítica é exibida
-- **THEN** o texto “Impacto: Crítico” e o ícone `AlertTriangle` acompanham a cor rose
+- **WHEN** uma chamada em destaque é exibida
+- **THEN** o texto do impacto e o ícone acompanham a cor — rose com `AlertTriangle` para `Crítico`,
+  laranja com `Gauge` para `Alto`
 
 ### Requirement: A leitura pública do painel é anônima e obedece ao gate de visibilidade
 
@@ -261,7 +270,7 @@ O sistema SHALL servir a leitura do painel por `GET /api/publico/painel` e
 `GET /api/publico/releases`, sem exigir sessão. As duas leituras SHALL aplicar o gate público tanto
 ao conteúdo pai quanto às chamadas: `status = 'Publicado'`, `arquivada = 0`, `publicado_em IS NOT
 NULL` e `publicado_em <= NOW(6)`. Rascunho, revisão, aprovação sem publicação efetiva, arquivamento e
-publicação futura NÃO SHALL aparecer. O escopo em destaque e as chamadas críticas SHALL obedecer ao
+publicação futura NÃO SHALL aparecer. O escopo em destaque e as chamadas em destaque SHALL obedecer ao
 mesmo gate de visibilidade. Uma chamada com `origem = 'Ambos'` PODE aparecer na release e no manual
 correspondentes; isso não é duplicidade. As respostas SHALL usar cache público de curta duração e
 SHALL responder `500` genérico em falha de banco, sem detalhe de infraestrutura. Escritas em
@@ -281,7 +290,7 @@ SHALL responder `500` genérico em falha de banco, sem detalhe de infraestrutura
 #### Scenario: Escopo não publicado
 
 - **WHEN** um escopo está em rascunho, arquivado ou com publicação futura
-- **THEN** ele não aparece na seção de Escopo de Projeto nem no card de chamadas críticas
+- **THEN** ele não aparece na seção de Escopo de Projeto nem no card de chamadas em destaque
 
 #### Scenario: Chamada filha não publicada
 
@@ -309,7 +318,7 @@ As respostas públicas SHALL expor apenas os campos de negócio necessários ao 
 públicos, semana, ano, mês, versão, código da release, título, descrição, tipo, software, módulo,
 parceiro, chamada, data efetiva, visualizações, contagem de fotos, links de vídeo/manual e
 `revisorNome`. Para o escopo em destaque, SHALL expor identificador público, código, nome, versão,
-ano, data efetiva, total de chamadas e sistemas com contagens. Para as chamadas críticas, SHALL expor
+ano, data efetiva, total de chamadas e sistemas com contagens. Para as chamadas em destaque, SHALL expor
 identificador público, código da chamada, título, sistema(s), parceiro, tipo e impacto. As respostas
 NÃO SHALL expor `autor_id`, `autor_nome`, `revisor_id`, `revisor_feedback`, status interno,
 arquivamento, trilha de auditoria, anexos completos, caminhos físicos ou timestamps internos. O
@@ -320,7 +329,7 @@ manual SHALL ser servidos como URL e abertos com atributos de segurança pela in
 
 - **WHEN** o painel recebe a resposta pública
 - **THEN** os cards conseguem exibir título, descrição, tipo, software, módulo, parceiro, chamada,
-  fotos, links, revisor, escopo em destaque e chamadas críticas
+  fotos, links, revisor, escopo em destaque e chamadas em destaque
 
 #### Scenario: Campos internos ausentes
 
@@ -331,7 +340,7 @@ manual SHALL ser servidos como URL e abertos com atributos de segurança pela in
 #### Scenario: Escopo e críticas sem dados internos
 
 - **WHEN** a seção de Escopo de Projeto é inspecionada
-- **THEN** ela expõe apenas os campos públicos do escopo e das chamadas críticas, sem autor, revisor,
+- **THEN** ela expõe apenas os campos públicos do escopo e das chamadas em destaque, sem autor, revisor,
   feedback, status interno ou caminhos físicos
 
 #### Scenario: Revisor opcional
@@ -349,7 +358,7 @@ manual SHALL ser servidos como URL e abertos com atributos de segurança pela in
 O painel SHALL exibir estado de carregamento na carga inicial, sem renderizar números parciais. Cada
 seção SHALL ter estado vazio próprio quando não houver conteúdo, exceto a seção de Escopo de Projeto,
 que NÃO SHALL ser renderizada quando não houver escopo publicado; nesse caso o card de chamadas
-críticas também não é exibido. Com escopo publicado e sem chamadas críticas, apenas o card do escopo
+em destaque também não é exibido. Com escopo publicado e sem chamadas em destaque, apenas o card do escopo
 é exibido. A falha da leitura principal SHALL exibir um estado de erro com **“Tentar novamente”**, sem
 manter dados antigos. A falha da leitura do histórico SHALL ficar restrita ao histórico, mantendo o
 hero, os manuais, o ranking e o escopo utilizáveis. A troca de filtros SHALL exibir carregamento apenas
@@ -390,7 +399,7 @@ na lista do histórico e manter os controles utilizáveis.
 
 O painel SHALL manter o hero em largura total, os manuais e o ranking em duas colunas proporcionais no
 desktop e empilhados abaixo de `lg`, e o histórico em três colunas no desktop, duas em tablet e uma
-no mobile. A seção de Escopo de Projeto SHALL exibir o card do escopo e o card de chamadas críticas
+no mobile. A seção de Escopo de Projeto SHALL exibir o card do escopo e o card de chamadas em destaque
 lado a lado no desktop e empilhados abaixo de `lg`. Em nenhuma largura entre 320px e 1440px o painel
 SHALL produzir overflow horizontal. Os chips SHALL quebrar linha, os filtros SHALL empilhar no mobile
 e os alvos de toque SHALL ter no mínimo 44x44 no mobile. O drawer da sidebar pública SHALL continuar
@@ -424,12 +433,12 @@ independente do painel.
 O painel SHALL usar um `h1` com o título **“Painel de Destaques & Busca”** e um `h2` por seção,
 associado ao conteúdo por `aria-labelledby`. Cada card SHALL ser um artigo com título `h3`. A seção de
 Escopo de Projeto SHALL usar `h2` “Escopo de Projeto” e `h3` para o escopo e para o card “Chamadas
-críticas”. Os links de CTA SHALL ter nomes acessíveis que incluam a semana, o título do item ou o nome
-do escopo. Os badges de tipo e o impacto crítico NÃO SHALL depender apenas de cor; o rótulo textual
-SHALL estar presente. A contagem de visualizações SHALL ter nome acessível (“1.434 visualizações”).
+em destaque”. Os links de CTA SHALL ter nomes acessíveis que incluam a semana, o título do item ou o
+nome do escopo. Os badges de tipo e de impacto (`Crítico` e `Alto`) NÃO SHALL depender apenas de cor;
+o rótulo textual SHALL estar presente. A contagem de visualizações SHALL ter nome acessível (“1.434 visualizações”).
 Os filtros SHALL ter rótulos visíveis, o resultado SHALL ser anunciado por `aria-live` e o
 carregamento SHALL expor `aria-busy`. O foco SHALL ser visível com o anel canônico do design system, a
-ordem de tabulação SHALL seguir hero, manuais, ranking, escopo, críticas, filtros e cards do
+ordem de tabulação SHALL seguir hero, manuais, ranking, escopo, destaques, filtros e cards do
 histórico, e o contraste SHALL atender AA nos temas claro e escuro.
 
 #### Scenario: Hierarquia de títulos
@@ -444,11 +453,11 @@ histórico, e o contraste SHALL atender AA nos temas claro e escuro.
 - **THEN** o texto “Correção”, “Melhoria” ou “Nova Funcionalidade” está presente, além da cor e do
   ícone
 
-#### Scenario: Escopo e críticas acessíveis
+#### Scenario: Escopo e destaques acessíveis
 
 - **WHEN** a seção de Escopo de Projeto é percorrida por tecnologia assistiva
-- **THEN** o escopo e cada chamada crítica têm nome acessível com o código e o título, e o impacto
-  crítico é anunciado como “Impacto: Crítico”
+- **THEN** o escopo e cada chamada em destaque têm nome acessível com o código e o título, e o
+  impacto é anunciado como “Impacto: Crítico” ou “Impacto: Alto”
 
 #### Scenario: Visualizações anunciadas
 
@@ -474,7 +483,8 @@ histórico, e o contraste SHALL atender AA nos temas claro e escuro.
 
 `GET /api/publico/painel` SHALL retornar `releaseDestaque`, `manuaisDestaque`, `maisVistas`,
 `modoMaisVistas` (`vistas` ou `recentes`), `filtros` com as opções de software e tipo,
-`escopoDestaque` (ou `null`) e `chamadasCriticas` (lista, possivelmente vazia).
+`escopoDestaque` (ou `null`) e `chamadasCriticas` (lista de chamadas com impacto `Crítico` ou `Alto`,
+possivelmente vazia).
 `GET /api/publico/releases` SHALL aceitar `software`, `tipo`, `pagina` e `porPagina` e retornar os
 itens da página, o total, a página e o tamanho da página. `porPagina` SHALL ter padrão 6 e limite
 máximo 50; `pagina` inválida SHALL ser normalizada para 1; `tipo` fora do enum SHALL ser ignorado;
@@ -492,8 +502,8 @@ filtro SHALL ser derivadas apenas de conteúdo publicado.
 
 - **WHEN** há escopo publicado
 - **THEN** `escopoDestaque` contém id, código, nome, versão, ano, data efetiva, chamadas e sistemas, e
-  `chamadasCriticas` contém no máximo três itens com código, título, sistema(s), parceiro, tipo e
-  impacto
+  `chamadasCriticas` contém no máximo três itens com impacto `Crítico` ou `Alto`, com código, título,
+  sistema(s), parceiro e tipo
 
 #### Scenario: Painel sem escopo
 

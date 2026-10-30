@@ -221,17 +221,17 @@ interface PublicoPainel {
 - `escopoDestaque`: último escopo publicado por `publicado_em` (desempate por ano e versão); `null`
   quando não há escopo publicado. Contém código, nome, versão, ano, chamadas, sistemas e
   `publicadoEm`.
-- `chamadasCriticas`: até três chamadas publicadas com `impacto = 'Crítico'` do escopo em destaque,
-  ordenadas por `ordem_apresentacao` e `chamada`; lista vazia quando o escopo não tem críticas ou
-  quando não há escopo.
+- `chamadasCriticas`: até três chamadas publicadas do escopo em destaque com `impacto` `Crítico` ou
+  `Alto`, com as críticas antes das altas e, dentro de cada impacto, por `ordem_apresentacao` e
+  `chamada`; lista vazia quando o escopo não tem chamadas em destaque ou quando não há escopo.
 
 ### 8.3 Campos públicos
 
 **Expõe:** identificadores públicos, semana, ano, mês, versão, release, título, descrição, tipo,
 software, módulo, parceiro, chamada, `publicadoEm`, `totalVisualizacoes`, contagem de fotos,
 `linkVideo`, `linkManual` e `revisorNome`; para o escopo em destaque, código, nome, versão, ano,
-chamadas, sistemas e `publicadoEm`; para as chamadas críticas, código, título, sistemas, parceiro,
-tipo e impacto.
+chamadas, sistemas e `publicadoEm`; para as chamadas em destaque, código, título, sistemas, parceiro,
+tipo e impacto (`Crítico` ou `Alto`).
 
 **Não expõe:** autor, feedback de revisor, IDs internos, status interno, arquivamento, auditoria,
 anexos completos, caminhos físicos e timestamps internos.
@@ -294,6 +294,15 @@ O crédito do revisor é o único dado de revisor exposto; `revisor_feedback`, `
       "parceiro": "MT8 Soluções",
       "tipo": "Melhoria",
       "impacto": "Crítico"
+    },
+    {
+      "id": "9c31...",
+      "chamada": "0000457104",
+      "titulo": "Divergência de saldo após a conferência",
+      "softwares": ["WMS Logística"],
+      "parceiro": "Logística Express",
+      "tipo": "Correção",
+      "impacto": "Alto"
     }
   ]
 }

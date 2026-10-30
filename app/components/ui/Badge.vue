@@ -11,7 +11,8 @@ import {
   MessageSquareWarning,
   Wrench,
   Sparkles,
-  PlusCircle
+  PlusCircle,
+  Gauge
 } from '@lucide/vue'
 
 export type BadgeVariant =
@@ -29,6 +30,7 @@ export type BadgeVariant =
   | 'melhoria'
   | 'nova'
   | 'critico'
+  | 'alto'
 
 interface Props {
   variant?: BadgeVariant
@@ -136,6 +138,13 @@ const variantConfig = computed(() => {
         dot: 'bg-rose-700',
         icon: AlertTriangle,
         label: 'Crítico'
+      }
+    case 'alto':
+      return {
+        bg: 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950/40 dark:border-orange-900 dark:text-orange-300',
+        dot: 'bg-orange-600',
+        icon: Gauge,
+        label: 'Alto'
       }
     case 'neutral':
     default:

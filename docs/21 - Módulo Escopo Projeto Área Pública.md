@@ -210,12 +210,21 @@ Regras:
 - O impacto usa `UiBadge variant="neutral"` com o rótulo **“Impacto: {valor}”** e ícone `Gauge`; o
   valor textual é obrigatório e a cor não é o único sinal.
 - O impacto **Crítico** usa `UiBadge variant="critico"` (`rose-700` + `AlertTriangle`) e dá ao card
-  uma moldura rose com **barra de 4px na borda esquerda**, acompanhando os cantos superior e
-  inferior do card, mais anel/sombra discreta; os demais impactos permanecem neutros e sem moldura.
-  O destaque não depende apenas de cor.
+  uma **borda animada "cometa"** em rose-600: um `<svg>` sobreposto (`absolute inset-0`,
+  `pointer-events-none`, `aria-hidden`) desenha um `<rect>` de 2px com `pathLength="100"`,
+  `stroke-dasharray="22 78"` e `stroke-linecap="round"`, e o trecho aceso percorre o perímetro do
+  card em **5s, `linear`, infinito**, sem pausar em hover/focus. O card mantém a borda base de 1px
+  (`rose-300`) e não usa mais barra lateral de 4px nem anel/sombra pesada. O impacto **Alto** recebe
+  o mesmo movimento em `orange-500` com `UiBadge variant="alto"` (`Gauge`). Os demais impactos
+  permanecem neutros e sem borda animada. O destaque não depende apenas de cor: em
+  `prefers-reduced-motion: reduce` o `<svg>` é ocultado e o card passa a exibir borda estática de 2px
+  na cor do impacto (`rose-600`/`orange-500`).
 - Os sistemas usam os chips indigo-700 com todos os softwares da chamada, sem repetição.
 - O bloco da direita exibe **“Publicado em: {publicadoEm}”**, alinhado à direita no desktop e
   empilhado no mobile. A publicação é o carimbo efetivo `publicado_em`, não `data_publicacao`.
+- Cada card tem o `id` de âncora `chamada-{id}` e usa `scroll-mt-24`; abrir a URL com esse hash já
+  posiciona a página no card, sem destaque adicional. O card em destaque do painel aponta para essa
+  âncora.
 - O título é apresentado em um container com o degradê do cabeçalho de modal
   (`from-brand-primary to-brand-structure`) e borda esquerda accent (`border-l-[2.5px]
   border-l-brand-accent`), com texto branco.
@@ -404,7 +413,8 @@ timestamps internos.
   `indigo-200/300/400` (bordas/texto), `indigo-800/950` (texto).
 - Cards: `bg-white border-slate-200` no claro; `bg-slate-900 border-slate-800` no escuro.
 - Badges de tipo: `correcao` (`rose-700`), `melhoria` (`emerald-700`) e `nova` (`indigo-700`),
-  sempre com rótulo textual e ícone.
+  sempre com rótulo textual e ícone. Badges de impacto: `critico` (`rose-700` + `AlertTriangle`) e
+  `alto` (`orange-700` + `Gauge`).
 - Foco: `brand-focus` `#1a9e07`; erro: `rose-700` `#be123c`.
 - Nenhum `lime-500` e nenhum degradê fora das superfícies permitidas.
 
@@ -491,8 +501,11 @@ app/components/publico/EscopoEvidencias.vue   miniaturas + galeria
   - “Ver Tudo”, URL direta, recarregar, voltar/avançar e “Voltar aos Destaques”;
   - galeria (abrir, setas, `Escape`, foco);
   - descrição, solução, impacto, título do manual, botão primário e tags à direita no card;
-  - destaque do impacto crítico (moldura rose, barra na borda esquerda, badge `critico`) e impacto
-    não crítico sem moldura;
+  - destaque do impacto crítico (borda animada "cometa" em rose-600, badge `critico`) e do
+    impacto alto (mesmo cometa em orange-500, badge `alto`), com os demais impactos sem borda
+    animada; com movimento reduzido, borda estática de 2px na cor do impacto;
+  - clique na chamada em destaque do painel abre `/escopos/{id}#chamada-{id}` já rolado até o card,
+    sem destaque adicional;
   - estados vazio, sistema desconhecido e erro;
   - 390/768/1024/1440 sem overflow; temas claro e escuro.
 - Gates: `npm run lint`, `npm run test`, `npm run typecheck` e `npm run build`.

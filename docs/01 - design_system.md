@@ -325,7 +325,7 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `size` | `'sm' \| 'md'` | `'md'` | `sm` 10px · `md` 11px |
 
 - **Emits:** nenhum · **Slots:** `default` (substitui o rótulo interno).
-- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes' | 'correcao' | 'melhoria' | 'nova' | 'critico'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week, `alteracoes` é a do catálogo mensal de Manuais e `critico` é a do impacto crítico das chamadas do Escopo público).
+- **`BadgeVariant` = `'done' | 'reconciled' | 'pending' | 'inReview' | 'blocked' | 'neutral' | 'aberta' | 'publicado' | 'arquivado' | 'alteracoes' | 'correcao' | 'melhoria' | 'nova' | 'critico' | 'alto'`** (enum em inglês, display em pt-BR; `aberta`/`publicado`/`arquivado` são as variantes semânticas do módulo Release Week, `alteracoes` é a do catálogo mensal de Manuais e `critico`/`alto` são as dos impactos crítico e alto das chamadas do Escopo público).
 
 | Variant | Rótulo (PT) | Fundo / Borda / Texto | Ícone |
 | :--- | :--- | :--- | :--- |
@@ -343,12 +343,21 @@ Ordem = numeração do `/design`. Auto-importados (ver [4.1](#41-uso-e-auto-impo
 | `melhoria` | Melhoria | `bg-emerald-50` / `border-emerald-200` / `text-emerald-800` | `Sparkles` |
 | `nova` | Nova Funcionalidade | `bg-indigo-50` / `border-indigo-200` / `text-indigo-800` | `PlusCircle` |
 | `critico` | Crítico | `bg-rose-50` / `border-rose-200` / `text-rose-700` | `AlertTriangle` |
+| `alto` | Alto | `bg-orange-50` / `border-orange-200` / `text-orange-700` | `Gauge` |
 
 - **Badges de tipo no painel público:** `correcao`/`melhoria`/`nova` são exclusivos do conteúdo editorial da Área Pública; o `rose-700` de Correção não substitui o `rose-700` de erro/validação. O rótulo textual e o ícone são obrigatórios.
 - **Badge `critico`:** usado pelo impacto crítico do card do Escopo público. Não pulsa; o card
-  correspondente recebe moldura rose com barra de 4px na **borda esquerda** (acompanhando os cantos
-  superior e inferior do card) e anel/sombra discreta, sempre com o texto “Impacto: Crítico” como
-  sinal principal. No tema escuro usa `dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300`.
+  correspondente recebe uma **borda animada "cometa"** em `rose-600` (um `<svg>` absoluto com
+  `<rect>` de 2px, `pathLength="100"`, `stroke-dasharray="22 78"` e `stroke-linecap="round"`, cujo
+  `stroke-dashoffset` vai de `0` a `-100` em `5s linear infinite`, sem pausar em hover/focus) sobre
+  uma borda base de 1px (`rose-300`), sempre com o texto "Impacto: Crítico" como sinal principal.
+  Em `prefers-reduced-motion: reduce` o SVG some e vale a borda estática de 2px em `rose-600`,
+  mantendo o destaque sem movimento. No tema escuro usa
+  `dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300`.
+- **Badge `alto`:** mesmo tratamento do `critico` — cometa de 2px em `orange-500`, mesmo loop de 5s,
+  borda base de 1px (`orange-300`) e fallback estático de 2px em `prefers-reduced-motion: reduce` —,
+  com ícone `Gauge` e o texto "Impacto: Alto". No tema escuro usa
+  `dark:bg-orange-950/40 dark:border-orange-900 dark:text-orange-300`.
 - **Disciplina Zero-Pill:** `rounded-md` obrigatório (nunca `rounded-full`).
 - **Gotchas:** `variant="blocked"` força o dot pulsante mesmo com `pulsing=false`; `neutral` não tem ícone. Com `prefers-reduced-motion: reduce` a pulsão para (regra global de `main.css` — vale para animações e transições de todo o kit).
 

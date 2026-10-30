@@ -19,6 +19,7 @@ const props = withDefaults(
 )
 
 const critico = computed(() => props.chamada.impacto === 'Crítico')
+const alto = computed(() => props.chamada.impacto === 'Alto')
 
 const temRodape = computed(() =>
   Boolean(
@@ -42,13 +43,41 @@ const linkPrimarioClasse =
 
 <template>
   <article
+    :id="`chamada-${chamada.id}`"
+    :data-impacto="critico ? 'critico' : alto ? 'alto' : undefined"
     :class="[
-      'flex min-w-0 flex-col rounded-2xl border bg-white p-4 shadow-xs transition-colors dark:bg-slate-900 sm:p-5',
+      'relative flex min-w-0 scroll-mt-24 flex-col rounded-2xl border bg-white p-4 shadow-xs transition-colors dark:bg-slate-900 sm:p-5',
       critico
-        ? 'border-rose-300 border-l-4 border-l-rose-700 shadow-md ring-1 ring-rose-700/20 dark:border-rose-800 dark:border-l-rose-400 dark:ring-rose-500/20'
-        : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+        ? 'border-rose-300 dark:border-rose-800'
+        : alto
+          ? 'border-orange-300 dark:border-orange-800'
+          : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
     ]"
   >
+    <svg
+      v-if="critico || alto"
+      :class="[
+        'escopo-comet pointer-events-none absolute inset-0 h-full w-full',
+        critico ? 'text-rose-600' : 'text-orange-500'
+      ]"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect
+        x="0"
+        y="0"
+        width="100%"
+        height="100%"
+        rx="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        pathLength="100"
+        stroke-dasharray="22 78"
+        stroke-linecap="round"
+      />
+    </svg>
+
     <div class="flex flex-wrap items-start justify-between gap-3">
       <div class="flex min-w-0 flex-wrap items-center gap-2">
         <span
@@ -67,10 +96,10 @@ const linkPrimarioClasse =
           v-if="chamada.impacto"
           :variant="varianteImpacto(chamada.impacto)"
           size="sm"
-          :show-icon="chamada.impacto !== 'Crítico'"
+          :show-icon="chamada.impacto !== 'Crítico' && chamada.impacto !== 'Alto'"
         >
           <Gauge
-            v-if="chamada.impacto !== 'Crítico'"
+            v-if="chamada.impacto !== 'Crítico' && chamada.impacto !== 'Alto'"
             class="h-3 w-3"
             aria-hidden="true"
           />
@@ -225,3 +254,36 @@ const linkPrimarioClasse =
     </div>
   </article>
 </template>
+
+<style scoped>
+/* Borda "cometa" do impacto: o traço percorre o perímetro do card em 5s, sem
+   pausa em hover/focus. A cor vem de currentColor (text-rose-600 / text-orange-500). */
+.escopo-comet rect {
+  animation: escopo-comet-trail 5s linear infinite;
+}
+
+@keyframes escopo-comet-trail {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .escopo-comet {
+    display: none;
+  }
+
+  article[data-impacto='critico'] {
+    border-width: 2px;
+    border-color: #e11d48;
+  }
+
+  article[data-impacto='alto'] {
+    border-width: 2px;
+    border-color: #f97316;
+  }
+}
+</style>

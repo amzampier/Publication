@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import { formatarData } from '#shared/escopo-projetos'
 import { usePublicoEscopo } from '../../composables/usePublicoEscopo'
 
@@ -32,6 +32,51 @@ const exibindo = computed(() => {
 const publicacao = computed(() =>
   escopo.value?.publicadoEm ? formatarData(escopo.value.publicadoEm) : ''
 )
+
+const rota = useRoute()
+
+const rolarParaChamada = async (tentativa = 0) => {
+  if (!import.meta.client) return
+  const hash = rota.hash
+  if (!hash.startsWith('#chamada-')) return
+  await nextTick()
+  const alvo = document.getElementById(hash.slice(1))
+  if (!alvo) {
+    if (tentativa < 10) {
+      window.setTimeout(() => {
+        void rolarParaChamada(tentativa + 1)
+      }, 50)
+    }
+    return
+  }
+
+  const aplicarScroll = () => {
+    const container = document.querySelector<HTMLElement>('[data-publico-shell] main')
+    if (!container) return
+    const top =
+      alvo.getBoundingClientRect().top -
+      container.getBoundingClientRect().top +
+      container.scrollTop -
+      16
+    container.scrollTop = top
+  }
+
+  aplicarScroll()
+  window.setTimeout(aplicarScroll, 300)
+  return
+}
+
+watch(
+  [() => rota.hash, chamadas, carregando],
+  () => {
+    void rolarParaChamada()
+  },
+  { flush: 'post' }
+)
+
+onMounted(() => {
+  void rolarParaChamada()
+})
 
 const titulo = computed(() =>
   escopo.value ? `${escopo.value.nome} - Dicas Teorema` : 'Escopo de Projetos - Dicas Teorema'

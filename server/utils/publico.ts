@@ -611,9 +611,10 @@ async function listarChamadasCriticasPainel(
             e.ordem_apresentacao
        FROM entregas_itens e
       WHERE e.projeto_id = ?
-        AND e.impacto = 'Crítico'
+        AND e.impacto IN ('Crítico', 'Alto')
         AND ${gateChamada('e')}
-      ORDER BY e.ordem_apresentacao ASC, e.chamada ASC
+      ORDER BY CASE WHEN e.impacto = 'Crítico' THEN 0 ELSE 1 END,
+               e.ordem_apresentacao ASC, e.chamada ASC
       LIMIT 3`,
     [escopoId]
   )

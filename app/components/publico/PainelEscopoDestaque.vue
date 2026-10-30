@@ -4,7 +4,9 @@ import { AlertTriangle, ArrowRight, CalendarDays, FolderGit2, Monitor } from '@l
 import { formatarData } from '#shared/escopo-projetos'
 import {
   rotuloChamadas,
+  rotuloImpacto,
   rotuloSistemas,
+  varianteImpacto,
   type PublicoChamadaCritica,
   type PublicoEscopoResumo
 } from '#shared/publico'
@@ -133,7 +135,9 @@ const criticaClasse =
       >
         <div class="flex items-center gap-2">
           <AlertTriangle class="h-4 w-4 text-rose-700 dark:text-rose-300" aria-hidden="true" />
-          <h3 class="text-sm font-bold text-rose-800 dark:text-rose-200">Chamadas críticas</h3>
+          <h3 class="text-sm font-bold text-rose-800 dark:text-rose-200">
+            Chamadas em destaque
+          </h3>
           <span
             class="ml-auto rounded bg-rose-50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
           >
@@ -145,15 +149,17 @@ const criticaClasse =
           <li v-for="critica in criticas" :key="critica.id">
             <NuxtLink
               v-if="!demo"
-              :to="`/escopos/${escopo.id}`"
+              :to="`/escopos/${escopo.id}#chamada-${critica.id}`"
               :class="criticaClasse"
-              :aria-label="`Chamada ${critica.chamada}: ${critica.titulo}`"
+              :aria-label="`Abrir a chamada ${critica.chamada}: ${critica.titulo}`"
             >
               <div class="flex flex-wrap items-center gap-1.5">
                 <span class="font-mono text-[10px] font-bold text-slate-500 dark:text-slate-400">
                   #{{ critica.chamada }}
                 </span>
-                <UiBadge variant="critico" size="sm">Impacto: Crítico</UiBadge>
+                <UiBadge :variant="varianteImpacto(critica.impacto)" size="sm">
+                  {{ rotuloImpacto(critica.impacto) }}
+                </UiBadge>
               </div>
               <p class="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-slate-800 dark:text-slate-100">
                 {{ critica.titulo }}
@@ -174,7 +180,9 @@ const criticaClasse =
                 <span class="font-mono text-[10px] font-bold text-slate-500 dark:text-slate-400">
                   #{{ critica.chamada }}
                 </span>
-                <UiBadge variant="critico" size="sm">Impacto: Crítico</UiBadge>
+                <UiBadge :variant="varianteImpacto(critica.impacto)" size="sm">
+                  {{ rotuloImpacto(critica.impacto) }}
+                </UiBadge>
               </div>
               <p class="mt-1 line-clamp-2 text-xs font-semibold leading-snug text-slate-800 dark:text-slate-100">
                 {{ critica.titulo }}
